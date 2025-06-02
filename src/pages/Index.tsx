@@ -24,23 +24,27 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-10">
+      <div className="bg-white/90 backdrop-blur-sm border-b border-blue-100 sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
-                <Activity className="w-6 h-6 text-white" />
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center shadow-lg">
+                <img 
+                  src="/lovable-uploads/d42a4294-b163-4e70-8cdb-4bacd9e33a98.png" 
+                  alt="Rebound Medicine Logo" 
+                  className="w-10 h-10 rounded-full object-cover"
+                />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-800">CC Athletics</h1>
-                <p className="text-sm text-slate-600">Force Plate Analysis Platform</p>
+                <h1 className="text-2xl font-bold text-gray-800">Rebound Medicine</h1>
+                <p className="text-sm text-blue-600 font-medium">Force Plate Analysis Platform</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-slate-600">Professional Sports Science</p>
-              <p className="text-xs text-slate-500">Denmark</p>
+              <p className="text-sm text-gray-600 font-medium">Performance Analytics</p>
+              <p className="text-xs text-blue-500">Denmark</p>
             </div>
           </div>
         </div>
@@ -51,48 +55,54 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             {/* Welcome Section */}
             <div className="text-center mb-8">
-              <h2 className="text-4xl font-bold text-slate-800 mb-4">
-                Advanced Force Plate Analytics
+              <h2 className="text-4xl font-bold text-gray-800 mb-4">
+                Advanced Biomechanical Analysis
               </h2>
-              <p className="text-lg text-slate-600 mb-8">
-                Upload your force plate data to generate comprehensive biomechanical insights
+              <p className="text-lg text-gray-600 mb-8">
+                Professional force plate data analysis for elite athletic performance
               </p>
             </div>
 
             {/* Feature Cards */}
             <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card className="border-blue-200 hover:border-blue-300 transition-colors">
+              <Card className="border-blue-200 hover:border-blue-400 transition-all hover:shadow-lg bg-white/80 backdrop-blur-sm">
                 <CardHeader className="text-center">
-                  <TrendingUp className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                  <CardTitle className="text-lg">Real-time Analysis</CardTitle>
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <TrendingUp className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <CardTitle className="text-lg text-gray-800">Real-time Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-600 text-center">
-                    Instant processing of force plate data with advanced algorithms
+                  <p className="text-gray-600 text-center">
+                    Instant processing with advanced biomechanical algorithms
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200 hover:border-blue-300 transition-colors">
+              <Card className="border-blue-200 hover:border-blue-400 transition-all hover:shadow-lg bg-white/80 backdrop-blur-sm">
                 <CardHeader className="text-center">
-                  <Zap className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                  <CardTitle className="text-lg">Key Metrics</CardTitle>
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Zap className="w-8 h-8 text-red-500" />
+                  </div>
+                  <CardTitle className="text-lg text-gray-800">Comprehensive Metrics</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-600 text-center">
-                    Peak force, RFD, impulse, and center of pressure analysis
+                  <p className="text-gray-600 text-center">
+                    Jump, isometric, and pogo analysis with detailed insights
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-200 hover:border-blue-300 transition-colors">
+              <Card className="border-blue-200 hover:border-blue-400 transition-all hover:shadow-lg bg-white/80 backdrop-blur-sm">
                 <CardHeader className="text-center">
-                  <Upload className="w-12 h-12 text-blue-600 mx-auto mb-2" />
-                  <CardTitle className="text-lg">Easy Import</CardTitle>
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Upload className="w-8 h-8 text-green-600" />
+                  </div>
+                  <CardTitle className="text-lg text-gray-800">Multi-format Support</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-600 text-center">
-                    Support for multiple force plate data formats
+                  <p className="text-gray-600 text-center">
+                    Compatible with CC Athletics API and multiple data formats
                   </p>
                 </CardContent>
               </Card>
@@ -105,11 +115,11 @@ const Index = () => {
           <div className="space-y-6">
             {/* Action Bar */}
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-800">Force Plate Analysis Results</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Biomechanical Analysis Results</h2>
               <Button
                 variant="outline"
                 onClick={() => setData(null)}
-                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                className="border-blue-400 text-blue-700 hover:bg-blue-50"
               >
                 Upload New Data
               </Button>
