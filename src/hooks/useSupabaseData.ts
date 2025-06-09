@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TestData } from '@/types/forcePlateTypes';
+import { TestData, JumpMetrics, IsometricMetrics, PogoMetrics } from '@/types/forcePlateTypes';
 import { toast } from 'sonner';
 
 export interface UseSupabaseData {
@@ -41,7 +41,7 @@ export const useSupabaseData = (): UseSupabaseData => {
         test_date: record.test_date,
         test_name: record.test_name,
         repetition_number: record.repetition_number,
-        metrics: record.metrics,
+        metrics: record.metrics as JumpMetrics | IsometricMetrics | PogoMetrics,
       })) || [];
 
       return transformedData;
