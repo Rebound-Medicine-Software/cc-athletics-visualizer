@@ -1,0 +1,280 @@
+
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY')
+    if (!ccApiKey) {
+      throw new Error('CC_ATHLETICS_API_KEY not configured')
+    }
+
+    console.log('Starting CC Athletics data sync...')
+
+    // Fetch data from CC Athletics API
+    const baseUrl = 'https://europe-west1-forcemate-desktop.cloudfunctions.net'
+    const headers = {
+      'X-API-Key': ccApiKey,
+      'Content-Type': 'application/json',
+    }
+
+    // Fetch teams
+    console.log('Fetching teams...')
+    const teamsResponse = await fetch(`${baseUrl}/get_teams`, { headers })
+    if (!teamsResponse.ok) {
+      throw new Error(`Teams API request failed: ${teamsResponse.status}`)
+    }
+    const teamsData = await teamsResponse.json()
+    
+    // Fetch athletes for each test type
+    console.log('Fetching athletes...')
+    const [jumpResponse, isometricResponse, pogoResponse] = await Promise.all([
+      fetch(`${baseUrl}/get_athletes?analysis_type=Jump`, { headers }),
+      fetch(`${baseUrl}/get_athletes?analysis_type=Isometric`, { headers }),
+      fetch(`${baseUrl}/get_athletes?analysis_type=Pogo`, { headers }),
+    ])
+
+    if (!jumpResponse.ok || !isometricResponse.ok || !pogoResponse.ok) {
+      throw new Error('Athletes API request failed')
+    }
+
+    const [jumpData, isometricData, pogoData] = await Promise.all([
+      jumpResponse.json(),
+      isometricResponse.json(),
+      pogoResponse.json(),
+    ])
+
+    // Store teams in database
+    console.log('Storing teams...')
+    for (const team of teamsData.teams) {
+      await supabaseClient
+        .from('teams')
+        .upsert({
+          cc_team_id: team.id,
+          name: team.name,
+          creation_date: team.creation_date,
+        }, {
+          onConflict: 'cc_team_id'
+        })
+    }
+
+    // Create team mapping
+    const teamMap = new Map()
+    teamsData.teams.forEach(team => {
+      teamMap.set(team.id, team.name)
+    })
+
+    // Process and store athletes and test data
+    const allAthletes = new Set()
+    const allTestData = []
+
+    // Helper function to extract demographics
+    const extractDemographics = (athlete) => {
+      const info = athlete.player_info || {}
+      let age = null
+      
+      if (info.birth_date) {
+        const birthDate = typeof info.birth_date === 'number' 
+          ? new Date(info.birth_date) 
+          : new Date(info.birth_date)
+        
+        if (!isNaN(birthDate.getTime())) {
+          const today = new Date()
+          age = today.getFullYear() - birthDate.getFullYear()
+          const monthDiff = today.getMonth() - birthDate.getMonth()
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--
+          }
+        }
+      }
+
+      return {
+        gender: info.gender,
+        age,
+        height_cm: info.height_cm,
+        weight_kg: info.weight_kg,
+      }
+    }
+
+    // Process jump data
+    console.log('Processing jump data...')
+    for (const athlete of jumpData.athletes) {
+      const demographics = extractDemographics(athlete)
+      
+      allAthletes.add({
+        cc_athlete_id: athlete.id,
+        name: athlete.name,
+        cc_team_id: athlete.team_id,
+        ...demographics,
+      })
+
+      Object.values(athlete.recordings || {}).forEach(recording => {
+        const jumps = recording.jump_analysis || []
+        
+        jumps.forEach((jump, index) => {
+          const rawJumpType = (jump.plot_annotations?.jump_type || '').toUpperCase()
+          const testName = rawJumpType === 'CMJ' ? 'Countermovement Jump'
+                          : rawJumpType === 'SJ' ? 'Squat Jump'
+                          : rawJumpType === 'DJ' ? 'Drop Jump'
+                          : 'Jump Test'
+
+          allTestData.push({
+            cc_athlete_id: athlete.id,
+            athlete_name: athlete.name,
+            team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+            test_date: new Date(jump.date).toISOString().split('T')[0],
+            test_name: testName,
+            repetition_number: index + 1,
+            metrics: jump.metric_table,
+            test_type: 'jump',
+          })
+        })
+      })
+    }
+
+    // Process isometric data
+    console.log('Processing isometric data...')
+    for (const athlete of isometricData.athletes) {
+      const demographics = extractDemographics(athlete)
+      
+      allAthletes.add({
+        cc_athlete_id: athlete.id,
+        name: athlete.name,
+        cc_team_id: athlete.team_id,
+        ...demographics,
+      })
+
+      Object.values(athlete.recordings || {}).forEach(recording => {
+        const analysis = recording.isometric_analysis
+        if (!analysis?.trials) return
+
+        analysis.trials.forEach((trial, index) => {
+          allTestData.push({
+            cc_athlete_id: athlete.id,
+            athlete_name: athlete.name,
+            team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+            test_date: new Date(recording.date).toISOString().split('T')[0],
+            test_name: recording.exercise_name || 'Isometric Test',
+            repetition_number: index + 1,
+            metrics: trial.total_metrics,
+            test_type: 'isometric',
+          })
+        })
+      })
+    }
+
+    // Process pogo data
+    console.log('Processing pogo data...')
+    for (const athlete of pogoData.athletes) {
+      const demographics = extractDemographics(athlete)
+      
+      allAthletes.add({
+        cc_athlete_id: athlete.id,
+        name: athlete.name,
+        cc_team_id: athlete.team_id,
+        ...demographics,
+      })
+
+      Object.values(athlete.recordings || {}).forEach(recording => {
+        const analysis = recording.pogo_jump_analysis
+        if (!analysis) return
+
+        // Add average metrics row
+        if (analysis.avg_metrics) {
+          allTestData.push({
+            cc_athlete_id: athlete.id,
+            athlete_name: athlete.name,
+            team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+            test_date: new Date(recording.date).toISOString().split('T')[0],
+            test_name: 'Pogo Jump',
+            repetition_number: 0, // 0 indicates average
+            metrics: analysis.avg_metrics,
+            test_type: 'pogo',
+          })
+        }
+
+        // Add individual jump data
+        (analysis.jumps || []).forEach((jump, index) => {
+          allTestData.push({
+            cc_athlete_id: athlete.id,
+            athlete_name: athlete.name,
+            team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+            test_date: new Date(recording.date).toISOString().split('T')[0],
+            test_name: 'Pogo Jump',
+            repetition_number: index + 1,
+            metrics: jump,
+            test_type: 'pogo',
+          })
+        })
+      })
+    }
+
+    // Store athletes
+    console.log(`Storing ${allAthletes.size} athletes...`)
+    const athleteArray = Array.from(allAthletes)
+    for (const athlete of athleteArray) {
+      await supabaseClient
+        .from('athletes')
+        .upsert(athlete, {
+          onConflict: 'cc_athlete_id'
+        })
+    }
+
+    // Store test data in batches
+    console.log(`Storing ${allTestData.length} test records...`)
+    const batchSize = 100
+    for (let i = 0; i < allTestData.length; i += batchSize) {
+      const batch = allTestData.slice(i, i + batchSize)
+      await supabaseClient
+        .from('test_data')
+        .upsert(batch, {
+          onConflict: 'cc_athlete_id,test_date,test_name,repetition_number'
+        })
+    }
+
+    console.log('CC Athletics data sync completed successfully!')
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Data sync completed',
+        stats: {
+          teams: teamsData.teams.length,
+          athletes: allAthletes.size,
+          testRecords: allTestData.length,
+        },
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
+
+  } catch (error) {
+    console.error('Error in CC Athletics sync:', error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
+  }
+})

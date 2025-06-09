@@ -9,7 +9,136 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      athletes: {
+        Row: {
+          age: number | null
+          cc_athlete_id: string
+          cc_team_id: string | null
+          created_at: string | null
+          gender: string | null
+          height_cm: number | null
+          id: string
+          name: string
+          team_id: string | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          age?: number | null
+          cc_athlete_id: string
+          cc_team_id?: string | null
+          created_at?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          name: string
+          team_id?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          age?: number | null
+          cc_athlete_id?: string
+          cc_team_id?: string | null
+          created_at?: string | null
+          gender?: string | null
+          height_cm?: number | null
+          id?: string
+          name?: string
+          team_id?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athletes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          cc_team_id: string
+          created_at: string | null
+          creation_date: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          cc_team_id: string
+          created_at?: string | null
+          creation_date?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          cc_team_id?: string
+          created_at?: string | null
+          creation_date?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      test_data: {
+        Row: {
+          athlete_id: string | null
+          athlete_name: string
+          cc_athlete_id: string
+          created_at: string | null
+          id: string
+          metrics: Json
+          repetition_number: number
+          team_name: string
+          test_date: string
+          test_name: string
+          test_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          athlete_name: string
+          cc_athlete_id: string
+          created_at?: string | null
+          id?: string
+          metrics: Json
+          repetition_number: number
+          team_name: string
+          test_date: string
+          test_name: string
+          test_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          athlete_id?: string | null
+          athlete_name?: string
+          cc_athlete_id?: string
+          created_at?: string | null
+          id?: string
+          metrics?: Json
+          repetition_number?: number
+          team_name?: string
+          test_date?: string
+          test_name?: string
+          test_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_data_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
