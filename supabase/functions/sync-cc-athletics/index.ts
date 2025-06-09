@@ -20,7 +20,17 @@ serve(async (req) => {
 
     const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY')
     if (!ccApiKey) {
-      throw new Error('CC_ATHLETICS_API_KEY not configured')
+      console.error('CC_ATHLETICS_API_KEY not configured in Supabase secrets')
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'CC_ATHLETICS_API_KEY not configured. Please add your API key in Supabase project settings > Edge Functions > Manage secrets.',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        }
+      )
     }
 
     console.log('Starting CC Athletics data sync...')
@@ -32,13 +42,24 @@ serve(async (req) => {
       'Content-Type': 'application/json',
     }
 
+    // Helper function to handle API responses
+    const handleApiResponse = async (response: Response, endpoint: string) => {
+      if (response.status === 401) {
+        throw new Error(`CC Athletics API: Invalid or missing API key for ${endpoint}. Please check your API key configuration.`)
+      }
+      if (response.status === 500) {
+        throw new Error(`CC Athletics API: Internal server error for ${endpoint}. Please try again later.`)
+      }
+      if (!response.ok) {
+        throw new Error(`CC Athletics API: Request failed for ${endpoint} with status ${response.status}`)
+      }
+      return response.json()
+    }
+
     // Fetch teams
     console.log('Fetching teams...')
     const teamsResponse = await fetch(`${baseUrl}/get_teams`, { headers })
-    if (!teamsResponse.ok) {
-      throw new Error(`Teams API request failed: ${teamsResponse.status}`)
-    }
-    const teamsData = await teamsResponse.json()
+    const teamsData = await handleApiResponse(teamsResponse, 'get_teams')
     
     // Fetch athletes for each test type
     console.log('Fetching athletes...')
@@ -48,14 +69,10 @@ serve(async (req) => {
       fetch(`${baseUrl}/get_athletes?analysis_type=Pogo`, { headers }),
     ])
 
-    if (!jumpResponse.ok || !isometricResponse.ok || !pogoResponse.ok) {
-      throw new Error('Athletes API request failed')
-    }
-
     const [jumpData, isometricData, pogoData] = await Promise.all([
-      jumpResponse.json(),
-      isometricResponse.json(),
-      pogoResponse.json(),
+      handleApiResponse(jumpResponse, 'get_athletes?analysis_type=Jump'),
+      handleApiResponse(isometricResponse, 'get_athletes?analysis_type=Isometric'),
+      handleApiResponse(pogoResponse, 'get_athletes?analysis_type=Pogo'),
     ])
 
     // Store teams in database
@@ -266,10 +283,21 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in CC Athletics sync:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = error.message
+    if (error.message.includes('CC Athletics API')) {
+      // API-specific errors are already formatted
+    } else if (error.message.includes('fetch')) {
+      errorMessage = 'Network error: Unable to connect to CC Athletics API. Please check your internet connection.'
+    } else {
+      errorMessage = `Sync error: ${error.message}`
+    }
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: errorMessage,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
