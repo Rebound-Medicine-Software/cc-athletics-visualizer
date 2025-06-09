@@ -24,14 +24,22 @@ export const useSupabaseData = (): UseSupabaseData => {
       
       const { data: testData, error } = await supabase
         .from('test_data')
-        .select('*')
+        .select(`
+          *,
+          athletes:athlete_id (
+            name,
+            cc_athlete_id
+          )
+        `)
         .order('test_date', { ascending: false });
 
       if (error) {
+        console.error('Supabase fetch error:', error);
         throw new Error(`Failed to fetch data: ${error.message}`);
       }
 
       console.log(`Fetched ${testData?.length || 0} test records from Supabase`);
+      console.log('Sample record:', testData?.[0]);
       
       // Transform the data to match the expected TestData interface
       const transformedData: TestData[] = testData?.map(record => ({
@@ -52,13 +60,17 @@ export const useSupabaseData = (): UseSupabaseData => {
 
   const syncData = async () => {
     try {
+      console.log('Starting data synchronization...');
       toast.info('Starting data synchronization...');
       
       const { data: result, error } = await supabase.functions.invoke('sync-cc-athletics');
       
       if (error) {
+        console.error('Sync error:', error);
         throw error;
       }
+
+      console.log('Sync result:', result);
 
       if (result?.success) {
         setLastSyncTime(new Date());
