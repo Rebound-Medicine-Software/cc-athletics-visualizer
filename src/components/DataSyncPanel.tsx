@@ -2,12 +2,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Database, Clock, CheckCircle, AlertCircle, Key } from "lucide-react";
+import { RefreshCw, Database, Clock, CheckCircle, AlertCircle, Key, Settings } from "lucide-react";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { formatDistanceToNow } from "date-fns";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const DataSyncPanel = () => {
   const { data, isLoading, syncData, lastSyncTime, error } = useSupabaseData();
+  const [isSettingUpCron, setIsSettingUpCron] = useState(false);
 
   const formatLastSync = (date: Date | null) => {
     if (!date) return "Never";
@@ -15,6 +19,28 @@ export const DataSyncPanel = () => {
   };
 
   const isApiKeyError = error?.includes('CC_ATHLETICS_API_KEY not configured') || error?.includes('Invalid or missing API key');
+
+  const setupCronJob = async () => {
+    setIsSettingUpCron(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke('setup-cron');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (result?.success) {
+        toast.success('Automated sync scheduled successfully! Data will sync daily at 6:00 AM UTC.');
+      } else {
+        throw new Error(result?.error || 'Setup failed');
+      }
+    } catch (error) {
+      console.error('Cron setup error:', error);
+      toast.error(`Setup failed: ${error.message}`);
+    } finally {
+      setIsSettingUpCron(false);
+    }
+  };
 
   return (
     <Card className="border-2 border-green-200 bg-green-50/50 backdrop-blur-sm shadow-lg">
@@ -75,27 +101,48 @@ export const DataSyncPanel = () => {
           )}
         </div>
 
-        <Button
-          onClick={syncData}
-          disabled={isLoading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white"
-        >
-          {isLoading ? (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              Syncing Data...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Sync Now
-            </>
-          )}
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={syncData}
+            disabled={isLoading}
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Syncing Data...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Sync Now
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={setupCronJob}
+            disabled={isSettingUpCron || isApiKeyError}
+            variant="outline"
+            className="w-full border-green-300 text-green-700 hover:bg-green-50"
+          >
+            {isSettingUpCron ? (
+              <>
+                <Settings className="w-4 h-4 mr-2 animate-spin" />
+                Setting up...
+              </>
+            ) : (
+              <>
+                <Settings className="w-4 h-4 mr-2" />
+                Setup Auto-Sync (Daily)
+              </>
+            )}
+          </Button>
+        </div>
 
         <div className="text-center">
           <p className="text-xs text-gray-500">
-            Data automatically syncs every 24 hours
+            Manual sync available • Auto-sync runs daily at 6:00 AM UTC
           </p>
         </div>
       </CardContent>
