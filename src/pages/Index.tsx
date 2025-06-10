@@ -73,9 +73,17 @@ const Index = () => {
             <Activity className="w-10 h-10 text-blue-600" />
             CC Athletics Force Plate Hub
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             Advanced biomechanical analysis platform for sports performance optimization
           </p>
+          <div className="flex gap-4 justify-center">
+            <Button 
+              onClick={() => window.location.href = '/login'}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Access Reporting Dashboard
+            </Button>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
