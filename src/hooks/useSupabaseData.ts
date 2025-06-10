@@ -1,111 +1,60 @@
 
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TestData, JumpMetrics, IsometricMetrics, PogoMetrics } from '@/types/forcePlateTypes';
-import { toast } from 'sonner';
+import { TestData } from '@/types/forcePlateTypes';
 
-export interface UseSupabaseData {
-  data: TestData[] | null;
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => void;
-  syncData: () => void;
-  lastSyncTime: Date | null;
-}
-
-export const useSupabaseData = (): UseSupabaseData => {
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-
-  const { data, isLoading, error, refetch } = useQuery({
+export const useSupabaseData = () => {
+  return useQuery({
     queryKey: ['supabase-test-data'],
-    queryFn: async () => {
+    queryFn: async (): Promise<TestData[]> => {
       console.log('Fetching test data from Supabase...');
       
-      const { data: testData, error } = await supabase
-        .from('test_data')
-        .select(`
-          *,
-          athletes:athlete_id (
-            name,
-            cc_athlete_id
-          )
-        `)
-        .order('test_date', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('test_data')
+          .select(`
+            *,
+            athletes!inner(name, gender, age, height_cm, weight_kg),
+            teams!inner(name)
+          `)
+          .order('test_date', { ascending: false });
 
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        throw new Error(`Failed to fetch data: ${error.message}`);
-      }
+        if (error) {
+          console.error('Supabase query error:', error);
+          throw new Error(`Database error: ${error.message}`);
+        }
 
-      console.log(`Fetched ${testData?.length || 0} test records from Supabase`);
-      console.log('Sample record:', testData?.[0]);
-      
-      // Transform the data to match the expected TestData interface
-      const transformedData: TestData[] = testData?.map(record => ({
-        athlete_id: record.cc_athlete_id,
-        athlete_name: record.athlete_name,
-        team_name: record.team_name,
-        test_date: record.test_date,
-        test_name: record.test_name,
-        repetition_number: record.repetition_number,
-        metrics: record.metrics as JumpMetrics | IsometricMetrics | PogoMetrics,
-      })) || [];
+        console.log(`Fetched ${data?.length || 0} test records from Supabase`);
+        
+        if (data && data.length > 0) {
+          console.log('Sample record:', {
+            athlete_name: data[0].athlete_name,
+            test_name: data[0].test_name,
+            test_date: data[0].test_date,
+            team_name: data[0].team_name,
+            metrics_keys: data[0].metrics ? Object.keys(data[0].metrics) : []
+          });
+        }
 
-      return transformedData;
-    },
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-    retry: 2,
-  });
+        // Transform the data to match our TestData interface
+        const transformedData: TestData[] = (data || []).map(record => ({
+          athlete_id: record.cc_athlete_id,
+          athlete_name: record.athlete_name,
+          team_name: record.team_name,
+          test_date: record.test_date,
+          test_name: record.test_name,
+          repetition_number: record.repetition_number,
+          metrics: record.metrics || {}
+        }));
 
-  const syncData = async () => {
-    try {
-      console.log('Starting data synchronization...');
-      toast.info('Starting data synchronization...');
-      
-      const { data: result, error } = await supabase.functions.invoke('sync-cc-athletics');
-      
-      if (error) {
-        console.error('Sync error:', error);
+        return transformedData;
+      } catch (error) {
+        console.error('Error fetching Supabase data:', error);
         throw error;
       }
-
-      console.log('Sync result:', result);
-
-      if (result?.success) {
-        setLastSyncTime(new Date());
-        toast.success(`Data sync completed! ${result.stats?.testRecords || 0} test records synchronized.`);
-        refetch(); // Refresh the local data
-      } else {
-        throw new Error(result?.error || 'Sync failed');
-      }
-    } catch (error) {
-      console.error('Sync error:', error);
-      toast.error(`Sync failed: ${error.message}`);
-    }
-  };
-
-  // Load last sync time from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem('last-sync-time');
-    if (stored) {
-      setLastSyncTime(new Date(stored));
-    }
-  }, []);
-
-  // Store sync time when it changes
-  useEffect(() => {
-    if (lastSyncTime) {
-      localStorage.setItem('last-sync-time', lastSyncTime.toISOString());
-    }
-  }, [lastSyncTime]);
-
-  return {
-    data: data || null,
-    isLoading,
-    error: error?.message || null,
-    refetch,
-    syncData,
-    lastSyncTime,
-  };
+    },
+    refetchInterval: 30000, // Refetch every 30 seconds for live updates
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+  });
 };

@@ -4,17 +4,18 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ReportFilters } from "@/components/dashboard/ReportFilters";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
 import { RegionComparison } from "@/components/dashboard/RegionComparison";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, BarChart3 } from "lucide-react";
+import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useSupabaseData();
+  const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
 
   useEffect(() => {
@@ -29,6 +30,11 @@ const Dashboard = () => {
     localStorage.removeItem('cc-athletics-api-key');
     toast.success("Logged out successfully");
     navigate('/login');
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    toast.info("Refreshing data...");
   };
 
   if (isLoading) {
@@ -60,11 +66,18 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <Button
                 variant="outline"
+                onClick={handleRefresh}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => navigate('/')}
                 className="text-gray-600"
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Force Plate Hub
+                ← Home
               </Button>
               <Button
                 variant="outline"
@@ -82,26 +95,34 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Data Status */}
         {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <p className="text-red-800">Error loading data: {error}</p>
-            </CardContent>
-          </Card>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Error loading data: {error}
+              <Button variant="outline" size="sm" onClick={handleRefresh} className="ml-2">
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
         )}
 
         {data && data.length > 0 && (
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-green-800">
-                  Dashboard loaded successfully with {data.length} test records
-                </p>
-                <Badge className="bg-green-100 text-green-800">
-                  Data Active
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              Dashboard loaded successfully with {data.length} test records from CC Athletics API
+              <Badge className="ml-2 bg-green-100 text-green-800">Live Data</Badge>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {data && data.length === 0 && (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800">
+              No test data found. Please ensure data has been synchronized from CC Athletics API.
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Main Content */}
@@ -132,10 +153,13 @@ const Dashboard = () => {
             <Card className="bg-gray-100 border-gray-300">
               <CardContent className="p-6 text-center">
                 <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                  Please Select A 'Test Name'
+                  {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
                 </h2>
                 <p className="text-gray-600">
-                  Choose a test from the filters below to view detailed analysis
+                  {selectedTest 
+                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+                    : "Choose a test from the filters below to view detailed analysis"
+                  }
                 </p>
               </CardContent>
             </Card>

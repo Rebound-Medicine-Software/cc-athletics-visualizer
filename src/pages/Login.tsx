@@ -1,39 +1,69 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Key, Activity } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Activity, Key, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [apiKey, setApiKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const validateApiKey = async (key: string) => {
+    try {
+      const response = await fetch('https://europe-west1-forcemate-desktop.cloudfunctions.net/get_teams', {
+        method: 'GET',
+        headers: {
+          'X-API-Key': key,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 401) {
+        throw new Error('Invalid API key. Please check your credentials.');
+      }
+      
+      if (response.status === 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.teams && data.teams.length > 0;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Network error. Please check your connection.');
+    }
+  };
+
+  const handleLogin = async () => {
     if (!apiKey.trim()) {
-      toast.error("Please enter your API key");
+      setError("Please enter your API key");
       return;
     }
 
     setIsLoading(true);
-    
+    setError("");
+
     try {
-      // Store the API key in localStorage
-      localStorage.setItem('cc-athletics-api-key', apiKey.trim());
-      
-      // Simulate API validation (you can add actual validation here)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success("Login successful!");
+      await validateApiKey(apiKey);
+      localStorage.setItem('cc-athletics-api-key', apiKey);
+      toast.success("API key validated successfully!");
       navigate('/dashboard');
     } catch (error) {
-      toast.error("Invalid API key. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -41,64 +71,62 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
+      <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
             <Activity className="w-12 h-12 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-800">
-              CC Athletics
-            </h1>
           </div>
-          <p className="text-lg text-gray-600">
-            Advanced Testing Platform
+          <CardTitle className="text-2xl font-bold text-gray-800">
+            Evolve Physiotherapy
+          </CardTitle>
+          <p className="text-gray-600">
+            Enter your CC Athletics API key to access the dashboard
           </p>
-        </div>
-
-        <Card className="shadow-lg border-gray-200">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl text-gray-800 flex items-center justify-center gap-2">
-              <Key className="w-6 h-6 text-blue-600" />
-              API Access Required
-            </CardTitle>
-            <p className="text-gray-600 text-sm">
-              Enter your CC Athletics API key to access the reporting dashboard
-            </p>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="apiKey" className="text-sm font-medium text-gray-700">
-                  API Key
-                </Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your API key"
-                  className="mt-1"
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-              
-              <Button
-                type="submit"
-                disabled={!apiKey.trim() || isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isLoading ? "Validating..." : "Access Dashboard"}
-              </Button>
-            </form>
-            
-            <div className="mt-4 text-center">
-              <p className="text-xs text-gray-500">
-                Don't have an API key? Contact your administrator
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="space-y-2">
+            <label htmlFor="apiKey" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Key className="w-4 h-4" />
+              API Key
+            </label>
+            <Input
+              id="apiKey"
+              type="password"
+              placeholder="Enter your CC Athletics API key"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+              className="bg-white/90"
+            />
+          </div>
+          
+          <Button
+            onClick={handleLogin}
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            {isLoading ? "Validating..." : "Access Dashboard"}
+          </Button>
+          
+          <div className="text-center">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/')}
+              className="text-gray-600"
+            >
+              ← Back to Home
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
