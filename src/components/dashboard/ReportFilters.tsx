@@ -45,6 +45,7 @@ export const ReportFilters = ({ data, onTestSelect }: ReportFiltersProps) => {
               <SelectValue placeholder="Athlete Name" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Athletes</SelectItem>
               {uniqueAthletes.map(athlete => (
                 <SelectItem key={athlete} value={athlete}>
                   {athlete}
@@ -58,6 +59,7 @@ export const ReportFilters = ({ data, onTestSelect }: ReportFiltersProps) => {
               <SelectValue placeholder="Test Name" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Tests</SelectItem>
               {uniqueTests.map(test => (
                 <SelectItem key={test} value={test}>
                   {test}

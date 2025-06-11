@@ -28,9 +28,9 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
 
   // Filter data based on current selections
   const filteredData = data.filter(test => {
-    if (filters.athleteName && test.athlete_name !== filters.athleteName) return false;
-    if (filters.testName && test.test_name !== filters.testName) return false;
-    if (filters.teamName && test.team_name !== filters.teamName) return false;
+    if (filters.athleteName && filters.athleteName !== "all" && test.athlete_name !== filters.athleteName) return false;
+    if (filters.testName && filters.testName !== "all" && test.test_name !== filters.testName) return false;
+    if (filters.teamName && filters.teamName !== "all" && test.team_name !== filters.teamName) return false;
     return true;
   });
 
@@ -84,7 +84,7 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
               <SelectValue placeholder="Athlete Name" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Athletes</SelectItem>
+              <SelectItem value="all">All Athletes</SelectItem>
               {uniqueAthletes.map(athlete => (
                 <SelectItem key={athlete} value={athlete}>
                   {athlete}
@@ -100,7 +100,7 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
               <SelectValue placeholder="Sex" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="male">Male</SelectItem>
               <SelectItem value="female">Female</SelectItem>
             </SelectContent>
@@ -113,7 +113,7 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
               <SelectValue placeholder="Test Name" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Tests</SelectItem>
+              <SelectItem value="all">All Tests</SelectItem>
               {uniqueTests.map(test => (
                 <SelectItem key={test} value={test}>
                   {test}
@@ -179,7 +179,7 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
               <SelectValue placeholder="Team Name" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Teams</SelectItem>
+              <SelectItem value="all">All Teams</SelectItem>
               {uniqueTeams.map(team => (
                 <SelectItem key={team} value={team}>
                   {team}
