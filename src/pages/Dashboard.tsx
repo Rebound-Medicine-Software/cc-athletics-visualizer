@@ -9,6 +9,7 @@ import { ReportFilters } from "@/components/dashboard/ReportFilters";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
 import { RegionComparison } from "@/components/dashboard/RegionComparison";
+import { DataSyncPanel } from "@/components/DataSyncPanel";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ const Dashboard = () => {
   }
 
   const errorMessage = error?.message || "";
+  const hasNoData = !error && (!data || data.length === 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
@@ -118,67 +120,82 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        {data && data.length === 0 && (
-          <Alert className="border-yellow-200 bg-yellow-50">
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
-              No test data found. Please ensure data has been synchronized from CC Athletics API.
+        {hasNoData && (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800">
+              <div className="font-semibold mb-2">No test data found in your database</div>
+              <p className="text-sm">Your API key is valid, but you need to sync data from CC Athletics first. Use the sync panel below to import your test data.</p>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Main Content */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <div className="col-span-3">
-            <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-lg">Navigation</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="ghost" className="w-full justify-start text-gray-600">
-                  📋 Introduction
-                </Button>
-                <Button variant="default" className="w-full justify-start bg-gray-800 text-white">
-                  📊 Report
-                </Button>
-                <Button variant="ghost" className="w-full justify-start text-gray-600">
-                  🔬 Recommendations
-                </Button>
-              </CardContent>
-            </Card>
+        {/* Show DataSyncPanel prominently when no data */}
+        {hasNoData && (
+          <div className="flex justify-center">
+            <div className="w-full max-w-md">
+              <DataSyncPanel />
+            </div>
           </div>
+        )}
 
-          {/* Main Dashboard */}
-          <div className="col-span-9 space-y-6">
-            {/* Test Selection Notice */}
-            <Card className="bg-gray-100 border-gray-300">
-              <CardContent className="p-6 text-center">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                  {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
-                </h2>
-                <p className="text-gray-600">
-                  {selectedTest 
-                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
-                    : "Choose a test from the filters below to view detailed analysis"
-                  }
-                </p>
-              </CardContent>
-            </Card>
+        {/* Main Content - only show if we have data */}
+        {data && data.length > 0 && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* Sidebar */}
+            <div className="col-span-3 space-y-6">
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Navigation</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button variant="ghost" className="w-full justify-start text-gray-600">
+                    📋 Introduction
+                  </Button>
+                  <Button variant="default" className="w-full justify-start bg-gray-800 text-white">
+                    📊 Report
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start text-gray-600">
+                    🔬 Recommendations
+                  </Button>
+                </CardContent>
+              </Card>
 
-            {/* Filters */}
-            <ReportFilters data={data || []} onTestSelect={setSelectedTest} />
+              {/* Data Sync Panel in sidebar when we have data */}
+              <DataSyncPanel />
+            </div>
 
-            {/* Metric Cards */}
-            <MetricCards selectedTest={selectedTest} data={data || []} />
+            {/* Main Dashboard */}
+            <div className="col-span-9 space-y-6">
+              {/* Test Selection Notice */}
+              <Card className="bg-gray-100 border-gray-300">
+                <CardContent className="p-6 text-center">
+                  <h2 className="text-xl font-semibold text-gray-700 mb-2">
+                    {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
+                  </h2>
+                  <p className="text-gray-600">
+                    {selectedTest 
+                      ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+                      : "Choose a test from the filters below to view detailed analysis"
+                    }
+                  </p>
+                </CardContent>
+              </Card>
 
-            {/* Comparison Charts */}
-            <ComparisonChart data={data || []} />
+              {/* Filters */}
+              <ReportFilters data={data || []} onTestSelect={setSelectedTest} />
 
-            {/* Region Comparisons */}
-            <RegionComparison data={data || []} />
+              {/* Metric Cards */}
+              <MetricCards selectedTest={selectedTest} data={data || []} />
+
+              {/* Comparison Charts */}
+              <ComparisonChart data={data || []} />
+
+              {/* Region Comparisons */}
+              <RegionComparison data={data || []} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
