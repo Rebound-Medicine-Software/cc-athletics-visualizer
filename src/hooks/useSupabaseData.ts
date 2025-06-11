@@ -10,13 +10,10 @@ export const useSupabaseData = () => {
       console.log('Fetching test data from Supabase...');
       
       try {
+        // Fetch test data without complex joins since the relationships aren't properly set up
         const { data, error } = await supabase
           .from('test_data')
-          .select(`
-            *,
-            athletes!inner(name, gender, age, height_cm, weight_kg),
-            teams!inner(name)
-          `)
+          .select('*')
           .order('test_date', { ascending: false });
 
         if (error) {
