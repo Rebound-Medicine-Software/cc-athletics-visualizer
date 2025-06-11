@@ -44,7 +44,9 @@ export const useSupabaseData = () => {
           test_date: record.test_date,
           test_name: record.test_name,
           repetition_number: record.repetition_number,
-          metrics: record.metrics || {}
+          metrics: (typeof record.metrics === 'object' && record.metrics !== null) 
+            ? record.metrics as any 
+            : {}
         }));
 
         return transformedData;

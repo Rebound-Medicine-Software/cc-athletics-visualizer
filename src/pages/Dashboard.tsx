@@ -48,6 +48,8 @@ const Dashboard = () => {
     );
   }
 
+  const errorMessage = error?.message || "";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       {/* Header */}
@@ -98,7 +100,7 @@ const Dashboard = () => {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Error loading data: {error}
+              Error loading data: {errorMessage}
               <Button variant="outline" size="sm" onClick={handleRefresh} className="ml-2">
                 Retry
               </Button>

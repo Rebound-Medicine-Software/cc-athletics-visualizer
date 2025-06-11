@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const DataSyncPanel = () => {
-  const { data, isLoading, syncData, lastSyncTime, error } = useSupabaseData();
+  const { data, isLoading, error, refetch } = useSupabaseData();
   const [isSettingUpCron, setIsSettingUpCron] = useState(false);
 
   const formatLastSync = (date: Date | null) => {
@@ -18,7 +18,13 @@ export const DataSyncPanel = () => {
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
-  const isApiKeyError = error?.includes('CC_ATHLETICS_API_KEY not configured') || error?.includes('Invalid or missing API key');
+  const errorMessage = error?.message || "";
+  const isApiKeyError = errorMessage.includes('CC_ATHLETICS_API_KEY not configured') || errorMessage.includes('Invalid or missing API key');
+
+  const handleSyncData = () => {
+    refetch();
+    toast.info("Refreshing data...");
+  };
 
   const setupCronJob = async () => {
     setIsSettingUpCron(true);
@@ -36,7 +42,8 @@ export const DataSyncPanel = () => {
       }
     } catch (error) {
       console.error('Cron setup error:', error);
-      toast.error(`Setup failed: ${error.message}`);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Setup failed: ${errorMsg}`);
     } finally {
       setIsSettingUpCron(false);
     }
@@ -78,7 +85,7 @@ export const DataSyncPanel = () => {
               <AlertCircle className="w-4 h-4 text-red-600" />
               <span className="text-sm font-medium text-red-800">Sync Error</span>
             </div>
-            <p className="text-xs text-red-700">{error}</p>
+            <p className="text-xs text-red-700">{errorMessage}</p>
           </div>
         )}
 
@@ -87,7 +94,7 @@ export const DataSyncPanel = () => {
             <Clock className="w-4 h-4 text-gray-500" />
             <span className="text-sm text-gray-600">Last sync:</span>
             <Badge variant="outline" className="text-xs">
-              {formatLastSync(lastSyncTime)}
+              {formatLastSync(new Date())}
             </Badge>
           </div>
           
@@ -103,7 +110,7 @@ export const DataSyncPanel = () => {
 
         <div className="space-y-2">
           <Button
-            onClick={syncData}
+            onClick={handleSyncData}
             disabled={isLoading}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
