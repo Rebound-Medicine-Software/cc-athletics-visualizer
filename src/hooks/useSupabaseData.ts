@@ -5,54 +5,44 @@ import { TestData } from '@/types/forcePlateTypes';
 
 export const useSupabaseData = () => {
   return useQuery({
-    queryKey: ['supabase-test-data'],
+    queryKey: ['cc-athletics-live-data'],
     queryFn: async (): Promise<TestData[]> => {
-      console.log('Fetching test data from Supabase...');
+      console.log('Fetching live data from CC Athletics API via Supabase Edge Function...');
       
       try {
-        // Fetch test data without complex joins since the relationships aren't properly set up
-        const { data, error } = await supabase
-          .from('test_data')
-          .select('*')
-          .order('test_date', { ascending: false });
+        const { data, error } = await supabase.functions.invoke('fetch-cc-data', {
+          method: 'GET',
+        });
 
         if (error) {
-          console.error('Supabase query error:', error);
-          throw new Error(`Database error: ${error.message}`);
+          console.error('Edge Function error:', error);
+          throw new Error(`Failed to fetch data: ${error.message}`);
         }
 
-        console.log(`Fetched ${data?.length || 0} test records from Supabase`);
+        if (!data.success) {
+          console.error('CC Athletics API error:', data.error);
+          throw new Error(data.error);
+        }
+
+        console.log(`Fetched ${data.data?.length || 0} test records from CC Athletics API`);
         
-        if (data && data.length > 0) {
+        if (data.data && data.data.length > 0) {
           console.log('Sample record:', {
-            athlete_name: data[0].athlete_name,
-            test_name: data[0].test_name,
-            test_date: data[0].test_date,
-            team_name: data[0].team_name,
-            metrics_keys: data[0].metrics ? Object.keys(data[0].metrics) : []
+            athlete_name: data.data[0].athlete_name,
+            test_name: data.data[0].test_name,
+            test_date: data.data[0].test_date,
+            team_name: data.data[0].team_name,
+            metrics_keys: data.data[0].metrics ? Object.keys(data.data[0].metrics) : []
           });
         }
 
-        // Transform the data to match our TestData interface
-        const transformedData: TestData[] = (data || []).map(record => ({
-          athlete_id: record.cc_athlete_id,
-          athlete_name: record.athlete_name,
-          team_name: record.team_name,
-          test_date: record.test_date,
-          test_name: record.test_name,
-          repetition_number: record.repetition_number,
-          metrics: (typeof record.metrics === 'object' && record.metrics !== null) 
-            ? record.metrics as any 
-            : {}
-        }));
-
-        return transformedData;
+        return data.data || [];
       } catch (error) {
-        console.error('Error fetching Supabase data:', error);
+        console.error('Error fetching live CC Athletics data:', error);
         throw error;
       }
     },
-    refetchInterval: 30000, // Refetch every 30 seconds for live updates
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes for live updates
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
