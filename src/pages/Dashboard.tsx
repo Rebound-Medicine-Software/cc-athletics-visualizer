@@ -9,15 +9,16 @@ import { ReportFilters } from "@/components/dashboard/ReportFilters";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
 import { RegionComparison } from "@/components/dashboard/RegionComparison";
-import { DataSyncPanel } from "@/components/DataSyncPanel";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
+import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
 
   useEffect(() => {
     // Check if user has API key (is "logged in")
@@ -37,6 +38,11 @@ const Dashboard = () => {
     refetch();
     toast.info("Refreshing data...");
   };
+
+  // Filter data based on selected teams
+  const filteredData = data?.filter(test => 
+    selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
+  ) || [];
 
   if (isLoading) {
     return (
@@ -62,7 +68,7 @@ const Dashboard = () => {
               <Activity className="w-8 h-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Evolve Physiotherapy Advanced Testing Report
+                  Rebound Performance and Medicine Testing Report
                 </h1>
                 <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
               </div>
@@ -125,48 +131,54 @@ const Dashboard = () => {
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
               <div className="font-semibold mb-2">No test data found in your database</div>
-              <p className="text-sm">Your API key is valid, but you need to sync data from CC Athletics first. Use the sync panel below to import your test data.</p>
+              <p className="text-sm">Your API key is valid, but no test data was found. Please contact support if you believe this is an error.</p>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Show DataSyncPanel prominently when no data */}
-        {hasNoData && (
-          <div className="flex justify-center">
-            <div className="w-full max-w-md">
-              <DataSyncPanel />
-            </div>
-          </div>
-        )}
-
         {/* Main Content - only show if we have data */}
         {data && data.length > 0 && (
-          <div className="grid grid-cols-12 gap-6">
-            {/* Sidebar */}
-            <div className="col-span-3 space-y-6">
-              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-                <CardHeader>
-                  <CardTitle className="text-lg">Navigation</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button variant="ghost" className="w-full justify-start text-gray-600">
-                    📋 Introduction
+          <div className="flex gap-6">
+            {/* Collapsible Sidebar */}
+            <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-64' : 'w-12'}`}>
+              <div className="space-y-6">
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsNavigationVisible(!isNavigationVisible)}
+                    className="h-8 w-8"
+                  >
+                    {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                   </Button>
-                  <Button variant="default" className="w-full justify-start bg-gray-800 text-white">
-                    📊 Report
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start text-gray-600">
-                    🔬 Recommendations
-                  </Button>
-                </CardContent>
-              </Card>
+                  {isNavigationVisible && (
+                    <span className="ml-2 font-medium text-gray-700">Navigation</span>
+                  )}
+                </div>
 
-              {/* Data Sync Panel in sidebar when we have data */}
-              <DataSyncPanel />
+                {isNavigationVisible && (
+                  <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Navigation</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button variant="ghost" className="w-full justify-start text-gray-600">
+                        📋 Introduction
+                      </Button>
+                      <Button variant="default" className="w-full justify-start bg-gray-800 text-white">
+                        📊 Report
+                      </Button>
+                      <Button variant="ghost" className="w-full justify-start text-gray-600">
+                        🔬 Recommendations
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
 
             {/* Main Dashboard */}
-            <div className="col-span-9 space-y-6">
+            <div className="flex-1 space-y-6">
               {/* Test Selection Notice */}
               <Card className="bg-gray-100 border-gray-300">
                 <CardContent className="p-6 text-center">
@@ -183,16 +195,22 @@ const Dashboard = () => {
               </Card>
 
               {/* Filters */}
-              <ReportFilters data={data || []} onTestSelect={setSelectedTest} />
+              <ReportFilters 
+                data={filteredData} 
+                onTestSelect={setSelectedTest}
+                selectedTeams={selectedTeams}
+                onTeamsChange={setSelectedTeams}
+                allData={data || []}
+              />
 
               {/* Metric Cards */}
-              <MetricCards selectedTest={selectedTest} data={data || []} />
+              <MetricCards selectedTest={selectedTest} data={filteredData} />
 
               {/* Comparison Charts */}
-              <ComparisonChart data={data || []} />
+              <ComparisonChart data={filteredData} />
 
               {/* Region Comparisons */}
-              <RegionComparison data={data || []} />
+              <RegionComparison data={filteredData} />
             </div>
           </div>
         )}
