@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Activity, Key, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,29 +17,26 @@ const Login = () => {
 
   const validateApiKey = async (key: string) => {
     try {
-      const response = await fetch('https://europe-west1-forcemate-desktop.cloudfunctions.net/get_teams', {
-        method: 'GET',
-        headers: {
-          'X-API-Key': key,
-          'Content-Type': 'application/json',
-        },
+      console.log('Validating API key via Supabase Edge Function...');
+      
+      const { data, error } = await supabase.functions.invoke('validate-api-key', {
+        body: { apiKey: key }
       });
 
-      if (response.status === 401) {
-        throw new Error('Invalid API key. Please check your credentials.');
-      }
-      
-      if (response.status === 500) {
-        throw new Error('Server error. Please try again later.');
-      }
-      
-      if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error('Failed to validate API key. Please try again.');
       }
 
-      const data = await response.json();
-      return data.teams && data.teams.length > 0;
+      console.log('Validation response:', data);
+
+      if (!data.valid) {
+        throw new Error(data.error || 'Invalid API key');
+      }
+
+      return data.valid;
     } catch (error) {
+      console.error('API validation error:', error);
       if (error instanceof Error) {
         throw error;
       }
