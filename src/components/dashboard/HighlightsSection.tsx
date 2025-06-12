@@ -3,30 +3,43 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface HighlightsSectionProps {
   data: TestData[];
-  selectedAthlete: string;
-  selectedTestDate: string;
-  onAthleteChange: (athlete: string) => void;
-  onTestDateChange: (date: string) => void;
+  selectedTest: string;
+  selectedTeams: string[];
+  selectedAthletes: string[];
+  selectedTestDates: string[];
+  onTestChange: (test: string) => void;
+  onTeamsChange: (teams: string[]) => void;
+  onAthletesChange: (athletes: string[]) => void;
+  onTestDatesChange: (dates: string[]) => void;
 }
 
 export const HighlightsSection = ({
   data,
-  selectedAthlete,
-  selectedTestDate,
-  onAthleteChange,
-  onTestDateChange
+  selectedTest,
+  selectedTeams,
+  selectedAthletes,
+  selectedTestDates,
+  onTestChange,
+  onTeamsChange,
+  onAthletesChange,
+  onTestDatesChange
 }: HighlightsSectionProps) => {
+  const uniqueTests = [...new Set(data.map(d => d.test_name))].filter(test => test !== "All Tests" && test !== "Isometric Test");
+  const uniqueTeams = [...new Set(data.map(d => d.team_name))];
   const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
   const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
 
-  // Filter data based on selections
+  // Filter data based on all selections
   const filteredData = data.filter(test => {
-    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
-    const dateMatch = !selectedTestDate || selectedTestDate === "all" || test.test_date === selectedTestDate;
-    return athleteMatch && dateMatch;
+    const testMatch = !selectedTest || test.test_name === selectedTest;
+    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
+    const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
+    const dateMatch = selectedTestDates.length === 0 || selectedTestDates.includes(test.test_date);
+    return testMatch && teamMatch && athleteMatch && dateMatch;
   });
 
   // Calculate highlights based on filtered data
@@ -78,68 +91,99 @@ export const HighlightsSection = ({
   const highlights = getHighlights();
 
   return (
-    <Card className="bg-blue-50/80 border-blue-200 mb-6">
-      <CardHeader>
-        <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
-        <div className="flex gap-4 justify-center">
-          <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <Select value={selectedAthlete || "all"} onValueChange={onAthleteChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Athletes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Athletes</SelectItem>
-                {uniqueAthletes.map(athlete => (
-                  <SelectItem key={athlete} value={athlete}>
-                    {athlete}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+    <div className="space-y-6">
+      {/* Test Selection Notice */}
+      <Card className="bg-gray-100 border-gray-300">
+        <CardContent className="p-6 text-center">
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">
+            {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A Test Name"}
+          </h2>
+          <p className="text-gray-600">
+            {selectedTest 
+              ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+              : "Choose a test from the filters below to view detailed analysis"
+            }
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Individual Filters */}
+      <Card className="bg-blue-50/80 border-blue-200">
+        <CardHeader>
+          <CardTitle className="text-center text-lg text-gray-800">Individual Filters</CardTitle>
+          <div className="grid grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+              <Select value={selectedTest || ""} onValueChange={onTestChange}>
+                <SelectTrigger className="bg-black text-white border-gray-600">
+                  <SelectValue placeholder="Select Test" />
+                </SelectTrigger>
+                <SelectContent>
+                  {uniqueTests.map(test => (
+                    <SelectItem key={test} value={test}>
+                      {test}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team Names</label>
+              <MultiSelect
+                options={uniqueTeams.map(team => ({ label: team, value: team }))}
+                selected={selectedTeams}
+                onChange={onTeamsChange}
+                placeholder="Select Teams"
+                className="bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Names</label>
+              <MultiSelect
+                options={uniqueAthletes.map(athlete => ({ label: athlete, value: athlete }))}
+                selected={selectedAthletes}
+                onChange={onAthletesChange}
+                placeholder="Select Athletes"
+                className="bg-white"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Test Dates</label>
+              <MultiSelect
+                options={uniqueTestDates.map(date => ({ label: date, value: date }))}
+                selected={selectedTestDates}
+                onChange={onTestDatesChange}
+                placeholder="Select Dates"
+                className="bg-white"
+              />
+            </div>
           </div>
-          <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
-            <Select value={selectedTestDate || "all"} onValueChange={onTestDateChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Dates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dates</SelectItem>
-                {uniqueTestDates.map(date => (
-                  <SelectItem key={date} value={date}>
-                    {date}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+              <div className="text-sm text-gray-600">Total Tests</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.avgPerformance}</div>
+              <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
+              <div className="text-sm text-gray-600">Top Performer</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
+              <div className="text-sm text-gray-600">Latest Test</div>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-            <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
-            <div className="text-sm text-gray-600">Total Tests</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-            <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.avgPerformance}</div>
-            <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-            <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
-            <div className="text-sm text-gray-600">Top Performer</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-            <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
-            <div className="text-sm text-gray-600">Latest Test</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

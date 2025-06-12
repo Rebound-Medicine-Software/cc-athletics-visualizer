@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,14 +26,15 @@ import {
   CreditCard
 } from "lucide-react";
 import { toast } from "sonner";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
-  const [selectedTestDate, setSelectedTestDate] = useState<string>("");
+  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+  const [selectedTestDates, setSelectedTestDates] = useState<string[]>([]);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -57,11 +57,6 @@ const Dashboard = () => {
     refetch();
     toast.info("Refreshing data...");
   };
-
-  // Filter data based on selected teams
-  const filteredData = data?.filter(test => 
-    selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
-  ) || [];
 
   // Get organization data for logo
   const getOrganizationLogo = () => {
@@ -107,46 +102,17 @@ const Dashboard = () => {
         );
       case "dashboard":
         return (
-          <div className="space-y-6">
-            {/* Test Selection Notice */}
-            <Card className="bg-gray-100 border-gray-300">
-              <CardContent className="p-6 text-center">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                  {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
-                </h2>
-                <p className="text-gray-600">
-                  {selectedTest 
-                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
-                    : "Choose a test from the filters below to view detailed analysis"
-                  }
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Highlights Section */}
-            <HighlightsSection
-              data={filteredData}
-              selectedAthlete={selectedAthlete}
-              selectedTestDate={selectedTestDate}
-              onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
-              onTestDateChange={(date) => setSelectedTestDate(date === "all" ? "" : date)}
-            />
-
-            {/* Filters with integrated comparison chart */}
-            <ReportFilters 
-              data={filteredData} 
-              onTestSelect={setSelectedTest}
-              selectedTeams={selectedTeams}
-              onTeamsChange={setSelectedTeams}
-              allData={data || []}
-            />
-
-            {/* Metric Cards */}
-            <MetricCards selectedTest={selectedTest} data={filteredData} />
-
-            {/* Region Comparisons */}
-            <RegionComparison data={filteredData} />
-          </div>
+          <DashboardLayout
+            data={data || []}
+            selectedTest={selectedTest}
+            selectedTeams={selectedTeams}
+            selectedAthletes={selectedAthletes}
+            selectedTestDates={selectedTestDates}
+            onTestChange={setSelectedTest}
+            onTeamsChange={setSelectedTeams}
+            onAthletesChange={setSelectedAthletes}
+            onTestDatesChange={setSelectedTestDates}
+          />
         );
       default:
         return (
