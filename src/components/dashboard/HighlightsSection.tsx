@@ -24,8 +24,8 @@ export const HighlightsSection = ({
 
   // Filter data based on selections
   const filteredData = data.filter(test => {
-    const athleteMatch = !selectedAthlete || test.athlete_name === selectedAthlete;
-    const dateMatch = !selectedTestDate || test.test_date === selectedTestDate;
+    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
+    const dateMatch = !selectedTestDate || selectedTestDate === "all" || test.test_date === selectedTestDate;
     return athleteMatch && dateMatch;
   });
 
@@ -84,12 +84,12 @@ export const HighlightsSection = ({
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <Select value={selectedAthlete} onValueChange={onAthleteChange}>
+            <Select value={selectedAthlete || "all"} onValueChange={onAthleteChange}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Athletes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Athletes</SelectItem>
+                <SelectItem value="all">All Athletes</SelectItem>
                 {uniqueAthletes.map(athlete => (
                   <SelectItem key={athlete} value={athlete}>
                     {athlete}
@@ -100,12 +100,12 @@ export const HighlightsSection = ({
           </div>
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
-            <Select value={selectedTestDate} onValueChange={onTestDateChange}>
+            <Select value={selectedTestDate || "all"} onValueChange={onTestDateChange}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Dates</SelectItem>
+                <SelectItem value="all">All Dates</SelectItem>
                 {uniqueTestDates.map(date => (
                   <SelectItem key={date} value={date}>
                     {date}

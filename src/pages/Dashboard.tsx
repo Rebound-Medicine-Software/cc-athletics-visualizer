@@ -128,8 +128,8 @@ const Dashboard = () => {
               data={filteredData}
               selectedAthlete={selectedAthlete}
               selectedTestDate={selectedTestDate}
-              onAthleteChange={setSelectedAthlete}
-              onTestDateChange={setSelectedTestDate}
+              onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
+              onTestDateChange={(date) => setSelectedTestDate(date === "all" ? "" : date)}
             />
 
             {/* Filters with integrated comparison chart */}

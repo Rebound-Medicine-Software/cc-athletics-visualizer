@@ -64,7 +64,7 @@ export const ReportFilters = ({
   };
 
   const handleTeamChange = (value: string) => {
-    if (value === "") {
+    if (value === "all") {
       onTeamsChange([]);
     } else {
       onTeamsChange([value]);
@@ -72,7 +72,7 @@ export const ReportFilters = ({
   };
 
   const handleAthleteChange = (value: string) => {
-    if (value === "") {
+    if (value === "all") {
       setFilters(prev => ({ ...prev, selectedAthletes: [] }));
     } else {
       setFilters(prev => ({ ...prev, selectedAthletes: [value] }));
@@ -80,7 +80,7 @@ export const ReportFilters = ({
   };
 
   const handleDateChange = (value: string) => {
-    if (value === "") {
+    if (value === "all") {
       setFilters(prev => ({ ...prev, testDates: [] }));
     } else {
       setFilters(prev => ({ ...prev, testDates: [value] }));
@@ -109,12 +109,12 @@ export const ReportFilters = ({
         {/* Team Name Filter */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-          <Select value={selectedTeams[0] || ""} onValueChange={handleTeamChange}>
+          <Select value={selectedTeams[0] || "all"} onValueChange={handleTeamChange}>
             <SelectTrigger className="bg-white max-w-xs">
               <SelectValue placeholder="All Teams" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Teams</SelectItem>
+              <SelectItem value="all">All Teams</SelectItem>
               {uniqueTeams.map(team => (
                 <SelectItem key={team} value={team}>
                   {team}
@@ -128,12 +128,12 @@ export const ReportFilters = ({
           {/* Athlete Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <Select value={filters.selectedAthletes[0] || ""} onValueChange={handleAthleteChange}>
+            <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Athletes" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Athletes</SelectItem>
+                <SelectItem value="all">All Athletes</SelectItem>
                 {uniqueAthletes.map(athlete => (
                   <SelectItem key={athlete} value={athlete}>
                     {athlete}
@@ -146,12 +146,12 @@ export const ReportFilters = ({
           {/* Test Dates */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Test Date(s)</label>
-            <Select value={filters.testDates[0] || ""} onValueChange={handleDateChange}>
+            <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Dates</SelectItem>
+                <SelectItem value="all">All Dates</SelectItem>
                 {uniqueTestDates.map(date => (
                   <SelectItem key={date} value={date}>
                     {date}
