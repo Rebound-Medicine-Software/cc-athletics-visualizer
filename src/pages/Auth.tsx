@@ -67,6 +67,24 @@ const Auth = () => {
     };
   };
 
+  const sendWelcomeEmail = async (email: string, firstName: string, lastName: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: { email, firstName, lastName }
+      });
+      
+      if (error) {
+        console.error('Error sending welcome email:', error);
+        // Don't throw here as signup was successful
+      } else {
+        console.log('Welcome email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      // Don't throw here as signup was successful
+    }
+  };
+
   const handleLogin = async () => {
     if (!loginData.email || !loginData.password) {
       setError("Please fill in all fields");
@@ -133,6 +151,9 @@ const Auth = () => {
         setError(error.message);
         return;
       }
+
+      // Send welcome email
+      await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
       toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
     } catch (error) {

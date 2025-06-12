@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Upload, Building2, Users, Plus, X, Key, CheckCircle } from "lucide-react";
+import { Upload, Building2, Users, Plus, X, Key, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +15,7 @@ const Setup = () => {
   const [selectedSoftware, setSelectedSoftware] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [apiKeyValidated, setApiKeyValidated] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [orgData, setOrgData] = useState({
     name: "",
     logo: null as File | null,
@@ -49,15 +50,35 @@ const Setup = () => {
       return;
     }
 
-    // Here you would typically validate the API key with CC Athletics
-    // For now, we'll simulate validation
+    setIsValidating(true);
+
     try {
-      // Simulate API validation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setApiKeyValidated(true);
-      toast.success("API key validated successfully!");
+      console.log('Validating API key...');
+      
+      const { data, error } = await supabase.functions.invoke('validate-api-key', {
+        body: { apiKey }
+      });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        toast.error("Failed to validate API key. Please try again.");
+        setIsValidating(false);
+        return;
+      }
+
+      console.log('API validation response:', data);
+
+      if (data.valid) {
+        setApiKeyValidated(true);
+        toast.success(`API key validated successfully! Found ${data.teamsCount} teams.`);
+      } else {
+        toast.error(data.error || "Invalid API key. Please check your credentials.");
+      }
     } catch (error) {
-      toast.error("Invalid API key. Please check and try again.");
+      console.error('API validation error:', error);
+      toast.error("Network error. Unable to validate API key.");
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -98,8 +119,15 @@ const Setup = () => {
     }
 
     try {
-      // Save organization and practitioner data to Supabase
-      // This would typically involve creating tables for organizations and practitioners
+      // Save API key to localStorage for now
+      localStorage.setItem('cc-athletics-api-key', apiKey);
+      
+      // Save organization data to localStorage for now
+      localStorage.setItem('organization-data', JSON.stringify({
+        ...orgData,
+        practitioners: validPractitioners
+      }));
+
       toast.success("Setup complete! Welcome to Rebound Medicine & Performance");
       navigate('/dashboard');
     } catch (error) {
@@ -189,10 +217,16 @@ const Setup = () => {
                     />
                     <Button 
                       onClick={validateApiKey}
-                      disabled={!apiKey || apiKeyValidated}
+                      disabled={!apiKey || apiKeyValidated || isValidating}
                       variant="outline"
                     >
-                      {apiKeyValidated ? <CheckCircle className="w-4 h-4 text-green-600" /> : "Validate"}
+                      {isValidating ? (
+                        "Validating..."
+                      ) : apiKeyValidated ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        "Validate"
+                      )}
                     </Button>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">

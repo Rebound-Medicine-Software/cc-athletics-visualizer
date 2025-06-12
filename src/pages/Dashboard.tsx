@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ReportFilters } from "@/components/dashboard/ReportFilters";
 import { MetricCards } from "@/components/dashboard/MetricCards";
-import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
+import { HighlightsSection } from "@/components/dashboard/HighlightsSection";
 import { RegionComparison } from "@/components/dashboard/RegionComparison";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { 
@@ -16,7 +16,7 @@ import {
   AlertCircle, 
   CheckCircle, 
   RefreshCw, 
-  ChevronRight, 
+  ChevronRight,
   ChevronLeft,
   Home,
   Calendar,
@@ -33,6 +33,8 @@ const Dashboard = () => {
   const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
+  const [selectedTestDate, setSelectedTestDate] = useState<string>("");
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -40,14 +42,15 @@ const Dashboard = () => {
     // Check if user has API key (is "logged in")
     const apiKey = localStorage.getItem('cc-athletics-api-key');
     if (!apiKey) {
-      navigate('/login');
+      navigate('/auth');
     }
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('cc-athletics-api-key');
+    localStorage.removeItem('organization-data');
     toast.success("Logged out successfully");
-    navigate('/login');
+    navigate('/auth');
   };
 
   const handleRefresh = () => {
@@ -59,6 +62,22 @@ const Dashboard = () => {
   const filteredData = data?.filter(test => 
     selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
   ) || [];
+
+  // Get organization data for logo
+  const getOrganizationLogo = () => {
+    try {
+      const orgData = localStorage.getItem('organization-data');
+      if (orgData) {
+        const parsed = JSON.parse(orgData);
+        return parsed.logo ? URL.createObjectURL(parsed.logo) : null;
+      }
+    } catch (error) {
+      console.error('Error getting organization logo:', error);
+    }
+    return null;
+  };
+
+  const orgLogo = getOrganizationLogo();
 
   const navigationItems = [
     { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
@@ -104,7 +123,16 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Filters */}
+            {/* Highlights Section */}
+            <HighlightsSection
+              data={filteredData}
+              selectedAthlete={selectedAthlete}
+              selectedTestDate={selectedTestDate}
+              onAthleteChange={setSelectedAthlete}
+              onTestDateChange={setSelectedTestDate}
+            />
+
+            {/* Filters with integrated comparison chart */}
             <ReportFilters 
               data={filteredData} 
               onTestSelect={setSelectedTest}
@@ -115,9 +143,6 @@ const Dashboard = () => {
 
             {/* Metric Cards */}
             <MetricCards selectedTest={selectedTest} data={filteredData} />
-
-            {/* Comparison Charts */}
-            <ComparisonChart data={filteredData} />
 
             {/* Region Comparisons */}
             <RegionComparison data={filteredData} />
@@ -247,11 +272,19 @@ const Dashboard = () => {
                 </Button>
                 {isNavigationVisible && (
                   <div className="ml-4 flex items-center gap-2">
-                    <img 
-                      src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
-                      alt="Organization Logo" 
-                      className="w-8 h-8 rounded-full"
-                    />
+                    {orgLogo ? (
+                      <img 
+                        src={orgLogo}
+                        alt="Organization Logo" 
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <img 
+                        src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
+                        alt="Default Logo" 
+                        className="w-8 h-8 rounded-full"
+                      />
+                    )}
                     <span className="font-medium text-gray-700">Navigation</span>
                   </div>
                 )}

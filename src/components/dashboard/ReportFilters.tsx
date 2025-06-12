@@ -1,8 +1,11 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
+import { ComparisonChart } from "./ComparisonChart";
+
 interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
@@ -10,6 +13,7 @@ interface ReportFiltersProps {
   onTeamsChange: (teams: string[]) => void;
   allData: TestData[];
 }
+
 export const ReportFilters = ({
   data,
   onTestSelect,
@@ -44,11 +48,12 @@ export const ReportFilters = ({
       case "Pogo Jump":
         return ["Jump Height (cm)", "Power", "Flight Time", "Reactive Strength Index"];
       default:
-        // Isometric tests
         return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"];
     }
   };
+  
   const availableMetricTypes = filters.testName ? getMetricTypesForTest(filters.testName) : [];
+
   const handleTestNameChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
@@ -57,25 +62,43 @@ export const ReportFilters = ({
     }));
     onTestSelect(value);
   };
-  const handleTeamToggle = (teamName: string) => {
-    const newTeams = selectedTeams.includes(teamName) ? selectedTeams.filter(t => t !== teamName) : [...selectedTeams, teamName];
-    onTeamsChange(newTeams);
+
+  const handleTeamChange = (value: string) => {
+    if (value === "") {
+      onTeamsChange([]);
+    } else {
+      onTeamsChange([value]);
+    }
   };
-  const handleAthleteToggle = (athleteName: string) => {
-    const newAthletes = filters.selectedAthletes.includes(athleteName) ? filters.selectedAthletes.filter(a => a !== athleteName) : [...filters.selectedAthletes, athleteName];
-    setFilters(prev => ({
-      ...prev,
-      selectedAthletes: newAthletes
-    }));
+
+  const handleAthleteChange = (value: string) => {
+    if (value === "") {
+      setFilters(prev => ({ ...prev, selectedAthletes: [] }));
+    } else {
+      setFilters(prev => ({ ...prev, selectedAthletes: [value] }));
+    }
   };
-  const handleDateToggle = (date: string) => {
-    const newDates = filters.testDates.includes(date) ? filters.testDates.filter(d => d !== date) : [...filters.testDates, date];
-    setFilters(prev => ({
-      ...prev,
-      testDates: newDates
-    }));
+
+  const handleDateChange = (value: string) => {
+    if (value === "") {
+      setFilters(prev => ({ ...prev, testDates: [] }));
+    } else {
+      setFilters(prev => ({ ...prev, testDates: [value] }));
+    }
   };
-  return <Card className="bg-teal-50/80 border-teal-200">
+
+  // Filter data for comparison chart based on current selections
+  const getFilteredDataForChart = () => {
+    return data.filter(test => {
+      const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
+      const dateMatch = filters.testDates.length === 0 || filters.testDates.includes(test.test_date);
+      const testMatch = !filters.testName || test.test_name === filters.testName;
+      return athleteMatch && dateMatch && testMatch;
+    });
+  };
+
+  return (
+    <Card className="bg-teal-50/80 border-teal-200">
       <CardContent className="p-4">
         <div className="flex gap-4 mb-4">
           <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white px-[240px]">
@@ -86,38 +109,56 @@ export const ReportFilters = ({
         {/* Team Name Filter */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-          <div className="flex flex-wrap gap-2">
-            {uniqueTeams.map(team => <Button key={team} variant={selectedTeams.includes(team) ? "default" : "outline"} size="sm" onClick={() => handleTeamToggle(team)} className={selectedTeams.includes(team) ? "bg-teal-600 text-white" : ""}>
-                {team}
-              </Button>)}
-          </div>
+          <Select value={selectedTeams[0] || ""} onValueChange={handleTeamChange}>
+            <SelectTrigger className="bg-white max-w-xs">
+              <SelectValue placeholder="All Teams" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All Teams</SelectItem>
+              {uniqueTeams.map(team => (
+                <SelectItem key={team} value={team}>
+                  {team}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-4 mb-6">
           {/* Athlete Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <div className="max-h-32 overflow-y-auto border rounded p-2 bg-white">
-              {uniqueAthletes.map(athlete => <div key={athlete} className="flex items-center space-x-2 mb-1">
-                  <input type="checkbox" id={`athlete-${athlete}`} checked={filters.selectedAthletes.includes(athlete)} onChange={() => handleAthleteToggle(athlete)} className="rounded border-gray-300" />
-                  <label htmlFor={`athlete-${athlete}`} className="text-sm">
+            <Select value={filters.selectedAthletes[0] || ""} onValueChange={handleAthleteChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="All Athletes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Athletes</SelectItem>
+                {uniqueAthletes.map(athlete => (
+                  <SelectItem key={athlete} value={athlete}>
                     {athlete}
-                  </label>
-                </div>)}
-            </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Test Dates */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Test Date(s)</label>
-            <div className="max-h-32 overflow-y-auto border rounded p-2 bg-white">
-              {uniqueTestDates.map(date => <div key={date} className="flex items-center space-x-2 mb-1">
-                  <input type="checkbox" id={`date-${date}`} checked={filters.testDates.includes(date)} onChange={() => handleDateToggle(date)} className="rounded border-gray-300" />
-                  <label htmlFor={`date-${date}`} className="text-sm">
+            <Select value={filters.testDates[0] || ""} onValueChange={handleDateChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="All Dates" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Dates</SelectItem>
+                {uniqueTestDates.map(date => (
+                  <SelectItem key={date} value={date}>
                     {date}
-                  </label>
-                </div>)}
-            </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Test Name */}
@@ -128,9 +169,11 @@ export const ReportFilters = ({
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
               <SelectContent>
-                {uniqueTests.map(test => <SelectItem key={test} value={test}>
+                {uniqueTests.map(test => (
+                  <SelectItem key={test} value={test}>
                     {test}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -138,21 +181,28 @@ export const ReportFilters = ({
           {/* Metric Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
-            <Select value={filters.metricType} onValueChange={value => setFilters(prev => ({
-            ...prev,
-            metricType: value
-          }))} disabled={!filters.testName}>
+            <Select 
+              value={filters.metricType} 
+              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))} 
+              disabled={!filters.testName}
+            >
               <SelectTrigger className="bg-black text-white border-gray-600">
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent>
-                {availableMetricTypes.map(metric => <SelectItem key={metric} value={metric}>
+                {availableMetricTypes.map(metric => (
+                  <SelectItem key={metric} value={metric}>
                     {metric}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
         </div>
+
+        {/* Comparison Chart moved here */}
+        <ComparisonChart data={getFilteredDataForChart()} />
       </CardContent>
-    </Card>;
+    </Card>
+  );
 };
