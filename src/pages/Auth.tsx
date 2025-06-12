@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -29,6 +29,26 @@ const Auth = () => {
     firstName: "",
     lastName: ""
   });
+
+  // Safe password generation
+  const generateSafePassword = () => {
+    const adjectives = ["Swift", "Strong", "Bright", "Noble", "Quick", "Bold", "Smart", "Great"];
+    const nouns = ["Tiger", "Eagle", "Lion", "Wolf", "Bear", "Hawk", "Fox", "Shark"];
+    const numbers = Math.floor(Math.random() * 99) + 10;
+    const symbols = ["!", "@", "#", "$", "%"];
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    
+    return `${adjective}${noun}${numbers}${symbol}`;
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateSafePassword();
+    setSignupData(prev => ({ ...prev, password: newPassword, confirmPassword: newPassword }));
+    toast.success("Safe password generated! Consider saving this in your password manager.");
+  };
 
   const validatePassword = (password: string) => {
     const minLength = password.length >= 8;
@@ -114,7 +134,7 @@ const Auth = () => {
         return;
       }
 
-      toast.success("Account created! Please check your email for verification.");
+      toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
     } catch (error) {
       setError("An unexpected error occurred");
     } finally {
@@ -246,10 +266,22 @@ const Auth = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="signup-password" className="flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Password
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="signup-password" className="flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Password
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleGeneratePassword}
+                    className="text-xs h-6"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Generate Safe Password
+                  </Button>
+                </div>
                 <div className="relative">
                   <Input
                     id="signup-password"
@@ -272,23 +304,23 @@ const Auth = () => {
                 {signupData.password && (
                   <div className="text-xs space-y-1">
                     <div className={`flex items-center gap-2 ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordValidation.minLength ? 'bg-green-600' : 'bg-red-600'}`} />
+                      <CheckCircle className={`w-3 h-3 ${passwordValidation.minLength ? 'text-green-600' : 'text-red-600'}`} />
                       At least 8 characters
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.hasUpper ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordValidation.hasUpper ? 'bg-green-600' : 'bg-red-600'}`} />
+                      <CheckCircle className={`w-3 h-3 ${passwordValidation.hasUpper ? 'text-green-600' : 'text-red-600'}`} />
                       One uppercase letter
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.hasLower ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordValidation.hasLower ? 'bg-green-600' : 'bg-red-600'}`} />
+                      <CheckCircle className={`w-3 h-3 ${passwordValidation.hasLower ? 'text-green-600' : 'text-red-600'}`} />
                       One lowercase letter
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordValidation.hasNumber ? 'bg-green-600' : 'bg-red-600'}`} />
+                      <CheckCircle className={`w-3 h-3 ${passwordValidation.hasNumber ? 'text-green-600' : 'text-red-600'}`} />
                       One number
                     </div>
                     <div className={`flex items-center gap-2 ${passwordValidation.hasSpecial ? 'text-green-600' : 'text-red-600'}`}>
-                      <div className={`w-2 h-2 rounded-full ${passwordValidation.hasSpecial ? 'bg-green-600' : 'bg-red-600'}`} />
+                      <CheckCircle className={`w-3 h-3 ${passwordValidation.hasSpecial ? 'text-green-600' : 'text-red-600'}`} />
                       One special character
                     </div>
                   </div>

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Upload, Building2, Users, Plus, X } from "lucide-react";
+import { Upload, Building2, Users, Plus, X, Key, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -13,6 +13,8 @@ const Setup = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedSoftware, setSelectedSoftware] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [apiKeyValidated, setApiKeyValidated] = useState(false);
   const [orgData, setOrgData] = useState({
     name: "",
     logo: null as File | null,
@@ -39,6 +41,32 @@ const Setup = () => {
       return;
     }
     setStep(2);
+  };
+
+  const validateApiKey = async () => {
+    if (!apiKey) {
+      toast.error("Please enter your CC Athletics API key");
+      return;
+    }
+
+    // Here you would typically validate the API key with CC Athletics
+    // For now, we'll simulate validation
+    try {
+      // Simulate API validation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setApiKeyValidated(true);
+      toast.success("API key validated successfully!");
+    } catch (error) {
+      toast.error("Invalid API key. Please check and try again.");
+    }
+  };
+
+  const proceedToOrgSetup = () => {
+    if (!apiKeyValidated) {
+      toast.error("Please validate your API key first");
+      return;
+    }
+    setStep(3);
   };
 
   const addPractitioner = () => {
@@ -103,8 +131,13 @@ const Setup = () => {
                   variant={selectedSoftware === "cc-athletics" ? "default" : "outline"}
                   size="lg"
                   onClick={() => setSelectedSoftware("cc-athletics")}
-                  className="w-64 h-32 flex flex-col items-center justify-center space-y-4"
+                  className="w-80 h-40 flex flex-col items-center justify-center space-y-4"
                 >
+                  <img 
+                    src="/lovable-uploads/8fca559f-901e-4e29-9b01-018c2c7634ba.png" 
+                    alt="CC Athletics Logo" 
+                    className="w-16 h-16"
+                  />
                   <div className="text-lg font-semibold">CC Athletics</div>
                   <div className="text-sm text-gray-600">Force plate data integration</div>
                 </Button>
@@ -124,6 +157,74 @@ const Setup = () => {
         )}
 
         {step === 2 && (
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="w-6 h-6" />
+                CC Athletics API Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="text-center mb-6">
+                <img 
+                  src="/lovable-uploads/8fca559f-901e-4e29-9b01-018c2c7634ba.png" 
+                  alt="CC Athletics Logo" 
+                  className="w-20 h-20 mx-auto mb-4"
+                />
+                <h3 className="text-lg font-semibold">Connect your CC Athletics account</h3>
+                <p className="text-gray-600">Enter your API key to sync your force plate data</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="api-key">CC Athletics API Key</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Enter your CC Athletics API key"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={validateApiKey}
+                      disabled={!apiKey || apiKeyValidated}
+                      variant="outline"
+                    >
+                      {apiKeyValidated ? <CheckCircle className="w-4 h-4 text-green-600" /> : "Validate"}
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    You can find your API key in your CC Athletics dashboard under Settings → API Access
+                  </p>
+                </div>
+
+                {apiKeyValidated && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-medium">API Key Validated Successfully!</span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                      Your CC Athletics account is now connected and ready to sync data.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <Button 
+                onClick={proceedToOrgSetup} 
+                disabled={!apiKeyValidated}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                Continue to Organization Setup
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 3 && (
           <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -170,14 +271,14 @@ const Setup = () => {
                 </div>
               </div>
               
-              <Button onClick={() => setStep(3)} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setStep(4)} className="w-full bg-blue-600 hover:bg-blue-700">
                 Continue to Practitioner Setup
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

@@ -10,7 +10,22 @@ import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
 import { RegionComparison } from "@/components/dashboard/RegionComparison";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
+import { 
+  Activity, 
+  LogOut, 
+  AlertCircle, 
+  CheckCircle, 
+  RefreshCw, 
+  ChevronRight, 
+  ChevronLeft,
+  Home,
+  Calendar,
+  Users,
+  FileText,
+  Dumbbell,
+  Settings,
+  CreditCard
+} from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -19,6 +34,7 @@ const Dashboard = () => {
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
+  const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
     // Check if user has API key (is "logged in")
@@ -43,6 +59,85 @@ const Dashboard = () => {
   const filteredData = data?.filter(test => 
     selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
   ) || [];
+
+  const navigationItems = [
+    { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
+    { id: "dashboard", label: "Dashboard", icon: Activity, description: "Testing reports" },
+    { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
+    { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
+    { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
+    { id: "programming", label: "Programming", icon: Dumbbell, description: "Exercise programs & templates" },
+    { id: "settings", label: "Settings", icon: Settings, description: "Account & preferences" },
+    { id: "payment", label: "Payment Packages", icon: CreditCard, description: "Billing & subscriptions" },
+  ];
+
+  const renderContent = () => {
+    switch (activeSection) {
+      case "home":
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Welcome to Rebound Medicine & Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Your comprehensive force plate analysis platform dashboard.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      case "dashboard":
+        return (
+          <div className="space-y-6">
+            {/* Test Selection Notice */}
+            <Card className="bg-gray-100 border-gray-300">
+              <CardContent className="p-6 text-center">
+                <h2 className="text-xl font-semibold text-gray-700 mb-2">
+                  {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
+                </h2>
+                <p className="text-gray-600">
+                  {selectedTest 
+                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+                    : "Choose a test from the filters below to view detailed analysis"
+                  }
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Filters */}
+            <ReportFilters 
+              data={filteredData} 
+              onTestSelect={setSelectedTest}
+              selectedTeams={selectedTeams}
+              onTeamsChange={setSelectedTeams}
+              allData={data || []}
+            />
+
+            {/* Metric Cards */}
+            <MetricCards selectedTest={selectedTest} data={filteredData} />
+
+            {/* Comparison Charts */}
+            <ComparisonChart data={filteredData} />
+
+            {/* Region Comparisons */}
+            <RegionComparison data={filteredData} />
+          </div>
+        );
+      default:
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{navigationItems.find(item => item.id === activeSection)?.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">This section is coming soon! We're working hard to bring you the best experience.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+    }
+  };
 
   if (isLoading) {
     return (
@@ -136,84 +231,64 @@ const Dashboard = () => {
           </Alert>
         )}
 
-        {/* Main Content - only show if we have data */}
-        {data && data.length > 0 && (
-          <div className="flex gap-6">
-            {/* Collapsible Sidebar */}
-            <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-64' : 'w-12'}`}>
-              <div className="space-y-6">
-                <div className="flex items-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsNavigationVisible(!isNavigationVisible)}
-                    className="h-8 w-8"
-                  >
-                    {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                  </Button>
-                  {isNavigationVisible && (
-                    <span className="ml-2 font-medium text-gray-700">Navigation</span>
-                  )}
-                </div>
-
+        {/* Main Content Layout */}
+        <div className="flex gap-6">
+          {/* Collapsible Sidebar */}
+          <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
+            <div className="space-y-6">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsNavigationVisible(!isNavigationVisible)}
+                  className="h-8 w-8"
+                >
+                  {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
                 {isNavigationVisible && (
-                  <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-                    <CardHeader>
-                      <CardTitle className="text-lg">Navigation</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <Button variant="ghost" className="w-full justify-start text-gray-600">
-                        📋 Introduction
-                      </Button>
-                      <Button variant="default" className="w-full justify-start bg-gray-800 text-white">
-                        📊 Report
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start text-gray-600">
-                        🔬 Recommendations
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <div className="ml-4 flex items-center gap-2">
+                    <img 
+                      src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
+                      alt="Organization Logo" 
+                      className="w-8 h-8 rounded-full"
+                    />
+                    <span className="font-medium text-gray-700">Navigation</span>
+                  </div>
                 )}
               </div>
-            </div>
 
-            {/* Main Dashboard */}
-            <div className="flex-1 space-y-6">
-              {/* Test Selection Notice */}
-              <Card className="bg-gray-100 border-gray-300">
-                <CardContent className="p-6 text-center">
-                  <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                    {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
-                  </h2>
-                  <p className="text-gray-600">
-                    {selectedTest 
-                      ? `Viewing detailed analysis for ${selectedTest} across all athletes`
-                      : "Choose a test from the filters below to view detailed analysis"
-                    }
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Filters */}
-              <ReportFilters 
-                data={filteredData} 
-                onTestSelect={setSelectedTest}
-                selectedTeams={selectedTeams}
-                onTeamsChange={setSelectedTeams}
-                allData={data || []}
-              />
-
-              {/* Metric Cards */}
-              <MetricCards selectedTest={selectedTest} data={filteredData} />
-
-              {/* Comparison Charts */}
-              <ComparisonChart data={filteredData} />
-
-              {/* Region Comparisons */}
-              <RegionComparison data={filteredData} />
+              {isNavigationVisible && (
+                <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                  <CardContent className="p-6 space-y-2">
+                    {navigationItems.map((item) => (
+                      <Button
+                        key={item.id}
+                        variant={activeSection === item.id ? "default" : "ghost"}
+                        className={`w-full justify-start text-left ${
+                          activeSection === item.id 
+                            ? "bg-blue-600 text-white" 
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                        onClick={() => setActiveSection(item.id)}
+                      >
+                        <item.icon className="w-4 h-4 mr-3" />
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{item.label}</span>
+                          <span className="text-xs opacity-70">{item.description}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
-        )}
+
+          {/* Main Content */}
+          <div className="flex-1">
+            {renderContent()}
+          </div>
+        </div>
       </div>
     </div>
   );
