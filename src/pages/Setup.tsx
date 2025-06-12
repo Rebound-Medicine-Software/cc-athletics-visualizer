@@ -1,0 +1,273 @@
+
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Upload, Building2, Users, Plus, X } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+const Setup = () => {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [selectedSoftware, setSelectedSoftware] = useState("");
+  const [orgData, setOrgData] = useState({
+    name: "",
+    logo: null as File | null,
+    practitionerCount: ""
+  });
+  const [practitioners, setPractitioners] = useState([
+    { name: "", role: "", qualifications: "", email: "", image: null as File | null }
+  ]);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/auth');
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  const handleSoftwareSelection = () => {
+    if (!selectedSoftware) {
+      toast.error("Please select a software platform");
+      return;
+    }
+    setStep(2);
+  };
+
+  const addPractitioner = () => {
+    setPractitioners([...practitioners, { name: "", role: "", qualifications: "", email: "", image: null }]);
+  };
+
+  const removePractitioner = (index: number) => {
+    setPractitioners(practitioners.filter((_, i) => i !== index));
+  };
+
+  const updatePractitioner = (index: number, field: string, value: string | File | null) => {
+    const updated = [...practitioners];
+    updated[index] = { ...updated[index], [field]: value };
+    setPractitioners(updated);
+  };
+
+  const handleComplete = async () => {
+    // Validate organization data
+    if (!orgData.name || !orgData.practitionerCount) {
+      toast.error("Please fill in all organization details");
+      return;
+    }
+
+    // Validate practitioners
+    const validPractitioners = practitioners.filter(p => p.name && p.role && p.email);
+    if (validPractitioners.length === 0) {
+      toast.error("Please add at least one practitioner");
+      return;
+    }
+
+    try {
+      // Save organization and practitioner data to Supabase
+      // This would typically involve creating tables for organizations and practitioners
+      toast.success("Setup complete! Welcome to Rebound Medicine & Performance");
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error("Failed to complete setup. Please try again.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <img 
+            src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
+            alt="Rebound Medicine and Performance Logo" 
+            className="w-16 h-16 rounded-full shadow-lg mx-auto mb-4"
+          />
+          <h1 className="text-3xl font-bold text-gray-800">Setup Your Account</h1>
+          <p className="text-gray-600 mt-2">Let's get you started with Rebound Medicine & Performance</p>
+        </div>
+
+        {step === 1 && (
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+            <CardHeader>
+              <CardTitle className="text-center">Which force plate software are you using?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-center">
+                <Button
+                  variant={selectedSoftware === "cc-athletics" ? "default" : "outline"}
+                  size="lg"
+                  onClick={() => setSelectedSoftware("cc-athletics")}
+                  className="w-64 h-32 flex flex-col items-center justify-center space-y-4"
+                >
+                  <div className="text-lg font-semibold">CC Athletics</div>
+                  <div className="text-sm text-gray-600">Force plate data integration</div>
+                </Button>
+              </div>
+              
+              <div className="text-center text-sm text-gray-500">
+                More integrations coming soon...
+              </div>
+              
+              <div className="flex justify-center">
+                <Button onClick={handleSoftwareSelection} className="bg-blue-600 hover:bg-blue-700">
+                  Continue
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 2 && (
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-6 h-6" />
+                Organization Setup
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="org-name">Organization Name</Label>
+                  <Input
+                    id="org-name"
+                    placeholder="Enter your organization name"
+                    value={orgData.name}
+                    onChange={(e) => setOrgData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="org-logo">Organization Logo</Label>
+                  <div className="flex items-center space-x-4">
+                    <Input
+                      id="org-logo"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setOrgData(prev => ({ ...prev, logo: e.target.files?.[0] || null }))}
+                      className="flex-1"
+                    />
+                    <Upload className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">This will be used to customize your dashboard theme</p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="practitioner-count">Number of Practitioners</Label>
+                  <Input
+                    id="practitioner-count"
+                    type="number"
+                    placeholder="How many practitioners in your organization?"
+                    value={orgData.practitionerCount}
+                    onChange={(e) => setOrgData(prev => ({ ...prev, practitionerCount: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
+              <Button onClick={() => setStep(3)} className="w-full bg-blue-600 hover:bg-blue-700">
+                Continue to Practitioner Setup
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === 3 && (
+          <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-6 h-6" />
+                Add Practitioner Profiles
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {practitioners.map((practitioner, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold">Practitioner {index + 1}</h3>
+                    {practitioners.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePractitioner(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Name</Label>
+                      <Input
+                        placeholder="Full name"
+                        value={practitioner.name}
+                        onChange={(e) => updatePractitioner(index, "name", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Role</Label>
+                      <Input
+                        placeholder="e.g., Sports Scientist, Physiotherapist"
+                        value={practitioner.role}
+                        onChange={(e) => updatePractitioner(index, "role", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        type="email"
+                        placeholder="email@example.com"
+                        value={practitioner.email}
+                        onChange={(e) => updatePractitioner(index, "email", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Qualifications</Label>
+                      <Input
+                        placeholder="Degrees, certifications"
+                        value={practitioner.qualifications}
+                        onChange={(e) => updatePractitioner(index, "qualifications", e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label>Profile Image</Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => updatePractitioner(index, "image", e.target.files?.[0] || null)}
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              <div className="flex gap-4">
+                <Button
+                  variant="outline"
+                  onClick={addPractitioner}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Another Practitioner
+                </Button>
+                
+                <Button onClick={handleComplete} className="bg-blue-600 hover:bg-blue-700 flex-1">
+                  Complete Setup
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Setup;
