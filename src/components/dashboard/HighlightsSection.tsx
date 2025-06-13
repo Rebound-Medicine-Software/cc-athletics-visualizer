@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -34,14 +33,18 @@ export const HighlightsSection = ({
   console.log('HighlightsSection - selectedAthletes type:', typeof selectedAthletes, 'value:', selectedAthletes);
   console.log('HighlightsSection - selectedTestDates type:', typeof selectedTestDates, 'value:', selectedTestDates);
 
+  // Defensive: ensure data is always an array
+  const safeDataInput = Array.isArray(data) ? data : [];
+  console.log('Safe data input length:', safeDataInput.length);
+
   // Safely get unique values with comprehensive null checks
   const safeData = React.useMemo(() => {
-    if (!Array.isArray(data)) {
-      console.log('Data is not an array, converting:', data);
+    if (!Array.isArray(safeDataInput)) {
+      console.log('Data is not an array, converting:', safeDataInput);
       return [];
     }
     
-    const filtered = data.filter(item => {
+    const filtered = safeDataInput.filter(item => {
       if (!item || typeof item !== 'object') return false;
       return (
         typeof item.test_name === 'string' && item.test_name.trim() !== '' &&
@@ -53,7 +56,7 @@ export const HighlightsSection = ({
     
     console.log('Filtered safe data length:', filtered.length);
     return filtered;
-  }, [data]);
+  }, [safeDataInput]);
   
   const uniqueTests = React.useMemo(() => {
     if (!safeData || safeData.length === 0) {

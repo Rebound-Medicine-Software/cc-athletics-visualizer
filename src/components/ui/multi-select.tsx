@@ -32,15 +32,19 @@ export function MultiSelect({
   placeholder = "Select items...",
   className,
 }: MultiSelectProps) {
+  // Defensive: ensure options and selected are always arrays at the very top
+  const realOptions = Array.isArray(options) ? options : [];
+  const realSelected = Array.isArray(selected) ? selected : [];
+  
+  console.log('MultiSelect defensive check - realOptions:', realOptions);
+  console.log('MultiSelect defensive check - realSelected:', realSelected);
+  
   const [open, setOpen] = React.useState(false)
-
-  console.log('MultiSelect render - options:', options);
-  console.log('MultiSelect render - selected:', selected);
 
   // Force array types and add null checks
   const safeOptions = React.useMemo(() => {
     // Handle null/undefined options
-    const initialOptions = Array.isArray(options) ? options : [];
+    const initialOptions = Array.isArray(realOptions) ? realOptions : [];
     console.log('Initial options:', initialOptions);
     
     const filtered = initialOptions.filter(option => 
@@ -53,11 +57,11 @@ export function MultiSelect({
     );
     console.log('Safe options:', filtered);
     return filtered;
-  }, [options])
+  }, [realOptions])
   
   const safeSelected = React.useMemo(() => {
     // Force array type - handle null/undefined selected
-    const initialSelected = Array.isArray(selected) ? selected : [];
+    const initialSelected = Array.isArray(realSelected) ? realSelected : [];
     console.log('Initial selected:', initialSelected);
     
     const filtered = initialSelected.filter(item => 
@@ -66,7 +70,7 @@ export function MultiSelect({
     );
     console.log('Safe selected:', filtered);
     return filtered;
-  }, [selected])
+  }, [realSelected])
 
   const handleUnselect = React.useCallback((item: string) => {
     try {
