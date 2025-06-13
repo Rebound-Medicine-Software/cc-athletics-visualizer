@@ -30,6 +30,9 @@ export const HighlightsSection = ({
   onTestDatesChange
 }: HighlightsSectionProps) => {
   console.log('HighlightsSection render - data length:', data?.length || 0);
+  console.log('HighlightsSection - selectedTeams type:', typeof selectedTeams, 'value:', selectedTeams);
+  console.log('HighlightsSection - selectedAthletes type:', typeof selectedAthletes, 'value:', selectedAthletes);
+  console.log('HighlightsSection - selectedTestDates type:', typeof selectedTestDates, 'value:', selectedTestDates);
 
   // Safely get unique values with comprehensive null checks
   const safeData = React.useMemo(() => {
@@ -112,36 +115,104 @@ export const HighlightsSection = ({
     return dates;
   }, [safeData]);
 
-  // Convert arrays to options format with safety checks
+  // Convert arrays to options format with safety checks - ensuring correct format
   const teamOptions = React.useMemo(() => {
-    const options = uniqueTeams.map(team => ({ label: team, value: team }));
+    const options = uniqueTeams.map(team => ({ 
+      label: String(team), 
+      value: String(team) 
+    }));
     console.log('Team options:', options);
     return options;
   }, [uniqueTeams]);
 
   const athleteOptions = React.useMemo(() => {
-    const options = uniqueAthletes.map(athlete => ({ label: athlete, value: athlete }));
+    const options = uniqueAthletes.map(athlete => ({ 
+      label: String(athlete), 
+      value: String(athlete) 
+    }));
     console.log('Athlete options:', options);
     return options;
   }, [uniqueAthletes]);
 
   const dateOptions = React.useMemo(() => {
-    const options = uniqueTestDates.map(date => ({ label: date, value: date }));
+    const options = uniqueTestDates.map(date => ({ 
+      label: String(date), 
+      value: String(date) 
+    }));
     console.log('Date options:', options);
     return options;
   }, [uniqueTestDates]);
+
+  // Ensure selected values are always string arrays
+  const safeSelectedTeams = React.useMemo(() => {
+    if (!Array.isArray(selectedTeams)) {
+      console.log('selectedTeams is not an array, converting:', selectedTeams);
+      return [];
+    }
+    const filtered = selectedTeams.filter(item => typeof item === 'string');
+    console.log('Safe selected teams:', filtered);
+    return filtered;
+  }, [selectedTeams]);
+
+  const safeSelectedAthletes = React.useMemo(() => {
+    if (!Array.isArray(selectedAthletes)) {
+      console.log('selectedAthletes is not an array, converting:', selectedAthletes);
+      return [];
+    }
+    const filtered = selectedAthletes.filter(item => typeof item === 'string');
+    console.log('Safe selected athletes:', filtered);
+    return filtered;
+  }, [selectedAthletes]);
+
+  const safeSelectedTestDates = React.useMemo(() => {
+    if (!Array.isArray(selectedTestDates)) {
+      console.log('selectedTestDates is not an array, converting:', selectedTestDates);
+      return [];
+    }
+    const filtered = selectedTestDates.filter(item => typeof item === 'string');
+    console.log('Safe selected test dates:', filtered);
+    return filtered;
+  }, [selectedTestDates]);
+
+  // Create safe event handlers that ensure string[] type
+  const handleTeamsChange = React.useCallback((teams: string[]) => {
+    console.log('handleTeamsChange called with:', teams, 'type:', typeof teams);
+    if (Array.isArray(teams) && typeof onTeamsChange === 'function') {
+      onTeamsChange(teams);
+    } else {
+      console.error('handleTeamsChange: Invalid teams array or onTeamsChange function');
+    }
+  }, [onTeamsChange]);
+
+  const handleAthletesChange = React.useCallback((athletes: string[]) => {
+    console.log('handleAthletesChange called with:', athletes, 'type:', typeof athletes);
+    if (Array.isArray(athletes) && typeof onAthletesChange === 'function') {
+      onAthletesChange(athletes);
+    } else {
+      console.error('handleAthletesChange: Invalid athletes array or onAthletesChange function');
+    }
+  }, [onAthletesChange]);
+
+  const handleTestDatesChange = React.useCallback((dates: string[]) => {
+    console.log('handleTestDatesChange called with:', dates, 'type:', typeof dates);
+    if (Array.isArray(dates) && typeof onTestDatesChange === 'function') {
+      onTestDatesChange(dates);
+    } else {
+      console.error('handleTestDatesChange: Invalid dates array or onTestDatesChange function');
+    }
+  }, [onTestDatesChange]);
 
   // Filter data based on all selections
   const filteredData = React.useMemo(() => {
     return safeData.filter(test => {
       if (!test) return false;
       const testMatch = !selectedTest || test.test_name === selectedTest;
-      const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
-      const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
-      const dateMatch = selectedTestDates.length === 0 || selectedTestDates.includes(test.test_date);
+      const teamMatch = safeSelectedTeams.length === 0 || safeSelectedTeams.includes(test.team_name);
+      const athleteMatch = safeSelectedAthletes.length === 0 || safeSelectedAthletes.includes(test.athlete_name);
+      const dateMatch = safeSelectedTestDates.length === 0 || safeSelectedTestDates.includes(test.test_date);
       return testMatch && teamMatch && athleteMatch && dateMatch;
     });
-  }, [safeData, selectedTest, selectedTeams, selectedAthletes, selectedTestDates]);
+  }, [safeData, selectedTest, safeSelectedTeams, safeSelectedAthletes, safeSelectedTestDates]);
 
   // Enhanced metrics calculation matching Looker Studio format
   const getHighlights = () => {
@@ -293,8 +364,8 @@ export const HighlightsSection = ({
               <label className="text-sm font-medium text-gray-700">Team</label>
               <MultiSelect
                 options={teamOptions}
-                selected={selectedTeams || []}
-                onChange={onTeamsChange}
+                selected={safeSelectedTeams}
+                onChange={handleTeamsChange}
                 placeholder="Select Teams"
                 className="bg-white border-gray-300"
               />
@@ -304,8 +375,8 @@ export const HighlightsSection = ({
               <label className="text-sm font-medium text-gray-700">Athlete</label>
               <MultiSelect
                 options={athleteOptions}
-                selected={selectedAthletes || []}
-                onChange={onAthletesChange}
+                selected={safeSelectedAthletes}
+                onChange={handleAthletesChange}
                 placeholder="Select Athletes"
                 className="bg-white border-gray-300"
               />
@@ -315,8 +386,8 @@ export const HighlightsSection = ({
               <label className="text-sm font-medium text-gray-700">Test Date</label>
               <MultiSelect
                 options={dateOptions}
-                selected={selectedTestDates || []}
-                onChange={onTestDatesChange}
+                selected={safeSelectedTestDates}
+                onChange={handleTestDatesChange}
                 placeholder="Select Dates"
                 className="bg-white border-gray-300"
               />

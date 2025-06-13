@@ -71,7 +71,7 @@ export function MultiSelect({
   const handleUnselect = React.useCallback((item: string) => {
     try {
       if (typeof onChange !== 'function') {
-        console.log('onChange is not a function');
+        console.error('onChange is not a function');
         return;
       }
       const newSelected = safeSelected.filter((i) => i !== item);
@@ -85,11 +85,11 @@ export function MultiSelect({
   const handleSelect = React.useCallback((optionValue: string) => {
     try {
       if (typeof onChange !== 'function') {
-        console.log('onChange is not a function');
+        console.error('onChange is not a function');
         return;
       }
       
-      let newSelected;
+      let newSelected: string[];
       if (safeSelected.includes(optionValue)) {
         newSelected = safeSelected.filter((item) => item !== optionValue);
       } else {
