@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +20,7 @@ interface HighlightsSectionProps {
 
 export const HighlightsSection = ({
   data = [],
-  selectedTest,
+  selectedTest = "",
   selectedTeams = [],
   selectedAthletes = [],
   selectedTestDates = [],
@@ -29,9 +30,9 @@ export const HighlightsSection = ({
   onTestDatesChange
 }: HighlightsSectionProps) => {
   console.log('HighlightsSection render - data length:', data?.length || 0);
-  console.log('HighlightsSection - selectedTeams type:', typeof selectedTeams, 'value:', selectedTeams);
-  console.log('HighlightsSection - selectedAthletes type:', typeof selectedAthletes, 'value:', selectedAthletes);
-  console.log('HighlightsSection - selectedTestDates type:', typeof selectedTestDates, 'value:', selectedTestDates);
+  console.log('HighlightsSection - selectedTeams:', selectedTeams);
+  console.log('HighlightsSection - selectedAthletes:', selectedAthletes);
+  console.log('HighlightsSection - selectedTestDates:', selectedTestDates);
 
   // Defensive: ensure data is always an array
   const safeDataInput = Array.isArray(data) ? data : [];
@@ -59,152 +60,78 @@ export const HighlightsSection = ({
   }, [safeDataInput]);
   
   const uniqueTests = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) {
-      return [];
-    }
-    
-    const tests = safeData
-      .map(d => d.test_name)
-      .filter(test => test && test.trim() !== '')
-      .filter((test, index, arr) => arr.indexOf(test) === index)
-      .sort();
-    
+    if (!safeData || safeData.length === 0) return [];
+    const tests = [...new Set(safeData.map(d => d.test_name).filter(test => test && test.trim() !== ''))].sort();
     console.log('Unique tests:', tests);
     return tests;
   }, [safeData]);
     
   const uniqueTeams = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) {
-      return [];
-    }
-    
-    const teams = safeData
-      .map(d => d.team_name)
-      .filter(team => team && team.trim() !== '')
-      .filter((team, index, arr) => arr.indexOf(team) === index)
-      .sort();
-    
+    if (!safeData || safeData.length === 0) return [];
+    const teams = [...new Set(safeData.map(d => d.team_name).filter(team => team && team.trim() !== ''))].sort();
     console.log('Unique teams:', teams);
     return teams;
   }, [safeData]);
     
   const uniqueAthletes = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) {
-      return [];
-    }
-    
-    const athletes = safeData
-      .map(d => d.athlete_name)
-      .filter(athlete => athlete && athlete.trim() !== '')
-      .filter((athlete, index, arr) => arr.indexOf(athlete) === index)
-      .sort();
-    
+    if (!safeData || safeData.length === 0) return [];
+    const athletes = [...new Set(safeData.map(d => d.athlete_name).filter(athlete => athlete && athlete.trim() !== ''))].sort();
     console.log('Unique athletes:', athletes);
     return athletes;
   }, [safeData]);
     
   const uniqueTestDates = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) {
-      return [];
-    }
-    
-    const dates = safeData
-      .map(d => d.test_date)
-      .filter(date => date && date.trim() !== '')
-      .filter((date, index, arr) => arr.indexOf(date) === index)
-      .sort();
-    
+    if (!safeData || safeData.length === 0) return [];
+    const dates = [...new Set(safeData.map(d => d.test_date).filter(date => date && date.trim() !== ''))].sort();
     console.log('Unique test dates:', dates);
     return dates;
   }, [safeData]);
 
-  // Convert arrays to options format with safety checks - ensuring correct format
+  // Convert arrays to options format with safety checks
   const teamOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueTeams)) {
-      console.log('uniqueTeams is not an array:', uniqueTeams);
-      return [];
-    }
-    const options = uniqueTeams.map(team => ({ 
-      label: String(team), 
-      value: String(team) 
-    }));
-    console.log('Team options:', options);
-    return options;
+    if (!Array.isArray(uniqueTeams)) return [];
+    return uniqueTeams.map(team => ({ label: String(team), value: String(team) }));
   }, [uniqueTeams]);
 
   const athleteOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueAthletes)) {
-      console.log('uniqueAthletes is not an array:', uniqueAthletes);
-      return [];
-    }
-    const options = uniqueAthletes.map(athlete => ({ 
-      label: String(athlete), 
-      value: String(athlete) 
-    }));
-    console.log('Athlete options:', options);
-    return options;
+    if (!Array.isArray(uniqueAthletes)) return [];
+    return uniqueAthletes.map(athlete => ({ label: String(athlete), value: String(athlete) }));
   }, [uniqueAthletes]);
 
   const dateOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueTestDates)) {
-      console.log('uniqueTestDates is not an array:', uniqueTestDates);
-      return [];
-    }
-    const options = uniqueTestDates.map(date => ({ 
-      label: String(date), 
-      value: String(date) 
-    }));
-    console.log('Date options:', options);
-    return options;
+    if (!Array.isArray(uniqueTestDates)) return [];
+    return uniqueTestDates.map(date => ({ label: String(date), value: String(date) }));
   }, [uniqueTestDates]);
 
-  // Ensure selected values are always string arrays with proper validation
+  // Ensure selected values are always string arrays
   const safeSelectedTeams = React.useMemo(() => {
-    const initial = Array.isArray(selectedTeams) ? selectedTeams : [];
-    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
-    console.log('Safe selected teams:', filtered);
-    return filtered;
+    return Array.isArray(selectedTeams) ? selectedTeams.filter(item => typeof item === 'string' && item.trim() !== '') : [];
   }, [selectedTeams]);
 
   const safeSelectedAthletes = React.useMemo(() => {
-    const initial = Array.isArray(selectedAthletes) ? selectedAthletes : [];
-    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
-    console.log('Safe selected athletes:', filtered);
-    return filtered;
+    return Array.isArray(selectedAthletes) ? selectedAthletes.filter(item => typeof item === 'string' && item.trim() !== '') : [];
   }, [selectedAthletes]);
 
   const safeSelectedTestDates = React.useMemo(() => {
-    const initial = Array.isArray(selectedTestDates) ? selectedTestDates : [];
-    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
-    console.log('Safe selected test dates:', filtered);
-    return filtered;
+    return Array.isArray(selectedTestDates) ? selectedTestDates.filter(item => typeof item === 'string' && item.trim() !== '') : [];
   }, [selectedTestDates]);
 
-  // Create safe event handlers that ensure string[] type
+  // Safe event handlers
   const handleTeamsChange = React.useCallback((teams: string[]) => {
-    console.log('handleTeamsChange called with:', teams, 'type:', typeof teams);
     if (Array.isArray(teams) && typeof onTeamsChange === 'function') {
       onTeamsChange(teams);
-    } else {
-      console.error('handleTeamsChange: Invalid teams array or onTeamsChange function');
     }
   }, [onTeamsChange]);
 
   const handleAthletesChange = React.useCallback((athletes: string[]) => {
-    console.log('handleAthletesChange called with:', athletes, 'type:', typeof athletes);
     if (Array.isArray(athletes) && typeof onAthletesChange === 'function') {
       onAthletesChange(athletes);
-    } else {
-      console.error('handleAthletesChange: Invalid athletes array or onAthletesChange function');
     }
   }, [onAthletesChange]);
 
   const handleTestDatesChange = React.useCallback((dates: string[]) => {
-    console.log('handleTestDatesChange called with:', dates, 'type:', typeof dates);
     if (Array.isArray(dates) && typeof onTestDatesChange === 'function') {
       onTestDatesChange(dates);
-    } else {
-      console.error('handleTestDatesChange: Invalid dates array or onTestDatesChange function');
     }
   }, [onTestDatesChange]);
 
@@ -220,7 +147,7 @@ export const HighlightsSection = ({
     });
   }, [safeData, selectedTest, safeSelectedTeams, safeSelectedAthletes, safeSelectedTestDates]);
 
-  // Enhanced metrics calculation matching Looker Studio format
+  // Enhanced metrics calculation
   const getHighlights = () => {
     if (!filteredData || filteredData.length === 0) {
       return {
@@ -233,14 +160,11 @@ export const HighlightsSection = ({
 
     const totalTests = filteredData.length;
     
-    // Calculate average performance based on test type
-    const getMetricValue = (test: any, keys: string[]) => {
+    const getMetricValue = (test: TestData, keys: string[]) => {
       if (!test?.metrics) return 0;
-      const metrics = test.metrics;
-      
       for (const key of keys) {
-        if (metrics[key] && typeof metrics[key] === 'number' && metrics[key] > 0) {
-          return metrics[key];
+        if (test.metrics[key] && typeof test.metrics[key] === 'number' && test.metrics[key] > 0) {
+          return test.metrics[key];
         }
       }
       return 0;
@@ -249,7 +173,6 @@ export const HighlightsSection = ({
     let avgPerformance = "N/A";
     let performanceValues: number[] = [];
 
-    // Get performance values based on test type
     if (selectedTest) {
       switch (selectedTest) {
         case "Countermovement Jump":
@@ -265,14 +188,12 @@ export const HighlightsSection = ({
           ).filter(val => val > 0);
           break;
         default:
-          // Isometric tests
           performanceValues = filteredData.map(test => 
             getMetricValue(test, ['force_peak', 'rfd_max', 'peak_force'])
           ).filter(val => val > 0);
           break;
       }
     } else {
-      // No specific test selected, use peak force as general metric
       performanceValues = filteredData.map(test => 
         getMetricValue(test, ['peak_force', 'force_peak'])
       ).filter(val => val > 0);
@@ -283,10 +204,8 @@ export const HighlightsSection = ({
       avgPerformance = Math.round(avg).toString();
     }
 
-    // Find top performer based on best single performance
     const athletePerformances = filteredData.reduce((acc, test) => {
       if (!test?.athlete_name) return acc;
-      
       let performanceValue = 0;
       if (selectedTest) {
         switch (selectedTest) {
@@ -307,9 +226,7 @@ export const HighlightsSection = ({
       }
       
       if (performanceValue > 0) {
-        if (!acc[test.athlete_name] || acc[test.athlete_name] < performanceValue) {
-          acc[test.athlete_name] = performanceValue;
-        }
+        acc[test.athlete_name] = Math.max(acc[test.athlete_name] || 0, performanceValue);
       }
       return acc;
     }, {} as Record<string, number>);
@@ -317,12 +234,15 @@ export const HighlightsSection = ({
     const topPerformer = Object.entries(athletePerformances)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
-    const latestTest = uniqueTestDates.length > 0 ? uniqueTestDates[uniqueTestDates.length - 1] : "N/A";
+    const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
 
     return { totalTests, avgPerformance, topPerformer, latestTest };
   };
 
   const highlights = getHighlights();
+
+  // Avoid rendering filters until options are ready
+  const isDataReady = teamOptions.length > 0 || athleteOptions.length > 0 || dateOptions.length > 0;
 
   return (
     <div className="space-y-6">
@@ -349,56 +269,60 @@ export const HighlightsSection = ({
           <CardTitle className="text-lg font-semibold text-gray-800">Performance Filters</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Test Type</label>
-              <Select value={selectedTest || ""} onValueChange={onTestChange}>
-                <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500">
-                  <SelectValue placeholder="Select Test Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50">
-                  {uniqueTests.map(test => (
-                    <SelectItem key={test} value={test}>
-                      {test}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {isDataReady ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Test Type</label>
+                <Select value={selectedTest} onValueChange={onTestChange}>
+                  <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500">
+                    <SelectValue placeholder="Select Test Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {uniqueTests.map(test => (
+                      <SelectItem key={test} value={test}>
+                        {test}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Team</label>
+                <MultiSelect
+                  options={teamOptions}
+                  selected={safeSelectedTeams}
+                  onChange={handleTeamsChange}
+                  placeholder="Select Teams"
+                  className="bg-white border-gray-300"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Athlete</label>
+                <MultiSelect
+                  options={athleteOptions}
+                  selected={safeSelectedAthletes}
+                  onChange={handleAthletesChange}
+                  placeholder="Select Athletes"
+                  className="bg-white border-gray-300"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Test Date</label>
+                <MultiSelect
+                  options={dateOptions}
+                  selected={safeSelectedTestDates}
+                  onChange={handleTestDatesChange}
+                  placeholder="Select Dates"
+                  className="bg-white border-gray-300"
+                />
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Team</label>
-              <MultiSelect
-                options={teamOptions}
-                selected={safeSelectedTeams}
-                onChange={handleTeamsChange}
-                placeholder="Select Teams"
-                className="bg-white border-gray-300"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Athlete</label>
-              <MultiSelect
-                options={athleteOptions}
-                selected={safeSelectedAthletes}
-                onChange={handleAthletesChange}
-                placeholder="Select Athletes"
-                className="bg-white border-gray-300"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Test Date</label>
-              <MultiSelect
-                options={dateOptions}
-                selected={safeSelectedTestDates}
-                onChange={handleTestDatesChange}
-                placeholder="Select Dates"
-                className="bg-white border-gray-300"
-              />
-            </div>
-          </div>
+          ) : (
+            <div className="text-center text-gray-500">Loading filters...</div>
+          )}
 
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
