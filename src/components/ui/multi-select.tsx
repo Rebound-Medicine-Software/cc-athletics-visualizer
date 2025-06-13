@@ -69,29 +69,37 @@ export function MultiSelect({
   }, [selected])
 
   const handleUnselect = React.useCallback((item: string) => {
-    if (typeof onChange !== 'function') {
-      console.log('onChange is not a function');
-      return;
+    try {
+      if (typeof onChange !== 'function') {
+        console.log('onChange is not a function');
+        return;
+      }
+      const newSelected = safeSelected.filter((i) => i !== item);
+      console.log('Unselecting item:', item, 'New selected:', newSelected);
+      onChange(newSelected);
+    } catch (error) {
+      console.error('Error in handleUnselect:', error);
     }
-    const newSelected = safeSelected.filter((i) => i !== item);
-    console.log('Unselecting item:', item, 'New selected:', newSelected);
-    onChange(newSelected);
   }, [safeSelected, onChange])
 
   const handleSelect = React.useCallback((optionValue: string) => {
-    if (typeof onChange !== 'function') {
-      console.log('onChange is not a function');
-      return;
+    try {
+      if (typeof onChange !== 'function') {
+        console.log('onChange is not a function');
+        return;
+      }
+      
+      let newSelected;
+      if (safeSelected.includes(optionValue)) {
+        newSelected = safeSelected.filter((item) => item !== optionValue);
+      } else {
+        newSelected = [...safeSelected, optionValue];
+      }
+      console.log('Selecting option:', optionValue, 'New selected:', newSelected);
+      onChange(newSelected);
+    } catch (error) {
+      console.error('Error in handleSelect:', error);
     }
-    
-    let newSelected;
-    if (safeSelected.includes(optionValue)) {
-      newSelected = safeSelected.filter((item) => item !== optionValue);
-    } else {
-      newSelected = [...safeSelected, optionValue];
-    }
-    console.log('Selecting option:', optionValue, 'New selected:', newSelected);
-    onChange(newSelected);
   }, [safeSelected, onChange])
 
   // Show loading/empty state if no options

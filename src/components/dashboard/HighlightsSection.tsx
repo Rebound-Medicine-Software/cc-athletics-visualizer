@@ -30,14 +30,11 @@ export const HighlightsSection = ({
   onTestDatesChange
 }: HighlightsSectionProps) => {
   console.log('HighlightsSection render - data length:', data?.length || 0);
-  console.log('HighlightsSection render - selectedTeams:', selectedTeams);
-  console.log('HighlightsSection render - selectedAthletes:', selectedAthletes);
-  console.log('HighlightsSection render - selectedTestDates:', selectedTestDates);
 
   // Safely get unique values with comprehensive null checks
   const safeData = React.useMemo(() => {
     if (!Array.isArray(data)) {
-      console.log('Data is not an array:', data);
+      console.log('Data is not an array, converting:', data);
       return [];
     }
     
@@ -57,14 +54,14 @@ export const HighlightsSection = ({
   
   const uniqueTests = React.useMemo(() => {
     if (!safeData || safeData.length === 0) {
-      console.log('No safe data for tests');
       return [];
     }
     
     const tests = safeData
       .map(d => d.test_name)
-      .filter(test => test && test.trim() !== '' && test !== "All Tests" && test !== "Isometric Test")
-      .filter((test, index, arr) => arr.indexOf(test) === index);
+      .filter(test => test && test.trim() !== '')
+      .filter((test, index, arr) => arr.indexOf(test) === index)
+      .sort();
     
     console.log('Unique tests:', tests);
     return tests;
@@ -72,14 +69,14 @@ export const HighlightsSection = ({
     
   const uniqueTeams = React.useMemo(() => {
     if (!safeData || safeData.length === 0) {
-      console.log('No safe data for teams');
       return [];
     }
     
     const teams = safeData
       .map(d => d.team_name)
       .filter(team => team && team.trim() !== '')
-      .filter((team, index, arr) => arr.indexOf(team) === index);
+      .filter((team, index, arr) => arr.indexOf(team) === index)
+      .sort();
     
     console.log('Unique teams:', teams);
     return teams;
@@ -87,14 +84,14 @@ export const HighlightsSection = ({
     
   const uniqueAthletes = React.useMemo(() => {
     if (!safeData || safeData.length === 0) {
-      console.log('No safe data for athletes');
       return [];
     }
     
     const athletes = safeData
       .map(d => d.athlete_name)
       .filter(athlete => athlete && athlete.trim() !== '')
-      .filter((athlete, index, arr) => arr.indexOf(athlete) === index);
+      .filter((athlete, index, arr) => arr.indexOf(athlete) === index)
+      .sort();
     
     console.log('Unique athletes:', athletes);
     return athletes;
@@ -102,7 +99,6 @@ export const HighlightsSection = ({
     
   const uniqueTestDates = React.useMemo(() => {
     if (!safeData || safeData.length === 0) {
-      console.log('No safe data for dates');
       return [];
     }
     
@@ -116,7 +112,7 @@ export const HighlightsSection = ({
     return dates;
   }, [safeData]);
 
-  // Convert arrays to options format with additional safety checks
+  // Convert arrays to options format with safety checks
   const teamOptions = React.useMemo(() => {
     const options = uniqueTeams.map(team => ({ label: team, value: team }));
     console.log('Team options:', options);
@@ -135,7 +131,7 @@ export const HighlightsSection = ({
     return options;
   }, [uniqueTestDates]);
 
-  // Filter data based on all selections with proper null checks
+  // Filter data based on all selections
   const filteredData = React.useMemo(() => {
     return safeData.filter(test => {
       if (!test) return false;
@@ -147,7 +143,7 @@ export const HighlightsSection = ({
     });
   }, [safeData, selectedTest, selectedTeams, selectedAthletes, selectedTestDates]);
 
-  // Calculate highlights based on filtered data
+  // Enhanced metrics calculation matching Looker Studio format
   const getHighlights = () => {
     if (!filteredData || filteredData.length === 0) {
       return {
@@ -160,27 +156,82 @@ export const HighlightsSection = ({
 
     const totalTests = filteredData.length;
     
-    // Calculate average performance (using peak force as example)
-    const peakForces = filteredData
-      .map(test => {
-        const metrics = test?.metrics as any;
-        return metrics?.peak_force || metrics?.force_peak || 0;
-      })
-      .filter(force => force > 0);
-    
-    const avgPerformance = peakForces.length > 0 
-      ? Math.round(peakForces.reduce((sum, force) => sum + force, 0) / peakForces.length)
-      : "N/A";
+    // Calculate average performance based on test type
+    const getMetricValue = (test: any, keys: string[]) => {
+      if (!test?.metrics) return 0;
+      const metrics = test.metrics;
+      
+      for (const key of keys) {
+        if (metrics[key] && typeof metrics[key] === 'number' && metrics[key] > 0) {
+          return metrics[key];
+        }
+      }
+      return 0;
+    };
 
-    // Find top performer
+    let avgPerformance = "N/A";
+    let performanceValues: number[] = [];
+
+    // Get performance values based on test type
+    if (selectedTest) {
+      switch (selectedTest) {
+        case "Countermovement Jump":
+        case "Squat Jump":
+        case "Drop Jump":
+          performanceValues = filteredData.map(test => 
+            getMetricValue(test, ['jump_height_ft', 'jump_height_ni', 'peak_force'])
+          ).filter(val => val > 0);
+          break;
+        case "Pogo Jump":
+          performanceValues = filteredData.map(test => 
+            getMetricValue(test, ['jump_height', 'avg_jump_height', 'power', 'avg_power'])
+          ).filter(val => val > 0);
+          break;
+        default:
+          // Isometric tests
+          performanceValues = filteredData.map(test => 
+            getMetricValue(test, ['force_peak', 'rfd_max', 'peak_force'])
+          ).filter(val => val > 0);
+          break;
+      }
+    } else {
+      // No specific test selected, use peak force as general metric
+      performanceValues = filteredData.map(test => 
+        getMetricValue(test, ['peak_force', 'force_peak'])
+      ).filter(val => val > 0);
+    }
+
+    if (performanceValues.length > 0) {
+      const avg = performanceValues.reduce((sum, val) => sum + val, 0) / performanceValues.length;
+      avgPerformance = Math.round(avg).toString();
+    }
+
+    // Find top performer based on best single performance
     const athletePerformances = filteredData.reduce((acc, test) => {
       if (!test?.athlete_name) return acc;
-      const metrics = test.metrics as any;
-      const peakForce = metrics?.peak_force || metrics?.force_peak || 0;
       
-      if (peakForce > 0) {
-        if (!acc[test.athlete_name] || acc[test.athlete_name] < peakForce) {
-          acc[test.athlete_name] = peakForce;
+      let performanceValue = 0;
+      if (selectedTest) {
+        switch (selectedTest) {
+          case "Countermovement Jump":
+          case "Squat Jump":
+          case "Drop Jump":
+            performanceValue = getMetricValue(test, ['jump_height_ft', 'jump_height_ni']);
+            break;
+          case "Pogo Jump":
+            performanceValue = getMetricValue(test, ['jump_height', 'avg_jump_height']);
+            break;
+          default:
+            performanceValue = getMetricValue(test, ['force_peak', 'rfd_max']);
+            break;
+        }
+      } else {
+        performanceValue = getMetricValue(test, ['peak_force', 'force_peak']);
+      }
+      
+      if (performanceValue > 0) {
+        if (!acc[test.athlete_name] || acc[test.athlete_name] < performanceValue) {
+          acc[test.athlete_name] = performanceValue;
         }
       }
       return acc;
@@ -198,7 +249,7 @@ export const HighlightsSection = ({
 
   return (
     <div className="space-y-6">
-      {/* Test Selection Card - Professional styling like Looker Studio */}
+      {/* Test Selection Card */}
       <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardContent className="p-6">
           <div className="text-center mb-4">
@@ -215,7 +266,7 @@ export const HighlightsSection = ({
         </CardContent>
       </Card>
 
-      {/* Filters Section - Clean professional layout */}
+      {/* Filters Section */}
       <Card className="border border-gray-200 shadow-sm">
         <CardHeader className="bg-gray-50 border-b">
           <CardTitle className="text-lg font-semibold text-gray-800">Performance Filters</CardTitle>
@@ -272,7 +323,7 @@ export const HighlightsSection = ({
             </div>
           </div>
 
-          {/* Key Metrics Cards - Professional styling */}
+          {/* Key Metrics Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
               <div className="flex items-center justify-center mb-2">
@@ -287,7 +338,9 @@ export const HighlightsSection = ({
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
               <div className="text-2xl font-bold text-gray-900">{highlights.avgPerformance}</div>
-              <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
+              <div className="text-sm text-gray-600">
+                {selectedTest?.includes('Jump') ? 'Avg Performance' : 'Avg Peak Force (N)'}
+              </div>
             </div>
             
             <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
