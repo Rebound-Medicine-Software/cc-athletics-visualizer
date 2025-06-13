@@ -18,23 +18,25 @@ interface HighlightsSectionProps {
 }
 
 export const HighlightsSection = ({
-  data,
+  data = [],
   selectedTest,
-  selectedTeams,
-  selectedAthletes,
-  selectedTestDates,
+  selectedTeams = [],
+  selectedAthletes = [],
+  selectedTestDates = [],
   onTestChange,
   onTeamsChange,
   onAthletesChange,
   onTestDatesChange
 }: HighlightsSectionProps) => {
-  const uniqueTests = [...new Set(data.map(d => d.test_name))].filter(test => test !== "All Tests" && test !== "Isometric Test");
-  const uniqueTeams = [...new Set(data.map(d => d.team_name))];
-  const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
-  const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
+  // Safely get unique values with proper null checks
+  const uniqueTests = data ? [...new Set(data.map(d => d?.test_name).filter(Boolean))].filter(test => test !== "All Tests" && test !== "Isometric Test") : [];
+  const uniqueTeams = data ? [...new Set(data.map(d => d?.team_name).filter(Boolean))] : [];
+  const uniqueAthletes = data ? [...new Set(data.map(d => d?.athlete_name).filter(Boolean))] : [];
+  const uniqueTestDates = data ? [...new Set(data.map(d => d?.test_date).filter(Boolean))].sort() : [];
 
-  // Filter data based on all selections
-  const filteredData = data.filter(test => {
+  // Filter data based on all selections with proper null checks
+  const filteredData = (data || []).filter(test => {
+    if (!test) return false;
     const testMatch = !selectedTest || test.test_name === selectedTest;
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
     const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
@@ -44,7 +46,7 @@ export const HighlightsSection = ({
 
   // Calculate highlights based on filtered data
   const getHighlights = () => {
-    if (filteredData.length === 0) {
+    if (!filteredData || filteredData.length === 0) {
       return {
         totalTests: 0,
         avgPerformance: "N/A",
@@ -58,7 +60,7 @@ export const HighlightsSection = ({
     // Calculate average performance (using peak force as example)
     const peakForces = filteredData
       .map(test => {
-        const metrics = test.metrics as any;
+        const metrics = test?.metrics as any;
         return metrics?.peak_force || metrics?.force_peak || 0;
       })
       .filter(force => force > 0);
@@ -69,6 +71,7 @@ export const HighlightsSection = ({
 
     // Find top performer
     const athletePerformances = filteredData.reduce((acc, test) => {
+      if (!test?.athlete_name) return acc;
       const metrics = test.metrics as any;
       const peakForce = metrics?.peak_force || metrics?.force_peak || 0;
       

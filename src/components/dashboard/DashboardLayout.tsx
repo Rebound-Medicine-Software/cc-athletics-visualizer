@@ -19,18 +19,19 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout = ({
-  data,
+  data = [],
   selectedTest,
-  selectedTeams,
-  selectedAthletes,
-  selectedTestDates,
+  selectedTeams = [],
+  selectedAthletes = [],
+  selectedTestDates = [],
   onTestChange,
   onTeamsChange,
   onAthletesChange,
   onTestDatesChange
 }: DashboardLayoutProps) => {
-  // Filter data based on all selections
-  const filteredData = data.filter(test => {
+  // Filter data based on all selections with proper null checks
+  const filteredData = (data || []).filter(test => {
+    if (!test) return false;
     const testMatch = !selectedTest || test.test_name === selectedTest;
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
     const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);

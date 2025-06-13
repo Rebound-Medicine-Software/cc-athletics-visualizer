@@ -26,8 +26,8 @@ interface MultiSelectProps {
 }
 
 export function MultiSelect({
-  options,
-  selected,
+  options = [],
+  selected = [],
   onChange,
   placeholder = "Select items...",
   className,
@@ -48,7 +48,7 @@ export function MultiSelect({
           className={cn("w-full justify-between h-auto min-h-10", className)}
         >
           <div className="flex gap-1 flex-wrap">
-            {selected.length > 0 ? (
+            {selected && selected.length > 0 ? (
               selected.map((item) => (
                 <Badge
                   variant="secondary"
@@ -59,7 +59,7 @@ export function MultiSelect({
                     handleUnselect(item)
                   }}
                 >
-                  {options.find((option) => option.value === item)?.label}
+                  {options.find((option) => option.value === item)?.label || item}
                   <button
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
@@ -92,7 +92,7 @@ export function MultiSelect({
           <CommandInput placeholder="Search..." />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {options.map((option) => (
+            {(options || []).map((option) => (
               <CommandItem
                 key={option.value}
                 onSelect={() => {
