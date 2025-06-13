@@ -34,16 +34,21 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
-  // Ensure options and selected are always arrays
-  const safeOptions = Array.isArray(options) ? options : []
-  const safeSelected = Array.isArray(selected) ? selected : []
+  // Ensure options and selected are always arrays and handle loading states
+  const safeOptions = React.useMemo(() => {
+    return Array.isArray(options) ? options.filter(option => option && option.value && option.label) : []
+  }, [options])
+  
+  const safeSelected = React.useMemo(() => {
+    return Array.isArray(selected) ? selected.filter(Boolean) : []
+  }, [selected])
 
-  const handleUnselect = (item: string) => {
+  const handleUnselect = React.useCallback((item: string) => {
     onChange(safeSelected.filter((i) => i !== item))
-  }
+  }, [safeSelected, onChange])
 
-  // Don't render if options are still loading/undefined
-  if (!safeOptions || safeOptions.length === 0) {
+  // Show loading state if options are still being fetched
+  if (!options || options.length === 0) {
     return (
       <Button
         variant="outline"
@@ -68,37 +73,41 @@ export function MultiSelect({
         >
           <div className="flex gap-1 flex-wrap">
             {safeSelected && safeSelected.length > 0 ? (
-              safeSelected.map((item) => (
-                <Badge
-                  variant="secondary"
-                  key={item}
-                  className="mr-1 mb-1"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleUnselect(item)
-                  }}
-                >
-                  {safeOptions.find((option) => option.value === item)?.label || item}
-                  <button
-                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUnselect(item)
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
+              safeSelected.map((item) => {
+                const option = safeOptions.find((opt) => opt.value === item)
+                if (!option) return null
+                return (
+                  <Badge
+                    variant="secondary"
+                    key={item}
+                    className="mr-1 mb-1"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleUnselect(item)
                     }}
                   >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                </Badge>
-              ))
+                    {option.label}
+                    <button
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleUnselect(item)
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleUnselect(item)
+                      }}
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </button>
+                  </Badge>
+                )
+              })
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
             )}
@@ -106,7 +115,7 @@ export function MultiSelect({
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-full p-0 z-50 bg-white" align="start">
         <Command>
           <CommandInput placeholder="Search..." />
           <CommandEmpty>No item found.</CommandEmpty>

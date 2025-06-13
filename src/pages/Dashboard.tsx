@@ -1,17 +1,15 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ReportFilters } from "@/components/dashboard/ReportFilters";
-import { MetricCards } from "@/components/dashboard/MetricCards";
-import { HighlightsSection } from "@/components/dashboard/HighlightsSection";
-import { RegionComparison } from "@/components/dashboard/RegionComparison";
-import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft, Home, Calendar, Users, FileText, Dumbbell, Settings, CreditCard } from "lucide-react";
-import { toast } from "sonner";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
+import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft, Calendar, Users, FileText, Dumbbell, Settings, CreditCard } from "lucide-react";
+import { toast } from "sonner";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const {
@@ -26,6 +24,7 @@ const Dashboard = () => {
   const [selectedTestDates, setSelectedTestDates] = useState<string[]>([]);
   const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
+
   useEffect(() => {
     // Check if user has API key (is "logged in")
     const apiKey = localStorage.getItem('cc-athletics-api-key');
@@ -33,89 +32,103 @@ const Dashboard = () => {
       navigate('/auth');
     }
   }, [navigate]);
+
   const handleLogout = () => {
     localStorage.removeItem('cc-athletics-api-key');
     localStorage.removeItem('organization-data');
     toast.success("Logged out successfully");
     navigate('/auth');
   };
+
   const handleRefresh = () => {
     refetch();
     toast.info("Refreshing data...");
   };
 
-  // Get organization data for logo
-  const getOrganizationLogo = () => {
+  // Get organization data for name and logo
+  const getOrganizationData = () => {
     try {
       const orgData = localStorage.getItem('organization-data');
       if (orgData) {
         const parsed = JSON.parse(orgData);
-        return parsed.logo ? URL.createObjectURL(parsed.logo) : null;
+        return {
+          name: parsed.name || "Rebound Medicine & Performance",
+          logo: parsed.logo ? URL.createObjectURL(parsed.logo) : null
+        };
       }
     } catch (error) {
-      console.error('Error getting organization logo:', error);
+      console.error('Error getting organization data:', error);
     }
-    return null;
+    return {
+      name: "Rebound Medicine & Performance",
+      logo: null
+    };
   };
-  const orgLogo = getOrganizationLogo();
-  const navigationItems = [{
-    id: "home",
-    label: "Home",
-    icon: Home,
-    description: "Insights & company feed"
-  }, {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: Activity,
-    description: "Testing reports"
-  }, {
-    id: "bookings",
-    label: "Bookings",
-    icon: Calendar,
-    description: "Calendar & scheduling"
-  }, {
-    id: "profiles",
-    label: "Profiles",
-    icon: Users,
-    description: "Practitioner management"
-  }, {
-    id: "reports",
-    label: "Reports",
-    icon: FileText,
-    description: "Custom reports & templates"
-  }, {
-    id: "programming",
-    label: "Programming",
-    icon: Dumbbell,
-    description: "Exercise programs & templates"
-  }, {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    description: "Account & preferences"
-  }, {
-    id: "payment",
-    label: "Payment Packages",
-    icon: CreditCard,
-    description: "Billing & subscriptions"
-  }];
+
+  const orgData = getOrganizationData();
+
+  const navigationItems = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: Activity,
+      description: "Testing reports"
+    }, 
+    {
+      id: "bookings",
+      label: "Bookings",
+      icon: Calendar,
+      description: "Calendar & scheduling"
+    }, 
+    {
+      id: "profiles",
+      label: "Profiles",
+      icon: Users,
+      description: "Practitioner management"
+    }, 
+    {
+      id: "reports",
+      label: "Reports",
+      icon: FileText,
+      description: "Custom reports & templates"
+    }, 
+    {
+      id: "programming",
+      label: "Programming",
+      icon: Dumbbell,
+      description: "Exercise programs & templates"
+    }, 
+    {
+      id: "settings",
+      label: "Settings",
+      icon: Settings,
+      description: "Account & preferences"
+    }, 
+    {
+      id: "payment",
+      label: "Payment Packages",
+      icon: CreditCard,
+      description: "Billing & subscriptions"
+    }
+  ];
+
   const renderContent = () => {
     switch (activeSection) {
-      case "home":
-        return <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Welcome to Rebound Medicine & Performance</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Your comprehensive force plate analysis platform dashboard.</p>
-              </CardContent>
-            </Card>
-          </div>;
       case "dashboard":
-        return <DashboardLayout data={data || []} selectedTest={selectedTest} selectedTeams={selectedTeams} selectedAthletes={selectedAthletes} selectedTestDates={selectedTestDates} onTestChange={setSelectedTest} onTeamsChange={setSelectedTeams} onAthletesChange={setSelectedAthletes} onTestDatesChange={setSelectedTestDates} />;
+        return <DashboardLayout 
+          data={data || []} 
+          selectedTest={selectedTest} 
+          selectedTeams={selectedTeams} 
+          selectedAthletes={selectedAthletes} 
+          selectedTestDates={selectedTestDates} 
+          onTestChange={setSelectedTest} 
+          onTeamsChange={setSelectedTeams} 
+          onAthletesChange={setSelectedAthletes} 
+          onTestDatesChange={setSelectedTestDates} 
+        />;
       default:
-        return <div className="space-y-6">
+        return (
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>{navigationItems.find(item => item.id === activeSection)?.label}</CardTitle>
@@ -124,29 +137,40 @@ const Dashboard = () => {
                 <p className="text-gray-600">This section is coming soon! We're working hard to bring you the best experience.</p>
               </CardContent>
             </Card>
-          </div>;
+          </div>
+        );
     }
   };
+
   if (isLoading) {
-    return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard data...</p>
         </div>
-      </div>;
+      </div>
+    );
   }
+
   const errorMessage = error?.message || "";
   const hasNoData = !error && (!data || data.length === 0);
-  return <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      {/* Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      {/* Fixed Header */}
+      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Activity className="w-8 h-8 text-blue-600" />
+              {orgData.logo ? (
+                <img src={orgData.logo} alt="Organization Logo" className="w-8 h-8 rounded-full object-cover" />
+              ) : (
+                <img src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" alt="Default Logo" className="w-8 h-8 rounded-full" />
+              )}
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Rebound Performance and Medicine Testing Report
+                  {orgData.name}
                 </h1>
                 <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
               </div>
@@ -168,9 +192,10 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="pt-20 container mx-auto px-4 py-6 space-y-6">
         {/* Data Status */}
-        {error && <Alert variant="destructive">
+        {error && (
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Error loading data: {errorMessage}
@@ -178,59 +203,71 @@ const Dashboard = () => {
                 Retry
               </Button>
             </AlertDescription>
-          </Alert>}
+          </Alert>
+        )}
 
-        {data && data.length > 0 && <Alert className="border-green-200 bg-green-50">
+        {data && data.length > 0 && (
+          <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               Dashboard loaded successfully with {data.length} test records from CC Athletics API
               <Badge className="ml-2 bg-green-100 text-green-800">Live Data</Badge>
             </AlertDescription>
-          </Alert>}
+          </Alert>
+        )}
 
-        {hasNoData && <Alert className="border-orange-200 bg-orange-50">
+        {hasNoData && (
+          <Alert className="border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
               <div className="font-semibold mb-2">No test data found in your database</div>
               <p className="text-sm">Your API key is valid, but no test data was found. Please contact support if you believe this is an error.</p>
             </AlertDescription>
-          </Alert>}
+          </Alert>
+        )}
 
         {/* Main Content Layout */}
         <div className="flex gap-6">
-          {/* Collapsible Sidebar */}
-          <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
-            <div className="space-y-6">
+          {/* Fixed Collapsible Sidebar */}
+          <div className={`fixed left-0 top-20 h-full bg-white/90 backdrop-blur-sm border-r border-gray-200 transition-all duration-300 z-40 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
+            <div className="p-4 space-y-6">
               <div className="flex items-center">
                 <Button variant="ghost" size="icon" onClick={() => setIsNavigationVisible(!isNavigationVisible)} className="h-8 w-8">
                   {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </Button>
-                {isNavigationVisible && <div className="ml-4 flex items-center gap-2">
-                    {orgLogo ? <img src={orgLogo} alt="Organization Logo" className="w-8 h-8 rounded-full object-cover" /> : <img src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" alt="Default Logo" className="w-8 h-8 rounded-full" />}
-                    
-                  </div>}
               </div>
 
-              {isNavigationVisible && <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+              {isNavigationVisible && (
+                <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
                   <CardContent className="p-6 space-y-2">
-                    {navigationItems.map(item => <Button key={item.id} variant={activeSection === item.id ? "default" : "ghost"} className={`w-full justify-start text-left ${activeSection === item.id ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`} onClick={() => setActiveSection(item.id)}>
+                    {navigationItems.map(item => (
+                      <Button 
+                        key={item.id} 
+                        variant={activeSection === item.id ? "default" : "ghost"} 
+                        className={`w-full justify-start text-left ${activeSection === item.id ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`} 
+                        onClick={() => setActiveSection(item.id)}
+                      >
                         <item.icon className="w-4 h-4 mr-3" />
                         <div className="flex flex-col items-start">
                           <span className="font-medium">{item.label}</span>
                           <span className="text-xs opacity-70">{item.description}</span>
                         </div>
-                      </Button>)}
+                      </Button>
+                    ))}
                   </CardContent>
-                </Card>}
+                </Card>
+              )}
             </div>
           </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
+          {/* Main Content with left margin to account for sidebar */}
+          <div className={`flex-1 transition-all duration-300 ${isNavigationVisible ? 'ml-80' : 'ml-12'}`}>
             {renderContent()}
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Dashboard;

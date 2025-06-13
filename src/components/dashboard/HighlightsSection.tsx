@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
-import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
+import { TrendingUp, Users, Calendar, BarChart3 } from "lucide-react";
 import { MultiSelect } from "@/components/ui/multi-select";
 
 interface HighlightsSectionProps {
@@ -29,22 +29,22 @@ export const HighlightsSection = ({
   onTestDatesChange
 }: HighlightsSectionProps) => {
   // Safely get unique values with proper null checks
-  const safeData = Array.isArray(data) ? data : [];
+  const safeData = Array.isArray(data) ? data.filter(item => item && item.test_name && item.team_name && item.athlete_name && item.test_date) : [];
   
-  const uniqueTests = safeData && safeData.length > 0 
-    ? [...new Set(safeData.map(d => d?.test_name).filter(Boolean))].filter(test => test !== "All Tests" && test !== "Isometric Test")
+  const uniqueTests = safeData.length > 0 
+    ? [...new Set(safeData.map(d => d.test_name))].filter(test => test && test !== "All Tests" && test !== "Isometric Test")
     : [];
     
-  const uniqueTeams = safeData && safeData.length > 0 
-    ? [...new Set(safeData.map(d => d?.team_name).filter(Boolean))]
+  const uniqueTeams = safeData.length > 0 
+    ? [...new Set(safeData.map(d => d.team_name))].filter(Boolean)
     : [];
     
-  const uniqueAthletes = safeData && safeData.length > 0 
-    ? [...new Set(safeData.map(d => d?.athlete_name).filter(Boolean))]
+  const uniqueAthletes = safeData.length > 0 
+    ? [...new Set(safeData.map(d => d.athlete_name))].filter(Boolean)
     : [];
     
-  const uniqueTestDates = safeData && safeData.length > 0 
-    ? [...new Set(safeData.map(d => d?.test_date).filter(Boolean))].sort()
+  const uniqueTestDates = safeData.length > 0 
+    ? [...new Set(safeData.map(d => d.test_date))].filter(Boolean).sort()
     : [];
 
   // Filter data based on all selections with proper null checks
@@ -116,7 +116,7 @@ export const HighlightsSection = ({
           </h2>
           <p className="text-gray-600">
             {selectedTest 
-              ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+              ? `Viewing detailed analysis for ${selectedTest} across selected filters`
               : "Choose a test from the filters below to view detailed analysis"
             }
           </p>
@@ -127,14 +127,16 @@ export const HighlightsSection = ({
       <Card className="bg-blue-50/80 border-blue-200">
         <CardHeader>
           <CardTitle className="text-center text-lg text-gray-800">Individual Filters</CardTitle>
-          <div className="grid grid-cols-4 gap-4">
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4 mb-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
               <Select value={selectedTest || ""} onValueChange={onTestChange}>
                 <SelectTrigger className="bg-black text-white border-gray-600">
                   <SelectValue placeholder="Select Test" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white z-50">
                   {uniqueTests.map(test => (
                     <SelectItem key={test} value={test}>
                       {test}
@@ -174,11 +176,10 @@ export const HighlightsSection = ({
               />
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
           <div className="grid grid-cols-4 gap-4">
             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+              <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
               <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
               <div className="text-sm text-gray-600">Total Tests</div>
             </div>
@@ -188,12 +189,12 @@ export const HighlightsSection = ({
               <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
               <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
               <div className="text-sm text-gray-600">Top Performer</div>
             </div>
             <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+              <Calendar className="w-8 h-8 text-orange-500 mx-auto mb-2" />
               <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
               <div className="text-sm text-gray-600">Latest Test</div>
             </div>
