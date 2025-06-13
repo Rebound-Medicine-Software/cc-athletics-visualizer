@@ -117,6 +117,10 @@ export const HighlightsSection = ({
 
   // Convert arrays to options format with safety checks - ensuring correct format
   const teamOptions = React.useMemo(() => {
+    if (!Array.isArray(uniqueTeams)) {
+      console.log('uniqueTeams is not an array:', uniqueTeams);
+      return [];
+    }
     const options = uniqueTeams.map(team => ({ 
       label: String(team), 
       value: String(team) 
@@ -126,6 +130,10 @@ export const HighlightsSection = ({
   }, [uniqueTeams]);
 
   const athleteOptions = React.useMemo(() => {
+    if (!Array.isArray(uniqueAthletes)) {
+      console.log('uniqueAthletes is not an array:', uniqueAthletes);
+      return [];
+    }
     const options = uniqueAthletes.map(athlete => ({ 
       label: String(athlete), 
       value: String(athlete) 
@@ -135,6 +143,10 @@ export const HighlightsSection = ({
   }, [uniqueAthletes]);
 
   const dateOptions = React.useMemo(() => {
+    if (!Array.isArray(uniqueTestDates)) {
+      console.log('uniqueTestDates is not an array:', uniqueTestDates);
+      return [];
+    }
     const options = uniqueTestDates.map(date => ({ 
       label: String(date), 
       value: String(date) 
@@ -143,33 +155,24 @@ export const HighlightsSection = ({
     return options;
   }, [uniqueTestDates]);
 
-  // Ensure selected values are always string arrays
+  // Ensure selected values are always string arrays with proper validation
   const safeSelectedTeams = React.useMemo(() => {
-    if (!Array.isArray(selectedTeams)) {
-      console.log('selectedTeams is not an array, converting:', selectedTeams);
-      return [];
-    }
-    const filtered = selectedTeams.filter(item => typeof item === 'string');
+    const initial = Array.isArray(selectedTeams) ? selectedTeams : [];
+    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
     console.log('Safe selected teams:', filtered);
     return filtered;
   }, [selectedTeams]);
 
   const safeSelectedAthletes = React.useMemo(() => {
-    if (!Array.isArray(selectedAthletes)) {
-      console.log('selectedAthletes is not an array, converting:', selectedAthletes);
-      return [];
-    }
-    const filtered = selectedAthletes.filter(item => typeof item === 'string');
+    const initial = Array.isArray(selectedAthletes) ? selectedAthletes : [];
+    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
     console.log('Safe selected athletes:', filtered);
     return filtered;
   }, [selectedAthletes]);
 
   const safeSelectedTestDates = React.useMemo(() => {
-    if (!Array.isArray(selectedTestDates)) {
-      console.log('selectedTestDates is not an array, converting:', selectedTestDates);
-      return [];
-    }
-    const filtered = selectedTestDates.filter(item => typeof item === 'string');
+    const initial = Array.isArray(selectedTestDates) ? selectedTestDates : [];
+    const filtered = initial.filter(item => typeof item === 'string' && item.trim() !== '');
     console.log('Safe selected test dates:', filtered);
     return filtered;
   }, [selectedTestDates]);

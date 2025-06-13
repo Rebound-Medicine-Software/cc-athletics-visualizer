@@ -37,13 +37,13 @@ export function MultiSelect({
   console.log('MultiSelect render - options:', options);
   console.log('MultiSelect render - selected:', selected);
 
-  // Comprehensive safety checks for options and selected values
+  // Force array types and add null checks
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) {
-      console.log('Options is not an array:', options);
-      return [];
-    }
-    const filtered = options.filter(option => 
+    // Handle null/undefined options
+    const initialOptions = Array.isArray(options) ? options : [];
+    console.log('Initial options:', initialOptions);
+    
+    const filtered = initialOptions.filter(option => 
       option && 
       typeof option === 'object' && 
       typeof option.value === 'string' && 
@@ -56,11 +56,11 @@ export function MultiSelect({
   }, [options])
   
   const safeSelected = React.useMemo(() => {
-    if (!Array.isArray(selected)) {
-      console.log('Selected is not an array:', selected);
-      return [];
-    }
-    const filtered = selected.filter(item => 
+    // Force array type - handle null/undefined selected
+    const initialSelected = Array.isArray(selected) ? selected : [];
+    console.log('Initial selected:', initialSelected);
+    
+    const filtered = initialSelected.filter(item => 
       typeof item === 'string' && 
       item.trim() !== ''
     );

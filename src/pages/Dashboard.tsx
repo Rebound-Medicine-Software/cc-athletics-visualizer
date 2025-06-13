@@ -18,6 +18,8 @@ const Dashboard = () => {
     error,
     refetch
   } = useSupabaseData();
+  
+  // Ensure all state is properly initialized as empty arrays
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
