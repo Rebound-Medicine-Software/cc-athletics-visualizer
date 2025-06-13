@@ -5,25 +5,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { ReportFilters } from "@/components/dashboard/ReportFilters";
+import { MetricCards } from "@/components/dashboard/MetricCards";
+import { HighlightsSection } from "@/components/dashboard/HighlightsSection";
+import { RegionComparison } from "@/components/dashboard/RegionComparison";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, Calendar, Users, FileText, Dumbbell, Settings, CreditCard } from "lucide-react";
+import { 
+  Activity, 
+  LogOut, 
+  AlertCircle, 
+  CheckCircle, 
+  RefreshCw, 
+  ChevronRight,
+  ChevronLeft,
+  Home,
+  Calendar,
+  Users,
+  FileText,
+  Dumbbell,
+  Settings,
+  CreditCard
+} from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const {
-    data,
-    isLoading,
-    error,
-    refetch
-  } = useSupabaseData();
-  
-  // Ensure all state is properly initialized as empty arrays
+  const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-  const [selectedTestDates, setSelectedTestDates] = useState<string[]>([]);
+  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
+  const [selectedTestDate, setSelectedTestDate] = useState<string>("");
+  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
@@ -46,98 +58,105 @@ const Dashboard = () => {
     toast.info("Refreshing data...");
   };
 
-  // Get organization data safely
-  const getOrganizationData = () => {
+  // Filter data based on selected teams
+  const filteredData = data?.filter(test => 
+    selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
+  ) || [];
+
+  // Get organization data for logo
+  const getOrganizationLogo = () => {
     try {
       const orgData = localStorage.getItem('organization-data');
       if (orgData) {
         const parsed = JSON.parse(orgData);
-        return {
-          name: parsed.name || "Rebound Medicine & Performance",
-          logo: parsed.logo && typeof parsed.logo === 'string' ? parsed.logo : null
-        };
+        return parsed.logo ? URL.createObjectURL(parsed.logo) : null;
       }
     } catch (error) {
-      console.error('Error getting organization data:', error);
+      console.error('Error getting organization logo:', error);
     }
-    return {
-      name: "Rebound Medicine & Performance",
-      logo: null
-    };
+    return null;
   };
 
-  const orgData = getOrganizationData();
+  const orgLogo = getOrganizationLogo();
 
   const navigationItems = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: Activity,
-      description: "Performance Analytics"
-    }, 
-    {
-      id: "bookings",
-      label: "Bookings",
-      icon: Calendar,
-      description: "Schedule Management"
-    }, 
-    {
-      id: "profiles",
-      label: "Profiles",
-      icon: Users,
-      description: "Athlete Management"
-    }, 
-    {
-      id: "reports",
-      label: "Reports",
-      icon: FileText,
-      description: "Custom Reports"
-    }, 
-    {
-      id: "programming",
-      label: "Programming",
-      icon: Dumbbell,
-      description: "Exercise Programs"
-    }, 
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      description: "System Settings"
-    }, 
-    {
-      id: "payment",
-      label: "Billing",
-      icon: CreditCard,
-      description: "Subscription Management"
-    }
+    { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
+    { id: "dashboard", label: "Dashboard", icon: Activity, description: "Testing reports" },
+    { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
+    { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
+    { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
+    { id: "programming", label: "Programming", icon: Dumbbell, description: "Exercise programs & templates" },
+    { id: "settings", label: "Settings", icon: Settings, description: "Account & preferences" },
+    { id: "payment", label: "Payment Packages", icon: CreditCard, description: "Billing & subscriptions" },
   ];
 
   const renderContent = () => {
     switch (activeSection) {
+      case "home":
+        return (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Welcome to Rebound Medicine & Performance</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">Your comprehensive force plate analysis platform dashboard.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
       case "dashboard":
-        return <DashboardLayout 
-          data={data || []} 
-          selectedTest={selectedTest} 
-          selectedTeams={selectedTeams} 
-          selectedAthletes={selectedAthletes} 
-          selectedTestDates={selectedTestDates} 
-          onTestChange={setSelectedTest} 
-          onTeamsChange={setSelectedTeams} 
-          onAthletesChange={setSelectedAthletes} 
-          onTestDatesChange={setSelectedTestDates} 
-        />;
+        return (
+          <div className="space-y-6">
+            {/* Test Selection Notice */}
+            <Card className="bg-gray-100 border-gray-300">
+              <CardContent className="p-6 text-center">
+                <h2 className="text-xl font-semibold text-gray-700 mb-2">
+                  {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A 'Test Name'"}
+                </h2>
+                <p className="text-gray-600">
+                  {selectedTest 
+                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
+                    : "Choose a test from the filters below to view detailed analysis"
+                  }
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Highlights Section */}
+            <HighlightsSection
+              data={filteredData}
+              selectedAthlete={selectedAthlete}
+              selectedTestDate={selectedTestDate}
+              onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
+              onTestDateChange={(date) => setSelectedTestDate(date === "all" ? "" : date)}
+            />
+
+            {/* Filters with integrated comparison chart */}
+            <ReportFilters 
+              data={filteredData} 
+              onTestSelect={setSelectedTest}
+              selectedTeams={selectedTeams}
+              onTeamsChange={setSelectedTeams}
+              allData={data || []}
+            />
+
+            {/* Metric Cards */}
+            <MetricCards selectedTest={selectedTest} data={filteredData} />
+
+            {/* Region Comparisons */}
+            <RegionComparison data={filteredData} />
+          </div>
+        );
       default:
         return (
           <div className="space-y-6">
-            <Card className="border border-gray-200">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-xl font-semibold text-gray-800">
-                  {navigationItems.find(item => item.id === activeSection)?.label}
-                </CardTitle>
+                <CardTitle>{navigationItems.find(item => item.id === activeSection)?.label}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">This section is under development. Check back soon for updates.</p>
+                <p className="text-gray-600">This section is coming soon! We're working hard to bring you the best experience.</p>
               </CardContent>
             </Card>
           </div>
@@ -147,10 +166,10 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading performance data...</p>
+          <p className="text-gray-600">Loading dashboard data...</p>
         </div>
       </div>
     );
@@ -160,46 +179,56 @@ const Dashboard = () => {
   const hasNoData = !error && (!data || data.length === 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Professional Header - Fixed */}
-      <div className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      {/* Header */}
+      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {orgData.logo ? (
-                <img src={orgData.logo} alt="Organization Logo" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
-              ) : (
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">{orgData.name.charAt(0)}</span>
-                </div>
-              )}
+            <div className="flex items-center gap-3">
+              <Activity className="w-8 h-8 text-blue-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{orgData.name}</h1>
-                <p className="text-sm text-gray-500">Performance Analytics Platform</p>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Rebound Performance and Medicine Testing Report
+                </h1>
+                <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-3">
-              <Button variant="outline" onClick={handleRefresh} className="text-gray-600 border-gray-300 hover:bg-gray-50">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
+                Refresh Data
               </Button>
-              <Button variant="outline" onClick={handleLogout} className="text-red-600 border-red-200 hover:bg-red-50">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/')}
+                className="text-gray-600"
+              >
+                ← Home
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                Logout
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="pt-20 max-w-7xl mx-auto px-6 py-6">
-        {/* Status Alerts */}
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Data Status */}
         {error && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Data loading error: {errorMessage}
+              Error loading data: {errorMessage}
               <Button variant="outline" size="sm" onClick={handleRefresh} className="ml-2">
                 Retry
               </Button>
@@ -208,56 +237,88 @@ const Dashboard = () => {
         )}
 
         {data && data.length > 0 && (
-          <Alert className="border-green-200 bg-green-50 mb-6">
+          <Alert className="border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Connected to CC Athletics API - {data.length} test records loaded
-              <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Live Data</Badge>
+              Dashboard loaded successfully with {data.length} test records from CC Athletics API
+              <Badge className="ml-2 bg-green-100 text-green-800">Live Data</Badge>
             </AlertDescription>
           </Alert>
         )}
 
         {hasNoData && (
-          <Alert className="border-orange-200 bg-orange-50 mb-6">
+          <Alert className="border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
-              <div className="font-medium mb-1">No performance data available</div>
-              <p className="text-sm">API connection established but no test data found. Contact support if needed.</p>
+              <div className="font-semibold mb-2">No test data found in your database</div>
+              <p className="text-sm">Your API key is valid, but no test data was found. Please contact support if you believe this is an error.</p>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Main Layout with Fixed Sidebar */}
+        {/* Main Content Layout */}
         <div className="flex gap-6">
-          {/* Fixed Navigation Sidebar */}
-          <div className="w-64 fixed left-6 top-32 h-[calc(100vh-200px)] bg-white rounded-lg border border-gray-200 shadow-sm overflow-y-auto">
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-4">Navigation</h3>
-              <div className="space-y-1">
-                {navigationItems.map(item => (
-                  <Button 
-                    key={item.id} 
-                    variant={activeSection === item.id ? "default" : "ghost"} 
-                    className={`w-full justify-start text-left ${
-                      activeSection === item.id 
-                        ? "bg-blue-600 text-white hover:bg-blue-700" 
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`} 
-                    onClick={() => setActiveSection(item.id)}
-                  >
-                    <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
-                    <div className="flex flex-col items-start min-w-0">
-                      <span className="font-medium text-sm">{item.label}</span>
-                      <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
-                    </div>
-                  </Button>
-                ))}
+          {/* Collapsible Sidebar */}
+          <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
+            <div className="space-y-6">
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsNavigationVisible(!isNavigationVisible)}
+                  className="h-8 w-8"
+                >
+                  {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                </Button>
+                {isNavigationVisible && (
+                  <div className="ml-4 flex items-center gap-2">
+                    {orgLogo ? (
+                      <img 
+                        src={orgLogo}
+                        alt="Organization Logo" 
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <img 
+                        src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
+                        alt="Default Logo" 
+                        className="w-8 h-8 rounded-full"
+                      />
+                    )}
+                    <span className="font-medium text-gray-700">Navigation</span>
+                  </div>
+                )}
               </div>
+
+              {isNavigationVisible && (
+                <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                  <CardContent className="p-6 space-y-2">
+                    {navigationItems.map((item) => (
+                      <Button
+                        key={item.id}
+                        variant={activeSection === item.id ? "default" : "ghost"}
+                        className={`w-full justify-start text-left ${
+                          activeSection === item.id 
+                            ? "bg-blue-600 text-white" 
+                            : "text-gray-600 hover:bg-gray-100"
+                        }`}
+                        onClick={() => setActiveSection(item.id)}
+                      >
+                        <item.icon className="w-4 h-4 mr-3" />
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{item.label}</span>
+                          <span className="text-xs opacity-70">{item.description}</span>
+                        </div>
+                      </Button>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
 
-          {/* Main Content Area */}
-          <div className="flex-1 ml-64 pl-6">
+          {/* Main Content */}
+          <div className="flex-1">
             {renderContent()}
           </div>
         </div>

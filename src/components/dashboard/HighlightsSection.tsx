@@ -1,155 +1,37 @@
 
-import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
-import { TrendingUp, Users, Calendar, BarChart3 } from "lucide-react";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
 
 interface HighlightsSectionProps {
   data: TestData[];
-  selectedTest: string;
-  selectedTeams: string[];
-  selectedAthletes: string[];
-  selectedTestDates: string[];
-  onTestChange: (test: string) => void;
-  onTeamsChange: (teams: string[]) => void;
-  onAthletesChange: (athletes: string[]) => void;
-  onTestDatesChange: (dates: string[]) => void;
+  selectedAthlete: string;
+  selectedTestDate: string;
+  onAthleteChange: (athlete: string) => void;
+  onTestDateChange: (date: string) => void;
 }
 
 export const HighlightsSection = ({
-  data = [],
-  selectedTest = "",
-  selectedTeams = [],
-  selectedAthletes = [],
-  selectedTestDates = [],
-  onTestChange,
-  onTeamsChange,
-  onAthletesChange,
-  onTestDatesChange
+  data,
+  selectedAthlete,
+  selectedTestDate,
+  onAthleteChange,
+  onTestDateChange
 }: HighlightsSectionProps) => {
-  console.log('HighlightsSection render - data length:', data?.length || 0);
-  console.log('HighlightsSection - selectedTeams:', selectedTeams);
-  console.log('HighlightsSection - selectedAthletes:', selectedAthletes);
-  console.log('HighlightsSection - selectedTestDates:', selectedTestDates);
+  const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
+  const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
 
-  // Defensive: ensure data is always an array
-  const safeDataInput = Array.isArray(data) ? data : [];
-  console.log('Safe data input length:', safeDataInput.length);
+  // Filter data based on selections
+  const filteredData = data.filter(test => {
+    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
+    const dateMatch = !selectedTestDate || selectedTestDate === "all" || test.test_date === selectedTestDate;
+    return athleteMatch && dateMatch;
+  });
 
-  // Safely get unique values with comprehensive null checks
-  const safeData = React.useMemo(() => {
-    if (!Array.isArray(safeDataInput)) {
-      console.log('Data is not an array, converting:', safeDataInput);
-      return [];
-    }
-    
-    const filtered = safeDataInput.filter(item => {
-      if (!item || typeof item !== 'object') return false;
-      return (
-        typeof item.test_name === 'string' && item.test_name.trim() !== '' &&
-        typeof item.team_name === 'string' && item.team_name.trim() !== '' &&
-        typeof item.athlete_name === 'string' && item.athlete_name.trim() !== '' &&
-        typeof item.test_date === 'string' && item.test_date.trim() !== ''
-      );
-    });
-    
-    console.log('Filtered safe data length:', filtered.length);
-    return filtered;
-  }, [safeDataInput]);
-  
-  const uniqueTests = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) return [];
-    const tests = [...new Set(safeData.map(d => d.test_name).filter(test => test && test.trim() !== ''))].sort();
-    console.log('Unique tests:', tests);
-    return tests;
-  }, [safeData]);
-    
-  const uniqueTeams = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) return [];
-    const teams = [...new Set(safeData.map(d => d.team_name).filter(team => team && team.trim() !== ''))].sort();
-    console.log('Unique teams:', teams);
-    return teams;
-  }, [safeData]);
-    
-  const uniqueAthletes = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) return [];
-    const athletes = [...new Set(safeData.map(d => d.athlete_name).filter(athlete => athlete && athlete.trim() !== ''))].sort();
-    console.log('Unique athletes:', athletes);
-    return athletes;
-  }, [safeData]);
-    
-  const uniqueTestDates = React.useMemo(() => {
-    if (!safeData || safeData.length === 0) return [];
-    const dates = [...new Set(safeData.map(d => d.test_date).filter(date => date && date.trim() !== ''))].sort();
-    console.log('Unique test dates:', dates);
-    return dates;
-  }, [safeData]);
-
-  // Convert arrays to options format with safety checks
-  const teamOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueTeams)) return [];
-    return uniqueTeams.map(team => ({ label: String(team), value: String(team) }));
-  }, [uniqueTeams]);
-
-  const athleteOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueAthletes)) return [];
-    return uniqueAthletes.map(athlete => ({ label: String(athlete), value: String(athlete) }));
-  }, [uniqueAthletes]);
-
-  const dateOptions = React.useMemo(() => {
-    if (!Array.isArray(uniqueTestDates)) return [];
-    return uniqueTestDates.map(date => ({ label: String(date), value: String(date) }));
-  }, [uniqueTestDates]);
-
-  // Ensure selected values are always string arrays
-  const safeSelectedTeams = React.useMemo(() => {
-    return Array.isArray(selectedTeams) ? selectedTeams.filter(item => typeof item === 'string' && item.trim() !== '') : [];
-  }, [selectedTeams]);
-
-  const safeSelectedAthletes = React.useMemo(() => {
-    return Array.isArray(selectedAthletes) ? selectedAthletes.filter(item => typeof item === 'string' && item.trim() !== '') : [];
-  }, [selectedAthletes]);
-
-  const safeSelectedTestDates = React.useMemo(() => {
-    return Array.isArray(selectedTestDates) ? selectedTestDates.filter(item => typeof item === 'string' && item.trim() !== '') : [];
-  }, [selectedTestDates]);
-
-  // Safe event handlers
-  const handleTeamsChange = React.useCallback((teams: string[]) => {
-    if (Array.isArray(teams) && typeof onTeamsChange === 'function') {
-      onTeamsChange(teams);
-    }
-  }, [onTeamsChange]);
-
-  const handleAthletesChange = React.useCallback((athletes: string[]) => {
-    if (Array.isArray(athletes) && typeof onAthletesChange === 'function') {
-      onAthletesChange(athletes);
-    }
-  }, [onAthletesChange]);
-
-  const handleTestDatesChange = React.useCallback((dates: string[]) => {
-    if (Array.isArray(dates) && typeof onTestDatesChange === 'function') {
-      onTestDatesChange(dates);
-    }
-  }, [onTestDatesChange]);
-
-  // Filter data based on all selections
-  const filteredData = React.useMemo(() => {
-    return safeData.filter(test => {
-      if (!test) return false;
-      const testMatch = !selectedTest || test.test_name === selectedTest;
-      const teamMatch = safeSelectedTeams.length === 0 || safeSelectedTeams.includes(test.team_name);
-      const athleteMatch = safeSelectedAthletes.length === 0 || safeSelectedAthletes.includes(test.athlete_name);
-      const dateMatch = safeSelectedTestDates.length === 0 || safeSelectedTestDates.includes(test.test_date);
-      return testMatch && teamMatch && athleteMatch && dateMatch;
-    });
-  }, [safeData, selectedTest, safeSelectedTeams, safeSelectedAthletes, safeSelectedTestDates]);
-
-  // Enhanced metrics calculation
+  // Calculate highlights based on filtered data
   const getHighlights = () => {
-    if (!filteredData || filteredData.length === 0) {
+    if (filteredData.length === 0) {
       return {
         totalTests: 0,
         avgPerformance: "N/A",
@@ -160,73 +42,27 @@ export const HighlightsSection = ({
 
     const totalTests = filteredData.length;
     
-    const getMetricValue = (test: TestData, keys: string[]) => {
-      if (!test?.metrics) return 0;
-      for (const key of keys) {
-        if (test.metrics[key] && typeof test.metrics[key] === 'number' && test.metrics[key] > 0) {
-          return test.metrics[key];
-        }
-      }
-      return 0;
-    };
+    // Calculate average performance (using peak force as example)
+    const peakForces = filteredData
+      .map(test => {
+        const metrics = test.metrics as any;
+        return metrics?.peak_force || metrics?.force_peak || 0;
+      })
+      .filter(force => force > 0);
+    
+    const avgPerformance = peakForces.length > 0 
+      ? Math.round(peakForces.reduce((sum, force) => sum + force, 0) / peakForces.length)
+      : "N/A";
 
-    let avgPerformance = "N/A";
-    let performanceValues: number[] = [];
-
-    if (selectedTest) {
-      switch (selectedTest) {
-        case "Countermovement Jump":
-        case "Squat Jump":
-        case "Drop Jump":
-          performanceValues = filteredData.map(test => 
-            getMetricValue(test, ['jump_height_ft', 'jump_height_ni', 'peak_force'])
-          ).filter(val => val > 0);
-          break;
-        case "Pogo Jump":
-          performanceValues = filteredData.map(test => 
-            getMetricValue(test, ['jump_height', 'avg_jump_height', 'power', 'avg_power'])
-          ).filter(val => val > 0);
-          break;
-        default:
-          performanceValues = filteredData.map(test => 
-            getMetricValue(test, ['force_peak', 'rfd_max', 'peak_force'])
-          ).filter(val => val > 0);
-          break;
-      }
-    } else {
-      performanceValues = filteredData.map(test => 
-        getMetricValue(test, ['peak_force', 'force_peak'])
-      ).filter(val => val > 0);
-    }
-
-    if (performanceValues.length > 0) {
-      const avg = performanceValues.reduce((sum, val) => sum + val, 0) / performanceValues.length;
-      avgPerformance = Math.round(avg).toString();
-    }
-
+    // Find top performer
     const athletePerformances = filteredData.reduce((acc, test) => {
-      if (!test?.athlete_name) return acc;
-      let performanceValue = 0;
-      if (selectedTest) {
-        switch (selectedTest) {
-          case "Countermovement Jump":
-          case "Squat Jump":
-          case "Drop Jump":
-            performanceValue = getMetricValue(test, ['jump_height_ft', 'jump_height_ni']);
-            break;
-          case "Pogo Jump":
-            performanceValue = getMetricValue(test, ['jump_height', 'avg_jump_height']);
-            break;
-          default:
-            performanceValue = getMetricValue(test, ['force_peak', 'rfd_max']);
-            break;
-        }
-      } else {
-        performanceValue = getMetricValue(test, ['peak_force', 'force_peak']);
-      }
+      const metrics = test.metrics as any;
+      const peakForce = metrics?.peak_force || metrics?.force_peak || 0;
       
-      if (performanceValue > 0) {
-        acc[test.athlete_name] = Math.max(acc[test.athlete_name] || 0, performanceValue);
+      if (peakForce > 0) {
+        if (!acc[test.athlete_name] || acc[test.athlete_name] < peakForce) {
+          acc[test.athlete_name] = peakForce;
+        }
       }
       return acc;
     }, {} as Record<string, number>);
@@ -241,127 +77,69 @@ export const HighlightsSection = ({
 
   const highlights = getHighlights();
 
-  // Avoid rendering filters until options are ready
-  const isDataReady = teamOptions.length > 0 || athleteOptions.length > 0 || dateOptions.length > 0;
-
   return (
-    <div className="space-y-6">
-      {/* Test Selection Card */}
-      <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <CardContent className="p-6">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {selectedTest ? `Analysis: ${selectedTest}` : "Select Test for Analysis"}
-            </h2>
-            <p className="text-gray-600 text-sm">
-              {selectedTest 
-                ? `Comprehensive analysis for ${selectedTest} with applied filters`
-                : "Choose a test type to begin detailed performance analysis"
-              }
-            </p>
+    <Card className="bg-blue-50/80 border-blue-200 mb-6">
+      <CardHeader>
+        <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
+        <div className="flex gap-4 justify-center">
+          <div className="flex-1 max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
+            <Select value={selectedAthlete || "all"} onValueChange={onAthleteChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="All Athletes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Athletes</SelectItem>
+                {uniqueAthletes.map(athlete => (
+                  <SelectItem key={athlete} value={athlete}>
+                    {athlete}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Filters Section */}
-      <Card className="border border-gray-200 shadow-sm">
-        <CardHeader className="bg-gray-50 border-b">
-          <CardTitle className="text-lg font-semibold text-gray-800">Performance Filters</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          {isDataReady ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Test Type</label>
-                <Select value={selectedTest} onValueChange={onTestChange}>
-                  <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500">
-                    <SelectValue placeholder="Select Test Type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    {uniqueTests.map(test => (
-                      <SelectItem key={test} value={test}>
-                        {test}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Team</label>
-                <MultiSelect
-                  options={teamOptions}
-                  selected={safeSelectedTeams}
-                  onChange={handleTeamsChange}
-                  placeholder="Select Teams"
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Athlete</label>
-                <MultiSelect
-                  options={athleteOptions}
-                  selected={safeSelectedAthletes}
-                  onChange={handleAthletesChange}
-                  placeholder="Select Athletes"
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Test Date</label>
-                <MultiSelect
-                  options={dateOptions}
-                  selected={safeSelectedTestDates}
-                  onChange={handleTestDatesChange}
-                  placeholder="Select Dates"
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500">Loading filters...</div>
-          )}
-
-          {/* Key Metrics Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{highlights.totalTests}</div>
-              <div className="text-sm text-gray-600">Total Tests</div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <TrendingUp className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{highlights.avgPerformance}</div>
-              <div className="text-sm text-gray-600">
-                {selectedTest?.includes('Jump') ? 'Avg Performance' : 'Avg Peak Force (N)'}
-              </div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Users className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{highlights.topPerformer}</div>
-              <div className="text-sm text-gray-600">Top Performer</div>
-            </div>
-            
-            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-              <div className="flex items-center justify-center mb-2">
-                <Calendar className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{highlights.latestTest}</div>
-              <div className="text-sm text-gray-600">Latest Test</div>
-            </div>
+          <div className="flex-1 max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
+            <Select value={selectedTestDate || "all"} onValueChange={onTestDateChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="All Dates" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                {uniqueTestDates.map(date => (
+                  <SelectItem key={date} value={date}>
+                    {date}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-4 gap-4">
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+            <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+            <div className="text-sm text-gray-600">Total Tests</div>
+          </div>
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+            <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">{highlights.avgPerformance}</div>
+            <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
+          </div>
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+            <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
+            <div className="text-sm text-gray-600">Top Performer</div>
+          </div>
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+            <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
+            <div className="text-sm text-gray-600">Latest Test</div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
