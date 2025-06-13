@@ -29,13 +29,26 @@ export const HighlightsSection = ({
   onTestDatesChange
 }: HighlightsSectionProps) => {
   // Safely get unique values with proper null checks
-  const uniqueTests = data ? [...new Set(data.map(d => d?.test_name).filter(Boolean))].filter(test => test !== "All Tests" && test !== "Isometric Test") : [];
-  const uniqueTeams = data ? [...new Set(data.map(d => d?.team_name).filter(Boolean))] : [];
-  const uniqueAthletes = data ? [...new Set(data.map(d => d?.athlete_name).filter(Boolean))] : [];
-  const uniqueTestDates = data ? [...new Set(data.map(d => d?.test_date).filter(Boolean))].sort() : [];
+  const safeData = Array.isArray(data) ? data : [];
+  
+  const uniqueTests = safeData && safeData.length > 0 
+    ? [...new Set(safeData.map(d => d?.test_name).filter(Boolean))].filter(test => test !== "All Tests" && test !== "Isometric Test")
+    : [];
+    
+  const uniqueTeams = safeData && safeData.length > 0 
+    ? [...new Set(safeData.map(d => d?.team_name).filter(Boolean))]
+    : [];
+    
+  const uniqueAthletes = safeData && safeData.length > 0 
+    ? [...new Set(safeData.map(d => d?.athlete_name).filter(Boolean))]
+    : [];
+    
+  const uniqueTestDates = safeData && safeData.length > 0 
+    ? [...new Set(safeData.map(d => d?.test_date).filter(Boolean))].sort()
+    : [];
 
   // Filter data based on all selections with proper null checks
-  const filteredData = (data || []).filter(test => {
+  const filteredData = safeData.filter(test => {
     if (!test) return false;
     const testMatch = !selectedTest || test.test_name === selectedTest;
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
@@ -86,7 +99,7 @@ export const HighlightsSection = ({
     const topPerformer = Object.entries(athletePerformances)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
-    const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
+    const latestTest = uniqueTestDates.length > 0 ? uniqueTestDates[uniqueTestDates.length - 1] : "N/A";
 
     return { totalTests, avgPerformance, topPerformer, latestTest };
   };

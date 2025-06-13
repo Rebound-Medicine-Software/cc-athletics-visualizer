@@ -29,8 +29,11 @@ export const DashboardLayout = ({
   onAthletesChange,
   onTestDatesChange
 }: DashboardLayoutProps) => {
+  // Ensure data is always an array
+  const safeData = Array.isArray(data) ? data : [];
+  
   // Filter data based on all selections with proper null checks
-  const filteredData = (data || []).filter(test => {
+  const filteredData = safeData.filter(test => {
     if (!test) return false;
     const testMatch = !selectedTest || test.test_name === selectedTest;
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
@@ -43,7 +46,7 @@ export const DashboardLayout = ({
     <div className="space-y-6">
       {/* Top Section - Test Selection and Highlights */}
       <HighlightsSection
-        data={data}
+        data={safeData}
         selectedTest={selectedTest}
         selectedTeams={selectedTeams}
         selectedAthletes={selectedAthletes}
