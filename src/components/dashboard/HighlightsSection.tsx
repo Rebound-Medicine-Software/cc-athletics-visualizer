@@ -28,48 +28,123 @@ export const HighlightsSection = ({
   onAthletesChange,
   onTestDatesChange
 }: HighlightsSectionProps) => {
+  console.log('HighlightsSection render - data length:', data?.length || 0);
+  console.log('HighlightsSection render - selectedTeams:', selectedTeams);
+  console.log('HighlightsSection render - selectedAthletes:', selectedAthletes);
+  console.log('HighlightsSection render - selectedTestDates:', selectedTestDates);
+
   // Safely get unique values with comprehensive null checks
-  const safeData = Array.isArray(data) ? data.filter(item => {
-    return item && 
-           typeof item.test_name === 'string' && item.test_name.trim() !== '' &&
-           typeof item.team_name === 'string' && item.team_name.trim() !== '' &&
-           typeof item.athlete_name === 'string' && item.athlete_name.trim() !== '' &&
-           typeof item.test_date === 'string' && item.test_date.trim() !== '';
-  }) : [];
+  const safeData = React.useMemo(() => {
+    if (!Array.isArray(data)) {
+      console.log('Data is not an array:', data);
+      return [];
+    }
+    
+    const filtered = data.filter(item => {
+      if (!item || typeof item !== 'object') return false;
+      return (
+        typeof item.test_name === 'string' && item.test_name.trim() !== '' &&
+        typeof item.team_name === 'string' && item.team_name.trim() !== '' &&
+        typeof item.athlete_name === 'string' && item.athlete_name.trim() !== '' &&
+        typeof item.test_date === 'string' && item.test_date.trim() !== ''
+      );
+    });
+    
+    console.log('Filtered safe data length:', filtered.length);
+    return filtered;
+  }, [data]);
   
-  const uniqueTests = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.test_name?.toString().trim()).filter(test => 
-        test && test !== "All Tests" && test !== "Isometric Test"
-      ))]
-    : [];
+  const uniqueTests = React.useMemo(() => {
+    if (!safeData || safeData.length === 0) {
+      console.log('No safe data for tests');
+      return [];
+    }
     
-  const uniqueTeams = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.team_name?.toString().trim()).filter(team => 
-        team && team !== ''
-      ))]
-    : [];
+    const tests = safeData
+      .map(d => d.test_name)
+      .filter(test => test && test.trim() !== '' && test !== "All Tests" && test !== "Isometric Test")
+      .filter((test, index, arr) => arr.indexOf(test) === index);
     
-  const uniqueAthletes = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.athlete_name?.toString().trim()).filter(athlete => 
-        athlete && athlete !== ''
-      ))]
-    : [];
+    console.log('Unique tests:', tests);
+    return tests;
+  }, [safeData]);
     
-  const uniqueTestDates = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.test_date?.toString().trim()).filter(date => 
-        date && date !== ''
-      ))].sort()
-    : [];
+  const uniqueTeams = React.useMemo(() => {
+    if (!safeData || safeData.length === 0) {
+      console.log('No safe data for teams');
+      return [];
+    }
+    
+    const teams = safeData
+      .map(d => d.team_name)
+      .filter(team => team && team.trim() !== '')
+      .filter((team, index, arr) => arr.indexOf(team) === index);
+    
+    console.log('Unique teams:', teams);
+    return teams;
+  }, [safeData]);
+    
+  const uniqueAthletes = React.useMemo(() => {
+    if (!safeData || safeData.length === 0) {
+      console.log('No safe data for athletes');
+      return [];
+    }
+    
+    const athletes = safeData
+      .map(d => d.athlete_name)
+      .filter(athlete => athlete && athlete.trim() !== '')
+      .filter((athlete, index, arr) => arr.indexOf(athlete) === index);
+    
+    console.log('Unique athletes:', athletes);
+    return athletes;
+  }, [safeData]);
+    
+  const uniqueTestDates = React.useMemo(() => {
+    if (!safeData || safeData.length === 0) {
+      console.log('No safe data for dates');
+      return [];
+    }
+    
+    const dates = safeData
+      .map(d => d.test_date)
+      .filter(date => date && date.trim() !== '')
+      .filter((date, index, arr) => arr.indexOf(date) === index)
+      .sort();
+    
+    console.log('Unique test dates:', dates);
+    return dates;
+  }, [safeData]);
+
+  // Convert arrays to options format with additional safety checks
+  const teamOptions = React.useMemo(() => {
+    const options = uniqueTeams.map(team => ({ label: team, value: team }));
+    console.log('Team options:', options);
+    return options;
+  }, [uniqueTeams]);
+
+  const athleteOptions = React.useMemo(() => {
+    const options = uniqueAthletes.map(athlete => ({ label: athlete, value: athlete }));
+    console.log('Athlete options:', options);
+    return options;
+  }, [uniqueAthletes]);
+
+  const dateOptions = React.useMemo(() => {
+    const options = uniqueTestDates.map(date => ({ label: date, value: date }));
+    console.log('Date options:', options);
+    return options;
+  }, [uniqueTestDates]);
 
   // Filter data based on all selections with proper null checks
-  const filteredData = safeData.filter(test => {
-    if (!test) return false;
-    const testMatch = !selectedTest || test.test_name === selectedTest;
-    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
-    const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
-    const dateMatch = selectedTestDates.length === 0 || selectedTestDates.includes(test.test_date);
-    return testMatch && teamMatch && athleteMatch && dateMatch;
-  });
+  const filteredData = React.useMemo(() => {
+    return safeData.filter(test => {
+      if (!test) return false;
+      const testMatch = !selectedTest || test.test_name === selectedTest;
+      const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
+      const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
+      const dateMatch = selectedTestDates.length === 0 || selectedTestDates.includes(test.test_date);
+      return testMatch && teamMatch && athleteMatch && dateMatch;
+    });
+  }, [safeData, selectedTest, selectedTeams, selectedAthletes, selectedTestDates]);
 
   // Calculate highlights based on filtered data
   const getHighlights = () => {
@@ -165,8 +240,8 @@ export const HighlightsSection = ({
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Team</label>
               <MultiSelect
-                options={uniqueTeams.map(team => ({ label: team, value: team }))}
-                selected={selectedTeams}
+                options={teamOptions}
+                selected={selectedTeams || []}
                 onChange={onTeamsChange}
                 placeholder="Select Teams"
                 className="bg-white border-gray-300"
@@ -176,8 +251,8 @@ export const HighlightsSection = ({
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Athlete</label>
               <MultiSelect
-                options={uniqueAthletes.map(athlete => ({ label: athlete, value: athlete }))}
-                selected={selectedAthletes}
+                options={athleteOptions}
+                selected={selectedAthletes || []}
                 onChange={onAthletesChange}
                 placeholder="Select Athletes"
                 className="bg-white border-gray-300"
@@ -187,8 +262,8 @@ export const HighlightsSection = ({
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Test Date</label>
               <MultiSelect
-                options={uniqueTestDates.map(date => ({ label: date, value: date }))}
-                selected={selectedTestDates}
+                options={dateOptions}
+                selected={selectedTestDates || []}
                 onChange={onTestDatesChange}
                 placeholder="Select Dates"
                 className="bg-white border-gray-300"

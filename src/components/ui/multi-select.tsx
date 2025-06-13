@@ -34,10 +34,16 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
+  console.log('MultiSelect render - options:', options);
+  console.log('MultiSelect render - selected:', selected);
+
   // Comprehensive safety checks for options and selected values
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    return options.filter(option => 
+    if (!Array.isArray(options)) {
+      console.log('Options is not an array:', options);
+      return [];
+    }
+    const filtered = options.filter(option => 
       option && 
       typeof option === 'object' && 
       typeof option.value === 'string' && 
@@ -45,19 +51,47 @@ export function MultiSelect({
       option.value.trim() !== '' &&
       option.label.trim() !== ''
     );
+    console.log('Safe options:', filtered);
+    return filtered;
   }, [options])
   
   const safeSelected = React.useMemo(() => {
-    if (!Array.isArray(selected)) return [];
-    return selected.filter(item => 
+    if (!Array.isArray(selected)) {
+      console.log('Selected is not an array:', selected);
+      return [];
+    }
+    const filtered = selected.filter(item => 
       typeof item === 'string' && 
       item.trim() !== ''
     );
+    console.log('Safe selected:', filtered);
+    return filtered;
   }, [selected])
 
   const handleUnselect = React.useCallback((item: string) => {
-    if (typeof onChange !== 'function') return;
-    onChange(safeSelected.filter((i) => i !== item))
+    if (typeof onChange !== 'function') {
+      console.log('onChange is not a function');
+      return;
+    }
+    const newSelected = safeSelected.filter((i) => i !== item);
+    console.log('Unselecting item:', item, 'New selected:', newSelected);
+    onChange(newSelected);
+  }, [safeSelected, onChange])
+
+  const handleSelect = React.useCallback((optionValue: string) => {
+    if (typeof onChange !== 'function') {
+      console.log('onChange is not a function');
+      return;
+    }
+    
+    let newSelected;
+    if (safeSelected.includes(optionValue)) {
+      newSelected = safeSelected.filter((item) => item !== optionValue);
+    } else {
+      newSelected = [...safeSelected, optionValue];
+    }
+    console.log('Selecting option:', optionValue, 'New selected:', newSelected);
+    onChange(newSelected);
   }, [safeSelected, onChange])
 
   // Show loading/empty state if no options
@@ -136,14 +170,7 @@ export function MultiSelect({
             {safeOptions.map((option) => (
               <CommandItem
                 key={option.value}
-                onSelect={() => {
-                  if (typeof onChange !== 'function') return;
-                  if (safeSelected.includes(option.value)) {
-                    onChange(safeSelected.filter((item) => item !== option.value))
-                  } else {
-                    onChange([...safeSelected, option.value])
-                  }
-                }}
+                onSelect={() => handleSelect(option.value)}
                 className="cursor-pointer"
               >
                 <Check
