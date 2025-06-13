@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft, Calendar, Users, FileText, Dumbbell, Settings, CreditCard } from "lucide-react";
+import { Activity, LogOut, AlertCircle, CheckCircle, RefreshCw, Calendar, Users, FileText, Dumbbell, Settings, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -22,7 +22,6 @@ const Dashboard = () => {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [selectedTestDates, setSelectedTestDates] = useState<string[]>([]);
-  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
@@ -45,7 +44,7 @@ const Dashboard = () => {
     toast.info("Refreshing data...");
   };
 
-  // Get organization data for name and logo
+  // Get organization data safely
   const getOrganizationData = () => {
     try {
       const orgData = localStorage.getItem('organization-data');
@@ -53,7 +52,7 @@ const Dashboard = () => {
         const parsed = JSON.parse(orgData);
         return {
           name: parsed.name || "Rebound Medicine & Performance",
-          logo: parsed.logo ? URL.createObjectURL(parsed.logo) : null
+          logo: parsed.logo && typeof parsed.logo === 'string' ? parsed.logo : null
         };
       }
     } catch (error) {
@@ -72,43 +71,43 @@ const Dashboard = () => {
       id: "dashboard",
       label: "Dashboard",
       icon: Activity,
-      description: "Testing reports"
+      description: "Performance Analytics"
     }, 
     {
       id: "bookings",
       label: "Bookings",
       icon: Calendar,
-      description: "Calendar & scheduling"
+      description: "Schedule Management"
     }, 
     {
       id: "profiles",
       label: "Profiles",
       icon: Users,
-      description: "Practitioner management"
+      description: "Athlete Management"
     }, 
     {
       id: "reports",
       label: "Reports",
       icon: FileText,
-      description: "Custom reports & templates"
+      description: "Custom Reports"
     }, 
     {
       id: "programming",
       label: "Programming",
       icon: Dumbbell,
-      description: "Exercise programs & templates"
+      description: "Exercise Programs"
     }, 
     {
       id: "settings",
       label: "Settings",
       icon: Settings,
-      description: "Account & preferences"
+      description: "System Settings"
     }, 
     {
       id: "payment",
-      label: "Payment Packages",
+      label: "Billing",
       icon: CreditCard,
-      description: "Billing & subscriptions"
+      description: "Subscription Management"
     }
   ];
 
@@ -129,12 +128,14 @@ const Dashboard = () => {
       default:
         return (
           <div className="space-y-6">
-            <Card>
+            <Card className="border border-gray-200">
               <CardHeader>
-                <CardTitle>{navigationItems.find(item => item.id === activeSection)?.label}</CardTitle>
+                <CardTitle className="text-xl font-semibold text-gray-800">
+                  {navigationItems.find(item => item.id === activeSection)?.label}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">This section is coming soon! We're working hard to bring you the best experience.</p>
+                <p className="text-gray-600">This section is under development. Check back soon for updates.</p>
               </CardContent>
             </Card>
           </div>
@@ -144,10 +145,10 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard data...</p>
+          <p className="text-gray-600 font-medium">Loading performance data...</p>
         </div>
       </div>
     );
@@ -157,48 +158,46 @@ const Dashboard = () => {
   const hasNoData = !error && (!data || data.length === 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      {/* Fixed Header */}
-      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Professional Header - Fixed */}
+      <div className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center space-x-4">
               {orgData.logo ? (
-                <img src={orgData.logo} alt="Organization Logo" className="w-8 h-8 rounded-full object-cover" />
+                <img src={orgData.logo} alt="Organization Logo" className="w-10 h-10 rounded-lg object-cover border border-gray-200" />
               ) : (
-                <img src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" alt="Default Logo" className="w-8 h-8 rounded-full" />
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">{orgData.name.charAt(0)}</span>
+                </div>
               )}
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  {orgData.name}
-                </h1>
-                <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
+                <h1 className="text-xl font-bold text-gray-900">{orgData.name}</h1>
+                <p className="text-sm text-gray-500">Performance Analytics Platform</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={handleRefresh} className="text-blue-600 border-blue-200 hover:bg-blue-50">
+            
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" onClick={handleRefresh} className="text-gray-600 border-gray-300 hover:bg-gray-50">
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh Data
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/')} className="text-gray-600">
-                ← Home
+                Refresh
               </Button>
               <Button variant="outline" onClick={handleLogout} className="text-red-600 border-red-200 hover:bg-red-50">
                 <LogOut className="w-4 h-4 mr-2" />
-                Logout
+                Sign Out
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="pt-20 container mx-auto px-4 py-6 space-y-6">
-        {/* Data Status */}
+      <div className="pt-20 max-w-7xl mx-auto px-6 py-6">
+        {/* Status Alerts */}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Error loading data: {errorMessage}
+              Data loading error: {errorMessage}
               <Button variant="outline" size="sm" onClick={handleRefresh} className="ml-2">
                 Retry
               </Button>
@@ -207,61 +206,56 @@ const Dashboard = () => {
         )}
 
         {data && data.length > 0 && (
-          <Alert className="border-green-200 bg-green-50">
+          <Alert className="border-green-200 bg-green-50 mb-6">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Dashboard loaded successfully with {data.length} test records from CC Athletics API
-              <Badge className="ml-2 bg-green-100 text-green-800">Live Data</Badge>
+              Connected to CC Athletics API - {data.length} test records loaded
+              <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Live Data</Badge>
             </AlertDescription>
           </Alert>
         )}
 
         {hasNoData && (
-          <Alert className="border-orange-200 bg-orange-50">
+          <Alert className="border-orange-200 bg-orange-50 mb-6">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <AlertDescription className="text-orange-800">
-              <div className="font-semibold mb-2">No test data found in your database</div>
-              <p className="text-sm">Your API key is valid, but no test data was found. Please contact support if you believe this is an error.</p>
+              <div className="font-medium mb-1">No performance data available</div>
+              <p className="text-sm">API connection established but no test data found. Contact support if needed.</p>
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Main Content Layout */}
+        {/* Main Layout with Fixed Sidebar */}
         <div className="flex gap-6">
-          {/* Fixed Collapsible Sidebar */}
-          <div className={`fixed left-0 top-20 h-full bg-white/90 backdrop-blur-sm border-r border-gray-200 transition-all duration-300 z-40 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
-            <div className="p-4 space-y-6">
-              <div className="flex items-center">
-                <Button variant="ghost" size="icon" onClick={() => setIsNavigationVisible(!isNavigationVisible)} className="h-8 w-8">
-                  {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
+          {/* Fixed Navigation Sidebar */}
+          <div className="w-64 fixed left-6 top-32 h-[calc(100vh-200px)] bg-white rounded-lg border border-gray-200 shadow-sm overflow-y-auto">
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-900 mb-4">Navigation</h3>
+              <div className="space-y-1">
+                {navigationItems.map(item => (
+                  <Button 
+                    key={item.id} 
+                    variant={activeSection === item.id ? "default" : "ghost"} 
+                    className={`w-full justify-start text-left ${
+                      activeSection === item.id 
+                        ? "bg-blue-600 text-white hover:bg-blue-700" 
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`} 
+                    onClick={() => setActiveSection(item.id)}
+                  >
+                    <item.icon className="w-4 h-4 mr-3 flex-shrink-0" />
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="font-medium text-sm">{item.label}</span>
+                      <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
+                    </div>
+                  </Button>
+                ))}
               </div>
-
-              {isNavigationVisible && (
-                <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-                  <CardContent className="p-6 space-y-2">
-                    {navigationItems.map(item => (
-                      <Button 
-                        key={item.id} 
-                        variant={activeSection === item.id ? "default" : "ghost"} 
-                        className={`w-full justify-start text-left ${activeSection === item.id ? "bg-blue-600 text-white" : "text-gray-600 hover:bg-gray-100"}`} 
-                        onClick={() => setActiveSection(item.id)}
-                      >
-                        <item.icon className="w-4 h-4 mr-3" />
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{item.label}</span>
-                          <span className="text-xs opacity-70">{item.description}</span>
-                        </div>
-                      </Button>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
 
-          {/* Main Content with left margin to account for sidebar */}
-          <div className={`flex-1 transition-all duration-300 ${isNavigationVisible ? 'ml-80' : 'ml-12'}`}>
+          {/* Main Content Area */}
+          <div className="flex-1 ml-64 pl-6">
             {renderContent()}
           </div>
         </div>

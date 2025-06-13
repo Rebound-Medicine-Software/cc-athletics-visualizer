@@ -28,23 +28,37 @@ export const HighlightsSection = ({
   onAthletesChange,
   onTestDatesChange
 }: HighlightsSectionProps) => {
-  // Safely get unique values with proper null checks
-  const safeData = Array.isArray(data) ? data.filter(item => item && item.test_name && item.team_name && item.athlete_name && item.test_date) : [];
+  // Safely get unique values with comprehensive null checks
+  const safeData = Array.isArray(data) ? data.filter(item => {
+    return item && 
+           typeof item.test_name === 'string' && item.test_name.trim() !== '' &&
+           typeof item.team_name === 'string' && item.team_name.trim() !== '' &&
+           typeof item.athlete_name === 'string' && item.athlete_name.trim() !== '' &&
+           typeof item.test_date === 'string' && item.test_date.trim() !== '';
+  }) : [];
   
   const uniqueTests = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.test_name))].filter(test => test && test !== "All Tests" && test !== "Isometric Test")
+    ? [...new Set(safeData.map(d => d.test_name?.toString().trim()).filter(test => 
+        test && test !== "All Tests" && test !== "Isometric Test"
+      ))]
     : [];
     
   const uniqueTeams = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.team_name))].filter(Boolean)
+    ? [...new Set(safeData.map(d => d.team_name?.toString().trim()).filter(team => 
+        team && team !== ''
+      ))]
     : [];
     
   const uniqueAthletes = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.athlete_name))].filter(Boolean)
+    ? [...new Set(safeData.map(d => d.athlete_name?.toString().trim()).filter(athlete => 
+        athlete && athlete !== ''
+      ))]
     : [];
     
   const uniqueTestDates = safeData.length > 0 
-    ? [...new Set(safeData.map(d => d.test_date))].filter(Boolean).sort()
+    ? [...new Set(safeData.map(d => d.test_date?.toString().trim()).filter(date => 
+        date && date !== ''
+      ))].sort()
     : [];
 
   // Filter data based on all selections with proper null checks
@@ -108,33 +122,35 @@ export const HighlightsSection = ({
 
   return (
     <div className="space-y-6">
-      {/* Test Selection Notice */}
-      <Card className="bg-gray-100 border-gray-300">
-        <CardContent className="p-6 text-center">
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">
-            {selectedTest ? `Analyzing: ${selectedTest}` : "Please Select A Test Name"}
-          </h2>
-          <p className="text-gray-600">
-            {selectedTest 
-              ? `Viewing detailed analysis for ${selectedTest} across selected filters`
-              : "Choose a test from the filters below to view detailed analysis"
-            }
-          </p>
+      {/* Test Selection Card - Professional styling like Looker Studio */}
+      <Card className="border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardContent className="p-6">
+          <div className="text-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {selectedTest ? `Analysis: ${selectedTest}` : "Select Test for Analysis"}
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {selectedTest 
+                ? `Comprehensive analysis for ${selectedTest} with applied filters`
+                : "Choose a test type to begin detailed performance analysis"
+              }
+            </p>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Individual Filters */}
-      <Card className="bg-blue-50/80 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-center text-lg text-gray-800">Individual Filters</CardTitle>
+      {/* Filters Section - Clean professional layout */}
+      <Card className="border border-gray-200 shadow-sm">
+        <CardHeader className="bg-gray-50 border-b">
+          <CardTitle className="text-lg font-semibold text-gray-800">Performance Filters</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Test Type</label>
               <Select value={selectedTest || ""} onValueChange={onTestChange}>
-                <SelectTrigger className="bg-black text-white border-gray-600">
-                  <SelectValue placeholder="Select Test" />
+                <SelectTrigger className="bg-white border-gray-300 focus:border-blue-500">
+                  <SelectValue placeholder="Select Test Type" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
                   {uniqueTests.map(test => (
@@ -145,57 +161,72 @@ export const HighlightsSection = ({
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team Names</label>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Team</label>
               <MultiSelect
                 options={uniqueTeams.map(team => ({ label: team, value: team }))}
                 selected={selectedTeams}
                 onChange={onTeamsChange}
                 placeholder="Select Teams"
-                className="bg-white"
+                className="bg-white border-gray-300"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Names</label>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Athlete</label>
               <MultiSelect
                 options={uniqueAthletes.map(athlete => ({ label: athlete, value: athlete }))}
                 selected={selectedAthletes}
                 onChange={onAthletesChange}
                 placeholder="Select Athletes"
-                className="bg-white"
+                className="bg-white border-gray-300"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Test Dates</label>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Test Date</label>
               <MultiSelect
                 options={uniqueTestDates.map(date => ({ label: date, value: date }))}
                 selected={selectedTestDates}
                 onChange={onTestDatesChange}
                 placeholder="Select Dates"
-                className="bg-white"
+                className="bg-white border-gray-300"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+          {/* Key Metrics Cards - Professional styling */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{highlights.totalTests}</div>
               <div className="text-sm text-gray-600">Total Tests</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.avgPerformance}</div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{highlights.avgPerformance}</div>
               <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <Users className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{highlights.topPerformer}</div>
               <div className="text-sm text-gray-600">Top Performer</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-              <Calendar className="w-8 h-8 text-orange-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+              <div className="flex items-center justify-center mb-2">
+                <Calendar className="w-6 h-6 text-orange-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{highlights.latestTest}</div>
               <div className="text-sm text-gray-600">Latest Test</div>
             </div>
           </div>

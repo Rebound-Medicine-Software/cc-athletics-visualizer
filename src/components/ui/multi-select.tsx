@@ -34,29 +34,42 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
-  // Ensure options and selected are always arrays and handle loading states
+  // Comprehensive safety checks for options and selected values
   const safeOptions = React.useMemo(() => {
-    return Array.isArray(options) ? options.filter(option => option && option.value && option.label) : []
+    if (!Array.isArray(options)) return [];
+    return options.filter(option => 
+      option && 
+      typeof option === 'object' && 
+      typeof option.value === 'string' && 
+      typeof option.label === 'string' &&
+      option.value.trim() !== '' &&
+      option.label.trim() !== ''
+    );
   }, [options])
   
   const safeSelected = React.useMemo(() => {
-    return Array.isArray(selected) ? selected.filter(Boolean) : []
+    if (!Array.isArray(selected)) return [];
+    return selected.filter(item => 
+      typeof item === 'string' && 
+      item.trim() !== ''
+    );
   }, [selected])
 
   const handleUnselect = React.useCallback((item: string) => {
+    if (typeof onChange !== 'function') return;
     onChange(safeSelected.filter((i) => i !== item))
   }, [safeSelected, onChange])
 
-  // Show loading state if options are still being fetched
-  if (!options || options.length === 0) {
+  // Show loading/empty state if no options
+  if (!safeOptions || safeOptions.length === 0) {
     return (
       <Button
         variant="outline"
         role="combobox"
-        className={cn("w-full justify-between h-auto min-h-10", className)}
+        className={cn("w-full justify-between h-auto min-h-10 bg-white", className)}
         disabled
       >
-        <span className="text-muted-foreground">Loading...</span>
+        <span className="text-gray-400">No options available</span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
       </Button>
     )
@@ -69,9 +82,9 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between h-auto min-h-10", className)}
+          className={cn("w-full justify-between h-auto min-h-10 bg-white", className)}
         >
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1 flex-wrap max-w-full">
             {safeSelected && safeSelected.length > 0 ? (
               safeSelected.map((item) => {
                 const option = safeOptions.find((opt) => opt.value === item)
@@ -80,7 +93,7 @@ export function MultiSelect({
                   <Badge
                     variant="secondary"
                     key={item}
-                    className="mr-1 mb-1"
+                    className="mr-1 mb-1 bg-blue-100 text-blue-800 border-blue-200"
                     onClick={(e) => {
                       e.stopPropagation()
                       handleUnselect(item)
@@ -103,33 +116,35 @@ export function MultiSelect({
                         handleUnselect(item)
                       }}
                     >
-                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                      <X className="h-3 w-3 text-blue-600 hover:text-blue-800" />
                     </button>
                   </Badge>
                 )
               })
             ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
+              <span className="text-gray-500">{placeholder}</span>
             )}
           </div>
           <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0 z-50 bg-white" align="start">
+      <PopoverContent className="w-full p-0 z-50 bg-white border border-gray-200 shadow-lg" align="start">
         <Command>
-          <CommandInput placeholder="Search..." />
-          <CommandEmpty>No item found.</CommandEmpty>
+          <CommandInput placeholder="Search options..." className="h-9" />
+          <CommandEmpty>No options found.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
             {safeOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 onSelect={() => {
+                  if (typeof onChange !== 'function') return;
                   if (safeSelected.includes(option.value)) {
                     onChange(safeSelected.filter((item) => item !== option.value))
                   } else {
                     onChange([...safeSelected, option.value])
                   }
                 }}
+                className="cursor-pointer"
               >
                 <Check
                   className={cn(
