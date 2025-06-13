@@ -34,8 +34,27 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false)
 
+  // Ensure options and selected are always arrays
+  const safeOptions = Array.isArray(options) ? options : []
+  const safeSelected = Array.isArray(selected) ? selected : []
+
   const handleUnselect = (item: string) => {
-    onChange(selected.filter((i) => i !== item))
+    onChange(safeSelected.filter((i) => i !== item))
+  }
+
+  // Don't render if options are still loading/undefined
+  if (!safeOptions || safeOptions.length === 0) {
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        className={cn("w-full justify-between h-auto min-h-10", className)}
+        disabled
+      >
+        <span className="text-muted-foreground">Loading...</span>
+        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    )
   }
 
   return (
@@ -48,8 +67,8 @@ export function MultiSelect({
           className={cn("w-full justify-between h-auto min-h-10", className)}
         >
           <div className="flex gap-1 flex-wrap">
-            {selected && selected.length > 0 ? (
-              selected.map((item) => (
+            {safeSelected && safeSelected.length > 0 ? (
+              safeSelected.map((item) => (
                 <Badge
                   variant="secondary"
                   key={item}
@@ -59,7 +78,7 @@ export function MultiSelect({
                     handleUnselect(item)
                   }}
                 >
-                  {options.find((option) => option.value === item)?.label || item}
+                  {safeOptions.find((option) => option.value === item)?.label || item}
                   <button
                     className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     onKeyDown={(e) => {
@@ -92,21 +111,21 @@ export function MultiSelect({
           <CommandInput placeholder="Search..." />
           <CommandEmpty>No item found.</CommandEmpty>
           <CommandGroup className="max-h-64 overflow-auto">
-            {(options || []).map((option) => (
+            {safeOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 onSelect={() => {
-                  if (selected.includes(option.value)) {
-                    onChange(selected.filter((item) => item !== option.value))
+                  if (safeSelected.includes(option.value)) {
+                    onChange(safeSelected.filter((item) => item !== option.value))
                   } else {
-                    onChange([...selected, option.value])
+                    onChange([...safeSelected, option.value])
                   }
                 }}
               >
                 <Check
                   className={cn(
                     "mr-2 h-4 w-4",
-                    selected.includes(option.value) ? "opacity-100" : "opacity-0"
+                    safeSelected.includes(option.value) ? "opacity-100" : "opacity-0"
                   )}
                 />
                 {option.label}
