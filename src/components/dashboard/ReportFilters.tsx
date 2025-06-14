@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ export const ReportFilters = ({
   allData,
   metricCardsSlot,
 }: ReportFiltersProps) => {
+  // FILTER STATE
   const [filters, setFilters] = useState({
     selectedAthletes: [] as string[],
     testDates: [] as string[],
@@ -25,14 +27,14 @@ export const ReportFilters = ({
     metricType: ""
   });
 
-  // Get unique values for dropdowns
+  // Unique dropdown options
   const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
   const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
 
   // Filter test names - remove "All Tests" and "Isometric Test"
   const uniqueTests = [...new Set(data.map(d => d.test_name))].filter(test => test !== "All Tests" && test !== "Isometric Test");
 
-  // Get metric types based on selected test
+  // Metric types per test
   const getMetricTypesForTest = (testName: string): string[] => {
     switch (testName) {
       case "Drop Jump":
@@ -44,12 +46,12 @@ export const ReportFilters = ({
       case "Pogo Jump":
         return ["Jump Height (cm)", "Power", "Flight Time", "Reactive Strength Index"];
       default:
-        return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"];
+        return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"];
     }
   };
-  
   const availableMetricTypes = filters.testName ? getMetricTypesForTest(filters.testName) : [];
 
+  // Handlers for dropdowns
   const handleTestNameChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
@@ -75,7 +77,7 @@ export const ReportFilters = ({
     }
   };
 
-  // Filter data for comparison chart based on current selections
+  // DATA process for chart (send filters to chart)
   const getFilteredDataForChart = () => {
     return data.filter(test => {
       const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
@@ -88,22 +90,14 @@ export const ReportFilters = ({
   return (
     <Card className="bg-teal-50/80 border-teal-200">
       <CardContent className="p-4">
-        <div className="flex gap-4 mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white px-[240px]">
+        {/* 1. Header */}
+        <div className="flex mb-4">
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-full text-lg font-semibold">
             Individual Filters
           </Button>
         </div>
-        
-        {/* Chart first */}
-        <ComparisonChart data={getFilteredDataForChart()} />
 
-        {/* Metric cards after the chart, before the filter controls */}
-        {metricCardsSlot && (
-          <div className="my-4">
-            {metricCardsSlot}
-          </div>
-        )}
-
+        {/* 2. Dropdown Filters Row */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           {/* Athlete Name */}
           <div>
@@ -123,7 +117,7 @@ export const ReportFilters = ({
             </Select>
           </div>
 
-          {/* Test Dates */}
+          {/* Test Date(s) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Test Date(s)</label>
             <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange}>
@@ -179,6 +173,20 @@ export const ReportFilters = ({
             </Select>
           </div>
         </div>
+
+        {/* 3. Metric Cards */}
+        {metricCardsSlot && (
+          <div className="mb-6">
+            {metricCardsSlot}
+          </div>
+        )}
+
+        {/* 4. Graph */}
+        <ComparisonChart
+          data={getFilteredDataForChart()}
+          testName={filters.testName}
+          metricType={filters.metricType}
+        />
       </CardContent>
     </Card>
   );
