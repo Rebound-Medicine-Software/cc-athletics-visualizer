@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
+import { formatDate } from "@/utils/dateUtils";
 
 interface HighlightsSectionProps {
   data: TestData[];
@@ -136,7 +137,9 @@ export const HighlightsSection = ({
           </div>
           <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
             <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-xl font-bold text-gray-800">{highlights.latestTest}</div>
+            <div className="text-xl font-bold text-gray-800">
+              {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
+            </div>
             <div className="text-sm text-gray-600">Latest Test</div>
           </div>
         </div>

@@ -1,10 +1,10 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
+import { formatDate } from "@/utils/dateUtils";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -138,7 +138,7 @@ export const ReportFilters = ({
                 <SelectItem value="all">All Dates</SelectItem>
                 {uniqueTestDates.map(date => (
                   <SelectItem key={date} value={date}>
-                    {date}
+                    {formatDate(date)}
                   </SelectItem>
                 ))}
               </SelectContent>
