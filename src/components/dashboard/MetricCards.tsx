@@ -1,8 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
-import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
-import { getImprovementDirection } from "@/utils/metricsInfo";
 
 interface MetricCardsProps {
   selectedTest: string;
@@ -10,172 +8,191 @@ interface MetricCardsProps {
 }
 
 export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
-  // Filter data
-  const filteredData = selectedTest
+  // Filter data by selected test
+  const filteredData = selectedTest 
     ? data.filter(d => d.test_name === selectedTest)
     : [];
 
-  // Helper: Find the most recent and best value for each metric (by date for most recent)
-  function getMetricInfo(metricKey: string): {
-    recent?: { value: number, date: string },
-    best?: { value: number, date: string }
-  } {
-    if (filteredData.length === 0 || !metricKey) return {};
+  // Calculate average metrics if data exists
+  const getAverageMetric = (metricKey: string) => {
+    if (filteredData.length === 0) return null;
+    
+    const values = filteredData
+      .map(d => d.metrics)
+      .filter(m => m && typeof m === 'object' && metricKey in m)
+      .map(m => (m as any)[metricKey])
+      .filter(v => typeof v === 'number' && !isNaN(v));
+    
+    if (values.length === 0) return null;
+    return values.reduce((sum, val) => sum + val, 0) / values.length;
+  };
 
-    // Only take those with a valid value and valid metrics
-    const vals = filteredData
-      .map(d => {
-        if (!d.metrics || typeof (d.metrics as any)[metricKey] === "undefined") {
-          // Optionally console.log here if needed for debugging
-          // console.warn('Missing metrics for', d);
-          return null;
+  // Define metric configurations based on test type
+  const getMetricConfig = () => {
+    if (!selectedTest || filteredData.length === 0) {
+      return [
+        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
+        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
+        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
+        { icon: "⏱️", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" }
+      ];
+    }
+
+    // Check if it's a jump test
+    if (selectedTest.toLowerCase().includes('jump') || selectedTest.toLowerCase().includes('cmj') || selectedTest.toLowerCase().includes('squat')) {
+      return [
+        {
+          icon: "⚡",
+          title: `${selectedTest} - Force`,
+          primary: getAverageMetric('peak_force'),
+          secondary: getAverageMetric('avg_propulsive_force'),
+          unit: "N",
+          change: ""
+        },
+        {
+          icon: "📏", 
+          title: `${selectedTest} - Height`,
+          primary: getAverageMetric('jump_height_ft'),
+          secondary: getAverageMetric('flight_time'),
+          unit: "ft / ms",
+          change: ""
+        },
+        {
+          icon: "⚡",
+          title: `${selectedTest} - Power`, 
+          primary: getAverageMetric('peak_power'),
+          secondary: getAverageMetric('avg_propulsive_power'),
+          unit: "W",
+          change: ""
+        },
+        {
+          icon: "⏱️",
+          title: `${selectedTest} - Time`,
+          primary: getAverageMetric('contact_time'),
+          secondary: getAverageMetric('time_to_peak_force'),
+          unit: "ms",
+          change: ""
         }
-        return { value: Number((d.metrics as any)[metricKey]), date: d.test_date };
-      })
-      .filter(d => d !== null && typeof d.value === "number" && !isNaN(d.value)) as { value: number, date: string }[];
-
-    if (vals.length === 0) return {};
-
-    // Most recent: highest date (assumes ISO string)
-    vals.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const recent = vals[0];
-
-    // Best depends on direction
-    const direction = getImprovementDirection(metricKey);
-    const best = direction === "higher"
-      ? vals.reduce((a, b) => (b.value > a.value ? b : a), vals[0])
-      : vals.reduce((a, b) => (b.value < a.value ? b : a), vals[0]);
-
-    return { recent, best };
-  }
-
-  // Metric config for cards.
-  const metricCardsConfig = [
-    {
-      icon: "⚡",
-      title: "Force",
-      metricKey: selectedTest && (selectedTest.toLowerCase().includes('isometric') ? "force_peak" : "peak_force"),
-      unit: "N"
-    },
-    {
-      icon: "📏",
-      title: "Height",
-      metricKey: selectedTest && (selectedTest.toLowerCase().includes("pogo")
-        ? "avg_jump_height"
-        : (selectedTest.toLowerCase().includes('jump') || selectedTest.toLowerCase().includes('cmj') || selectedTest.toLowerCase().includes("squat"))
-          ? "jump_height_ft"
-          : ""),
-      unit: selectedTest && selectedTest.toLowerCase().includes("pogo") ? "m" : "ft"
-    },
-    {
-      icon: "⚡",
-      title: "Power",
-      metricKey: selectedTest && (selectedTest.toLowerCase().includes("pogo")
-        ? "avg_power"
-        : "peak_power"),
-      unit: "W"
-    },
-    {
-      icon: "⏱️",
-      title: "Contact/Time",
-      metricKey: selectedTest && (
-        selectedTest.toLowerCase().includes('isometric') ? "time_to_peak_force"
-        : selectedTest.toLowerCase().includes("pogo") ? "avg_contact_time"
-        : "contact_time"),
-      unit: "ms"
+      ];
     }
-  ];
 
-  // Format helpers
-  function formatValue(val?: number, unit?: string) {
-    if (val == null || isNaN(val)) return "N/A";
-    if (unit === "ms") return `${val.toFixed(0)} ms`;
-    if (unit === "ft" || unit === "m") return `${val.toFixed(2)} ${unit}`;
-    return `${val.toFixed(1)}${unit ? " " + unit : ""}`;
-  }
-
-  // Calculate improvement details
-  function percentDiff(recent: number, best: number, direction: "higher" | "lower") {
-    if (!isFinite(recent) || !isFinite(best) || best === 0) return null;
-    // For "higher is better", positive is improvement, for "lower is better", negative is improvement.
-    let pct: number;
-    if (direction === "higher") {
-      pct = ((recent - best) / best) * 100;
-    } else {
-      pct = ((best - recent) / best) * 100;
+    // Check if it's an isometric test
+    if (selectedTest.toLowerCase().includes('isometric')) {
+      return [
+        {
+          icon: "⚡",
+          title: `${selectedTest} - Peak Force`,
+          primary: getAverageMetric('force_peak'),
+          secondary: getAverageMetric('force_250ms'),
+          unit: "N",
+          change: ""
+        },
+        {
+          icon: "📈", 
+          title: `${selectedTest} - RFD`,
+          primary: getAverageMetric('rfd_max'),
+          secondary: getAverageMetric('rfd_250ms'),
+          unit: "N/s",
+          change: ""
+        },
+        {
+          icon: "⚡",
+          title: `${selectedTest} - Early Force`, 
+          primary: getAverageMetric('force_100ms'),
+          secondary: getAverageMetric('force_50ms'),
+          unit: "N",
+          change: ""
+        },
+        {
+          icon: "⏱️",
+          title: `${selectedTest} - Impulse`,
+          primary: getAverageMetric('impulse_250ms'),
+          secondary: getAverageMetric('impulse_100ms'),
+          unit: "N·s",
+          change: ""
+        }
+      ];
     }
-    return pct;
-  }
+
+    // Check if it's a pogo test
+    if (selectedTest.toLowerCase().includes('pogo')) {
+      return [
+        {
+          icon: "⚡",
+          title: `${selectedTest} - RSI`,
+          primary: getAverageMetric('avg_rsi'),
+          secondary: getAverageMetric('rsi'),
+          unit: "",
+          change: ""
+        },
+        {
+          icon: "📏", 
+          title: `${selectedTest} - Height`,
+          primary: getAverageMetric('avg_jump_height'),
+          secondary: getAverageMetric('jump_height'),
+          unit: "m",
+          change: ""
+        },
+        {
+          icon: "⚡",
+          title: `${selectedTest} - Power`, 
+          primary: getAverageMetric('avg_power'),
+          secondary: getAverageMetric('power'),
+          unit: "W",
+          change: ""
+        },
+        {
+          icon: "⏱️",
+          title: `${selectedTest} - Contact Time`,
+          primary: getAverageMetric('avg_contact_time'),
+          secondary: getAverageMetric('contact_time'),
+          unit: "ms",
+          change: ""
+        }
+      ];
+    }
+
+    // Default fallback
+    return [
+      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
+      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
+      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
+      { icon: "⏱️", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" }
+    ];
+  };
+
+  const metricCards = getMetricConfig();
+
+  const formatValue = (value: any, unit?: string) => {
+    if (value === null || value === undefined || typeof value !== 'number' || isNaN(value)) {
+      return "N/A";
+    }
+    return `${value.toFixed(1)}${unit ? ` ${unit}` : ''}`;
+  };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-      {metricCardsConfig.map((card, idx) => {
-        if (!card.metricKey) return (
-          <Card key={idx} className="bg-white shadow-md">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl mb-2">{card.icon}</div>
-              <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
-                Select Test Name
+    <div className="grid grid-cols-4 gap-4">
+      {metricCards.map((card, index) => (
+        <Card key={index} className="bg-white shadow-md">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl mb-2">{card.icon}</div>
+            <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
+              {card.title}
+            </div>
+            <div className="text-2xl font-bold text-gray-800 mb-1">
+              {formatValue(card.primary, card.unit)}
+            </div>
+            <div className="text-lg text-gray-600">
+              {formatValue(card.secondary, card.unit)}
+            </div>
+            {card.change && (
+              <div className="text-xs text-green-600 font-medium mt-1">
+                {card.change}
               </div>
-              <div className="text-2xl font-bold text-gray-800 mb-1">
-                N/A
-              </div>
-              <div className="text-sm text-gray-500">
-                No Data
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-        const { recent, best } = getMetricInfo(card.metricKey);
-        const dir = getImprovementDirection(card.metricKey);
-
-        const pct = recent && best && recent.value != null && best.value != null
-          ? percentDiff(recent.value, best.value, dir)
-          : null;
-
-        // Arrow, color
-        let color = "text-green-600";
-        let arrow = <ArrowUpCircle className="inline w-4 h-4 mr-1" />;
-        if (pct != null) {
-          if (dir === "higher") {
-            if (pct < 0) { // worse
-              color = "text-red-600";
-              arrow = <ArrowDownCircle className="inline w-4 h-4 mr-1" />;
-            }
-          } else {
-            if (pct < 0) { // worse in "lower better"
-              color = "text-red-600";
-              arrow = <ArrowDownCircle className="inline w-4 h-4 mr-1" />;
-            }
-          }
-        }
-
-        return (
-          <Card key={idx} className="bg-white shadow-md flex flex-col h-full">
-            <CardContent className="p-4 text-center flex flex-col h-full">
-              <div className="text-2xl mb-2">{card.icon}</div>
-              <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
-                {card.title}
-              </div>
-              <div className="text-2xl font-bold text-gray-800 mb-1">
-                {formatValue(recent?.value, card.unit)}
-              </div>
-              <div className={`text-sm font-medium mb-1 ${color}`}>
-                {pct != null && isFinite(pct) ? (
-                  <>
-                    {arrow}
-                    {Math.abs(pct).toFixed(1)}%
-                  </>
-                ) : <span className="text-gray-400">No Comparison</span>}
-              </div>
-              <div className="text-xs text-gray-500 mt-auto">
-                Best: {formatValue(best?.value, card.unit)}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 };
