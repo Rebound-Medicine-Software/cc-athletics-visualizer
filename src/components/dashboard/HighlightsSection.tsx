@@ -1,61 +1,46 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TestData } from "@/types/forcePlateTypes";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 
 interface HighlightsSectionProps {
-  data: TestData[];
+  data: any[];
   selectedTeam: string;
-  selectedAthlete: string;
   onTeamChange: (team: string) => void;
-  onAthleteChange: (athlete: string) => void;
   resetFiltersKey?: number;
 }
 
 export const HighlightsSection = ({
   data,
   selectedTeam,
-  selectedAthlete,
   onTeamChange,
-  onAthleteChange,
   resetFiltersKey
 }: HighlightsSectionProps) => {
   const uniqueTeams = [...new Set(data.map(d => d.team_name))];
 
-  // Filter athletes by selected team
-  const filteredAthletes = selectedTeam && selectedTeam !== "all"
-    ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
-    : [...new Set(data.map(d => d.athlete_name))];
+  // Athlete dropdown is now always filtered to current team, but local only
+  const filteredAthletes =
+    selectedTeam && selectedTeam !== "all"
+      ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
+      : [...new Set(data.map(d => d.athlete_name))];
 
-  // Locally controlled values so we can reset UI
-  const [teamValue, setTeamValue] = useState(selectedTeam || "all");
-  const [athleteValue, setAthleteValue] = useState(selectedAthlete || "all");
+  const [athleteValue, setAthleteValue] = useState("all");
 
-  // Keep external selection in sync and enable reset
+  // Reset ALL filters if parent requests reset
   useEffect(() => {
-    setTeamValue("all");
     setAthleteValue("all");
-    onTeamChange("all");
-    onAthleteChange("all");
-    // eslint-disable-next-line
-  }, [resetFiltersKey]);
+  }, [selectedTeam, resetFiltersKey]);
 
-  useEffect(() => {
-    setTeamValue(selectedTeam || "all");
-    setAthleteValue(selectedAthlete || "all");
-  }, [selectedTeam, selectedAthlete]);
-
-  // Filter data based on selections
+  // Data shown is filtered by team and (local) athlete
   const filteredData = data.filter(test => {
-    const teamMatch = !teamValue || teamValue === "all" || test.team_name === teamValue;
+    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
     const athleteMatch = !athleteValue || athleteValue === "all" || test.athlete_name === athleteValue;
     return teamMatch && athleteMatch;
   });
 
   // Calculate highlights based on filtered data
-  const getHighlights = () => {
+  const highlights = (() => {
     if (filteredData.length === 0) {
       return {
         totalTests: 0,
@@ -95,9 +80,7 @@ export const HighlightsSection = ({
     const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
 
     return { totalTests, primaryTeam, topPerformer, latestTest };
-  };
-
-  const highlights = getHighlights();
+  })();
 
   return (
     <Card className="bg-blue-50/80 border-blue-200 mb-6">
@@ -106,7 +89,7 @@ export const HighlightsSection = ({
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
-            <Select value={teamValue} onValueChange={val => { setTeamValue(val); onTeamChange(val); }}>
+            <Select value={selectedTeam || "all"} onValueChange={val => { onTeamChange(val); }}>
               <SelectTrigger className="bg-white text-center">
                 <SelectValue placeholder="All Teams" className="text-center" />
               </SelectTrigger>
@@ -122,7 +105,7 @@ export const HighlightsSection = ({
           </div>
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select value={athleteValue} onValueChange={val => { setAthleteValue(val); onAthleteChange(val); }}>
+            <Select value={athleteValue} onValueChange={val => setAthleteValue(val)}>
               <SelectTrigger className="bg-white text-center">
                 <SelectValue placeholder="All Athletes" className="text-center" />
               </SelectTrigger>

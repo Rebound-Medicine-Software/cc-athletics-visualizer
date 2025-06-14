@@ -1,30 +1,24 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ReportFilters } from "@/components/dashboard/ReportFilters";
-import { MetricCards } from "@/components/dashboard/MetricCards";
-import { HighlightsSection } from "@/components/dashboard/HighlightsSection";
-import { RegionComparison } from "@/components/dashboard/RegionComparison";
-import { CheckCircle, AlertCircle } from "lucide-react";
-import { TestData } from "@/types/forcePlateTypes";
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { HighlightsSection } from "./HighlightsSection";
+import { ReportFilters } from "./ReportFilters";
+import { RegionComparison } from "./RegionComparison";
+import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
-interface DashboardContentProps {
-  data: TestData[];
+export interface DashboardContentProps {
+  data: any[];
   isLoading: boolean;
-  error: any;
+  error: Error | null;
   errorMessage: string;
   hasNoData: boolean;
-  selectedTest: string;
-  setSelectedTest: (test: string) => void;
   selectedTeam: string;
   setSelectedTeam: (team: string) => void;
-  selectedAthlete: string;
-  setSelectedAthlete: (athlete: string) => void;
   handleRefresh: () => void;
-  orgData: { name: string; logo: string | null };
+  orgData: any;
   navigationItems: any[];
   activeSection: string;
-  resetFiltersKey?: number; // Added to receive key for filter reset
+  resetFiltersKey: number;
 }
 
 export const DashboardContent = ({
@@ -33,162 +27,76 @@ export const DashboardContent = ({
   error,
   errorMessage,
   hasNoData,
-  selectedTest,
-  setSelectedTest,
   selectedTeam,
   setSelectedTeam,
-  selectedAthlete,
-  setSelectedAthlete,
   handleRefresh,
   orgData,
   navigationItems,
   activeSection,
-  resetFiltersKey, // added to props
+  resetFiltersKey
 }: DashboardContentProps) => {
-  // Filter data based on selected team and athlete (master filters)
-  const filteredData =
-    data?.filter((test) => {
-      const teamMatch =
-        !selectedTeam ||
-        selectedTeam === "all" ||
-        test.team_name === selectedTeam;
-      const athleteMatch =
-        !selectedAthlete ||
-        selectedAthlete === "all" ||
-        test.athlete_name === selectedAthlete;
-      return teamMatch && athleteMatch;
-    }) || [];
+  const [selectedTest, setSelectedTest] = useState<string>("");
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case "home":
-        return (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Welcome to {orgData.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Your comprehensive force plate analysis platform dashboard.
-                </p>
-              </CardContent>
-            </Card>
+  // Error state
+  if (error) {
+    return (
+      <Card className="bg-red-50 border-red-200">
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center justify-center text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Data</h3>
+            <p className="text-red-600 mb-4">{errorMessage}</p>
+            <Button onClick={handleRefresh} variant="outline" className="bg-white">
+              <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+            </Button>
           </div>
-        );
-      case "dashboard":
-        return (
-          <div className="space-y-6">
-            <Card className="bg-gray-100 border-gray-300">
-              <CardContent className="p-6 text-center">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">
-                  {selectedTest
-                    ? `Analyzing: ${selectedTest}`
-                    : "Please Select A 'Test Name'"}
-                </h2>
-                <p className="text-gray-600">
-                  {selectedTest
-                    ? `Viewing detailed analysis for ${selectedTest} across all athletes`
-                    : "Choose a test from the filters below to view detailed analysis"}
-                </p>
-              </CardContent>
-            </Card>
-            <HighlightsSection
-              data={data || []}
-              selectedTeam={selectedTeam}
-              selectedAthlete={selectedAthlete}
-              onTeamChange={(team) => setSelectedTeam(team === "all" ? "" : team)}
-              onAthleteChange={(athlete) =>
-                setSelectedAthlete(athlete === "all" ? "" : athlete)
-              }
-              resetFiltersKey={resetFiltersKey}
-            />
-            <ReportFilters
-              data={filteredData}
-              onTestSelect={setSelectedTest}
-              allData={data || []}
-              metricCardsSlot={
-                <MetricCards selectedTest={selectedTest} data={filteredData} />
-              }
-              resetFiltersKey={resetFiltersKey}
-            />
-            <RegionComparison
-              data={filteredData}
-              resetFiltersKey={resetFiltersKey}
-            />
-          </div>
-        );
-      default:
-        return (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {
-                    navigationItems.find(
-                      (item: any) => item.id === activeSection
-                    )?.label
-                  }
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  This section is coming soon! We're working hard to bring you the best experience.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        );
-    }
-  };
+        </CardContent>
+      </Card>
+    );
+  }
 
-  return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Error loading data: {errorMessage}
-            <span>
-              <button
-                className="ml-2 underline text-blue-600"
-                onClick={handleRefresh}
-              >
-                Retry
-              </button>
-            </span>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {data && data.length > 0 && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">
-            Dashboard loaded successfully with {data.length} test records from CC Athletics API
-            <Badge className="ml-2 bg-green-100 text-green-800">Live Data</Badge>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hasNoData && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertCircle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
-            <div className="font-semibold mb-2">
-              No test data found in your database
-            </div>
-            <p className="text-sm">
-              Your API key is valid, but no test data was found. Please contact support if you believe this is an error.
+  // No data state
+  if (hasNoData) {
+    return (
+      <Card className="bg-amber-50 border-amber-200">
+        <CardContent className="p-6">
+          <div className="flex flex-col items-center justify-center text-center">
+            <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+            <h3 className="text-lg font-semibold text-amber-800 mb-2">No Data Available</h3>
+            <p className="text-amber-600 mb-4">
+              There are no test results available. Please check your connection or try again later.
             </p>
-          </AlertDescription>
-        </Alert>
-      )}
+            <Button onClick={handleRefresh} variant="outline" className="bg-white">
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh Data
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-      <div className="flex gap-6">
-        {/* Sidebar is rendered in Dashboard.tsx */}
-        <div className="flex-1">{renderContent()}</div>
-      </div>
+  // Success state with data
+  return (
+    <div>
+      {/* Performance Highlights */}
+      <HighlightsSection
+        data={data}
+        selectedTeam={selectedTeam}
+        onTeamChange={setSelectedTeam}
+        resetFiltersKey={resetFiltersKey}
+      />
+      {/* ReportFilters accepts selectedTeam as prop */}
+      <ReportFilters 
+        data={data.filter(d => selectedTeam === "all" || d.team_name === selectedTeam)} 
+        onTestSelect={setSelectedTest}
+        allData={data}
+        resetFiltersKey={resetFiltersKey} 
+      />
+      {/* RegionComparison accepts selectedTeam as prop */}
+      <RegionComparison 
+        data={data.filter(d => selectedTeam === "all" || d.team_name === selectedTeam)} 
+        resetFiltersKey={resetFiltersKey} 
+      />
     </div>
   );
 };

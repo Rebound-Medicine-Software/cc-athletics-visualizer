@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Menu, X } from "lucide-react";
@@ -23,7 +22,12 @@ export const DashboardSidebar = ({
   handleLogout,
 }: DashboardSidebarProps) => {
   return (
-    <div className={`transition-all duration-300 ${isNavigationCollapsed ? "w-16" : "w-80"}`}>
+    <div
+      className={`
+        transition-all duration-300
+        ${isNavigationCollapsed ? "w-16" : "w-80"}
+        sticky top-8 self-start z-40
+      `}>
       <div className="space-y-6">
         {/* Sidebar Header */}
         <Card className="bg-white/90 backdrop-blur-sm shadow-lg">

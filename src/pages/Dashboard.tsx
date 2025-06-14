@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
@@ -8,11 +9,6 @@ import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import {
   Activity,
   LogOut,
-  AlertCircle,
-  CheckCircle,
-  RefreshCw,
-  ChevronRight,
-  ChevronLeft,
   Home,
   Calendar,
   Users,
@@ -28,15 +24,13 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSupabaseData();
-  const [selectedTest, setSelectedTest] = useState<string>("");
+  // Only Team Name is global
   const [selectedTeam, setSelectedTeam] = useState<string>("");
-  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
 
   useEffect(() => {
-    // Check if user has API key (is "logged in")
     const apiKey = localStorage.getItem("cc-athletics-api-key");
     if (!apiKey) {
       navigate("/auth");
@@ -56,28 +50,10 @@ const Dashboard = () => {
   };
 
   const handleResetFilters = () => {
-    setResetFiltersKey(prev => prev + 1); // Changing key triggers reset downstream
+    setResetFiltersKey(prev => prev + 1);
+    setSelectedTeam("all");
   };
 
-  // Format date to DD/MM/YYYY
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  // Filter data based on selected team and athlete (master filters)
-  const filteredData = data?.filter(test => {
-    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
-    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
-    return teamMatch && athleteMatch;
-  }) || [];
-
-  // Get organization data for logo and branding
   const getOrganizationData = () => {
     try {
       const orgData = localStorage.getItem("organization-data");
@@ -126,7 +102,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      {/* Header */}
       <DashboardHeader
         orgData={orgData}
         handleRefresh={handleRefresh}
@@ -135,7 +110,7 @@ const Dashboard = () => {
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex gap-6">
-          {/* Sidebar */}
+          {/* Updated: Sidebar is sticky by CSS, see DashboardSidebar.tsx */}
           <DashboardSidebar
             orgData={orgData}
             isNavigationCollapsed={isNavigationCollapsed}
@@ -154,12 +129,8 @@ const Dashboard = () => {
               error={error}
               errorMessage={errorMessage}
               hasNoData={hasNoData}
-              selectedTest={selectedTest}
-              setSelectedTest={setSelectedTest}
               selectedTeam={selectedTeam}
               setSelectedTeam={setSelectedTeam}
-              selectedAthlete={selectedAthlete}
-              setSelectedAthlete={setSelectedAthlete}
               handleRefresh={handleRefresh}
               orgData={orgData}
               navigationItems={navigationItems}
