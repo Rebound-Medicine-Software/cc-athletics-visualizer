@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
@@ -19,12 +20,19 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
     recent?: { value: number, date: string },
     best?: { value: number, date: string }
   } {
-    if (filteredData.length === 0) return {};
+    if (filteredData.length === 0 || !metricKey) return {};
 
-    // Only take those with a valid value
+    // Only take those with a valid value and valid metrics
     const vals = filteredData
-      .map(d => ({ value: Number((d.metrics as any)[metricKey]), date: d.test_date }))
-      .filter(d => typeof d.value === "number" && !isNaN(d.value));
+      .map(d => {
+        if (!d.metrics || typeof (d.metrics as any)[metricKey] === "undefined") {
+          // Optionally console.log here if needed for debugging
+          // console.warn('Missing metrics for', d);
+          return null;
+        }
+        return { value: Number((d.metrics as any)[metricKey]), date: d.test_date };
+      })
+      .filter(d => d !== null && typeof d.value === "number" && !isNaN(d.value)) as { value: number, date: string }[];
 
     if (vals.length === 0) return {};
 
