@@ -79,33 +79,40 @@ const metricCaseLogic = (
   return { value: null, yAxisLabel };
 };
 
-export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartProps) => {
-  // Group and average data for chart: top 6 per metric value
-  const chartData = (() => {
-    if (!data || data.length === 0) return [];
-    const athleteMap: Record<string, { values: number[], team: string }> = {};
-    data.forEach(test => {
-      const { value } = metricCaseLogic(test, testName, metricType);
-      if (value !== null && !isNaN(value)) {
-        if (!athleteMap[test.athlete_name]) {
-          athleteMap[test.athlete_name] = { values: [], team: test.team_name };
-        }
-        athleteMap[test.athlete_name].values.push(value);
-      }
-    });
-    return Object.entries(athleteMap)
-      .map(([name, d]) => ({
-        name: name.length > 12 ? name.substring(0, 12) + '...' : name,
-        fullName: name,
-        value: d.values.reduce((sum, v) => sum + v, 0) / d.values.length,
-        team: d.team,
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 6);
-  })();
+export const ComparisonChart = ({ data, testName, metricType }: { data: TestData[], testName?: string, metricType?: string }) => {
+  // Group and average per athlete per date/metric (needed for banding)
+  const athPerDateMap: Record<string, { [date: string]: number[] }> = {};
+  data.forEach(test => {
+    if (!test.athlete_name) return;
+    // correct logic for displayed metric value
+    const { value } = metricCaseLogic(test, testName, metricType);
+    if (value === null || isNaN(value)) return;
+    const athlete = test.athlete_name;
+    const dateStr = test.test_date;
+    if (!athPerDateMap[athlete]) athPerDateMap[athlete] = {};
+    if (!athPerDateMap[athlete][dateStr]) athPerDateMap[athlete][dateStr] = [];
+    athPerDateMap[athlete][dateStr].push(value);
+  });
+
+  // For each athlete, get avg per date, then aggregate those to produce one value per athlete for the chart
+  const chartData = Object.entries(athPerDateMap).map(([athlete, byDate]) => {
+    const perDateAvgs: number[] = Object.values(byDate)
+      .map(vals => vals.reduce((a, b) => a + b, 0) / vals.length);
+    // For comparability, take the highest average across dates for this athlete
+    // (You could also use mean of per-date-avg, but the card uses best, so for now stick with highest avg per date)
+    const value = perDateAvgs.length > 0 ? Math.max(...perDateAvgs) : null;
+    // Need team name (from any test)
+    const team = data.find(d => d.athlete_name === athlete)?.team_name || '';
+    return {
+      name: athlete.length > 12 ? athlete.substring(0, 12) + '...' : athlete,
+      fullName: athlete,
+      value,
+      team,
+    };
+  }).filter(d => d.value !== null);
 
   // Determine max value for calculating band percentages
-  const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
+  const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value!)) : 0;
   // Bands: 'The Best' 90-100% (green), 'Good' 75-90% (yellow), 'Modest' 50-75% (orange)
   const bandAreas = [
     {
@@ -168,7 +175,7 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
                 left: 20,
                 bottom: 70,
               }}
-              barCategoryGap="25%" // 5% increase over default (was 30%)
+              barCategoryGap="25%"
             >
               {/* Colored achievement bands */}
               {maxValue > 0 &&
