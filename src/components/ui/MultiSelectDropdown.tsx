@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -62,7 +61,9 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           labelClassName
         )}
       >
-        <span className={cn("truncate text-center w-full")}>
+        <span className={cn(
+          "whitespace-normal break-words text-center flex-1"
+        )}>
           {labelDisplay}
         </span>
         <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
