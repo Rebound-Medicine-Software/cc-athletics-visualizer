@@ -49,8 +49,9 @@ export const ReportFilters = ({
     (!filters.testNames || d.test_name === filters.testNames)
   );
 
-  // Unique values for each filter, only from the current selection
-  const uniqueAthletes = Array.from(new Set(filtered.map(d => d.athlete_name)));
+  // Unique values for dropdown options
+  // --- Fix: Athlete multi-select dropdown options should ALWAYS be based on allData ---
+  const allAthleteNames = Array.from(new Set(allData.map(d => d.athlete_name))); // use allData for MultiSelectDropdown
   const uniqueTestDates = Array.from(new Set(filtered.map(d => d.test_date))).sort();
   const uniqueTestNames = Array.from(new Set(filtered.map(d => d.test_name)))
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
@@ -117,7 +118,7 @@ export const ReportFilters = ({
   };
 
   // --- Convert to Dropdown format ---
-  const athleteOptions = uniqueAthletes.map(a => ({ value: a, label: a }));
+  const athleteOptions = allAthleteNames.map(a => ({ value: a, label: a })); // Use all athlete names for options
   const dateOptions = uniqueTestDates.map(d => ({ value: d, label: formatDate(d) }));
   const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
   const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
