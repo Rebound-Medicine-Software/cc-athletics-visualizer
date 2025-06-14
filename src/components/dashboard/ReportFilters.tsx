@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
 import { formatDate } from "@/utils/dateUtils";
+import { RefreshCcw } from "lucide-react"; // Import the refresh icon
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -111,6 +113,15 @@ export const ReportFilters = ({
     }));
   };
 
+  // Reset handlers for each filter
+  const handleResetAthlete = () => setFilters(prev => ({ ...prev, selectedAthletes: [] }));
+  const handleResetDate = () => setFilters(prev => ({ ...prev, testDates: "" }));
+  const handleResetTestName = () => {
+    setFilters(prev => ({ ...prev, testNames: "", metricTypes: "" }));
+    onTestSelect("");
+  };
+  const handleResetMetricType = () => setFilters(prev => ({ ...prev, metricTypes: "" }));
+
   // --- Compute filtered data for chart ---
   const getFilteredDataForChart = () => {
     return data.filter(test => {
@@ -143,65 +154,113 @@ export const ReportFilters = ({
           {/* Athlete Name (MultiSelect) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <MultiSelectDropdown
-              options={athleteOptions}
-              value={filters.selectedAthletes}
-              onChange={handleAthleteChange}
-              placeholder="All Athletes"
-              className="text-center"
-              labelClassName="bg-white"
-            />
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={filters.selectedAthletes}
+                onChange={handleAthleteChange}
+                placeholder="All Athletes"
+                className="text-center"
+                labelClassName="bg-white"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Athlete Name"
+                className="p-2"
+                onClick={handleResetAthlete}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
 
           {/* Test Date(s) (Single Select) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
-            <Select value={filters.testDates} onValueChange={handleDateChange}>
-              <SelectTrigger className="bg-white text-center w-full">
-                <SelectValue placeholder="All Dates" />
-              </SelectTrigger>
-              <SelectContent>
-                {dateOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={filters.testDates} onValueChange={handleDateChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dateOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Date"
+                className="p-2"
+                onClick={handleResetDate}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
 
           {/* Test Name (Single Select) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
-            <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-              <SelectTrigger className="bg-white text-center w-full">
-                <SelectValue placeholder="All Tests" />
-              </SelectTrigger>
-              <SelectContent>
-                {testNameOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={filters.testNames} onValueChange={handleTestNameChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Tests" />
+                </SelectTrigger>
+                <SelectContent>
+                  {testNameOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Name"
+                className="p-2"
+                onClick={handleResetTestName}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
 
           {/* Metric Type (Single Select) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-            <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
-              <SelectTrigger className="bg-white text-center w-full">
-                <SelectValue placeholder="All Metrics" />
-              </SelectTrigger>
-              <SelectContent>
-                {metricTypeOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Metrics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {metricTypeOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Metric Type"
+                className="p-2"
+                onClick={handleResetMetricType}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -224,3 +283,4 @@ export const ReportFilters = ({
 };
 
 // This file is now VERY LONG! Consider refactoring it into multiple files for better readability.
+
