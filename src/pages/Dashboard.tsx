@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { HighlightsSection } from "@/components/dashboard/HighlightsSection";
-import { useCCAthletics } from "@/hooks/useCCAthletics";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { TestData } from "@/types/forcePlateTypes";
 import { formatDate } from "@/utils/dateUtils";
 
@@ -27,7 +28,7 @@ const Dashboard = () => {
   const [selectedAthlete, setSelectedAthlete] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  const { data, isLoading, error } = useCCAthletics();
+  const { data, isLoading, error } = useSupabaseData();
 
   useEffect(() => {
     const apiKey = localStorage.getItem('cc-athletics-api-key');
@@ -64,7 +65,7 @@ const Dashboard = () => {
     );
   }
 
-  // FIX: Use data array directly
+  // Use data array directly
   const allData: TestData[] = data ? data : [];
 
   const uniqueTests = [...new Set(allData.map(d => d.test_name))];
@@ -85,8 +86,7 @@ const Dashboard = () => {
       return {
         totalTests: 0,
         teamName: "N/A",
-        athleteName: "N/A",
-        latestTest: "N/A"
+        athleteName: "N/A"
       };
     }
 
@@ -117,9 +117,7 @@ const Dashboard = () => {
     const athleteName = Object.entries(athletePerformances)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
-    const latestTest = [...new Set(filteredData.map(d => d.test_date))].sort().pop() || "N/A";
-
-    return { totalTests, teamName, athleteName, latestTest };
+    return { totalTests, teamName, athleteName };
   };
 
   const highlights = getHighlights();
@@ -261,12 +259,7 @@ const Dashboard = () => {
               <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <BarChart3 className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
-                  <div className="text-sm text-gray-600">Total Tests</div>
-                </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
                   <Building2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
                   <div className="text-xl font-bold text-gray-800 truncate">{highlights.teamName}</div>
@@ -278,9 +271,9 @@ const Dashboard = () => {
                   <div className="text-sm text-gray-600">Athlete Name</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <Activity className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-gray-800">{formatDate(highlights.latestTest)}</div>
-                  <div className="text-sm text-gray-600">Latest Test</div>
+                  <BarChart3 className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+                  <div className="text-sm text-gray-600">Total Tests</div>
                 </div>
               </div>
             </CardContent>
