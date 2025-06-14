@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, ReferenceLine } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 
 interface ComparisonChartProps {
@@ -8,6 +8,14 @@ interface ComparisonChartProps {
   testName?: string;
   metricType?: string;
 }
+
+// Utility to determine direction: higher-is-better vs lower-is-better
+const reverseImprovementMetric = (metricType?: string) => {
+  return (
+    metricType === "Contact Time" ||
+    metricType === "Average Rate of Force Development" // Add more "lower is better" metrics as needed
+  );
+};
 
 const metricCaseLogic = (
   test: TestData,
@@ -19,7 +27,6 @@ const metricCaseLogic = (
   let value: number | undefined | null;
   let yAxisLabel = metricType;
 
-  // Helper for camel/underscore
   const pick = (keys: string[]) =>
     keys.find(k => (test.metrics as any)?.[k] !== undefined) ?
       (test.metrics as any)[keys.find(k => (test.metrics as any)?.[k] !== undefined) as string] : null;
@@ -50,14 +57,12 @@ const metricCaseLogic = (
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     default:
-      // "Isometric Test" etc.
       if (metricType === "Maximum Rate of Force Development") value = pick(["rfd_max", "avg_rfd"]);
       if (metricType === "Force at Max Rate of Force Development") value = pick(["force_150ms", "force_100ms", "force_50ms", "force_peak"]);
       if (metricType === "Peak Force" || metricType === "ISO Peak Force") value = pick(["peak_force", "force_peak"]);
       break;
   }
 
-  // try to get number
   if (value !== undefined && value !== null && !isNaN(Number(value))) {
     return { value: Number(value), yAxisLabel };
   }
@@ -89,8 +94,42 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
       .slice(0, 6);
   })();
 
-  // Y axis label
   const yAxisLabel = metricType || "Peak Force (N)";
+
+  // Calculate max for bands; adjust for lower-is-better metrics
+  const valuesOnly = chartData.map(d => d.value);
+  const max = Math.max(...valuesOnly, 0);
+  const min = Math.min(...valuesOnly, 0);
+
+  // Set reference bands (Best, Good, Modest)
+  let bands: Array<{
+    from: number,
+    to: number,
+    color: string,
+    label: string
+  }> = [];
+
+  if (valuesOnly.length > 0) {
+    // For lower-is-better metrics (like Contact Time), invert band ranges
+    const isReverse = reverseImprovementMetric(metricType);
+    if (isReverse) {
+      const range = max - min || 1;
+      const bestTo = min + 0.10 * range;
+      const goodTo = min + 0.25 * range;
+      const modestTo = min + 0.50 * range;
+      bands = [
+        { from: min, to: bestTo, color: "#bbf7d0", label: "The Best" },
+        { from: bestTo, to: goodTo, color: "#fef9c3", label: "Good" },
+        { from: goodTo, to: modestTo, color: "#e0e7ef", label: "Modest" }
+      ];
+    } else {
+      bands = [
+        { from: min + 0.90 * (max-min), to: max, color: "#bbf7d0", label: "The Best" },
+        { from: min + 0.75 * (max-min), to: min + 0.90 * (max-min), color: "#fef9c3", label: "Good" },
+        { from: min + 0.50 * (max-min), to: min + 0.70 * (max-min), color: "#e0e7ef", label: "Modest" }
+      ];
+    }
+  }
 
   if (chartData.length === 0) {
     return (
@@ -120,6 +159,10 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              {/* Add colored bands */}
+              {bands.map((band, i) => (
+                <ReferenceArea key={i} y1={band.from} y2={band.to} fill={band.color} fillOpacity={0.6} label={band.label} />
+              ))}
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 10 }}
