@@ -6,37 +6,58 @@ interface VideoBoxProps {
   testName: string;
 }
 
-interface TestVideo {
+interface ExerciseVideo {
   id: string;
   test_name: string;
-  test_link: string;
+  video_url: string | null;
+  Purpose: string | null;
+  Procedure: string | null;
 }
 
 export const VideoBox = ({ testName }: VideoBoxProps) => {
   const [videoLink, setVideoLink] = useState<string | null>(null);
+  const [purpose, setPurpose] = useState<string | null>(null);
+  const [procedure, setProcedure] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function fetchVideo() {
       setVideoLink(null);
+      setPurpose(null);
+      setProcedure(null);
       if (!testName) return;
       setIsLoading(true);
+
       const { data, error } = await supabase
-        .from("test_videos")
-        .select("test_link")
+        .from("exercise_videos")
+        .select("video_url,Purpose,Procedure")
         .eq("test_name", testName)
         .maybeSingle();
 
-      if (data && data.test_link) {
-        setVideoLink(data.test_link);
+      if (data) {
+        setVideoLink(data.video_url || null);
+        setPurpose(data.Purpose || null);
+        setProcedure(data.Procedure || null);
       } else {
         setVideoLink(null);
+        setPurpose(null);
+        setProcedure(null);
       }
       setIsLoading(false);
     }
 
     fetchVideo();
   }, [testName]);
+
+  // Helper: Converts YouTube link to embed URL
+  function getYoutubeEmbed(url: string) {
+    const match =
+      url?.match(/(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?&/]+)/) ||
+      url?.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^?&/]+)/);
+    return match
+      ? `https://www.youtube.com/embed/${match[1]}`
+      : url || "";
+  }
 
   // A responsive 16:9 video player, or a placeholder if no video
   return (
@@ -48,14 +69,29 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
             <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></span>
           </div>
         ) : videoLink ? (
-          <div className="w-full aspect-video">
-            <iframe
-              title="Test Instructional Video"
-              className="w-full h-full rounded-lg"
-              src={getYoutubeEmbed(videoLink)}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
+          <div className="w-full">
+            <div className="aspect-video mb-2">
+              <iframe
+                title="Test Instructional Video"
+                className="w-full h-full rounded-lg"
+                src={getYoutubeEmbed(videoLink)}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            {/* Purpose & Procedure sections */}
+            {purpose && (
+              <div className="mb-2 w-full text-left">
+                <span className="font-semibold text-gray-700">Purpose:</span>{" "}
+                <span className="text-gray-700">{purpose}</span>
+              </div>
+            )}
+            {procedure && (
+              <div className="w-full text-left">
+                <span className="font-semibold text-gray-700">Procedure:</span>{" "}
+                <span className="text-gray-700">{procedure}</span>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center justify-center h-56 w-full text-gray-500 text-sm">
@@ -66,14 +102,3 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
     </div>
   );
 };
-
-// Helper: Converts YouTube link to embed URL
-function getYoutubeEmbed(url: string) {
-  // Handles https://www.youtube.com/watch?v=... or https://youtu.be/...
-  const match =
-    url.match(/(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?&/]+)/) ||
-    url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^?&/]+)/);
-  return match
-    ? `https://www.youtube.com/embed/${match[1]}`
-    : url; // fallback
-}

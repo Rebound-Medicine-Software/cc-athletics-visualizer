@@ -62,28 +62,28 @@ export type Database = {
       exercise_videos: {
         Row: {
           created_at: string
-          description: string | null
           id: string
+          Procedure: string | null
+          Purpose: string | null
           test_name: string
-          thumbnail_url: string | null
           updated_at: string
           video_url: string | null
         }
         Insert: {
           created_at?: string
-          description?: string | null
           id?: string
+          Procedure?: string | null
+          Purpose?: string | null
           test_name: string
-          thumbnail_url?: string | null
           updated_at?: string
           video_url?: string | null
         }
         Update: {
           created_at?: string
-          description?: string | null
           id?: string
+          Procedure?: string | null
+          Purpose?: string | null
           test_name?: string
-          thumbnail_url?: string | null
           updated_at?: string
           video_url?: string | null
         }
