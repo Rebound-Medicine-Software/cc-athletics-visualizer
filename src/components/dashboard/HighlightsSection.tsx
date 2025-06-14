@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
@@ -20,7 +19,11 @@ export const HighlightsSection = ({
   onAthleteChange
 }: HighlightsSectionProps) => {
   const uniqueTeams = [...new Set(data.map(d => d.team_name))];
-  const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
+
+  // Filter athletes by selected team
+  const filteredAthletes = selectedTeam && selectedTeam !== "all"
+    ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
+    : [...new Set(data.map(d => d.athlete_name))];
 
   // Filter data based on selections
   const filteredData = data.filter(test => {
@@ -104,7 +107,7 @@ export const HighlightsSection = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Athletes</SelectItem>
-                {uniqueAthletes.map(athlete => (
+                {filteredAthletes.map(athlete => (
                   <SelectItem key={athlete} value={athlete}>
                     {athlete}
                   </SelectItem>

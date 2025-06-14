@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,12 +9,14 @@ interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
   allData: TestData[];
+  metricCardsSlot?: React.ReactNode; // <-- add slot for metric cards
 }
 
 export const ReportFilters = ({
   data,
   onTestSelect,
-  allData
+  allData,
+  metricCardsSlot,
 }: ReportFiltersProps) => {
   const [filters, setFilters] = useState({
     selectedAthletes: [] as string[],
@@ -93,6 +94,16 @@ export const ReportFilters = ({
           </Button>
         </div>
         
+        {/* Chart first */}
+        <ComparisonChart data={getFilteredDataForChart()} />
+
+        {/* Metric cards after the chart, before the filter controls */}
+        {metricCardsSlot && (
+          <div className="my-4">
+            {metricCardsSlot}
+          </div>
+        )}
+
         <div className="grid grid-cols-4 gap-4 mb-6">
           {/* Athlete Name */}
           <div>
@@ -168,9 +179,6 @@ export const ReportFilters = ({
             </Select>
           </div>
         </div>
-
-        {/* Comparison Chart moved here */}
-        <ComparisonChart data={getFilteredDataForChart()} />
       </CardContent>
     </Card>
   );

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,14 +151,14 @@ const Dashboard = () => {
               onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
             />
 
-            {/* Metric Cards */}
-            <MetricCards selectedTest={selectedTest} data={filteredData} />
-
-            {/* Filters with integrated comparison chart */}
+            {/* Individual Filters with Metric Cards after Chart */}
             <ReportFilters 
               data={filteredData} 
               onTestSelect={setSelectedTest}
               allData={data || []}
+              metricCardsSlot={
+                <MetricCards selectedTest={selectedTest} data={filteredData} />
+              }
             />
 
             {/* Region Comparisons */}
