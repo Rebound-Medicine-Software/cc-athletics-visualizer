@@ -65,72 +65,78 @@ interface MetricCardsProps {
   data: TestData[];
 }
 
-export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
+export const MetricCards = ({ selectedTest, data }: { selectedTest: string, data: TestData[] }) => {
   // Filter data by selected test
   const filteredData = selectedTest
     ? data.filter((d) => d.test_name === selectedTest)
     : [];
 
-  // Helper to get the recent and best value for a given metric
-  const getMostRecent = (metricKey: string) => {
-    if (filteredData.length === 0) return null;
-    const sorted = [...filteredData].sort((a, b) => {
-      const dateA = new Date(a.test_date).getTime();
-      const dateB = new Date(b.test_date).getTime();
-      return dateB - dateA || b.repetition_number - a.repetition_number;
-    });
-    const firstWithMetric = sorted.find(
-      (d) =>
-        d.metrics &&
-        metricKey in d.metrics &&
-        typeof (d.metrics as any)[metricKey] === "number"
-    );
-    if (firstWithMetric) {
-      return (firstWithMetric.metrics as any)[metricKey];
-    }
-    return null;
-  };
-
-  const getAllValues = (metricKey: string) => {
-    return filteredData
-      .map((d) =>
-        d.metrics && metricKey in d.metrics
-          ? (d.metrics as any)[metricKey]
-          : null
-      )
-      .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
-  };
-
-  // Helper to compute averages by date for a metric
-  const averageByDate = (metricKey: string) => {
-    if (filteredData.length === 0) return {};
-    const dateMap: Record<string, number[]> = {};
-    filteredData.forEach((d) => {
-      if (
-        d.metrics &&
-        metricKey in d.metrics &&
-        typeof (d.metrics as any)[metricKey] === "number"
-      ) {
-        const day = d.test_date;
-        if (!dateMap[day]) dateMap[day] = [];
-        dateMap[day].push((d.metrics as any)[metricKey]);
+  // Helper: collect all repetitions per date, then take avg for that date (per metricKey)
+  const getAvgPerDate = (metricKey: string) => {
+    const byDate: { [date: string]: number[] } = {};
+    filteredData.forEach(d => {
+      if (d.metrics && typeof (d.metrics as any)[metricKey] === "number") {
+        const dateStr = d.test_date;
+        if (!byDate[dateStr]) byDate[dateStr] = [];
+        byDate[dateStr].push((d.metrics as any)[metricKey]);
       }
     });
-    // Compute average for each date
-    const dateAverages: Record<string, number> = {};
-    Object.keys(dateMap).forEach((date) => {
-      const arr = dateMap[date];
-      dateAverages[date] = arr.reduce((s, v) => s + v, 0) / arr.length;
-    });
-    return dateAverages;
+    // result: date => [vals] for this metric
+    return Object.entries(byDate).map(([date, vals]) => ({
+      date,
+      avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+    })).filter(e => e.avg !== null);
   };
 
+  // For jump height cm/pogo averaging per date
+  const getAvgJumpHeightPerDate = (ftKey: string, cmKey: string) => {
+    const byDate: { [date: string]: number[] } = {};
+    filteredData.forEach(d => {
+      if (d.metrics) {
+        let val = null;
+        if (cmKey in d.metrics && typeof (d.metrics as any)[cmKey] === "number") {
+          val = (d.metrics as any)[cmKey];
+        } else if (ftKey in d.metrics && typeof (d.metrics as any)[ftKey] === "number") {
+          val = (d.metrics as any)[ftKey] * 30.48;
+        }
+        if (val !== null) {
+          const dateStr = d.test_date;
+          if (!byDate[dateStr]) byDate[dateStr] = [];
+          byDate[dateStr].push(val);
+        }
+      }
+    });
+    return Object.entries(byDate).map(([date, vals]) => ({
+      date,
+      avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+    })).filter(e => e.avg !== null);
+  };
+
+  // For relative peak power by date
+  const getAvgRelativePeakPowerPerDate = () => {
+    const byDate: { [date: string]: number[] } = {};
+    filteredData.forEach(d => {
+      if (d.metrics && typeof (d.metrics as any).peak_power === "number" && typeof (d.metrics as any).body_mass === "number" && (d.metrics as any).body_mass !== 0) {
+        const val = (d.metrics as any).peak_power / (d.metrics as any).body_mass;
+        const dateStr = d.test_date;
+        if (!byDate[dateStr]) byDate[dateStr] = [];
+        byDate[dateStr].push(val);
+      }
+    });
+    return Object.entries(byDate).map(([date, vals]) => ({
+      date,
+      avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null
+    })).filter(e => e.avg !== null);
+  };
+
+  // Generate card configs
   const cardConfigs = getCardConfigs(selectedTest);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
       {cardConfigs.map((card, index) => {
         if (!card.metricKey) {
+          // Placeholder card
           return (
             <MetricCard
               key={index}
@@ -142,91 +148,38 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
           );
         }
 
-        let mostRecentValue: number | null = null;
-        let bestValue: number | null = null;
-
-        if (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development") {
-          // Average RFD Max per date
-          const dateAverages = averageByDate("rfd_max");
-          const allDates = Object.keys(dateAverages);
-          if (allDates.length === 0) {
-            mostRecentValue = null;
-            bestValue = null;
-          } else {
-            // Most recent date's average
-            const mostRecentDate = allDates.sort().reverse()[0];
-            mostRecentValue = dateAverages[mostRecentDate];
-            // Best (highest date average)
-            bestValue = Math.max(...Object.values(dateAverages));
-          }
-        } else if (card.keyOverride && card.keyOverride === "jump_height_cm") {
-          // Most recent
-          const sorted = [...filteredData].sort((a, b) => {
-            const dateA = new Date(a.test_date).getTime();
-            const dateB = new Date(b.test_date).getTime();
-            return dateB - dateA || b.repetition_number - a.repetition_number;
-          });
-          const found = sorted.find(
-            (d) =>
-              d.metrics &&
-              (("jump_height_cm" in d.metrics &&
-                typeof (d.metrics as any).jump_height_cm === "number") ||
-                ("jump_height_ft" in d.metrics &&
-                  typeof (d.metrics as any).jump_height_ft === "number"))
-          );
-          if (found && found.metrics) {
-            mostRecentValue = resolveJumpHeight(
-              found.metrics,
-              "jump_height_ft",
-              "jump_height_cm"
-            );
-          }
-          // Best (by highest cm)
-          const values = filteredData
-            .map((d) =>
-              d.metrics
-                ? resolveJumpHeight(d.metrics, "jump_height_ft", "jump_height_cm")
-                : null
-            )
-            .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
-          bestValue = getBest(values, card.metricKey);
+        let recentAvgValue: number | null = null;
+        let bestAvgValue: number | null = null;
+        // Per-card avg logic
+        let perDateAvgs: { date: string, avg: number }[] = [];
+        if (card.keyOverride && card.keyOverride === "jump_height_cm") {
+          perDateAvgs = getAvgJumpHeightPerDate("jump_height_ft", "jump_height_cm");
         } else if (card.metricKey === "relative_peak_power") {
-          // Most recent
-          const sorted = [...filteredData].sort((a, b) => {
-            const dateA = new Date(a.test_date).getTime();
-            const dateB = new Date(b.test_date).getTime();
-            return dateB - dateA || b.repetition_number - a.repetition_number;
-          });
-          const found = sorted.find(
-            (d) =>
-              d.metrics &&
-              typeof (d.metrics as any).peak_power === "number" &&
-              typeof (d.metrics as any).body_mass === "number"
-          );
-          if (found && found.metrics) {
-            mostRecentValue = computeRelativePeakPower(found.metrics);
-          }
-          // Best (by highest relative)
-          const values = filteredData
-            .map((d) => computeRelativePeakPower(d.metrics))
-            .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
-          bestValue = getBest(values, card.metricKey);
+          perDateAvgs = getAvgRelativePeakPowerPerDate();
         } else {
-          mostRecentValue = getMostRecent(card.metricKey);
-          bestValue = getBest(getAllValues(card.metricKey), card.metricKey);
+          perDateAvgs = getAvgPerDate(card.metricKey);
         }
 
-        // Percent change for arrow
+        // Sort date descending
+        perDateAvgs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        if (perDateAvgs.length > 0) {
+          recentAvgValue = perDateAvgs[0].avg;
+          bestAvgValue = isLowerBetter(card.metricKey)
+            ? Math.min(...perDateAvgs.map(e => e.avg))
+            : Math.max(...perDateAvgs.map(e => e.avg));
+        }
+
+        // Percent change for arrow (always vs best)
         let percent = null;
         if (
-          bestValue !== null &&
-          mostRecentValue !== null &&
-          bestValue !== 0
+          bestAvgValue !== null &&
+          recentAvgValue !== null &&
+          bestAvgValue !== 0
         ) {
           if (isLowerBetter(card.metricKey)) {
-            percent = ((bestValue - mostRecentValue) / bestValue) * 100;
+            percent = ((bestAvgValue - recentAvgValue) / bestAvgValue) * 100;
           } else {
-            percent = ((mostRecentValue - bestValue) / bestValue) * 100;
+            percent = ((recentAvgValue - bestAvgValue) / bestAvgValue) * 100;
           }
         }
         const { arrow, color } =
@@ -234,35 +187,18 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
             ? getArrowInfo(percent, card.metricKey)
             : { arrow: "", color: "" };
 
-        const formattedRecent = (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development")
-          ? mostRecentValue !== null && !isNaN(mostRecentValue)
-            ? mostRecentValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
-            : "N/A"
-          : (card.keyOverride === "jump_height_cm" ||
-              card.metricKey === "relative_peak_power")
-            ? mostRecentValue !== null && !isNaN(mostRecentValue)
-              ? mostRecentValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
-              : "N/A"
-            : formatValue(mostRecentValue, card.unit);
-
-        const formattedBest = (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development")
-          ? bestValue !== null && !isNaN(bestValue)
-            ? bestValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
-            : "N/A"
-          : (card.keyOverride === "jump_height_cm" ||
-              card.metricKey === "relative_peak_power")
-            ? bestValue !== null && !isNaN(bestValue)
-              ? bestValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
-              : "N/A"
-            : formatValue(bestValue, card.unit);
+        const formatAvg = (val: number | null) =>
+          val !== null && !isNaN(val)
+            ? val.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
+            : "N/A";
 
         return (
           <MetricCard
             key={index}
             icon={card.icon}
             title={card.title}
-            formattedRecent={formattedRecent}
-            formattedBest={formattedBest}
+            formattedRecent={formatAvg(recentAvgValue)}
+            formattedBest={formatAvg(bestAvgValue)}
             arrow={arrow}
             color={color}
             percent={percent}
