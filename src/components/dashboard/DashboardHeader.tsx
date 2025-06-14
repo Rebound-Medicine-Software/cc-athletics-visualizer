@@ -20,23 +20,23 @@ export const DashboardHeader = ({
     <div
       className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50"
       style={{
-        background: "rgba(255,255,255,0.98)", // Slightly more opaque for a barrier effect
+        background: "rgba(255,255,255,0.98)",
         backdropFilter: "blur(4px)",
         boxShadow: "0 4px 12px 0 rgba(0,0,0,0.03)",
       }}
     >
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Activity className="w-8 h-8 text-blue-600" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
+      <div className="container mx-auto px-4 py-4 overflow-x-auto max-w-full">
+        <div className="flex items-center justify-between min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <Activity className="w-8 h-8 text-blue-600 shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-gray-800 truncate">
                 {orgData.name} Testing Report
               </h1>
-              <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
+              <p className="text-sm text-gray-600 truncate">Professional athlete performance analysis</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-shrink-0">
             {/* Reset All Filters Button */}
             <Button
               variant="outline"
