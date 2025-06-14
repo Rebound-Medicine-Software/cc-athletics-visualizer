@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
@@ -7,37 +6,29 @@ import { useEffect, useState } from "react";
 
 interface HighlightsSectionProps {
   data: any[];
-  selectedTeam: string;
-  onTeamChange: (team: string) => void;
+  selectedTeams: string[];
+  setSelectedTeams: (teams: string[]) => void;
   resetFiltersKey?: number;
 }
 
 export const HighlightsSection = ({
   data,
-  selectedTeam,
-  onTeamChange,
+  selectedTeams,
+  setSelectedTeams,
   resetFiltersKey
 }: HighlightsSectionProps) => {
-  // Multi-select states
+  // Multi-select state for athletes, teams comes from parent
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
-  const [selectedTeams, setSelectedTeams] = useState<string[]>(selectedTeam && selectedTeam !== "all" ? [selectedTeam] : []);
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
-
-  // Update multi state when team dropdown (used by parent for global selection) or reset is triggered
   useEffect(() => {
-    setSelectedTeams(selectedTeam && selectedTeam !== "all" ? [selectedTeam] : []);
     setSelectedAthletes([]);
-  }, [selectedTeam, resetFiltersKey]);
-
-  // Athlete options, filtered by selected team(s)
+  }, [selectedTeams, resetFiltersKey]);
+  // Filter athletes by selected teams
   const filteredAthletes = selectedTeams.length > 0
     ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
     : Array.from(new Set(data.map(d => d.athlete_name)));
-
-  // Dropdown options formatting
   const teamOptions = allTeams.map(t => ({ value: t, label: t }));
   const athleteOptions = filteredAthletes.map(a => ({ value: a, label: a }));
-
   // Filtering logic
   const filteredData = data.filter(test => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
@@ -105,15 +96,7 @@ export const HighlightsSection = ({
             <MultiSelectDropdown
               options={teamOptions}
               value={selectedTeams}
-              onChange={(next) => {
-                setSelectedTeams(next);
-                // Also update global state to first-selected team or "all" if all cleared
-                if (next.length === 1) {
-                  onTeamChange(next[0]);
-                } else if (next.length === 0) {
-                  onTeamChange("all");
-                }
-              }}
+              onChange={setSelectedTeams}
               placeholder="All Teams"
               className="text-center"
               labelClassName="bg-white"
@@ -161,4 +144,3 @@ export const HighlightsSection = ({
     </Card>
   );
 };
-

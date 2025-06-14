@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
@@ -25,7 +24,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
@@ -51,7 +50,7 @@ const Dashboard = () => {
 
   const handleResetFilters = () => {
     setResetFiltersKey(prev => prev + 1);
-    setSelectedTeam("all");
+    setSelectedTeams([]);
   };
 
   const getOrganizationData = () => {
@@ -107,10 +106,8 @@ const Dashboard = () => {
         handleRefresh={handleRefresh}
         handleResetFilters={handleResetFilters}
       />
-
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex gap-6">
-          {/* Updated: Sidebar is sticky by CSS, see DashboardSidebar.tsx */}
           <DashboardSidebar
             orgData={orgData}
             isNavigationCollapsed={isNavigationCollapsed}
@@ -120,8 +117,6 @@ const Dashboard = () => {
             navigationItems={navigationItems}
             handleLogout={handleLogout}
           />
-
-          {/* Main Content */}
           <div className="flex-1">
             <DashboardContent
               data={data || []}
@@ -129,8 +124,8 @@ const Dashboard = () => {
               error={error}
               errorMessage={errorMessage}
               hasNoData={hasNoData}
-              selectedTeam={selectedTeam}
-              setSelectedTeam={setSelectedTeam}
+              selectedTeams={selectedTeams} // CHANGED: pass array
+              setSelectedTeams={setSelectedTeams} // CHANGED: pass setter
               handleRefresh={handleRefresh}
               orgData={orgData}
               navigationItems={navigationItems}

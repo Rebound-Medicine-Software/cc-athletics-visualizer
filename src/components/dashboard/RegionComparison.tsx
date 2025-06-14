@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TestData } from "@/types/forcePlateTypes";
@@ -10,9 +9,10 @@ import { MapPlaceholder } from "./RegionComparison/MapPlaceholder";
 interface RegionComparisonProps {
   data: TestData[];
   resetFiltersKey?: number;
+  selectedTeams?: string[]; // NEW
 }
 
-export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProps) => {
+export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: RegionComparisonProps) => {
   const [filters, setFilters] = useState({
     athleteName: "",
     sex: "",
@@ -38,13 +38,18 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
     });
   }, [resetFiltersKey]);
 
-  // Get unique values for dropdowns from actual data
-  const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
-  const uniqueTests = [...new Set(data.map(d => d.test_name))];
-  const uniqueTeams = [...new Set(data.map(d => d.team_name))];
+  // Only include teams matching selectedTeams/global filter
+  const filteredByTeam = selectedTeams.length > 0
+    ? data.filter(d => selectedTeams.includes(d.team_name))
+    : data;
+
+  // Get unique values for dropdowns from filtered data
+  const uniqueAthletes = [...new Set(filteredByTeam.map(d => d.athlete_name))];
+  const uniqueTests = [...new Set(filteredByTeam.map(d => d.test_name))];
+  const uniqueTeams = [...new Set(filteredByTeam.map(d => d.team_name))];
 
   // Filter data based on current selections
-  const filteredData = data.filter(test => {
+  const filteredData = filteredByTeam.filter(test => {
     if (filters.athleteName && filters.athleteName !== "all" && test.athlete_name !== filters.athleteName) return false;
     if (filters.testName && filters.testName !== "all" && test.test_name !== filters.testName) return false;
     if (filters.teamName && filters.teamName !== "all" && test.team_name !== filters.teamName) return false;

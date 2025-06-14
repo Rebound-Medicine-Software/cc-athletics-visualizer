@@ -12,8 +12,8 @@ export interface DashboardContentProps {
   error: Error | null;
   errorMessage: string;
   hasNoData: boolean;
-  selectedTeam: string;
-  setSelectedTeam: (team: string) => void;
+  selectedTeams: string[]; // CHANGED
+  setSelectedTeams: (teams: string[]) => void; // CHANGED
   handleRefresh: () => void;
   orgData: any;
   navigationItems: any[];
@@ -22,18 +22,9 @@ export interface DashboardContentProps {
 }
 
 export const DashboardContent = ({
-  data,
-  isLoading,
-  error,
-  errorMessage,
-  hasNoData,
-  selectedTeam,
-  setSelectedTeam,
-  handleRefresh,
-  orgData,
-  navigationItems,
-  activeSection,
-  resetFiltersKey
+  data, isLoading, error, errorMessage, hasNoData,
+  selectedTeams, setSelectedTeams, handleRefresh, orgData,
+  navigationItems, activeSection, resetFiltersKey
 }: DashboardContentProps) => {
   const [selectedTest, setSelectedTest] = useState<string>("");
 
@@ -76,26 +67,31 @@ export const DashboardContent = ({
   }
 
   // Success state with data
+  const filteredData = selectedTeams.length === 0
+    ? data
+    : data.filter(d => selectedTeams.includes(d.team_name));
   return (
     <div>
       {/* Performance Highlights */}
       <HighlightsSection
         data={data}
-        selectedTeam={selectedTeam}
-        onTeamChange={setSelectedTeam}
+        selectedTeams={selectedTeams}
+        setSelectedTeams={setSelectedTeams}
         resetFiltersKey={resetFiltersKey}
       />
       {/* ReportFilters accepts selectedTeam as prop */}
       <ReportFilters 
-        data={data.filter(d => selectedTeam === "all" || d.team_name === selectedTeam)} 
+        data={filteredData} 
         onTestSelect={setSelectedTest}
         allData={data}
         resetFiltersKey={resetFiltersKey} 
+        selectedTeams={selectedTeams}
       />
       {/* RegionComparison accepts selectedTeam as prop */}
       <RegionComparison 
-        data={data.filter(d => selectedTeam === "all" || d.team_name === selectedTeam)} 
+        data={filteredData} 
         resetFiltersKey={resetFiltersKey} 
+        selectedTeams={selectedTeams}
       />
     </div>
   );

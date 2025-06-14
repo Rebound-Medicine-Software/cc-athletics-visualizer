@@ -13,6 +13,7 @@ interface ReportFiltersProps {
   allData: TestData[];
   metricCardsSlot?: React.ReactNode;
   resetFiltersKey?: number;
+  selectedTeams: string[]; // NEW
 }
 
 export const ReportFilters = ({
@@ -21,6 +22,7 @@ export const ReportFilters = ({
   allData,
   metricCardsSlot,
   resetFiltersKey,
+  selectedTeams = []
 }: ReportFiltersProps) => {
   // FILTER STATE
   const [filters, setFilters] = useState({
@@ -51,7 +53,9 @@ export const ReportFilters = ({
 
   // Unique values for dropdown options
   // Athlete multi-select should ONLY include athletes found in the filtered 'data' (which is already by Team)
-  const filteredAthleteNames = Array.from(new Set(data.map(d => d.athlete_name)));
+  const filteredAthleteNames = selectedTeams.length > 0
+    ? Array.from(new Set(allData.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
+    : Array.from(new Set(allData.map(d => d.athlete_name)));
   const uniqueTestDates = Array.from(new Set(filtered.map(d => d.test_date))).sort();
   const uniqueTestNames = Array.from(new Set(filtered.map(d => d.test_name)))
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
