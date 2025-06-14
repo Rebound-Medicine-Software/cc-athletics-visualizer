@@ -243,8 +243,9 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
                 {card.title}
               </div>
               <div className="flex flex-col items-center gap-1 w-full">
-                <div className="text-[12px] text-gray-500 uppercase tracking-wide mb-0">
-                  Recent
+                {/* RECENT label */}
+                <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wide mb-0">
+                  RECENT
                 </div>
                 <div className="text-2xl font-bold text-gray-800 mb-1">
                   {formatValue(mostRecentValue, card.unit)}
@@ -255,8 +256,9 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
                     <span>{Math.abs(percent).toFixed(1)}%</span>
                   )}
                 </div>
-                <div className="text-[12px] text-gray-500 uppercase tracking-wide mb-0 mt-1">
-                  All Time Best
+                {/* ALL TIME BEST label */}
+                <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wide mb-0 mt-1">
+                  ALL TIME BEST
                 </div>
                 <div className="text-lg font-semibold text-green-700 mt-0">
                   {formatValue(bestValue, card.unit)}

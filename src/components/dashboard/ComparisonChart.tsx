@@ -158,7 +158,6 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Increase the height, padding, and use larger ResponsiveContainer ratios */}
         <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
           <ResponsiveContainer width="100%" height="95%">
             <BarChart
@@ -169,7 +168,7 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
                 left: 20,
                 bottom: 70,
               }}
-              barCategoryGap="30%" // Default is usually 20%; We want 10% more = 30%
+              barCategoryGap="25%" // 5% increase over default (was 30%)
             >
               {/* Colored achievement bands */}
               {maxValue > 0 &&
@@ -216,7 +215,6 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
               />
             </BarChart>
           </ResponsiveContainer>
-          {/* Legend for bands */}
           <div className="flex gap-3 mt-2 items-center justify-center text-xs">
             <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#bbf7d0'}}></span> The Best (90-100%)</span>
             <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fde68a'}}></span> Good (75-90%)</span>
