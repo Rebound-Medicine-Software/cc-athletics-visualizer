@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,8 @@ interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
   allData: TestData[];
-  metricCardsSlot?: React.ReactNode; // <-- add slot for metric cards
+  metricCardsSlot?: React.ReactNode;
+  resetFiltersKey?: number;
 }
 
 export const ReportFilters = ({
@@ -18,6 +19,7 @@ export const ReportFilters = ({
   onTestSelect,
   allData,
   metricCardsSlot,
+  resetFiltersKey,
 }: ReportFiltersProps) => {
   // FILTER STATE
   const [filters, setFilters] = useState({
@@ -26,6 +28,17 @@ export const ReportFilters = ({
     testName: "",
     metricType: ""
   });
+
+  // Reset filters if resetFiltersKey changes
+  useEffect(() => {
+    setFilters({
+      selectedAthletes: [],
+      testDates: [],
+      testName: "",
+      metricType: ""
+    });
+    onTestSelect("");
+  }, [resetFiltersKey, onTestSelect]);
 
   // Unique values dependent on selections
   const filteredByTest = data.filter(d =>
@@ -38,7 +51,6 @@ export const ReportFilters = ({
     filteredByTest.filter(d => filters.selectedAthletes.includes(d.athlete_name));
   const uniqueTestDates = [...new Set(filteredByAthlete.map(d => d.test_date))].sort();
 
-  // Show only tests in data
   const uniqueTests = [...new Set(data.map(d => d.test_name))]
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
 
@@ -87,7 +99,7 @@ export const ReportFilters = ({
     }
   };
 
-  // DATA process for chart (send filters to chart)
+  // Chart data
   const getFilteredDataForChart = () => {
     return data.filter(test => {
       const testMatch = !filters.testName || test.test_name === filters.testName;
@@ -113,13 +125,13 @@ export const ReportFilters = ({
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange} disabled={!filters.testName}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Athletes" />
+              <SelectTrigger className="bg-white text-center">
+                <SelectValue placeholder="All Athletes" className="text-center" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Athletes</SelectItem>
+                <SelectItem value="all" className="text-center">All Athletes</SelectItem>
                 {uniqueAthletes.map(athlete => (
-                  <SelectItem key={athlete} value={athlete}>
+                  <SelectItem key={athlete} value={athlete} className="text-center">
                     {athlete}
                   </SelectItem>
                 ))}
@@ -131,13 +143,13 @@ export const ReportFilters = ({
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date(s)</label>
             <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange} disabled={!filters.selectedAthletes.length || uniqueTestDates.length === 0}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Dates" />
+              <SelectTrigger className="bg-white text-center">
+                <SelectValue placeholder="All Dates" className="text-center" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="all" className="text-center">All Dates</SelectItem>
                 {uniqueTestDates.map(date => (
-                  <SelectItem key={date} value={date}>
+                  <SelectItem key={date} value={date} className="text-center">
                     {formatDate(date)}
                   </SelectItem>
                 ))}
@@ -149,12 +161,12 @@ export const ReportFilters = ({
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <Select value={filters.testName} onValueChange={handleTestNameChange}>
-              <SelectTrigger className="bg-black text-white border-gray-600">
-                <SelectValue placeholder="Select Test" />
+              <SelectTrigger className="bg-black text-white border-gray-600 text-center">
+                <SelectValue placeholder="Select Test" className="text-center" />
               </SelectTrigger>
               <SelectContent>
                 {uniqueTests.map(test => (
-                  <SelectItem key={test} value={test}>
+                  <SelectItem key={test} value={test} className="text-center">
                     {test}
                   </SelectItem>
                 ))}
@@ -165,17 +177,17 @@ export const ReportFilters = ({
           {/* Metric Type */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-            <Select 
-              value={filters.metricType} 
-              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))} 
+            <Select
+              value={filters.metricType}
+              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
               disabled={!filters.testName}
             >
-              <SelectTrigger className="bg-black text-white border-gray-600">
-                <SelectValue placeholder="Select Metric" />
+              <SelectTrigger className="bg-black text-white border-gray-600 text-center">
+                <SelectValue placeholder="Select Metric" className="text-center" />
               </SelectTrigger>
               <SelectContent>
                 {availableMetricTypes.map(metric => (
-                  <SelectItem key={metric} value={metric}>
+                  <SelectItem key={metric} value={metric} className="text-center">
                     {metric}
                   </SelectItem>
                 ))}

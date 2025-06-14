@@ -22,6 +22,7 @@ import {
   CreditCard,
   Menu,
   X,
+  Reset,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -32,6 +33,7 @@ const Dashboard = () => {
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
 
   useEffect(() => {
     // Check if user has API key (is "logged in")
@@ -51,6 +53,10 @@ const Dashboard = () => {
   const handleRefresh = () => {
     refetch();
     toast.info("Refreshing data...");
+  };
+
+  const handleResetFilters = () => {
+    setResetFiltersKey(prev => prev + 1); // Changing key triggers reset downstream
   };
 
   // Format date to DD/MM/YYYY
@@ -121,7 +127,11 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       {/* Header */}
-      <DashboardHeader orgData={orgData} handleRefresh={handleRefresh} />
+      <DashboardHeader
+        orgData={orgData}
+        handleRefresh={handleRefresh}
+        handleResetFilters={handleResetFilters}
+      />
 
       <div className="container mx-auto px-4 py-6 space-y-6">
         <div className="flex gap-6">
@@ -154,6 +164,7 @@ const Dashboard = () => {
               orgData={orgData}
               navigationItems={navigationItems}
               activeSection={activeSection}
+              resetFiltersKey={resetFiltersKey}
             />
           </div>
         </div>
