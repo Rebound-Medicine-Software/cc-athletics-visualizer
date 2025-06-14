@@ -4,14 +4,12 @@ import { Trophy, TrendingUp, Users, Calendar, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-
 interface HighlightsSectionProps {
   data: any[];
   selectedTeams: string[];
   setSelectedTeams: (teams: string[]) => void;
   resetFiltersKey?: number;
 }
-
 export const HighlightsSection = ({
   data,
   selectedTeams,
@@ -25,11 +23,15 @@ export const HighlightsSection = ({
     setSelectedAthletes([]);
   }, [selectedTeams, resetFiltersKey]);
   // Filter athletes by selected teams
-  const filteredAthletes = selectedTeams.length > 0
-    ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
-    : Array.from(new Set(data.map(d => d.athlete_name)));
-  const teamOptions = allTeams.map(t => ({ value: t, label: t }));
-  const athleteOptions = filteredAthletes.map(a => ({ value: a, label: a }));
+  const filteredAthletes = selectedTeams.length > 0 ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name))) : Array.from(new Set(data.map(d => d.athlete_name)));
+  const teamOptions = allTeams.map(t => ({
+    value: t,
+    label: t
+  }));
+  const athleteOptions = filteredAthletes.map(a => ({
+    value: a,
+    label: a
+  }));
 
   // Reset handlers for team/athlete
   const handleResetTeams = () => setSelectedTeams([]);
@@ -59,9 +61,7 @@ export const HighlightsSection = ({
       acc[test.team_name] = (acc[test.team_name] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    const primaryTeam =
-      Object.entries(teamCounts)
-        .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
+    const primaryTeam = Object.entries(teamCounts).sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
 
     // Find top performer based on peak force
     const athletePerformances = filteredData.reduce((acc, test) => {
@@ -82,40 +82,25 @@ export const HighlightsSection = ({
       }
       return acc;
     }, {} as Record<string, number>);
-    const topPerformer =
-      Object.entries(athletePerformances)
-        .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
-
+    const topPerformer = Object.entries(athletePerformances).sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
     const uniqueTestDates = [...new Set(filteredData.map(d => d.test_date))].sort();
     const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
-
-    return { totalTests, primaryTeam, topPerformer, latestTest };
+    return {
+      totalTests,
+      primaryTeam,
+      topPerformer,
+      latestTest
+    };
   })();
-
-  return (
-    <Card className="bg-blue-50/80 border-blue-200 mb-6">
+  return <Card className="bg-blue-50/80 border-blue-200 mb-6">
       <CardHeader>
-        <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
+        <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={teamOptions}
-                value={selectedTeams}
-                onChange={setSelectedTeams}
-                placeholder="All Teams"
-                className="text-center"
-                labelClassName="bg-white"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Team Name"
-                className="p-2"
-                onClick={handleResetTeams}
-                type="button"
-              >
+              <MultiSelectDropdown options={teamOptions} value={selectedTeams} onChange={setSelectedTeams} placeholder="All Teams" className="text-center" labelClassName="bg-white" />
+              <Button variant="ghost" size="icon" aria-label="Reset Team Name" className="p-2" onClick={handleResetTeams} type="button">
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
@@ -123,22 +108,8 @@ export const HighlightsSection = ({
           <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={athleteOptions}
-                value={selectedAthletes}
-                onChange={setSelectedAthletes}
-                placeholder="All Athletes"
-                className="text-center"
-                labelClassName="bg-white"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Athlete Name"
-                className="p-2"
-                onClick={handleResetAthletes}
-                type="button"
-              >
+              <MultiSelectDropdown options={athleteOptions} value={selectedAthletes} onChange={setSelectedAthletes} placeholder="All Athletes" className="text-center" labelClassName="bg-white" />
+              <Button variant="ghost" size="icon" aria-label="Reset Athlete Name" className="p-2" onClick={handleResetAthletes} type="button">
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
@@ -171,6 +142,5 @@ export const HighlightsSection = ({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
