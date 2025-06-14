@@ -24,7 +24,9 @@ import {
   FileText,
   Dumbbell,
   Settings,
-  CreditCard
+  CreditCard,
+  Menu,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,7 +37,7 @@ const Dashboard = () => {
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [selectedTestDate, setSelectedTestDate] = useState<string>("");
-  const [isNavigationVisible, setIsNavigationVisible] = useState(true);
+  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
 
   useEffect(() => {
@@ -58,26 +60,43 @@ const Dashboard = () => {
     toast.info("Refreshing data...");
   };
 
+  // Format date to DD/MM/YYYY
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   // Filter data based on selected teams
   const filteredData = data?.filter(test => 
     selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
   ) || [];
 
-  // Get organization data for logo
-  const getOrganizationLogo = () => {
+  // Get organization data for logo and branding
+  const getOrganizationData = () => {
     try {
       const orgData = localStorage.getItem('organization-data');
       if (orgData) {
         const parsed = JSON.parse(orgData);
-        return parsed.logo ? URL.createObjectURL(parsed.logo) : null;
+        return {
+          name: parsed.name || "Rebound Medicine & Performance",
+          logo: parsed.logo ? URL.createObjectURL(parsed.logo) : null
+        };
       }
     } catch (error) {
-      console.error('Error getting organization logo:', error);
+      console.error('Error getting organization data:', error);
     }
-    return null;
+    return {
+      name: "Rebound Medicine & Performance",
+      logo: null
+    };
   };
 
-  const orgLogo = getOrganizationLogo();
+  const orgData = getOrganizationData();
 
   const navigationItems = [
     { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
@@ -97,7 +116,7 @@ const Dashboard = () => {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Welcome to Rebound Medicine & Performance</CardTitle>
+                <CardTitle>Welcome to {orgData.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">Your comprehensive force plate analysis platform dashboard.</p>
@@ -125,7 +144,10 @@ const Dashboard = () => {
 
             {/* Highlights Section */}
             <HighlightsSection
-              data={filteredData}
+              data={filteredData.map(item => ({
+                ...item,
+                test_date: formatDate(item.test_date)
+              }))}
               selectedAthlete={selectedAthlete}
               selectedTestDate={selectedTestDate}
               onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
@@ -188,7 +210,7 @@ const Dashboard = () => {
               <Activity className="w-8 h-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Rebound Performance and Medicine Testing Report
+                  {orgData.name} Testing Report
                 </h1>
                 <p className="text-sm text-gray-600">Professional athlete performance analysis</p>
               </div>
@@ -208,14 +230,6 @@ const Dashboard = () => {
                 className="text-gray-600"
               >
                 ← Home
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="text-red-600 border-red-200 hover:bg-red-50"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
               </Button>
             </div>
           </div>
@@ -259,40 +273,43 @@ const Dashboard = () => {
         {/* Main Content Layout */}
         <div className="flex gap-6">
           {/* Collapsible Sidebar */}
-          <div className={`transition-all duration-300 ${isNavigationVisible ? 'w-80' : 'w-12'}`}>
+          <div className={`transition-all duration-300 ${isNavigationCollapsed ? 'w-16' : 'w-80'}`}>
             <div className="space-y-6">
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsNavigationVisible(!isNavigationVisible)}
-                  className="h-8 w-8"
-                >
-                  {isNavigationVisible ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </Button>
-                {isNavigationVisible && (
-                  <div className="ml-4 flex items-center gap-2">
-                    {orgLogo ? (
-                      <img 
-                        src={orgLogo}
-                        alt="Organization Logo" 
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <img 
-                        src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
-                        alt="Default Logo" 
-                        className="w-8 h-8 rounded-full"
-                      />
+              {/* Sidebar Header */}
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    {!isNavigationCollapsed && (
+                      <div className="flex items-center gap-3">
+                        {orgData.logo ? (
+                          <img 
+                            src={orgData.logo}
+                            alt="Organization Logo" 
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                            <Activity className="w-6 h-6 text-white" />
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-gray-800 text-sm">{orgData.name}</h3>
+                          <p className="text-xs text-gray-600">Performance Analytics</p>
+                        </div>
+                      </div>
                     )}
-                    <span className="font-medium text-gray-700">Navigation</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
+                      className="h-8 w-8 shrink-0"
+                    >
+                      {isNavigationCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                    </Button>
                   </div>
-                )}
-              </div>
 
-              {isNavigationVisible && (
-                <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
-                  <CardContent className="p-6 space-y-2">
+                  {/* Navigation Menu */}
+                  <div className="space-y-2">
                     {navigationItems.map((item) => (
                       <Button
                         key={item.id}
@@ -301,19 +318,42 @@ const Dashboard = () => {
                           activeSection === item.id 
                             ? "bg-blue-600 text-white" 
                             : "text-gray-600 hover:bg-gray-100"
-                        }`}
+                        } ${isNavigationCollapsed ? 'px-2' : ''}`}
                         onClick={() => setActiveSection(item.id)}
                       >
-                        <item.icon className="w-4 h-4 mr-3" />
-                        <div className="flex flex-col items-start">
-                          <span className="font-medium">{item.label}</span>
-                          <span className="text-xs opacity-70">{item.description}</span>
-                        </div>
+                        <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? '' : 'mr-3'}`} />
+                        {!isNavigationCollapsed && (
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{item.label}</span>
+                            <span className="text-xs opacity-70">{item.description}</span>
+                          </div>
+                        )}
                       </Button>
                     ))}
-                  </CardContent>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Footer - Sign Out */}
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardContent className="p-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleLogout}
+                    className={`w-full justify-start text-red-600 border-red-200 hover:bg-red-50 ${
+                      isNavigationCollapsed ? 'px-2' : ''
+                    }`}
+                  >
+                    <LogOut className={`w-4 h-4 ${isNavigationCollapsed ? '' : 'mr-3'}`} />
+                    {!isNavigationCollapsed && <span>Sign Out</span>}
+                  </Button>
+                  {!isNavigationCollapsed && (
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                      © 2025 {orgData.name}. All rights reserved.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
 

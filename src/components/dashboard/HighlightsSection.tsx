@@ -34,7 +34,7 @@ export const HighlightsSection = ({
     if (filteredData.length === 0) {
       return {
         totalTests: 0,
-        avgPerformance: "N/A",
+        primaryTeam: "N/A",
         topPerformer: "N/A",
         latestTest: "N/A"
       };
@@ -42,24 +42,21 @@ export const HighlightsSection = ({
 
     const totalTests = filteredData.length;
     
-    // Calculate average performance (using peak force as example)
-    const peakForces = filteredData
-      .map(test => {
-        const metrics = test.metrics as any;
-        return metrics?.peak_force || metrics?.force_peak || 0;
-      })
-      .filter(force => force > 0);
+    // Find the most common team name
+    const teamCounts = filteredData.reduce((acc, test) => {
+      acc[test.team_name] = (acc[test.team_name] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
     
-    const avgPerformance = peakForces.length > 0 
-      ? Math.round(peakForces.reduce((sum, force) => sum + force, 0) / peakForces.length)
-      : "N/A";
+    const primaryTeam = Object.entries(teamCounts)
+      .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
-    // Find top performer
+    // Find top performer based on peak force
     const athletePerformances = filteredData.reduce((acc, test) => {
       const metrics = test.metrics as any;
       const peakForce = metrics?.peak_force || metrics?.force_peak || 0;
       
-      if (peakForce > 0) {
+      if (peakForce && typeof peakForce === 'number' && !isNaN(peakForce) && peakForce > 0) {
         if (!acc[test.athlete_name] || acc[test.athlete_name] < peakForce) {
           acc[test.athlete_name] = peakForce;
         }
@@ -72,7 +69,7 @@ export const HighlightsSection = ({
 
     const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
 
-    return { totalTests, avgPerformance, topPerformer, latestTest };
+    return { totalTests, primaryTeam, topPerformer, latestTest };
   };
 
   const highlights = getHighlights();
@@ -118,24 +115,24 @@ export const HighlightsSection = ({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
             <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
             <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
             <div className="text-sm text-gray-600">Total Tests</div>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
             <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.avgPerformance}</div>
-            <div className="text-sm text-gray-600">Avg Peak Force (N)</div>
+            <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
+            <div className="text-sm text-gray-600">Primary Team</div>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
             <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.topPerformer}</div>
+            <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
             <div className="text-sm text-gray-600">Top Performer</div>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
             <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.latestTest}</div>
+            <div className="text-xl font-bold text-gray-800">{highlights.latestTest}</div>
             <div className="text-sm text-gray-600">Latest Test</div>
           </div>
         </div>

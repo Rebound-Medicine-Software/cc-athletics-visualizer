@@ -59,29 +59,77 @@ export type Database = {
           },
         ]
       }
+      exercise_videos: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          test_name: string
+          thumbnail_url: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          test_name: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          test_name?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           cc_team_id: string
+          city: string | null
+          country: string | null
           created_at: string | null
           creation_date: string | null
           id: string
+          latitude: number | null
+          location: string | null
+          longitude: number | null
           name: string
+          region: string | null
           updated_at: string | null
         }
         Insert: {
           cc_team_id: string
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           creation_date?: string | null
           id?: string
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
           name: string
+          region?: string | null
           updated_at?: string | null
         }
         Update: {
           cc_team_id?: string
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           creation_date?: string | null
           id?: string
+          latitude?: number | null
+          location?: string | null
+          longitude?: number | null
           name?: string
+          region?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -96,8 +144,11 @@ export type Database = {
           metrics: Json
           repetition_number: number
           team_name: string
+          test_city: string | null
           test_date: string
+          test_location: string | null
           test_name: string
+          test_region: string | null
           test_type: string
           updated_at: string | null
         }
@@ -110,8 +161,11 @@ export type Database = {
           metrics: Json
           repetition_number: number
           team_name: string
+          test_city?: string | null
           test_date: string
+          test_location?: string | null
           test_name: string
+          test_region?: string | null
           test_type: string
           updated_at?: string | null
         }
@@ -124,8 +178,11 @@ export type Database = {
           metrics?: Json
           repetition_number?: number
           team_name?: string
+          test_city?: string | null
           test_date?: string
+          test_location?: string | null
           test_name?: string
+          test_region?: string | null
           test_type?: string
           updated_at?: string | null
         }
