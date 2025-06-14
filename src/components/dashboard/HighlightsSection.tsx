@@ -97,7 +97,7 @@ export const HighlightsSection = ({
       <CardHeader>
         <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
         <div className="flex gap-4 justify-center">
-          <div className="flex-1 max-w-[180px] w-[180px] min-w-[160px]">
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
             <div className="flex items-center gap-2">
               <MultiSelectDropdown
@@ -120,7 +120,7 @@ export const HighlightsSection = ({
               </Button>
             </div>
           </div>
-          <div className="flex-1 max-w-[180px] w-[180px] min-w-[160px]">
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <div className="flex items-center gap-2">
               <MultiSelectDropdown

@@ -1,14 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
 import { formatDate } from "@/utils/dateUtils";
-import { AthleteNameFilter } from "./ReportFilters/AthleteNameFilter";
-import { TestDateFilter } from "./ReportFilters/TestDateFilter";
-import { TestNameFilter } from "./ReportFilters/TestNameFilter";
-import { MetricTypeFilter } from "./ReportFilters/MetricTypeFilter";
-import { TestData } from "@/types/forcePlateTypes";
+import { RefreshCcw } from "lucide-react"; // Import the refresh icon
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -16,7 +14,7 @@ interface ReportFiltersProps {
   allData: TestData[];
   metricCardsSlot?: React.ReactNode;
   resetFiltersKey?: number;
-  selectedTeams: string[];
+  selectedTeams: string[]; // NEW
 }
 
 export const ReportFilters = ({
@@ -27,6 +25,7 @@ export const ReportFilters = ({
   resetFiltersKey,
   selectedTeams = []
 }: ReportFiltersProps) => {
+  // FILTER STATE
   const [filters, setFilters] = useState({
     selectedAthletes: [] as string[],
     testDates: "",
@@ -46,12 +45,15 @@ export const ReportFilters = ({
   }, [resetFiltersKey, onTestSelect]);
 
   // --- Interconnected Filtering Logic ---
+  // Calculate available options based on current filter state
   const filtered = data.filter(d =>
     (filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(d.athlete_name)) &&
     (!filters.testDates || d.test_date === filters.testDates) &&
     (!filters.testNames || d.test_name === filters.testNames)
   );
 
+  // Unique values for dropdown options
+  // Athlete multi-select should ONLY include athletes found in the filtered 'data' (which is already by Team)
   const filteredAthleteNames = selectedTeams.length > 0
     ? Array.from(new Set(allData.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
     : Array.from(new Set(allData.map(d => d.athlete_name)));
@@ -59,6 +61,7 @@ export const ReportFilters = ({
   const uniqueTestNames = Array.from(new Set(filtered.map(d => d.test_name)))
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
 
+  // Metric types depend on selected test
   const getMetricTypesForTest = (testName: string): string[] => {
     switch (testName) {
       case "Drop Jump":
@@ -81,6 +84,43 @@ export const ReportFilters = ({
     availableMetricTypes = getMetricTypesForTest(filters.testNames);
   }
 
+  // --- DROPDOWN CHANGE HANDLERS ---
+  const handleAthleteChange = (next: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      selectedAthletes: next,
+    }));
+  };
+  const handleDateChange = (val: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testDates: val,
+    }));
+  };
+  const handleTestNameChange = (val: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testNames: val,
+      metricTypes: "" // Reset metricTypes if tests changed
+    }));
+    onTestSelect(val);
+  };
+  const handleMetricTypeChange = (val: string) => {
+    setFilters(prev => ({
+      ...prev,
+      metricTypes: val,
+    }));
+  };
+
+  // Reset handlers for each filter
+  const handleResetAthlete = () => setFilters(prev => ({ ...prev, selectedAthletes: [] }));
+  const handleResetDate = () => setFilters(prev => ({ ...prev, testDates: "" }));
+  const handleResetTestName = () => {
+    setFilters(prev => ({ ...prev, testNames: "", metricTypes: "" }));
+    onTestSelect("");
+  };
+  const handleResetMetricType = () => setFilters(prev => ({ ...prev, metricTypes: "" }));
+
   // --- Compute filtered data for chart ---
   const getFilteredDataForChart = () => {
     return data.filter(test => {
@@ -91,48 +131,145 @@ export const ReportFilters = ({
     });
   };
 
+  // --- Convert to Dropdown format ---
+  // Athlete dropdown options should only show athletes from the currently filtered Team
+  const athleteOptions = filteredAthleteNames.map(a => ({ value: a, label: a }));
+  const dateOptions = uniqueTestDates.map(d => ({ value: d, label: formatDate(d) }));
+  const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
+  const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
+
   return (
     <Card className="bg-white border-teal-200">
       <CardContent className="p-4">
         {/* 1. Header */}
         <div className="flex justify-center mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[180px] text-lg font-semibold mx-auto justify-center block text-center">
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
             Individual Filters
           </Button>
         </div>
+
         {/* 2. Dropdown Filters Row */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-end">
-          <AthleteNameFilter
-            value={filters.selectedAthletes}
-            onChange={val => setFilters(prev => ({ ...prev, selectedAthletes: val }))}
-            options={filteredAthleteNames}
-          />
-          <TestDateFilter
-            value={filters.testDates}
-            onChange={val => setFilters(prev => ({ ...prev, testDates: val }))}
-            options={uniqueTestDates}
-            formatOption={formatDate}
-          />
-          <TestNameFilter
-            value={filters.testNames}
-            onChange={val => {
-              setFilters(prev => ({ ...prev, testNames: val, metricTypes: "" }));
-              onTestSelect(val);
-            }}
-            options={uniqueTestNames}
-          />
-          <MetricTypeFilter
-            value={filters.metricTypes}
-            onChange={val => setFilters(prev => ({ ...prev, metricTypes: val }))}
-            options={availableMetricTypes}
-          />
+          {/* Athlete Name (MultiSelect) */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={filters.selectedAthletes}
+                onChange={handleAthleteChange}
+                placeholder="All Athletes"
+                className="text-center"
+                labelClassName="bg-white"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Athlete Name"
+                className="p-2"
+                onClick={handleResetAthlete}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Test Date(s) (Single Select) */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
+            <div className="flex items-center gap-2">
+              <Select value={filters.testDates} onValueChange={handleDateChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dateOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Date"
+                className="p-2"
+                onClick={handleResetDate}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Test Name (Single Select) */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <div className="flex items-center gap-2">
+              <Select value={filters.testNames} onValueChange={handleTestNameChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Tests" />
+                </SelectTrigger>
+                <SelectContent>
+                  {testNameOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Name"
+                className="p-2"
+                onClick={handleResetTestName}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Metric Type (Single Select) */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <div className="flex items-center gap-2">
+              <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
+                <SelectTrigger className="bg-white text-center w-full">
+                  <SelectValue placeholder="All Metrics" />
+                </SelectTrigger>
+                <SelectContent>
+                  {metricTypeOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Metric Type"
+                className="p-2"
+                onClick={handleResetMetricType}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
         </div>
+
         {/* 3. Metric Cards */}
         {metricCardsSlot && (
           <div className="mb-6">
             {metricCardsSlot}
           </div>
         )}
+
         {/* 4. Graph */}
         <ComparisonChart
           data={getFilteredDataForChart()}
@@ -143,3 +280,5 @@ export const ReportFilters = ({
     </Card>
   );
 };
+
+// This file is now VERY LONG! Consider refactoring it into multiple files for better readability.
