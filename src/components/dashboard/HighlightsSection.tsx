@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
@@ -57,14 +56,15 @@ export const HighlightsSection = ({
       acc[test.team_name] = (acc[test.team_name] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
-    const primaryTeam = Object.entries(teamCounts)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
+
+    // Fix: force a & b to numbers
+    const primaryTeam =
+      Object.entries(teamCounts)
+        .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
 
     // Find top performer based on peak force (handle undefined/non-number safely)
     const athletePerformances = filteredData.reduce((acc, test) => {
       const metrics = test.metrics as any;
-      // Support multiple possible metric names, use the first that's a valid number
       let peakForce: number = 0;
       if (typeof metrics?.peak_force === 'number') {
         peakForce = metrics.peak_force;
@@ -82,8 +82,10 @@ export const HighlightsSection = ({
       return acc;
     }, {} as Record<string, number>);
 
-    const topPerformer = Object.entries(athletePerformances)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
+    // Fix: force a & b to numbers
+    const topPerformer =
+      Object.entries(athletePerformances)
+        .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
 
     const uniqueTestDates = [...new Set(filteredData.map(d => d.test_date))].sort();
     const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
