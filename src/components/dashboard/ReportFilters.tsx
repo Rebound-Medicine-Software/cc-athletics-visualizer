@@ -50,8 +50,8 @@ export const ReportFilters = ({
   );
 
   // Unique values for dropdown options
-  // --- Fix: Athlete multi-select dropdown options should ALWAYS be based on allData ---
-  const allAthleteNames = Array.from(new Set(allData.map(d => d.athlete_name))); // use allData for MultiSelectDropdown
+  // Athlete multi-select should ONLY include athletes found in the filtered 'data' (which is already by Team)
+  const filteredAthleteNames = Array.from(new Set(data.map(d => d.athlete_name)));
   const uniqueTestDates = Array.from(new Set(filtered.map(d => d.test_date))).sort();
   const uniqueTestNames = Array.from(new Set(filtered.map(d => d.test_name)))
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
@@ -118,7 +118,8 @@ export const ReportFilters = ({
   };
 
   // --- Convert to Dropdown format ---
-  const athleteOptions = allAthleteNames.map(a => ({ value: a, label: a })); // Use all athlete names for options
+  // Athlete dropdown options should only show athletes from the currently filtered Team
+  const athleteOptions = filteredAthleteNames.map(a => ({ value: a, label: a }));
   const dateOptions = uniqueTestDates.map(d => ({ value: d, label: formatDate(d) }));
   const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
   const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
