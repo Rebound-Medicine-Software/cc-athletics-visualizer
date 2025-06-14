@@ -1,4 +1,3 @@
-
 // Refactored: now uses subcomponents and helpers for maintainability!
 import { TestData } from "@/types/forcePlateTypes";
 import { getCardConfigs, isLowerBetter } from "./metric-cards/metricCardConfig";
@@ -102,6 +101,30 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
       .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
   };
 
+  // Helper to compute averages by date for a metric
+  const averageByDate = (metricKey: string) => {
+    if (filteredData.length === 0) return {};
+    const dateMap: Record<string, number[]> = {};
+    filteredData.forEach((d) => {
+      if (
+        d.metrics &&
+        metricKey in d.metrics &&
+        typeof (d.metrics as any)[metricKey] === "number"
+      ) {
+        const day = d.test_date;
+        if (!dateMap[day]) dateMap[day] = [];
+        dateMap[day].push((d.metrics as any)[metricKey]);
+      }
+    });
+    // Compute average for each date
+    const dateAverages: Record<string, number> = {};
+    Object.keys(dateMap).forEach((date) => {
+      const arr = dateMap[date];
+      dateAverages[date] = arr.reduce((s, v) => s + v, 0) / arr.length;
+    });
+    return dateAverages;
+  };
+
   const cardConfigs = getCardConfigs(selectedTest);
 
   return (
@@ -122,7 +145,21 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
         let mostRecentValue: number | null = null;
         let bestValue: number | null = null;
 
-        if (card.keyOverride && card.keyOverride === "jump_height_cm") {
+        if (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development") {
+          // Average RFD Max per date
+          const dateAverages = averageByDate("rfd_max");
+          const allDates = Object.keys(dateAverages);
+          if (allDates.length === 0) {
+            mostRecentValue = null;
+            bestValue = null;
+          } else {
+            // Most recent date's average
+            const mostRecentDate = allDates.sort().reverse()[0];
+            mostRecentValue = dateAverages[mostRecentDate];
+            // Best (highest date average)
+            bestValue = Math.max(...Object.values(dateAverages));
+          }
+        } else if (card.keyOverride && card.keyOverride === "jump_height_cm") {
           // Most recent
           const sorted = [...filteredData].sort((a, b) => {
             const dateA = new Date(a.test_date).getTime();
@@ -197,17 +234,23 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
             ? getArrowInfo(percent, card.metricKey)
             : { arrow: "", color: "" };
 
-        const formattedRecent =
-          card.keyOverride === "jump_height_cm" ||
-          card.metricKey === "relative_peak_power"
+        const formattedRecent = (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development")
+          ? mostRecentValue !== null && !isNaN(mostRecentValue)
+            ? mostRecentValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
+            : "N/A"
+          : (card.keyOverride === "jump_height_cm" ||
+              card.metricKey === "relative_peak_power")
             ? mostRecentValue !== null && !isNaN(mostRecentValue)
               ? mostRecentValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
               : "N/A"
             : formatValue(mostRecentValue, card.unit);
 
-        const formattedBest =
-          card.keyOverride === "jump_height_cm" ||
-          card.metricKey === "relative_peak_power"
+        const formattedBest = (card.metricKey === "rfd_max" || card.title === "RFD Max" || card.title === "Maximum Rate of Force Development")
+          ? bestValue !== null && !isNaN(bestValue)
+            ? bestValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
+            : "N/A"
+          : (card.keyOverride === "jump_height_cm" ||
+              card.metricKey === "relative_peak_power")
             ? bestValue !== null && !isNaN(bestValue)
               ? bestValue.toFixed(2) + (card.unit ? ` ${card.unit}` : "")
               : "N/A"

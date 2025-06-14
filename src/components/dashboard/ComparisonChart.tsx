@@ -79,27 +79,54 @@ const metricCaseLogic = (
   return { value: null, yAxisLabel };
 };
 
+const getRfdMaxDateAverages = (athleteData: TestData[]) => {
+  // Group by date, average rfd_max for each date, return array of date averages
+  const dateMap: Record<string, number[]> = {};
+  athleteData.forEach(test => {
+    const value = (test.metrics as any)?.rfd_max;
+    if (value !== undefined && value !== null && !isNaN(Number(value))) {
+      const d = test.test_date;
+      if (!dateMap[d]) dateMap[d] = [];
+      dateMap[d].push(Number(value));
+    }
+  });
+  return Object.values(dateMap).map(arr => arr.reduce((s, v) => s + v, 0) / arr.length);
+};
+
 export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartProps) => {
+  // Custom logic for RFD Max: use max average-by-date for each athlete
+  const useRfdMax =
+    metricType === "Maximum Rate of Force Development" ||
+    metricType === "RFD Max";
+
   // Group and average data for chart: top 6 per metric value
   const chartData = (() => {
     if (!data || data.length === 0) return [];
-    const athleteMap: Record<string, { values: number[], team: string }> = {};
+    const athleteMap: Record<string, { values: number[], team: string, all: TestData[] }> = {};
     data.forEach(test => {
-      const { value } = metricCaseLogic(test, testName, metricType);
-      if (value !== null && !isNaN(value)) {
-        if (!athleteMap[test.athlete_name]) {
-          athleteMap[test.athlete_name] = { values: [], team: test.team_name };
-        }
-        athleteMap[test.athlete_name].values.push(value);
-      }
+      const athlete = test.athlete_name;
+      if (!athleteMap[athlete]) athleteMap[athlete] = { values: [], team: test.team_name, all: [] };
+      athleteMap[athlete].all.push(test);
     });
     return Object.entries(athleteMap)
-      .map(([name, d]) => ({
-        name: name.length > 12 ? name.substring(0, 12) + '...' : name,
-        fullName: name,
-        value: d.values.reduce((sum, v) => sum + v, 0) / d.values.length,
-        team: d.team,
-      }))
+      .map(([name, d]) => {
+        let value: number;
+        if (useRfdMax) {
+          const dateAverages = getRfdMaxDateAverages(d.all);
+          value = dateAverages.length > 0 ? Math.max(...dateAverages) : NaN;
+        } else {
+          // original metric extraction
+          const { value: val } = metricCaseLogic(d.all[0], testName, metricType);
+          value = val !== null ? Number(val) : NaN;
+        }
+        return {
+          name: name.length > 12 ? name.substring(0, 12) + "..." : name,
+          fullName: name,
+          value,
+          team: d.team,
+        };
+      })
+      .filter(d => d.value !== null && !isNaN(d.value))
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
   })();
