@@ -33,7 +33,23 @@ const metricCaseLogic = (
     case "Countermovement Jump":
       if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
       if (metricType === "Peak Power") value = pick(["peak_power"]);
-      if (metricType === "Relative Peak Power") value = pick(["avg_propulsive_power", "avg_power"]);
+      if (metricType === "Relative Peak Power") {
+        // Compute relative peak power = Peak Power / Body Mass
+        const peak_power = pick(["peak_power"]);
+        const body_mass = pick(["body_mass"]);
+        if (
+          peak_power !== null &&
+          body_mass !== null &&
+          !isNaN(Number(peak_power)) &&
+          !isNaN(Number(body_mass)) &&
+          Number(body_mass) !== 0
+        ) {
+          value = Number(peak_power) / Number(body_mass);
+        } else {
+          value = null;
+        }
+        yAxisLabel = "Relative Peak Power (W/kg)";
+      }
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     case "Squat Jump":
@@ -113,7 +129,9 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
   ];
 
   // Y axis label
-  const yAxisLabel = metricType || "Peak Force (N)";
+  const yAxisLabel = chartData.length > 0 && chartData[0].value !== undefined
+    ? metricCaseLogic(data[0], testName, metricType).yAxisLabel
+    : metricType || "Peak Force (N)";
 
   if (chartData.length === 0) {
     return (
@@ -140,9 +158,19 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+        {/* Increase the height, padding, and use larger ResponsiveContainer ratios */}
+        <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
+          <ResponsiveContainer width="100%" height="95%">
+            <BarChart
+              data={chartData}
+              margin={{
+                top: 28,
+                right: 30,
+                left: 20,
+                bottom: 70,
+              }}
+              barCategoryGap="30%" // Default is usually 20%; We want 10% more = 30%
+            >
               {/* Colored achievement bands */}
               {maxValue > 0 &&
                 bandAreas.map(band => (
@@ -160,19 +188,19 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
               }
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 12 }}
                 className="text-gray-600"
                 angle={-45}
                 textAnchor="end"
-                height={60}
+                height={65}
               />
               <YAxis
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 13 }}
                 label={{
                   value: yAxisLabel,
                   angle: -90,
                   position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: 13, fill: "#374151" },
+                  style: { textAnchor: 'middle', fontSize: 14, fill: "#374151" },
                 }}
               />
               <Tooltip

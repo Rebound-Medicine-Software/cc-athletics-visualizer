@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
 
@@ -243,17 +242,25 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
               <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
                 {card.title}
               </div>
-              <div className="text-2xl font-bold text-gray-800 mb-1">
-                {formatValue(mostRecentValue, card.unit)}
-              </div>
-              <div className={`text-sm font-medium flex items-center gap-1 mt-1 ${color}`}>
-                {arrow && <span>{arrow}</span>}
-                {percent !== null && !Number.isNaN(percent) && (
-                  <span>{Math.abs(percent).toFixed(1)}%</span>
-                )}
-              </div>
-              <div className="text-lg text-gray-600 mt-2">
-                Best: {formatValue(bestValue, card.unit)}
+              <div className="flex flex-col items-center gap-1 w-full">
+                <div className="text-[12px] text-gray-500 uppercase tracking-wide mb-0">
+                  Recent
+                </div>
+                <div className="text-2xl font-bold text-gray-800 mb-1">
+                  {formatValue(mostRecentValue, card.unit)}
+                </div>
+                <div className={`text-sm font-medium flex items-center gap-1 mt-1 ${color}`}>
+                  {arrow && <span>{arrow}</span>}
+                  {percent !== null && !Number.isNaN(percent) && (
+                    <span>{Math.abs(percent).toFixed(1)}%</span>
+                  )}
+                </div>
+                <div className="text-[12px] text-gray-500 uppercase tracking-wide mb-0 mt-1">
+                  All Time Best
+                </div>
+                <div className="text-lg font-semibold text-green-700 mt-0">
+                  {formatValue(bestValue, card.unit)}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -262,4 +269,3 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
     </div>
   );
 };
-
