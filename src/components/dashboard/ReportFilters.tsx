@@ -7,6 +7,7 @@ import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
 import { formatDate } from "@/utils/dateUtils";
 import { RefreshCcw } from "lucide-react"; // Import the refresh icon
+import { VideoBox } from "./VideoBox";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -270,12 +271,21 @@ export const ReportFilters = ({
           </div>
         )}
 
-        {/* 4. Graph */}
-        <ComparisonChart
-          data={getFilteredDataForChart()}
-          testName={filters.testNames}
-          metricType={filters.metricTypes}
-        />
+        {/* 4. Responsive flex to put ComparisonChart and VideoBox side by side */}
+        <div className="flex flex-col md:flex-row gap-8 mt-2">
+          {/* Chart */}
+          <div className="flex-1 min-w-0">
+            <ComparisonChart
+              data={getFilteredDataForChart()}
+              testName={filters.testNames}
+              metricType={filters.metricTypes}
+            />
+          </div>
+          {/* Video box */}
+          <div className="w-full md:w-[420px] shrink-0">
+            <VideoBox testName={filters.testNames} />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
