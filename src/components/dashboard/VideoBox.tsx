@@ -51,12 +51,19 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
 
   // Helper: Converts YouTube link to embed URL
   function getYoutubeEmbed(url: string) {
-    const match =
-      url?.match(/(?:https?:\/\/)?(?:www\.)?youtu\.be\/([^?&/]+)/) ||
-      url?.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([^?&/]+)/);
-    return match
-      ? `https://www.youtube.com/embed/${match[1]}`
-      : url || "";
+    // Support normal, /watch, and /shorts links
+    if (!url) return "";
+    // Shorts: https://youtube.com/shorts/VIDEO_ID
+    let match = url.match(/(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    // Watch: https://youtube.com/watch?v=VIDEO_ID
+    match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    // youtu.be/VIDEO_ID
+    match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}`;
+    // Default: try to return the original url (may still fail to embed)
+    return url;
   }
 
   // A responsive 16:9 video player, or a placeholder if no video
