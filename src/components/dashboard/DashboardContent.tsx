@@ -1,4 +1,3 @@
-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,6 +24,7 @@ interface DashboardContentProps {
   orgData: { name: string; logo: string | null };
   navigationItems: any[];
   activeSection: string;
+  resetFiltersKey?: number; // Added to receive key for filter reset
 }
 
 export const DashboardContent = ({
@@ -43,6 +43,7 @@ export const DashboardContent = ({
   orgData,
   navigationItems,
   activeSection,
+  resetFiltersKey, // added to props
 }: DashboardContentProps) => {
   // Filter data based on selected team and athlete (master filters)
   const filteredData =
@@ -110,6 +111,7 @@ export const DashboardContent = ({
               metricCardsSlot={
                 <MetricCards selectedTest={selectedTest} data={filteredData} />
               }
+              resetFiltersKey={resetFiltersKey} // Pass the resetFiltersKey so ReportFilters can reset
             />
 
             <RegionComparison data={filteredData} />

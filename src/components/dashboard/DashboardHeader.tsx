@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Activity, RefreshCw, Reset } from "lucide-react";
+import { Activity, RefreshCw, RotateCw } from "lucide-react"; // Changed
 
 import { useNavigate } from "react-router-dom";
 
@@ -37,7 +37,7 @@ export const DashboardHeader = ({
               onClick={handleResetFilters}
               className="text-orange-600 border-orange-200 hover:bg-orange-50 flex items-center"
             >
-              <Reset className="w-4 h-4 mr-2" />
+              <RotateCw className="w-4 h-4 mr-2" /> {/* Changed icon */}
               Reset All Filters
             </Button>
             <Button

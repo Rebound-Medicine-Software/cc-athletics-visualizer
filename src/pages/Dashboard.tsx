@@ -22,7 +22,7 @@ import {
   CreditCard,
   Menu,
   X,
-  Reset,
+  RotateCw,
 } from "lucide-react";
 
 const Dashboard = () => {
