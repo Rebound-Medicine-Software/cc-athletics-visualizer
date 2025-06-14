@@ -1,3 +1,4 @@
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -106,6 +107,9 @@ export const DashboardContent = ({
               data={filteredData}
               onTestSelect={setSelectedTest}
               allData={data || []}
+              metricCardsSlot={
+                <MetricCards selectedTest={selectedTest} data={filteredData} />
+              }
             />
 
             <RegionComparison data={filteredData} />
