@@ -2,197 +2,264 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
 
+// Define which metrics consider "lower is better"
+const lowerIsBetterMetrics = [
+  "contact_time",
+  "time_to_peak_force",
+  "braking_duration",
+  "force_time_to_peak", // fallback for isos
+  "avg_contact_time",
+];
+
 interface MetricCardsProps {
   selectedTest: string;
   data: TestData[];
 }
 
+// Utility to determine if lower is better for a metric key
+const isLowerBetter = (metricKey: string) => {
+  return lowerIsBetterMetrics.includes(metricKey);
+};
+
+// Compare function for best metric (returns best value based on metric)
+const getBest = (arr: number[], metricKey: string): number | null => {
+  if (arr.length === 0) return null;
+  return isLowerBetter(metricKey) ? Math.min(...arr) : Math.max(...arr);
+};
+
+// Format arrow and color based on improvement
+const getArrowInfo = (change: number, metricKey: string) => {
+  if (change === null || change === undefined) return { arrow: "", color: "" };
+  const better = isLowerBetter(metricKey) ? change > 0 : change > 0;
+  return {
+    arrow: change === 0 ? "" : (better ? "↑" : "↓"),
+    color: change === 0
+      ? "text-gray-500"
+      : better
+        ? "text-green-600"
+        : "text-red-600",
+  };
+};
+
+// Format value for display
+const formatValue = (value: number | null | undefined, unit?: string) => {
+  if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
+  return `${value.toFixed(2)}${unit ? ` ${unit}` : ""}`;
+};
+
 export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
   // Filter data by selected test
-  const filteredData = selectedTest 
+  const filteredData = selectedTest
     ? data.filter(d => d.test_name === selectedTest)
     : [];
 
-  // Calculate average metrics if data exists
-  const getAverageMetric = (metricKey: string) => {
+  // Sort by date descending, then rep number descending (most recent first)
+  const getMostRecent = (metricKey: string) => {
     if (filteredData.length === 0) return null;
-    
-    const values = filteredData
-      .map(d => d.metrics)
-      .filter(m => m && typeof m === 'object' && metricKey in m)
-      .map(m => (m as any)[metricKey])
-      .filter(v => typeof v === 'number' && !isNaN(v));
-    
-    if (values.length === 0) return null;
-    return values.reduce((sum, val) => sum + val, 0) / values.length;
+    const sorted = [...filteredData].sort((a, b) => {
+      const dateA = new Date(a.test_date).getTime();
+      const dateB = new Date(b.test_date).getTime();
+      // handle rep number in tie
+      return dateB - dateA || (b.repetition_number - a.repetition_number);
+    });
+    const firstWithMetric = sorted.find(d => d.metrics && metricKey in d.metrics && typeof (d.metrics as any)[metricKey] === "number");
+    if (firstWithMetric) {
+      return (firstWithMetric.metrics as any)[metricKey];
+    }
+    return null;
   };
 
-  // Define metric configurations based on test type
+  // All values for this metric in this test set
+  const getAllValues = (metricKey: string) => {
+    return filteredData
+      .map(d => (d.metrics && (metricKey in d.metrics)) ? (d.metrics as any)[metricKey] : null)
+      .filter(v => typeof v === "number" && !isNaN(v)) as number[];
+  };
+
+  // Define metric configurations
   const getMetricConfig = () => {
     if (!selectedTest || filteredData.length === 0) {
       return [
-        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
-        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
-        { icon: "⚡", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" },
-        { icon: "⏱️", title: "Select Test Name", primary: "No Data", secondary: "Available", change: "" }
+        { icon: "⚡", title: "Select Test Name", metricKey: "", unit: "", secondaryKey: undefined },
+        { icon: "⚡", title: "Select Test Name", metricKey: "", unit: "", secondaryKey: undefined },
+        { icon: "⚡", title: "Select Test Name", metricKey: "", unit: "", secondaryKey: undefined },
+        { icon: "⏱️", title: "Select Test Name", metricKey: "", unit: "", secondaryKey: undefined }
       ];
     }
 
-    // Check if it's a jump test
     if (selectedTest.toLowerCase().includes('jump') || selectedTest.toLowerCase().includes('cmj') || selectedTest.toLowerCase().includes('squat')) {
       return [
         {
           icon: "⚡",
           title: `${selectedTest} - Force`,
-          primary: getAverageMetric('peak_force'),
-          secondary: getAverageMetric('avg_propulsive_force'),
+          metricKey: "peak_force",
           unit: "N",
-          change: ""
+          secondaryKey: "avg_propulsive_force"
         },
         {
-          icon: "📏", 
+          icon: "📏",
           title: `${selectedTest} - Height`,
-          primary: getAverageMetric('jump_height_ft'),
-          secondary: getAverageMetric('flight_time'),
-          unit: "ft / ms",
-          change: ""
+          metricKey: "jump_height_ft",
+          unit: "ft",
+          secondaryKey: "flight_time"
         },
         {
           icon: "⚡",
-          title: `${selectedTest} - Power`, 
-          primary: getAverageMetric('peak_power'),
-          secondary: getAverageMetric('avg_propulsive_power'),
+          title: `${selectedTest} - Power`,
+          metricKey: "peak_power",
           unit: "W",
-          change: ""
+          secondaryKey: "avg_propulsive_power"
         },
         {
           icon: "⏱️",
           title: `${selectedTest} - Time`,
-          primary: getAverageMetric('contact_time'),
-          secondary: getAverageMetric('time_to_peak_force'),
+          metricKey: "contact_time",
           unit: "ms",
-          change: ""
+          secondaryKey: "time_to_peak_force"
         }
       ];
     }
 
-    // Check if it's an isometric test
     if (selectedTest.toLowerCase().includes('isometric')) {
       return [
         {
           icon: "⚡",
           title: `${selectedTest} - Peak Force`,
-          primary: getAverageMetric('force_peak'),
-          secondary: getAverageMetric('force_250ms'),
+          metricKey: "force_peak",
           unit: "N",
-          change: ""
+          secondaryKey: "force_250ms"
         },
         {
-          icon: "📈", 
+          icon: "📈",
           title: `${selectedTest} - RFD`,
-          primary: getAverageMetric('rfd_max'),
-          secondary: getAverageMetric('rfd_250ms'),
+          metricKey: "rfd_max",
           unit: "N/s",
-          change: ""
+          secondaryKey: "rfd_250ms"
         },
         {
           icon: "⚡",
-          title: `${selectedTest} - Early Force`, 
-          primary: getAverageMetric('force_100ms'),
-          secondary: getAverageMetric('force_50ms'),
+          title: `${selectedTest} - Early Force`,
+          metricKey: "force_100ms",
           unit: "N",
-          change: ""
+          secondaryKey: "force_50ms"
         },
         {
           icon: "⏱️",
           title: `${selectedTest} - Impulse`,
-          primary: getAverageMetric('impulse_250ms'),
-          secondary: getAverageMetric('impulse_100ms'),
+          metricKey: "impulse_250ms",
           unit: "N·s",
-          change: ""
+          secondaryKey: "impulse_100ms"
         }
       ];
     }
 
-    // Check if it's a pogo test
     if (selectedTest.toLowerCase().includes('pogo')) {
       return [
         {
           icon: "⚡",
           title: `${selectedTest} - RSI`,
-          primary: getAverageMetric('avg_rsi'),
-          secondary: getAverageMetric('rsi'),
+          metricKey: "avg_rsi",
           unit: "",
-          change: ""
+          secondaryKey: "rsi"
         },
         {
-          icon: "📏", 
+          icon: "📏",
           title: `${selectedTest} - Height`,
-          primary: getAverageMetric('avg_jump_height'),
-          secondary: getAverageMetric('jump_height'),
+          metricKey: "avg_jump_height",
           unit: "m",
-          change: ""
+          secondaryKey: "jump_height"
         },
         {
           icon: "⚡",
-          title: `${selectedTest} - Power`, 
-          primary: getAverageMetric('avg_power'),
-          secondary: getAverageMetric('power'),
+          title: `${selectedTest} - Power`,
+          metricKey: "avg_power",
           unit: "W",
-          change: ""
+          secondaryKey: "power"
         },
         {
           icon: "⏱️",
           title: `${selectedTest} - Contact Time`,
-          primary: getAverageMetric('avg_contact_time'),
-          secondary: getAverageMetric('contact_time'),
+          metricKey: "avg_contact_time",
           unit: "ms",
-          change: ""
+          secondaryKey: "contact_time"
         }
       ];
     }
 
     // Default fallback
     return [
-      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
-      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
-      { icon: "⚡", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" },
-      { icon: "⏱️", title: selectedTest, primary: "No Metrics", secondary: "Available", change: "" }
+      { icon: "⚡", title: selectedTest, metricKey: "", unit: "", secondaryKey: undefined },
+      { icon: "⚡", title: selectedTest, metricKey: "", unit: "", secondaryKey: undefined },
+      { icon: "⚡", title: selectedTest, metricKey: "", unit: "", secondaryKey: undefined },
+      { icon: "⏱️", title: selectedTest, metricKey: "", unit: "", secondaryKey: undefined }
     ];
   };
 
   const metricCards = getMetricConfig();
 
-  const formatValue = (value: any, unit?: string) => {
-    if (value === null || value === undefined || typeof value !== 'number' || isNaN(value)) {
-      return "N/A";
-    }
-    return `${value.toFixed(1)}${unit ? ` ${unit}` : ''}`;
-  };
-
   return (
-    <div className="grid grid-cols-4 gap-4">
-      {metricCards.map((card, index) => (
-        <Card key={index} className="bg-white shadow-md">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl mb-2">{card.icon}</div>
-            <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
-              {card.title}
-            </div>
-            <div className="text-2xl font-bold text-gray-800 mb-1">
-              {formatValue(card.primary, card.unit)}
-            </div>
-            <div className="text-lg text-gray-600">
-              {formatValue(card.secondary, card.unit)}
-            </div>
-            {card.change && (
-              <div className="text-xs text-green-600 font-medium mt-1">
-                {card.change}
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      {metricCards.map((card, index) => {
+        if (!card.metricKey) {
+          // Empty state
+          return (
+            <Card key={index} className="bg-white shadow-md">
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl mb-2">{card.icon}</div>
+                <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
+                  {card.title}
+                </div>
+                <div className="text-2xl font-bold text-gray-800 mb-1">
+                  N/A
+                </div>
+                <div className="text-sm text-gray-500">No Data</div>
+              </CardContent>
+            </Card>
+          );
+        }
+        // Get data for this metric
+        const mostRecentValue = getMostRecent(card.metricKey);
+        const allValues = getAllValues(card.metricKey);
+        const bestValue = getBest(allValues, card.metricKey);
+
+        // Percent change to best
+        let percent = null;
+        if (bestValue !== null && mostRecentValue !== null && bestValue !== 0) {
+          // For "lower is better", improvement goes up so (best - recent)/best
+          if (isLowerBetter(card.metricKey)) {
+            percent = ((bestValue - mostRecentValue) / bestValue) * 100;
+          } else {
+            percent = ((mostRecentValue - bestValue) / bestValue) * 100;
+          }
+        }
+
+        // Arrow/color (positive if improvement, red or green)
+        const { arrow, color } = percent !== null ? getArrowInfo(percent, card.metricKey) : { arrow: "", color: "" };
+
+        return (
+          <Card key={index} className="bg-white shadow-md">
+            <CardContent className="p-4 text-center flex flex-col items-center">
+              <div className="text-2xl mb-2">{card.icon}</div>
+              <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
+                {card.title}
               </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
+              <div className="text-2xl font-bold text-gray-800 mb-1">
+                {formatValue(mostRecentValue, card.unit)}
+              </div>
+              <div className={`text-sm font-medium flex items-center gap-1 mt-1 ${color}`}>
+                {arrow && <span>{arrow}</span>}
+                {percent !== null && !Number.isNaN(percent) && (
+                  <span>{Math.abs(percent).toFixed(1)}%</span>
+                )}
+              </div>
+              <div className="text-lg text-gray-600 mt-2">
+                Best: {formatValue(bestValue, card.unit)}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };
+
