@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
 import { formatDate } from "@/utils/dateUtils";
@@ -25,8 +26,8 @@ export const ReportFilters = ({
   const [filters, setFilters] = useState({
     selectedAthletes: [] as string[],
     testDates: [] as string[],
-    testName: "",
-    metricType: ""
+    testNames: [] as string[],
+    metricTypes: [] as string[]
   });
 
   // Reset filters if resetFiltersKey changes
@@ -34,27 +35,27 @@ export const ReportFilters = ({
     setFilters({
       selectedAthletes: [],
       testDates: [],
-      testName: "",
-      metricType: ""
+      testNames: [],
+      metricTypes: []
     });
     onTestSelect("");
   }, [resetFiltersKey, onTestSelect]);
 
-  // Unique values dependent on selections
-  const filteredByTest = data.filter(d =>
-    !filters.testName || d.test_name === filters.testName
+  // --- Interconnected Filtering Logic ---
+  // Calculate available options based on current filter state
+  const filtered = data.filter(d =>
+    (filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(d.athlete_name)) &&
+    (filters.testDates.length === 0 || filters.testDates.includes(d.test_date)) &&
+    (filters.testNames.length === 0 || filters.testNames.includes(d.test_name))
   );
-  const uniqueAthletes = [...new Set(filteredByTest.map(d => d.athlete_name))];
 
-  const filteredByAthlete = filters.selectedAthletes.length === 0 ?
-    filteredByTest :
-    filteredByTest.filter(d => filters.selectedAthletes.includes(d.athlete_name));
-  const uniqueTestDates = [...new Set(filteredByAthlete.map(d => d.test_date))].sort();
-
-  const uniqueTests = [...new Set(data.map(d => d.test_name))]
+  // Unique values for each filter, only from the current selection
+  const uniqueAthletes = Array.from(new Set(filtered.map(d => d.athlete_name)));
+  const uniqueTestDates = Array.from(new Set(filtered.map(d => d.test_date))).sort();
+  const uniqueTestNames = Array.from(new Set(filtered.map(d => d.test_name)))
     .filter(test => test !== "All Tests" && test !== "Isometric Test");
 
-  // Metric types as before
+  // Metric types depend on the *selected* test(s) (union of sets)
   const getMetricTypesForTest = (testName: string): string[] => {
     switch (testName) {
       case "Drop Jump":
@@ -69,48 +70,70 @@ export const ReportFilters = ({
         return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"];
     }
   };
-  const availableMetricTypes = filters.testName ? getMetricTypesForTest(filters.testName) : [];
 
-  // Handlers for dropdowns
-  const handleTestNameChange = (value: string) => {
+  let availableMetricTypes: string[] = [];
+  if (filters.testNames.length === 0) {
+    availableMetricTypes = [];
+  } else {
+    // Union of metric types for all selected tests (prevent duplicates)
+    const typeSet = new Set<string>();
+    filters.testNames.forEach(testName => {
+      getMetricTypesForTest(testName).forEach(mt => typeSet.add(mt));
+    });
+    availableMetricTypes = Array.from(typeSet);
+  }
+
+  // --- DROPDOWN CHANGE HANDLERS ---
+  const handleAthleteChange = (next: string[]) => {
     setFilters(prev => ({
       ...prev,
-      testName: value,
-      metricType: "",
-      selectedAthletes: [],
-      testDates: []
+      selectedAthletes: next,
     }));
-    onTestSelect(value);
   };
-
-  const handleAthleteChange = (value: string) => {
-    if (value === "all") {
-      setFilters(prev => ({ ...prev, selectedAthletes: [], testDates: [] }));
+  const handleDateChange = (next: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      testDates: next,
+    }));
+  };
+  const handleTestNameChange = (next: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      testNames: next,
+      metricTypes: [] // Reset metricTypes if tests changed
+    }));
+    // Select the first if user only picks one test, else clear selection
+    if (next.length === 1) {
+      onTestSelect(next[0]);
     } else {
-      setFilters(prev => ({ ...prev, selectedAthletes: [value], testDates: [] }));
+      onTestSelect("");
     }
   };
-
-  const handleDateChange = (value: string) => {
-    if (value === "all") {
-      setFilters(prev => ({ ...prev, testDates: [] }));
-    } else {
-      setFilters(prev => ({ ...prev, testDates: [value] }));
-    }
+  const handleMetricTypeChange = (next: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      metricTypes: next,
+    }));
   };
 
-  // Chart data
+  // --- Compute filtered data for chart ---
   const getFilteredDataForChart = () => {
     return data.filter(test => {
-      const testMatch = !filters.testName || test.test_name === filters.testName;
+      const testMatch = filters.testNames.length === 0 || filters.testNames.includes(test.test_name);
       const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
       const dateMatch = filters.testDates.length === 0 || filters.testDates.includes(test.test_date);
       return testMatch && athleteMatch && dateMatch;
     });
   };
 
+  // --- Convert to MultiSelectDropdown format ---
+  const athleteOptions = uniqueAthletes.map(a => ({ value: a, label: a }));
+  const dateOptions = uniqueTestDates.map(d => ({ value: d, label: formatDate(d) }));
+  const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
+  const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
+
   return (
-    <Card className="bg-teal-50/80 border-teal-200">
+    <Card className="bg-white border-teal-200">
       <CardContent className="p-4">
         {/* 1. Header */}
         <div className="flex justify-center mb-4">
@@ -124,75 +147,52 @@ export const ReportFilters = ({
           {/* Athlete Name */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange} disabled={!filters.testName}>
-              <SelectTrigger className="bg-white text-center">
-                <SelectValue placeholder="All Athletes" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-center">All Athletes</SelectItem>
-                {uniqueAthletes.map(athlete => (
-                  <SelectItem key={athlete} value={athlete} className="text-center">
-                    {athlete}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={athleteOptions}
+              value={filters.selectedAthletes}
+              onChange={handleAthleteChange}
+              placeholder="All Athletes"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
 
           {/* Test Date(s) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date(s)</label>
-            <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange} disabled={!filters.selectedAthletes.length || uniqueTestDates.length === 0}>
-              <SelectTrigger className="bg-white text-center">
-                <SelectValue placeholder="All Dates" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-center">All Dates</SelectItem>
-                {uniqueTestDates.map(date => (
-                  <SelectItem key={date} value={date} className="text-center">
-                    {formatDate(date)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={dateOptions}
+              value={filters.testDates}
+              onChange={handleDateChange}
+              placeholder="All Dates"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
 
           {/* Test Name */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
-            <Select value={filters.testName} onValueChange={handleTestNameChange}>
-              <SelectTrigger className="bg-black text-white border-gray-600 text-center">
-                <SelectValue placeholder="Select Test" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                {uniqueTests.map(test => (
-                  <SelectItem key={test} value={test} className="text-center">
-                    {test}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={testNameOptions}
+              value={filters.testNames}
+              onChange={handleTestNameChange}
+              placeholder="Select Test"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
-
           {/* Metric Type */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-            <Select
-              value={filters.metricType}
-              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
-              disabled={!filters.testName}
-            >
-              <SelectTrigger className="bg-black text-white border-gray-600 text-center">
-                <SelectValue placeholder="Select Metric" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableMetricTypes.map(metric => (
-                  <SelectItem key={metric} value={metric} className="text-center">
-                    {metric}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={metricTypeOptions}
+              value={filters.metricTypes}
+              onChange={handleMetricTypeChange}
+              placeholder="Select Metric"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
         </div>
 
@@ -206,10 +206,12 @@ export const ReportFilters = ({
         {/* 4. Graph */}
         <ComparisonChart
           data={getFilteredDataForChart()}
-          testName={filters.testName}
-          metricType={filters.metricType}
+          testName={filters.testNames.length === 1 ? filters.testNames[0] : ""}
+          metricType={filters.metricTypes.length === 1 ? filters.metricTypes[0] : ""}
         />
       </CardContent>
     </Card>
   );
 };
+
+// This file is now VERY LONG! Consider refactoring it into multiple files for better readability.
