@@ -1,10 +1,10 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
+import { MetricCards } from "./MetricCards";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -17,7 +17,6 @@ export const ReportFilters = ({
   data,
   onTestSelect,
   allData,
-  metricCardsSlot,
 }: ReportFiltersProps) => {
   // FILTER STATE
   const [filters, setFilters] = useState({
@@ -87,6 +86,7 @@ export const ReportFilters = ({
     });
   };
 
+  // Improved layout order
   return (
     <Card className="bg-teal-50/80 border-teal-200">
       <CardContent className="p-4">
@@ -174,11 +174,14 @@ export const ReportFilters = ({
           </div>
         </div>
 
-        {/* 3. Metric Cards */}
-        {metricCardsSlot && (
-          <div className="mb-6">
-            {metricCardsSlot}
-          </div>
+        {/* 3. Performance Cards */}
+        {filters.testName && filters.metricType && filters.selectedAthletes.length === 1 && (
+          <MetricCards
+            selectedTest={filters.testName}
+            selectedAthlete={filters.selectedAthletes[0]}
+            metricType={filters.metricType}
+            data={data}
+          />
         )}
 
         {/* 4. Graph */}

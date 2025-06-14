@@ -1,6 +1,5 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 
 interface ComparisonChartProps {
@@ -89,10 +88,9 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
       .slice(0, 6);
   })();
 
-  // Y axis label
-  const yAxisLabel = metricType || "Peak Force (N)";
-
-  if (chartData.length === 0) {
+  // Find the all time best (highest or lowest, depending on metric type)
+  const values = chartData.map(d => d.value).filter(v => v !== null && !isNaN(Number(v)));
+  if (values.length === 0) {
     return (
       <Card className="bg-teal-50/80 border-teal-200 mt-6">
         <CardHeader>
@@ -109,6 +107,42 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
     );
   }
 
+  let bestValue = Math.max(...values);
+
+  // For inverse metrics (where lower is better), use Math.min
+  const improvementMetrics = [
+    "Contact Time",
+    "Avg Contact Time",
+    "Flight Time",
+    "Time to Peak Force",
+    "Take-off Velocity"
+  ];
+  const isLowerBetter = metricType ? improvementMetrics.some(mt => metricType.toLowerCase().includes(mt.toLowerCase())) : false;
+  if (isLowerBetter) {
+    bestValue = Math.min(...values);
+  }
+
+  // Calculate bands
+  let bands;
+  if (!isLowerBetter) {
+    // Higher is better
+    bands = [
+      { label: 'Modest', from: bestValue*0.5, to: bestValue*0.7, color: '#ffedd5' },   // orange-100
+      { label: 'Good', from: bestValue*0.75, to: bestValue*0.9, color: '#fefcbf' },   // yellow-100
+      { label: 'The Best', from: bestValue*0.9, to: bestValue, color: '#dcfce7' },    // green-100
+    ];
+  } else {
+    // Lower is better
+    bands = [
+      { label: 'The Best', from: bestValue, to: bestValue*1.1, color: '#dcfce7' },    // green-100
+      { label: 'Good', from: bestValue*1.1, to: bestValue*1.25, color: '#fefcbf' },   // yellow-100
+      { label: 'Modest', from: bestValue*1.25, to: bestValue*1.5, color: '#ffedd5' }, // orange-100
+    ];
+  }
+
+  // Y axis label
+  const yAxisLabel = metricType || "Peak Force (N)";
+
   return (
     <Card className="bg-teal-50/80 border-teal-200 mt-6">
       <CardHeader>
@@ -120,15 +154,27 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              {/* Bands */}
+              {bands.map((band, i) => (
+                <ReferenceArea
+                  key={i}
+                  y1={band.from}
+                  y2={band.to}
+                  fill={band.color}
+                  fillOpacity={0.45}
+                  stroke={undefined}
+                />
+              ))}
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 11 }}
                 className="text-gray-600"
                 angle={-45}
                 textAnchor="end"
                 height={60}
               />
               <YAxis
+                domain={['auto', 'auto']}
                 tick={{ fontSize: 12 }}
                 label={{
                   value: yAxisLabel,
