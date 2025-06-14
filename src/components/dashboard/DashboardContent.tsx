@@ -93,7 +93,6 @@ export const DashboardContent = ({
                 </p>
               </CardContent>
             </Card>
-
             <HighlightsSection
               data={data || []}
               selectedTeam={selectedTeam}
@@ -102,8 +101,8 @@ export const DashboardContent = ({
               onAthleteChange={(athlete) =>
                 setSelectedAthlete(athlete === "all" ? "" : athlete)
               }
+              resetFiltersKey={resetFiltersKey}
             />
-
             <ReportFilters
               data={filteredData}
               onTestSelect={setSelectedTest}
@@ -111,10 +110,12 @@ export const DashboardContent = ({
               metricCardsSlot={
                 <MetricCards selectedTest={selectedTest} data={filteredData} />
               }
-              resetFiltersKey={resetFiltersKey} // Pass the resetFiltersKey so ReportFilters can reset
+              resetFiltersKey={resetFiltersKey}
             />
-
-            <RegionComparison data={filteredData} />
+            <RegionComparison
+              data={filteredData}
+              resetFiltersKey={resetFiltersKey}
+            />
           </div>
         );
       default:

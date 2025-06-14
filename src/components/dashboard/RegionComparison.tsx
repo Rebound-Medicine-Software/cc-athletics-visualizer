@@ -1,25 +1,39 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { TestData } from "@/types/forcePlateTypes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface RegionComparisonProps {
   data: TestData[];
+  resetFiltersKey?: number;
 }
 
-export const RegionComparison = ({ data }: RegionComparisonProps) => {
+export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProps) => {
   const [filters, setFilters] = useState({
     athleteName: "",
     sex: "",
     testName: "",
     metricType: "",
     country: "UK",
-    region: "Wales", 
+    region: "Wales",
     address: "Swansea",
     teamName: ""
   });
+
+  // Reset all filters when key changes
+  useEffect(() => {
+    setFilters({
+      athleteName: "",
+      sex: "",
+      testName: "",
+      metricType: "",
+      country: "UK",
+      region: "Wales",
+      address: "Swansea",
+      teamName: ""
+    });
+  }, [resetFiltersKey]);
 
   // Get unique values for dropdowns from actual data
   const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
@@ -77,116 +91,124 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
         
         <div className="grid grid-cols-5 gap-4 mb-4">
           {/* Individual Filters Row */}
-          <Select value={filters.athleteName} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, athleteName: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Athlete Name" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Athletes</SelectItem>
-              {uniqueAthletes.map(athlete => (
-                <SelectItem key={athlete} value={athlete}>
-                  {athlete}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <Select value={filters.athleteName} onValueChange={value => setFilters(prev => ({ ...prev, athleteName: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Athlete Name" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-center">All Athletes</SelectItem>
+                {uniqueAthletes.map(athlete => (
+                  <SelectItem key={athlete} value={athlete} className="text-center">
+                    {athlete}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.sex} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, sex: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Sex" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
+            <Select value={filters.sex} onValueChange={value => setFilters(prev => ({ ...prev, sex: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Sex" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-center">All</SelectItem>
+                <SelectItem value="male" className="text-center">Male</SelectItem>
+                <SelectItem value="female" className="text-center">Female</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.testName} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, testName: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Test Name" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Tests</SelectItem>
-              {uniqueTests.map(test => (
-                <SelectItem key={test} value={test}>
-                  {test}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <Select value={filters.testName} onValueChange={value => setFilters(prev => ({ ...prev, testName: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Test Name" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-center">All Tests</SelectItem>
+                {uniqueTests.map(test => (
+                  <SelectItem key={test} value={test} className="text-center">
+                    {test}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.metricType} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, metricType: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Metric Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Peak Force">Peak Force</SelectItem>
-              <SelectItem value="Peak Power">Peak Power</SelectItem>
-              <SelectItem value="Jump Height">Jump Height</SelectItem>
-              <SelectItem value="RSI">RSI</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <Select value={filters.metricType} onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Metric Type" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Peak Force" className="text-center">Peak Force</SelectItem>
+                <SelectItem value="Peak Power" className="text-center">Peak Power</SelectItem>
+                <SelectItem value="Jump Height" className="text-center">Jump Height</SelectItem>
+                <SelectItem value="RSI" className="text-center">RSI</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
           <div></div>
           
           {/* Region Filters Row */}
-          <Select value={filters.country} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, country: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Country" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="UK">United Kingdom</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Country</label>
+            <Select value={filters.country} onValueChange={value => setFilters(prev => ({ ...prev, country: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Country" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="UK" className="text-center">United Kingdom</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.region} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, region: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Region" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Wales">Wales</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Region</label>
+            <Select value={filters.region} onValueChange={value => setFilters(prev => ({ ...prev, region: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Region" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Wales" className="text-center">Wales</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.address} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, address: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Address" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Swansea">Swansea</SelectItem>
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Address</label>
+            <Select value={filters.address} onValueChange={value => setFilters(prev => ({ ...prev, address: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Address" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Swansea" className="text-center">Swansea</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Select value={filters.teamName} onValueChange={(value) => 
-            setFilters(prev => ({ ...prev, teamName: value }))
-          }>
-            <SelectTrigger className="bg-black text-white">
-              <SelectValue placeholder="Team Name" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Teams</SelectItem>
-              {uniqueTeams.map(team => (
-                <SelectItem key={team} value={team}>
-                  {team}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
+            <Select value={filters.teamName} onValueChange={value => setFilters(prev => ({ ...prev, teamName: value }))}>
+              <SelectTrigger className="bg-black text-white text-center">
+                <SelectValue placeholder="Team Name" className="text-center" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-center">All Teams</SelectItem>
+                {uniqueTeams.map(team => (
+                  <SelectItem key={team} value={team} className="text-center">
+                    {team}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <CardTitle className="text-center text-lg text-gray-800 mb-4">
@@ -245,3 +267,5 @@ export const RegionComparison = ({ data }: RegionComparisonProps) => {
     </Card>
   );
 };
+
+// NOTE: This file is now 250+ lines. Consider refactoring it for maintainability.

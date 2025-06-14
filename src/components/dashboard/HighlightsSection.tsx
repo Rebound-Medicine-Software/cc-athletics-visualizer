@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TestData } from "@/types/forcePlateTypes";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
+import { useEffect, useState } from "react";
 
 interface HighlightsSectionProps {
   data: TestData[];
@@ -10,6 +11,7 @@ interface HighlightsSectionProps {
   selectedAthlete: string;
   onTeamChange: (team: string) => void;
   onAthleteChange: (athlete: string) => void;
+  resetFiltersKey?: number;
 }
 
 export const HighlightsSection = ({
@@ -17,7 +19,8 @@ export const HighlightsSection = ({
   selectedTeam,
   selectedAthlete,
   onTeamChange,
-  onAthleteChange
+  onAthleteChange,
+  resetFiltersKey
 }: HighlightsSectionProps) => {
   const uniqueTeams = [...new Set(data.map(d => d.team_name))];
 
@@ -26,10 +29,28 @@ export const HighlightsSection = ({
     ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
     : [...new Set(data.map(d => d.athlete_name))];
 
+  // Locally controlled values so we can reset UI
+  const [teamValue, setTeamValue] = useState(selectedTeam || "all");
+  const [athleteValue, setAthleteValue] = useState(selectedAthlete || "all");
+
+  // Keep external selection in sync and enable reset
+  useEffect(() => {
+    setTeamValue("all");
+    setAthleteValue("all");
+    onTeamChange("all");
+    onAthleteChange("all");
+    // eslint-disable-next-line
+  }, [resetFiltersKey]);
+
+  useEffect(() => {
+    setTeamValue(selectedTeam || "all");
+    setAthleteValue(selectedAthlete || "all");
+  }, [selectedTeam, selectedAthlete]);
+
   // Filter data based on selections
   const filteredData = data.filter(test => {
-    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
-    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
+    const teamMatch = !teamValue || teamValue === "all" || test.team_name === teamValue;
+    const athleteMatch = !athleteValue || athleteValue === "all" || test.athlete_name === athleteValue;
     return teamMatch && athleteMatch;
   });
 
@@ -43,7 +64,6 @@ export const HighlightsSection = ({
         latestTest: "N/A"
       };
     }
-
     const totalTests = filteredData.length;
     
     // Find the most common team name
@@ -85,15 +105,15 @@ export const HighlightsSection = ({
         <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-            <Select value={selectedTeam || "all"} onValueChange={onTeamChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Teams" />
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
+            <Select value={teamValue} onValueChange={val => { setTeamValue(val); onTeamChange(val); }}>
+              <SelectTrigger className="bg-white text-center">
+                <SelectValue placeholder="All Teams" className="text-center" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
+                <SelectItem value="all" className="text-center">All Teams</SelectItem>
                 {uniqueTeams.map(team => (
-                  <SelectItem key={team} value={team}>
+                  <SelectItem key={team} value={team} className="text-center">
                     {team}
                   </SelectItem>
                 ))}
@@ -101,15 +121,15 @@ export const HighlightsSection = ({
             </Select>
           </div>
           <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <Select value={selectedAthlete || "all"} onValueChange={onAthleteChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Athletes" />
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <Select value={athleteValue} onValueChange={val => { setAthleteValue(val); onAthleteChange(val); }}>
+              <SelectTrigger className="bg-white text-center">
+                <SelectValue placeholder="All Athletes" className="text-center" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Athletes</SelectItem>
+                <SelectItem value="all" className="text-center">All Athletes</SelectItem>
                 {filteredAthletes.map(athlete => (
-                  <SelectItem key={athlete} value={athlete}>
+                  <SelectItem key={athlete} value={athlete} className="text-center">
                     {athlete}
                   </SelectItem>
                 ))}
