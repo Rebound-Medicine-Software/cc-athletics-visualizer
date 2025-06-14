@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -156,7 +155,6 @@ export const ReportFilters = ({
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Dates</SelectItem>
                 {dateOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -171,10 +169,9 @@ export const ReportFilters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <Select value={filters.testNames} onValueChange={handleTestNameChange}>
               <SelectTrigger className="bg-white text-center w-full">
-                <SelectValue placeholder="Select Test" />
+                <SelectValue placeholder="All Tests" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Tests</SelectItem>
                 {testNameOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -189,10 +186,9 @@ export const ReportFilters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
             <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
               <SelectTrigger className="bg-white text-center w-full">
-                <SelectValue placeholder="Select Metric" />
+                <SelectValue placeholder="All Metrics" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Metrics</SelectItem>
                 {metricTypeOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -222,4 +218,3 @@ export const ReportFilters = ({
 };
 
 // This file is now VERY LONG! Consider refactoring it into multiple files for better readability.
-
