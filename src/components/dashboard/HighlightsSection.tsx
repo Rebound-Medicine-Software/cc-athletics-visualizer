@@ -20,6 +20,7 @@ export const HighlightsSection = ({
   const uniqueTeams = [...new Set(data.map(d => d.team_name))];
 
   // Athlete dropdown is now always filtered to current team, but local only
+  // --- Update: Only show athletes from the selected team in the Athlete Name dropdown ---
   const filteredAthletes =
     selectedTeam && selectedTeam !== "all"
       ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
