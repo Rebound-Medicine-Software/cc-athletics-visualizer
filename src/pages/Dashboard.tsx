@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,7 +64,9 @@ const Dashboard = () => {
     );
   }
 
-  const allData: TestData[] = data ? [...data.jumpData, ...data.isometricData, ...data.pogoData] : [];
+  // FIX: Use data array directly
+  const allData: TestData[] = data ? data : [];
+
   const uniqueTests = [...new Set(allData.map(d => d.test_name))];
   const uniqueTeams = [...new Set(allData.map(d => d.team_name))];
   const uniqueAthletes = [...new Set(allData.map(d => d.athlete_name))];
