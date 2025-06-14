@@ -1,201 +1,101 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
-import { TestData } from "@/types/forcePlateTypes";
+import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, ReferenceArea } from "recharts";
+import { getImprovementDirection } from "@/utils/metricsInfo";
 
-interface ComparisonChartProps {
-  data: TestData[];
-  testName?: string;
-  metricType?: string;
-}
+export const ComparisonChart = ({
+  data,
+  testName,
+  metricType,
+}: {
+  data: any[];
+  testName: string;
+  metricType: string;
+}) => {
+  // Helper: Direction for this metric (higher/lower is better)
+  const direction = getImprovementDirection(metricType);
 
-const metricCaseLogic = (
-  test: TestData,
-  testName?: string,
-  metricType?: string
-): { value: number | null; yAxisLabel: string } => {
-  if (!testName || !metricType) return { value: null, yAxisLabel: "Peak Force (N)" };
+  // Extract values for this metric
+  const metricVals = data
+    .map(d => ({ ...d, value: Number((d.metrics as any)[metricType]) }))
+    .filter(d => typeof d.value === "number" && !isNaN(d.value));
 
-  let value: number | undefined | null;
-  let yAxisLabel = metricType;
-
-  // Helper for camel/underscore
-  const pick = (keys: string[]) =>
-    keys.find(k => (test.metrics as any)?.[k] !== undefined) ?
-      (test.metrics as any)[keys.find(k => (test.metrics as any)?.[k] !== undefined) as string] : null;
-
-  switch (testName) {
-    case "Drop Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Contact Time") value = pick(["contact_time", "avg_contact_time"]);
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
-      break;
-    case "Countermovement Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Peak Power") value = pick(["peak_power"]);
-      if (metricType === "Relative Peak Power") value = pick(["avg_propulsive_power", "avg_power"]);
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      break;
-    case "Squat Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Take-off Velocity") value = pick(["takeoff_velocity", "peak_velocity"]);
-      if (metricType === "Average Rate of Force Development") value = pick(["avg_rfd", "rate_of_force_development", "rfd_max"]);
-      if (metricType === "Average Propulsive Power") value = pick(["avg_propulsive_power", "avg_power"]);
-      break;
-    case "Pogo Jump":
-      if (metricType === "Jump Height (cm)" || metricType === "Jump Height (Pogo)") value = pick(["jump_height", "avg_jump_height"]);
-      if (metricType === "Power") value = pick(["power", "avg_power"]);
-      if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      break;
-    default:
-      // "Isometric Test" etc.
-      if (metricType === "Maximum Rate of Force Development") value = pick(["rfd_max", "avg_rfd"]);
-      if (metricType === "Force at Max Rate of Force Development") value = pick(["force_150ms", "force_100ms", "force_50ms", "force_peak"]);
-      if (metricType === "Peak Force" || metricType === "ISO Peak Force") value = pick(["peak_force", "force_peak"]);
-      break;
+  if (!metricVals.length) {
+    return <div className="text-center text-gray-500 py-4">No data for selected metric.</div>;
   }
 
-  // try to get number
-  if (value !== undefined && value !== null && !isNaN(Number(value))) {
-    return { value: Number(value), yAxisLabel };
-  }
-  return { value: null, yAxisLabel };
-};
+  // Find best value (higher best or lower best)
+  const bestVal = direction === "higher"
+    ? Math.max(...metricVals.map(m => m.value))
+    : Math.min(...metricVals.map(m => m.value));
+  // For "lower is better" invert values for band/percent calc
+  const valueForPercent = (v: number) =>
+    direction === "higher" ? v / bestVal : bestVal / v;
 
-export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartProps) => {
-  // Group and average data for chart: top 6 per metric value
-  const chartData = (() => {
-    if (!data || data.length === 0) return [];
-    const athleteMap: Record<string, { values: number[], team: string }> = {};
-    data.forEach(test => {
-      const { value } = metricCaseLogic(test, testName, metricType);
-      if (value !== null && !isNaN(value)) {
-        if (!athleteMap[test.athlete_name]) {
-          athleteMap[test.athlete_name] = { values: [], team: test.team_name };
-        }
-        athleteMap[test.athlete_name].values.push(value);
-      }
-    });
-    return Object.entries(athleteMap)
-      .map(([name, d]) => ({
-        name: name.length > 12 ? name.substring(0, 12) + '...' : name,
-        fullName: name,
-        value: d.values.reduce((sum, v) => sum + v, 0) / d.values.length,
-        team: d.team,
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 6);
-  })();
-
-  // Determine max value for calculating band percentages
-  const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
-  // Bands: 'The Best' 90-100% (green), 'Good' 75-90% (yellow), 'Modest' 50-75% (orange)
-  const bandAreas = [
-    {
-      name: "The Best",
-      color: "#bbf7d0", // tailwind green-200
-      from: maxValue * 0.9,
-      to: maxValue,
-    },
-    {
-      name: "Good",
-      color: "#fde68a", // tailwind yellow-200
-      from: maxValue * 0.75,
-      to: maxValue * 0.9,
-    },
-    {
-      name: "Modest",
-      color: "#fed7aa", // tailwind orange-200
-      from: maxValue * 0.5,
-      to: maxValue * 0.75,
-    },
+  // Chart band regions - for bar overlay background
+  const bands = [
+    { name: "The Best", from: 0.9, to: 1, color: "#b9fbc0" }, // green
+    { name: "Good", from: 0.75, to: 0.9, color: "#ffe066" }, // yellow
+    { name: "Modest", from: 0.5, to: 0.75, color: "#ffd6a5" }, // orange
   ];
 
-  // Y axis label
-  const yAxisLabel = metricType || "Peak Force (N)";
-
-  if (chartData.length === 0) {
-    return (
-      <Card className="bg-teal-50/80 border-teal-200 mt-6">
-        <CardHeader>
-          <CardTitle className="text-center text-lg text-gray-800">
-            Comparisons Amongst Peers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 w-full flex items-center justify-center">
-            <p className="text-gray-600">No data available for comparison</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="bg-teal-50/80 border-teal-200 mt-6">
-      <CardHeader>
-        <CardTitle className="text-center text-lg text-gray-800">
-          Comparisons Amongst Peers{metricType ? ` - ${metricType}` : " - Peak Force"}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              {/* Colored achievement bands */}
-              {maxValue > 0 &&
-                bandAreas.map(band => (
-                  <ReferenceArea
-                    key={band.name}
-                    y1={band.from}
-                    y2={band.to}
-                    label={null}
-                    fill={band.color}
-                    fillOpacity={0.55}
-                    stroke="none"
-                    ifOverflow="extendDomain"
-                  />
-                ))
-              }
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 10 }}
-                className="text-gray-600"
-                angle={-45}
-                textAnchor="end"
-                height={60}
+    <div>
+      {/* Bands legend */}
+      <div className="flex justify-center gap-4 mb-2">
+        {bands.map(b => (
+          <span key={b.name} className="flex items-center text-sm">
+            <span className="w-4 h-4 rounded mr-1 inline-block" style={{ background: b.color, border: '1px solid #bbb' }} />
+            {b.name}
+          </span>
+        ))}
+      </div>
+      {/* Actual chart */}
+      <div className="w-full h-[320px] rounded bg-white/70 p-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={metricVals.map((val) => ({
+              ...val,
+              // Use percent for chart lookups
+              percent: valueForPercent(val.value),
+            }))}
+          >
+            {/* Render bands as ReferenceAreas */}
+            {bands.map(band => (
+              <ReferenceArea
+                key={band.name}
+                y1={band.from}
+                y2={band.to}
+                yAxisId="percent"
+                stroke="none"
+                fill={band.color}
+                fillOpacity={0.4}
+                ifOverflow="extendDomain"
               />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                label={{
-                  value: yAxisLabel,
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: 13, fill: "#374151" },
-                }}
-              />
-              <Tooltip
-                cursor={{ fill: '#e0e7ef44' }}
-                contentStyle={{ borderRadius: 8, backgroundColor: "#fff" }}
-                formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
-              />
-              <Bar
-                dataKey="value"
-                fill="#374151"
-                name={yAxisLabel}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-          {/* Legend for bands */}
-          <div className="flex gap-3 mt-2 items-center justify-center text-xs">
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#bbf7d0'}}></span> The Best (90-100%)</span>
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fde68a'}}></span> Good (75-90%)</span>
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fed7aa'}}></span> Modest (50-75%)</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+            {/* Axes */}
+            <YAxis
+              yAxisId="percent"
+              domain={[0.5, 1]}
+              hide={false}
+              tickFormatter={pct => `${Math.round(pct * 100)}%`}
+              label={{
+                value: "Performance",
+                angle: -90,
+                position: "insideLeft",
+                style: { textAnchor: "middle" },
+              }}
+            />
+            <XAxis
+              dataKey="athlete_name"
+              angle={-25}
+              textAnchor="end"
+              interval={0}
+              height={60}
+            />
+            {/* Bars/values */}
+            <Bar dataKey="percent" fill="#2ec4b6" />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 };

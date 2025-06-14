@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,13 +96,18 @@ export const ReportFilters = ({
     });
   };
 
+  // [NEW] Disable options if dependencies not selected
+  const testNameSelected = !!filters.testName;
+  const athleteSelected = filters.selectedAthletes.length > 0;
+  const dateAvailable = uniqueTestDates.length > 0;
+
   return (
     <Card className="bg-teal-50/80 border-teal-200">
       <CardContent className="p-4">
         {/* 1. Header */}
         <div className="flex justify-center mb-4">
           <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
-            Individual Filters
+            <span className="w-full block text-center">Individual Filters</span>
           </Button>
         </div>
 
@@ -112,7 +116,11 @@ export const ReportFilters = ({
           {/* Athlete Name */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange} disabled={!filters.testName}>
+            <Select
+              value={filters.selectedAthletes[0] || "all"}
+              onValueChange={handleAthleteChange}
+              disabled={!testNameSelected}
+            >
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Athletes" />
               </SelectTrigger>
@@ -130,7 +138,11 @@ export const ReportFilters = ({
           {/* Test Date(s) */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date(s)</label>
-            <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange} disabled={!filters.selectedAthletes.length || uniqueTestDates.length === 0}>
+            <Select
+              value={filters.testDates[0] || "all"}
+              onValueChange={handleDateChange}
+              disabled={!athleteSelected || !dateAvailable}
+            >
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
@@ -165,10 +177,10 @@ export const ReportFilters = ({
           {/* Metric Type */}
           <div className="w-full min-w-[160px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-            <Select 
-              value={filters.metricType} 
-              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))} 
-              disabled={!filters.testName}
+            <Select
+              value={filters.metricType}
+              onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
+              disabled={!testNameSelected}
             >
               <SelectTrigger className="bg-black text-white border-gray-600">
                 <SelectValue placeholder="Select Metric" />
