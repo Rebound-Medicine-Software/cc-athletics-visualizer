@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,7 +151,7 @@ export const ReportFilters = ({
         {/* 2. Dropdown Filters Row */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-end">
           {/* Athlete Name (MultiSelect) */}
-          <div className="w-full min-w-[160px]">
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <div className="flex items-center gap-2">
               <MultiSelectDropdown
@@ -177,7 +176,7 @@ export const ReportFilters = ({
           </div>
 
           {/* Test Date(s) (Single Select) */}
-          <div className="w-full min-w-[160px]">
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
             <div className="flex items-center gap-2">
               <Select value={filters.testDates} onValueChange={handleDateChange}>
@@ -206,7 +205,7 @@ export const ReportFilters = ({
           </div>
 
           {/* Test Name (Single Select) */}
-          <div className="w-full min-w-[160px]">
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <div className="flex items-center gap-2">
               <Select value={filters.testNames} onValueChange={handleTestNameChange}>
@@ -235,7 +234,7 @@ export const ReportFilters = ({
           </div>
 
           {/* Metric Type (Single Select) */}
-          <div className="w-full min-w-[160px]">
+          <div className="w-[200px] min-w-[200px] max-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
             <div className="flex items-center gap-2">
               <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
@@ -283,4 +282,3 @@ export const ReportFilters = ({
 };
 
 // This file is now VERY LONG! Consider refactoring it into multiple files for better readability.
-

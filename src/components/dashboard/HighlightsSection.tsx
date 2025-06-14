@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
-import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
+import { Trophy, TrendingUp, Users, Calendar, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 interface HighlightsSectionProps {
   data: any[];
@@ -17,7 +18,7 @@ export const HighlightsSection = ({
   setSelectedTeams,
   resetFiltersKey
 }: HighlightsSectionProps) => {
-  // Multi-select state for athletes, teams comes from parent
+  // All Teams
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   useEffect(() => {
@@ -29,6 +30,11 @@ export const HighlightsSection = ({
     : Array.from(new Set(data.map(d => d.athlete_name)));
   const teamOptions = allTeams.map(t => ({ value: t, label: t }));
   const athleteOptions = filteredAthletes.map(a => ({ value: a, label: a }));
+
+  // Reset handlers for team/athlete
+  const handleResetTeams = () => setSelectedTeams([]);
+  const handleResetAthletes = () => setSelectedAthletes([]);
+
   // Filtering logic
   const filteredData = data.filter(test => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
@@ -91,27 +97,51 @@ export const HighlightsSection = ({
       <CardHeader>
         <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
         <div className="flex gap-4 justify-center">
-          <div className="flex-1 max-w-xs">
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
-            <MultiSelectDropdown
-              options={teamOptions}
-              value={selectedTeams}
-              onChange={setSelectedTeams}
-              placeholder="All Teams"
-              className="text-center"
-              labelClassName="bg-white"
-            />
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={teamOptions}
+                value={selectedTeams}
+                onChange={setSelectedTeams}
+                placeholder="All Teams"
+                className="text-center"
+                labelClassName="bg-white"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Team Name"
+                className="p-2"
+                onClick={handleResetTeams}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
-          <div className="flex-1 max-w-xs">
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <MultiSelectDropdown
-              options={athleteOptions}
-              value={selectedAthletes}
-              onChange={setSelectedAthletes}
-              placeholder="All Athletes"
-              className="text-center"
-              labelClassName="bg-white"
-            />
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={selectedAthletes}
+                onChange={setSelectedAthletes}
+                placeholder="All Athletes"
+                className="text-center"
+                labelClassName="bg-white"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Athlete Name"
+                className="p-2"
+                onClick={handleResetAthletes}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
