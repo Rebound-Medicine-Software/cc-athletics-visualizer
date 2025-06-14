@@ -275,11 +275,19 @@ export const ReportFilters = ({
         <div className="flex flex-col md:flex-row gap-8 mt-2">
           {/* Chart */}
           <div className="flex-1 min-w-0">
-            <ComparisonChart
-              data={getFilteredDataForChart()}
-              testName={filters.testNames}
-              metricType={filters.metricTypes}
-            />
+            <div
+              className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col"
+              style={{
+                boxSizing: "border-box",
+                // Prevent shrinking if narrow, keep same as VideoBox
+              }}
+            >
+              <ComparisonChart
+                data={getFilteredDataForChart()}
+                testName={filters.testNames}
+                metricType={filters.metricTypes}
+              />
+            </div>
           </div>
           {/* Video box */}
           <div className="w-full md:w-[420px] shrink-0">

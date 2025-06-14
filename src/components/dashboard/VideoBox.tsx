@@ -66,17 +66,41 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
     return url;
   }
 
+  // Helper: Format Procedure with extra spacing after each numbered item (e.g. "1.", "2.", ...)
+  function formatProcedureText(proc: string | null) {
+    if (!proc) return null;
+    // Regex matches lines starting with "1.", "2.", etc, possibly after a newline or at start.
+    // Substitute each with itself + 2x \n, except the last one
+    // We'll do splitting to reliably add breaks after each pointer
+    const lines = proc.split(/\s*(\d+\..*?)(?=(?:\s*\d+\.)|$)/gs).filter(Boolean);
+    // lines will contain: ["", "1. ...", "2. ...", ...] — so filter out "" entries
+    const cleanLines = lines.filter(line => !!line.trim());
+    return cleanLines.map((line, idx) => (
+      <span key={idx}>
+        {line.trim()}
+        {idx !== cleanLines.length - 1 && <br />}
+        {idx !== cleanLines.length - 1 && <br />}
+      </span>
+    ));
+  }
+
   // A responsive 16:9 video player, or a placeholder if no video
   return (
     <div className="w-full max-w-[420px]">
-      <div className="bg-white border border-teal-200 rounded-lg shadow p-4 flex flex-col items-center min-h-[276px]">
+      <div
+        className="bg-white border border-teal-200 rounded-lg shadow p-4 flex flex-col items-center min-h-[370px] max-h-[480px] h-[480px] box-border"
+        style={{
+          // Force the main box to be a fixed height/match chart height: 480px
+          overflow: "hidden",
+        }}
+      >
         <div className="text-center mb-3 font-semibold text-teal-700">Instructional Video</div>
         {isLoading ? (
           <div className="flex items-center justify-center h-56 w-full">
             <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></span>
           </div>
         ) : videoLink ? (
-          <div className="w-full">
+          <div className="w-full flex-1 overflow-y-auto">
             <div className="aspect-video mb-2">
               <iframe
                 title="Test Instructional Video"
@@ -96,7 +120,7 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
             {procedure && (
               <div className="w-full text-left">
                 <span className="font-semibold text-gray-700">Procedure:</span>{" "}
-                <span className="text-gray-700">{procedure}</span>
+                <span className="text-gray-700 whitespace-pre-line block">{formatProcedureText(procedure)}</span>
               </div>
             )}
           </div>
@@ -109,3 +133,4 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
     </div>
   );
 };
+
