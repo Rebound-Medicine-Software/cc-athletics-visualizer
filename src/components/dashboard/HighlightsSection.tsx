@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
@@ -60,12 +61,20 @@ export const HighlightsSection = ({
     const primaryTeam = Object.entries(teamCounts)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
-    // Find top performer based on peak force
+    // Find top performer based on peak force (handle undefined/non-number safely)
     const athletePerformances = filteredData.reduce((acc, test) => {
       const metrics = test.metrics as any;
-      const peakForce = metrics?.peak_force || metrics?.force_peak || 0;
-      
-      if (peakForce && typeof peakForce === 'number' && !isNaN(peakForce) && peakForce > 0) {
+      // Support multiple possible metric names, use the first that's a valid number
+      let peakForce: number = 0;
+      if (typeof metrics?.peak_force === 'number') {
+        peakForce = metrics.peak_force;
+      } else if (typeof metrics?.force_peak === 'number') {
+        peakForce = metrics.force_peak;
+      } else if (typeof metrics?.peakForce === 'number') {
+        peakForce = metrics.peakForce;
+      }
+      peakForce = Number.isFinite(peakForce) ? peakForce : 0;
+      if (peakForce > 0) {
         if (!acc[test.athlete_name] || acc[test.athlete_name] < peakForce) {
           acc[test.athlete_name] = peakForce;
         }
