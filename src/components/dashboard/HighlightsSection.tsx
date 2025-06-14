@@ -1,5 +1,6 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
@@ -17,26 +18,30 @@ export const HighlightsSection = ({
   onTeamChange,
   resetFiltersKey
 }: HighlightsSectionProps) => {
-  const uniqueTeams = [...new Set(data.map(d => d.team_name))];
+  // Multi-select states
+  const allTeams = Array.from(new Set(data.map(d => d.team_name)));
+  const [selectedTeams, setSelectedTeams] = useState<string[]>(selectedTeam && selectedTeam !== "all" ? [selectedTeam] : []);
+  const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
-  // Athlete dropdown is now always filtered to current team, but local only
-  // --- Update: Only show athletes from the selected team in the Athlete Name dropdown ---
-  const filteredAthletes =
-    selectedTeam && selectedTeam !== "all"
-      ? [...new Set(data.filter(d => d.team_name === selectedTeam).map(d => d.athlete_name))]
-      : [...new Set(data.map(d => d.athlete_name))];
-
-  const [athleteValue, setAthleteValue] = useState("all");
-
-  // Reset ALL filters if parent requests reset
+  // Update multi state when team dropdown (used by parent for global selection) or reset is triggered
   useEffect(() => {
-    setAthleteValue("all");
+    setSelectedTeams(selectedTeam && selectedTeam !== "all" ? [selectedTeam] : []);
+    setSelectedAthletes([]);
   }, [selectedTeam, resetFiltersKey]);
 
-  // Data shown is filtered by team and (local) athlete
+  // Athlete options, filtered by selected team(s)
+  const filteredAthletes = selectedTeams.length > 0
+    ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
+    : Array.from(new Set(data.map(d => d.athlete_name)));
+
+  // Dropdown options formatting
+  const teamOptions = allTeams.map(t => ({ value: t, label: t }));
+  const athleteOptions = filteredAthletes.map(a => ({ value: a, label: a }));
+
+  // Filtering logic
   const filteredData = data.filter(test => {
-    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
-    const athleteMatch = !athleteValue || athleteValue === "all" || test.athlete_name === athleteValue;
+    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
+    const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
     return teamMatch && athleteMatch;
   });
 
@@ -51,19 +56,17 @@ export const HighlightsSection = ({
       };
     }
     const totalTests = filteredData.length;
-    
+
     // Find the most common team name
     const teamCounts = filteredData.reduce((acc, test) => {
       acc[test.team_name] = (acc[test.team_name] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-    // Fix: force a & b to numbers
     const primaryTeam =
       Object.entries(teamCounts)
         .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
 
-    // Find top performer based on peak force (handle undefined/non-number safely)
+    // Find top performer based on peak force
     const athletePerformances = filteredData.reduce((acc, test) => {
       const metrics = test.metrics as any;
       let peakForce: number = 0;
@@ -82,8 +85,6 @@ export const HighlightsSection = ({
       }
       return acc;
     }, {} as Record<string, number>);
-
-    // Fix: force a & b to numbers
     const topPerformer =
       Object.entries(athletePerformances)
         .sort(([, a], [, b]) => (Number(b) || 0) - (Number(a) || 0))[0]?.[0] || "N/A";
@@ -101,35 +102,33 @@ export const HighlightsSection = ({
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
-            <Select value={selectedTeam || "all"} onValueChange={val => { onTeamChange(val); }}>
-              <SelectTrigger className="bg-white text-center">
-                <SelectValue placeholder="All Teams" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-center">All Teams</SelectItem>
-                {uniqueTeams.map(team => (
-                  <SelectItem key={team} value={team} className="text-center">
-                    {team}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={teamOptions}
+              value={selectedTeams}
+              onChange={(next) => {
+                setSelectedTeams(next);
+                // Also update global state to first-selected team or "all" if all cleared
+                if (next.length === 1) {
+                  onTeamChange(next[0]);
+                } else if (next.length === 0) {
+                  onTeamChange("all");
+                }
+              }}
+              placeholder="All Teams"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
           <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select value={athleteValue} onValueChange={val => setAthleteValue(val)}>
-              <SelectTrigger className="bg-white text-center">
-                <SelectValue placeholder="All Athletes" className="text-center" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-center">All Athletes</SelectItem>
-                {filteredAthletes.map(athlete => (
-                  <SelectItem key={athlete} value={athlete} className="text-center">
-                    {athlete}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={athleteOptions}
+              value={selectedAthletes}
+              onChange={setSelectedAthletes}
+              placeholder="All Athletes"
+              className="text-center"
+              labelClassName="bg-white"
+            />
           </div>
         </div>
       </CardHeader>
@@ -162,3 +161,4 @@ export const HighlightsSection = ({
     </Card>
   );
 };
+
