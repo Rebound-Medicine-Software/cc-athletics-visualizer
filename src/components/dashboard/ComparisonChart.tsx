@@ -1,6 +1,5 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 
 interface ComparisonChartProps {
@@ -89,6 +88,30 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
       .slice(0, 6);
   })();
 
+  // Determine max value for calculating band percentages
+  const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
+  // Bands: 'The Best' 90-100% (green), 'Good' 75-90% (yellow), 'Modest' 50-75% (orange)
+  const bandAreas = [
+    {
+      name: "The Best",
+      color: "#bbf7d0", // tailwind green-200
+      from: maxValue * 0.9,
+      to: maxValue,
+    },
+    {
+      name: "Good",
+      color: "#fde68a", // tailwind yellow-200
+      from: maxValue * 0.75,
+      to: maxValue * 0.9,
+    },
+    {
+      name: "Modest",
+      color: "#fed7aa", // tailwind orange-200
+      from: maxValue * 0.5,
+      to: maxValue * 0.75,
+    },
+  ];
+
   // Y axis label
   const yAxisLabel = metricType || "Peak Force (N)";
 
@@ -120,6 +143,21 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              {/* Colored achievement bands */}
+              {maxValue > 0 &&
+                bandAreas.map(band => (
+                  <ReferenceArea
+                    key={band.name}
+                    y1={band.from}
+                    y2={band.to}
+                    label={null}
+                    fill={band.color}
+                    fillOpacity={0.55}
+                    stroke="none"
+                    ifOverflow="extendDomain"
+                  />
+                ))
+              }
               <XAxis
                 dataKey="name"
                 tick={{ fontSize: 10 }}
@@ -150,6 +188,12 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
               />
             </BarChart>
           </ResponsiveContainer>
+          {/* Legend for bands */}
+          <div className="flex gap-3 mt-2 items-center justify-center text-xs">
+            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#bbf7d0'}}></span> The Best (90-100%)</span>
+            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fde68a'}}></span> Good (75-90%)</span>
+            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fed7aa'}}></span> Modest (50-75%)</span>
+          </div>
         </div>
       </CardContent>
     </Card>

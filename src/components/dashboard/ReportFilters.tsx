@@ -27,14 +27,22 @@ export const ReportFilters = ({
     metricType: ""
   });
 
-  // Unique dropdown options
-  const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
-  const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
+  // Unique values dependent on selections
+  const filteredByTest = data.filter(d =>
+    !filters.testName || d.test_name === filters.testName
+  );
+  const uniqueAthletes = [...new Set(filteredByTest.map(d => d.athlete_name))];
 
-  // Filter test names - remove "All Tests" and "Isometric Test"
-  const uniqueTests = [...new Set(data.map(d => d.test_name))].filter(test => test !== "All Tests" && test !== "Isometric Test");
+  const filteredByAthlete = filters.selectedAthletes.length === 0 ?
+    filteredByTest :
+    filteredByTest.filter(d => filters.selectedAthletes.includes(d.athlete_name));
+  const uniqueTestDates = [...new Set(filteredByAthlete.map(d => d.test_date))].sort();
 
-  // Metric types per test
+  // Show only tests in data
+  const uniqueTests = [...new Set(data.map(d => d.test_name))]
+    .filter(test => test !== "All Tests" && test !== "Isometric Test");
+
+  // Metric types as before
   const getMetricTypesForTest = (testName: string): string[] => {
     switch (testName) {
       case "Drop Jump":
@@ -56,16 +64,18 @@ export const ReportFilters = ({
     setFilters(prev => ({
       ...prev,
       testName: value,
-      metricType: ""
+      metricType: "",
+      selectedAthletes: [],
+      testDates: []
     }));
     onTestSelect(value);
   };
 
   const handleAthleteChange = (value: string) => {
     if (value === "all") {
-      setFilters(prev => ({ ...prev, selectedAthletes: [] }));
+      setFilters(prev => ({ ...prev, selectedAthletes: [], testDates: [] }));
     } else {
-      setFilters(prev => ({ ...prev, selectedAthletes: [value] }));
+      setFilters(prev => ({ ...prev, selectedAthletes: [value], testDates: [] }));
     }
   };
 
@@ -80,10 +90,10 @@ export const ReportFilters = ({
   // DATA process for chart (send filters to chart)
   const getFilteredDataForChart = () => {
     return data.filter(test => {
+      const testMatch = !filters.testName || test.test_name === filters.testName;
       const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
       const dateMatch = filters.testDates.length === 0 || filters.testDates.includes(test.test_date);
-      const testMatch = !filters.testName || test.test_name === filters.testName;
-      return athleteMatch && dateMatch && testMatch;
+      return testMatch && athleteMatch && dateMatch;
     });
   };
 
@@ -91,18 +101,18 @@ export const ReportFilters = ({
     <Card className="bg-teal-50/80 border-teal-200">
       <CardContent className="p-4">
         {/* 1. Header */}
-        <div className="flex mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-full text-lg font-semibold">
+        <div className="flex justify-center mb-4">
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
             Individual Filters
           </Button>
         </div>
 
         {/* 2. Dropdown Filters Row */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-end">
           {/* Athlete Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
-            <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange}>
+          <div className="w-full min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <Select value={filters.selectedAthletes[0] || "all"} onValueChange={handleAthleteChange} disabled={!filters.testName}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Athletes" />
               </SelectTrigger>
@@ -118,9 +128,9 @@ export const ReportFilters = ({
           </div>
 
           {/* Test Date(s) */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date(s)</label>
-            <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange}>
+          <div className="w-full min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date(s)</label>
+            <Select value={filters.testDates[0] || "all"} onValueChange={handleDateChange} disabled={!filters.selectedAthletes.length || uniqueTestDates.length === 0}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
@@ -136,8 +146,8 @@ export const ReportFilters = ({
           </div>
 
           {/* Test Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+          <div className="w-full min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <Select value={filters.testName} onValueChange={handleTestNameChange}>
               <SelectTrigger className="bg-black text-white border-gray-600">
                 <SelectValue placeholder="Select Test" />
@@ -153,8 +163,8 @@ export const ReportFilters = ({
           </div>
 
           {/* Metric Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
+          <div className="w-full min-w-[160px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
             <Select 
               value={filters.metricType} 
               onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))} 
