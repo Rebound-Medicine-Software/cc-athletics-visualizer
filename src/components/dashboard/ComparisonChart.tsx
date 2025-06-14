@@ -1,3 +1,4 @@
+
 import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, ReferenceArea } from "recharts";
 import { getImprovementDirection } from "@/utils/metricsInfo";
 
@@ -10,13 +11,29 @@ export const ComparisonChart = ({
   testName: string;
   metricType: string;
 }) => {
+  // If no metricType is chosen, prompt user
+  if (!metricType) {
+    return (
+      <div className="text-center text-gray-500 py-4">
+        Select a metric to view comparison chart.
+      </div>
+    );
+  }
+
   // Helper: Direction for this metric (higher/lower is better)
   const direction = getImprovementDirection(metricType);
 
   // Extract values for this metric
   const metricVals = data
-    .map(d => ({ ...d, value: Number((d.metrics as any)[metricType]) }))
-    .filter(d => typeof d.value === "number" && !isNaN(d.value));
+    .map(d => {
+      if (!d.metrics || typeof (d.metrics as any)[metricType] === "undefined") {
+        // Optionally log missing data
+        // console.log("No valid metrics for this row", d);
+        return null;
+      }
+      return { ...d, value: Number((d.metrics as any)[metricType]) };
+    })
+    .filter(d => d !== null && typeof d.value === "number" && !isNaN(d.value));
 
   if (!metricVals.length) {
     return <div className="text-center text-gray-500 py-4">No data for selected metric.</div>;
