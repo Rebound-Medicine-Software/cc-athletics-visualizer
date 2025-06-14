@@ -6,27 +6,27 @@ import { Trophy, TrendingUp, Users, Calendar } from "lucide-react";
 
 interface HighlightsSectionProps {
   data: TestData[];
+  selectedTeam: string;
   selectedAthlete: string;
-  selectedTestDate: string;
+  onTeamChange: (team: string) => void;
   onAthleteChange: (athlete: string) => void;
-  onTestDateChange: (date: string) => void;
 }
 
 export const HighlightsSection = ({
   data,
+  selectedTeam,
   selectedAthlete,
-  selectedTestDate,
-  onAthleteChange,
-  onTestDateChange
+  onTeamChange,
+  onAthleteChange
 }: HighlightsSectionProps) => {
+  const uniqueTeams = [...new Set(data.map(d => d.team_name))];
   const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
-  const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
 
   // Filter data based on selections
   const filteredData = data.filter(test => {
+    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
     const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
-    const dateMatch = !selectedTestDate || selectedTestDate === "all" || test.test_date === selectedTestDate;
-    return athleteMatch && dateMatch;
+    return teamMatch && athleteMatch;
   });
 
   // Calculate highlights based on filtered data
@@ -67,6 +67,7 @@ export const HighlightsSection = ({
     const topPerformer = Object.entries(athletePerformances)
       .sort(([,a], [,b]) => b - a)[0]?.[0] || "N/A";
 
+    const uniqueTestDates = [...new Set(filteredData.map(d => d.test_date))].sort();
     const latestTest = uniqueTestDates[uniqueTestDates.length - 1] || "N/A";
 
     return { totalTests, primaryTeam, topPerformer, latestTest };
@@ -80,6 +81,22 @@ export const HighlightsSection = ({
         <CardTitle className="text-center text-lg text-gray-800">Performance Highlights</CardTitle>
         <div className="flex gap-4 justify-center">
           <div className="flex-1 max-w-xs">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
+            <Select value={selectedTeam || "all"} onValueChange={onTeamChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="All Teams" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                {uniqueTeams.map(team => (
+                  <SelectItem key={team} value={team}>
+                    {team}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1 max-w-xs">
             <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
             <Select value={selectedAthlete || "all"} onValueChange={onAthleteChange}>
               <SelectTrigger className="bg-white">
@@ -90,22 +107,6 @@ export const HighlightsSection = ({
                 {uniqueAthletes.map(athlete => (
                   <SelectItem key={athlete} value={athlete}>
                     {athlete}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex-1 max-w-xs">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
-            <Select value={selectedTestDate || "all"} onValueChange={onTestDateChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="All Dates" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dates</SelectItem>
-                {uniqueTestDates.map(date => (
-                  <SelectItem key={date} value={date}>
-                    {date}
                   </SelectItem>
                 ))}
               </SelectContent>

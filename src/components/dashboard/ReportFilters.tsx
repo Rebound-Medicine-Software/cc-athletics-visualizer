@@ -9,16 +9,12 @@ import { ComparisonChart } from "./ComparisonChart";
 interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
-  selectedTeams: string[];
-  onTeamsChange: (teams: string[]) => void;
   allData: TestData[];
 }
 
 export const ReportFilters = ({
   data,
   onTestSelect,
-  selectedTeams,
-  onTeamsChange,
   allData
 }: ReportFiltersProps) => {
   const [filters, setFilters] = useState({
@@ -29,7 +25,6 @@ export const ReportFilters = ({
   });
 
   // Get unique values for dropdowns
-  const uniqueTeams = [...new Set(allData.map(d => d.team_name))];
   const uniqueAthletes = [...new Set(data.map(d => d.athlete_name))];
   const uniqueTestDates = [...new Set(data.map(d => d.test_date))].sort();
 
@@ -61,14 +56,6 @@ export const ReportFilters = ({
       metricType: ""
     }));
     onTestSelect(value);
-  };
-
-  const handleTeamChange = (value: string) => {
-    if (value === "all") {
-      onTeamsChange([]);
-    } else {
-      onTeamsChange([value]);
-    }
   };
 
   const handleAthleteChange = (value: string) => {
@@ -106,24 +93,6 @@ export const ReportFilters = ({
           </Button>
         </div>
         
-        {/* Team Name Filter */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Team Name</label>
-          <Select value={selectedTeams[0] || "all"} onValueChange={handleTeamChange}>
-            <SelectTrigger className="bg-white max-w-xs">
-              <SelectValue placeholder="All Teams" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Teams</SelectItem>
-              {uniqueTeams.map(team => (
-                <SelectItem key={team} value={team}>
-                  {team}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="grid grid-cols-4 gap-4 mb-6">
           {/* Athlete Name */}
           <div>

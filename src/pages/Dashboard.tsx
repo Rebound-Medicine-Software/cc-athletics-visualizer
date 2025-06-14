@@ -34,9 +34,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { data, isLoading, error, refetch } = useSupabaseData();
   const [selectedTest, setSelectedTest] = useState<string>("");
-  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<string>("");
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
-  const [selectedTestDate, setSelectedTestDate] = useState<string>("");
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
 
@@ -71,10 +70,12 @@ const Dashboard = () => {
     });
   };
 
-  // Filter data based on selected teams
-  const filteredData = data?.filter(test => 
-    selectedTeams.length === 0 || selectedTeams.includes(test.team_name)
-  ) || [];
+  // Filter data based on selected team and athlete (master filters)
+  const filteredData = data?.filter(test => {
+    const teamMatch = !selectedTeam || selectedTeam === "all" || test.team_name === selectedTeam;
+    const athleteMatch = !selectedAthlete || selectedAthlete === "all" || test.athlete_name === selectedAthlete;
+    return teamMatch && athleteMatch;
+  }) || [];
 
   // Get organization data for logo and branding
   const getOrganizationData = () => {
@@ -100,7 +101,7 @@ const Dashboard = () => {
 
   const navigationItems = [
     { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
-    { id: "dashboard", label: "Dashboard", icon: Activity, description: "Testing reports" },
+    { id: "dashboard", label: "Analytics", icon: Activity, description: "Testing reports" },
     { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
     { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
     { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
@@ -142,29 +143,24 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Highlights Section */}
+            {/* Highlights Section with master filters */}
             <HighlightsSection
-              data={filteredData.map(item => ({
-                ...item,
-                test_date: formatDate(item.test_date)
-              }))}
+              data={data || []}
+              selectedTeam={selectedTeam}
               selectedAthlete={selectedAthlete}
-              selectedTestDate={selectedTestDate}
+              onTeamChange={(team) => setSelectedTeam(team === "all" ? "" : team)}
               onAthleteChange={(athlete) => setSelectedAthlete(athlete === "all" ? "" : athlete)}
-              onTestDateChange={(date) => setSelectedTestDate(date === "all" ? "" : date)}
             />
+
+            {/* Metric Cards */}
+            <MetricCards selectedTest={selectedTest} data={filteredData} />
 
             {/* Filters with integrated comparison chart */}
             <ReportFilters 
               data={filteredData} 
               onTestSelect={setSelectedTest}
-              selectedTeams={selectedTeams}
-              onTeamsChange={setSelectedTeams}
               allData={data || []}
             />
-
-            {/* Metric Cards */}
-            <MetricCards selectedTest={selectedTest} data={filteredData} />
 
             {/* Region Comparisons */}
             <RegionComparison data={filteredData} />
