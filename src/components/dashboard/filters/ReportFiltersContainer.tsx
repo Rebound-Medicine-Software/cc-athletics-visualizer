@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -157,6 +156,12 @@ export function ReportFiltersContainer({
             onTestSelect={onTestSelect}
             resetFiltersKey={resetFiltersKey}
           />
+          {/* --- Move the metricCardsSlot INSIDE this Card, under the filters --- */}
+          {metricCardsSlot && (
+            <div className="mb-6">
+              {metricCardsSlot}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -184,12 +189,6 @@ export function ReportFiltersContainer({
         metricType={metricType}
       />
 
-      {/* Metric Cards from original INDIVIDUAL filters REMAIN (if any, above only) */}
-      {metricCardsSlot && (
-        <div className="mb-6">
-          {metricCardsSlot}
-        </div>
-      )}
       {/* The Region Comparison stays as in the original layout, nothing changes here */}
       <ComparisonChart
         data={getFilteredDataForChart()}
@@ -202,4 +201,3 @@ export function ReportFiltersContainer({
 
 // Re-export under old name for compatibility
 export { ReportFiltersContainer as ReportFilters };
-
