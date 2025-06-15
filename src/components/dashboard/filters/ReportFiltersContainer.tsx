@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ComparisonChart } from "../ComparisonChart";
@@ -10,7 +10,6 @@ import { EliteComparisonFilters } from "./EliteComparisonFilters";
 import { EliteComparisonChart } from "../EliteComparisonChart";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useMemo } from "react";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -140,65 +139,67 @@ export function ReportFiltersContainer({
   };
 
   return (
-    <Card className="bg-white border-teal-200">
-      <CardContent className="p-4">
-        {/* Header */}
-        <div className="flex justify-center mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
-            Individual Filters
-          </Button>
-        </div>
-
-        {/* Individual Filters */}
-        <IndividualFilters
-          data={data}
-          allData={allData}
-          selectedTeams={selectedTeams}
-          filters={filters}
-          setFilters={setFilters}
-          onTestSelect={onTestSelect}
-          resetFiltersKey={resetFiltersKey}
-        />
-
-        {/* --- COPY: Comparisons Amongst Elites --- */}
-        <EliteComparisonFilters
-          eliteMetrics={eliteMetricsRaw}
-          athleteData={allData}
-          selectedEliteFilters={selectedEliteFilters}
-          setSelectedEliteFilters={setSelectedEliteFilters}
-          selectedIndividualFilters={selectedIndividualFilters}
-          setSelectedIndividualFilters={setSelectedIndividualFilters}
-          metricType={metricType}
-          setMetricType={setMetricType}
-          onFilterChange={handleEliteFilterUpdate}
-        />
-
-        {/* EliteComparisonChart replaces MetricCards/Video! */}
-        <EliteComparisonChart
-          individuals={individualChartData}
-          eliteValue={comparisonEliteRow && metricType ? Number(comparisonEliteRow.metric_value) : null}
-          metricType={metricType}
-        />
-
-        {/* Chart and Video from original block REMOVED */}
-        {/* <ComparisonChart ... /> and <VideoBox ... /> are removed from this part */}
-
-        {/* Metric Cards from original INDIVIDUAL filters REMAIN (if any, above only) */}
-        {metricCardsSlot && (
-          <div className="mb-6">
-            {metricCardsSlot}
+    <div className="space-y-6">
+      {/* Header and Individual Filters in first box */}
+      <Card className="bg-white border-teal-200">
+        <CardContent className="p-4">
+          <div className="flex justify-center mb-4">
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
+              Individual Filters
+            </Button>
           </div>
-        )}
-        {/* The Region Comparison stays as in the original layout, nothing changes here */}
-        <ComparisonChart
-                data={getFilteredDataForChart()}
-                testName={filters.testNames}
-                metricType={filters.metricTypes}
-              />
-      </CardContent>
-    </Card>
+          <IndividualFilters
+            data={data}
+            allData={allData}
+            selectedTeams={selectedTeams}
+            filters={filters}
+            setFilters={setFilters}
+            onTestSelect={onTestSelect}
+            resetFiltersKey={resetFiltersKey}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Comparison Amongst Elites in its own, visually distinct box */}
+      <Card className="bg-white border-amber-200">
+        <CardContent className="p-4">
+          <EliteComparisonFilters
+            eliteMetrics={eliteMetricsRaw}
+            athleteData={allData}
+            selectedEliteFilters={selectedEliteFilters}
+            setSelectedEliteFilters={setSelectedEliteFilters}
+            selectedIndividualFilters={selectedIndividualFilters}
+            setSelectedIndividualFilters={setSelectedIndividualFilters}
+            metricType={metricType}
+            setMetricType={setMetricType}
+            onFilterChange={handleEliteFilterUpdate}
+          />
+        </CardContent>
+      </Card>
+
+      {/* EliteComparisonChart replaces MetricCards/Video! */}
+      <EliteComparisonChart
+        individuals={individualChartData}
+        eliteValue={comparisonEliteRow && metricType ? Number(comparisonEliteRow.metric_value) : null}
+        metricType={metricType}
+      />
+
+      {/* Metric Cards from original INDIVIDUAL filters REMAIN (if any, above only) */}
+      {metricCardsSlot && (
+        <div className="mb-6">
+          {metricCardsSlot}
+        </div>
+      )}
+      {/* The Region Comparison stays as in the original layout, nothing changes here */}
+      <ComparisonChart
+        data={getFilteredDataForChart()}
+        testName={filters.testNames}
+        metricType={filters.metricTypes}
+      />
+    </div>
   );
 }
 
 // Re-export under old name for compatibility
 export { ReportFiltersContainer as ReportFilters };
+
