@@ -59,6 +59,51 @@ export type Database = {
           },
         ]
       }
+      elite_athlete_metrics: {
+        Row: {
+          age_group: string | null
+          athlete_name: string
+          created_at: string | null
+          exercise: string
+          id: string
+          metric_type: string
+          metric_value: number
+          sex: string | null
+          sport: string | null
+          team_name: string
+          test_date: string | null
+          weight_category_kg: number | null
+        }
+        Insert: {
+          age_group?: string | null
+          athlete_name: string
+          created_at?: string | null
+          exercise: string
+          id?: string
+          metric_type: string
+          metric_value: number
+          sex?: string | null
+          sport?: string | null
+          team_name: string
+          test_date?: string | null
+          weight_category_kg?: number | null
+        }
+        Update: {
+          age_group?: string | null
+          athlete_name?: string
+          created_at?: string | null
+          exercise?: string
+          id?: string
+          metric_type?: string
+          metric_value?: number
+          sex?: string | null
+          sport?: string | null
+          team_name?: string
+          test_date?: string | null
+          weight_category_kg?: number | null
+        }
+        Relationships: []
+      }
       exercise_videos: {
         Row: {
           created_at: string
