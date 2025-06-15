@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TestData } from "@/types/forcePlateTypes";
 import { ComparisonChart } from "./ComparisonChart";
 import { formatDate } from "@/utils/dateUtils";
-import { RefreshCcw } from "lucide-react"; // Import the refresh icon
+import { RefreshCcw } from "lucide-react";
 import { VideoBox } from "./VideoBox";
 
 interface ReportFiltersProps {
@@ -122,6 +122,15 @@ export const ReportFilters = ({
   };
   const handleResetMetricType = () => setFilters(prev => ({ ...prev, metricTypes: "" }));
 
+  // ----- Disable logic for sequential filters -----
+  // 1. Test Name (always enabled)
+  // 2. Athlete Name (enabled after test name picked)
+  const athleteEnabled = !!filters.testNames;
+  // 3. Test Date (enabled after athlete selected)
+  const testDateEnabled = filters.selectedAthletes.length > 0;
+  // 4. Metric Type (enabled after test date picked)
+  const metricTypeEnabled = !!filters.testDates;
+
   // --- Compute filtered data for chart ---
   const getFilteredDataForChart = () => {
     return data.filter(test => {
@@ -149,63 +158,9 @@ export const ReportFilters = ({
           </Button>
         </div>
 
-        {/* 2. Dropdown Filters Row */}
+        {/* 2. Dropdown Filters Row (ORDER CHANGED & SEQUENTIAL LOGIC APPLIED) */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-end">
-          {/* Athlete Name (MultiSelect) */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={athleteOptions}
-                value={filters.selectedAthletes}
-                onChange={handleAthleteChange}
-                placeholder="All Athletes"
-                className="text-center"
-                labelClassName="bg-white"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Athlete Name"
-                className="p-2"
-                onClick={handleResetAthlete}
-                type="button"
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Test Date(s) (Single Select) */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
-            <div className="flex items-center gap-2">
-              <Select value={filters.testDates} onValueChange={handleDateChange}>
-                <SelectTrigger className="bg-white text-center w-full">
-                  <SelectValue placeholder="All Dates" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dateOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Test Date"
-                className="p-2"
-                onClick={handleResetDate}
-                type="button"
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Test Name (Single Select) */}
+          {/* 1. Test Name (always enabled) */}
           <div className="w-[200px] min-w-[200px] max-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <div className="flex items-center gap-2">
@@ -234,29 +189,92 @@ export const ReportFilters = ({
             </div>
           </div>
 
-          {/* Metric Type (Single Select) */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px]">
+          {/* 2. Athlete Name (enabled after Test Name is selected) */}
+          <div className={`w-[200px] min-w-[200px] max-w-[200px]`}>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <div className="flex items-center gap-2">
+              <div className={athleteEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={athleteOptions}
+                  value={filters.selectedAthletes}
+                  onChange={athleteEnabled ? handleAthleteChange : () => {}}
+                  placeholder="All Athletes"
+                  className={`text-center ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"}
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Athlete Name"
+                className={`p-2 ${!athleteEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={athleteEnabled ? handleResetAthlete : undefined}
+                type="button"
+                disabled={!athleteEnabled}
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* 3. Test Date (enabled after Athlete Name) */}
+          <div className={`w-[200px] min-w-[200px] max-w-[200px]`}>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
+            <div className="flex items-center gap-2">
+              <div className={testDateEnabled ? "" : "pointer-events-none"}>
+                <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
+                  <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full`}>
+                    <SelectValue placeholder="All Dates" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dateOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Date"
+                className={`p-2 ${!testDateEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={testDateEnabled ? handleResetDate : undefined}
+                type="button"
+                disabled={!testDateEnabled}
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* 4. Metric Type (enabled after Test Date) */}
+          <div className={`w-[200px] min-w-[200px] max-w-[200px]`}>
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
             <div className="flex items-center gap-2">
-              <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
-                <SelectTrigger className="bg-white text-center w-full">
-                  <SelectValue placeholder="All Metrics" />
-                </SelectTrigger>
-                <SelectContent>
-                  {metricTypeOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
+                <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
+                  <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full`}>
+                    <SelectValue placeholder="All Metrics" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {metricTypeOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Metric Type"
-                className="p-2"
-                onClick={handleResetMetricType}
+                className={`p-2 ${!metricTypeEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={metricTypeEnabled ? handleResetMetricType : undefined}
                 type="button"
+                disabled={!metricTypeEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
