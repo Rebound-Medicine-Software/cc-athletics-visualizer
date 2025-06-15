@@ -1,8 +1,7 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { GoogleSpreadsheet } from "npm:google-spreadsheet";
-import { fromBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { decode as base64Decode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +31,9 @@ serve(async (req: Request) => {
       googleCred = JSON.parse(GOOGLE_CRED);
     } catch (e) {
       try {
-        googleCred = JSON.parse(new TextDecoder().decode(fromBase64(GOOGLE_CRED)));
+        googleCred = JSON.parse(
+          new TextDecoder().decode(base64Decode(GOOGLE_CRED))
+        );
       } catch {
         throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT_JSON secret. Is it valid JSON?");
       }
