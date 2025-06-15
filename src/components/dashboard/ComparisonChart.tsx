@@ -1,83 +1,16 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
+import { metricCaseLogic } from "./chart/useMetricCaseLogic";
+import { ChartLegend } from "./chart/ChartLegend";
+import { EmptyComparisonChart } from "./chart/EmptyComparisonChart";
 
 interface ComparisonChartProps {
   data: TestData[];
   testName?: string;
   metricType?: string;
 }
-
-const metricCaseLogic = (
-  test: TestData,
-  testName?: string,
-  metricType?: string
-): { value: number | null; yAxisLabel: string } => {
-  if (!testName || !metricType) return { value: null, yAxisLabel: "Peak Force (N)" };
-
-  let value: number | undefined | null;
-  let yAxisLabel = metricType;
-
-  // Helper for camel/underscore
-  const pick = (keys: string[]) =>
-    keys.find(k => (test.metrics as any)?.[k] !== undefined) ?
-      (test.metrics as any)[keys.find(k => (test.metrics as any)?.[k] !== undefined) as string] : null;
-
-  switch (testName) {
-    case "Drop Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Contact Time") value = pick(["contact_time", "avg_contact_time"]);
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
-      break;
-    case "Countermovement Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Peak Power") value = pick(["peak_power"]);
-      if (metricType === "Relative Peak Power") {
-        // Compute relative peak power = Peak Power / Body Mass
-        const peak_power = pick(["peak_power"]);
-        const body_mass = pick(["body_mass"]);
-        if (
-          peak_power !== null &&
-          body_mass !== null &&
-          !isNaN(Number(peak_power)) &&
-          !isNaN(Number(body_mass)) &&
-          Number(body_mass) !== 0
-        ) {
-          value = Number(peak_power) / Number(body_mass);
-        } else {
-          value = null;
-        }
-        yAxisLabel = "Relative Peak Power (W/kg)";
-      }
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      break;
-    case "Squat Jump":
-      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
-      if (metricType === "Take-off Velocity") value = pick(["takeoff_velocity", "peak_velocity"]);
-      if (metricType === "Average Rate of Force Development") value = pick(["avg_rfd", "rate_of_force_development", "rfd_max"]);
-      if (metricType === "Average Propulsive Power") value = pick(["avg_propulsive_power", "avg_power"]);
-      break;
-    case "Pogo Jump":
-      if (metricType === "Jump Height (cm)" || metricType === "Jump Height (Pogo)") value = pick(["jump_height", "avg_jump_height"]);
-      if (metricType === "Power") value = pick(["power", "avg_power"]);
-      if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
-      if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
-      break;
-    default:
-      // "Isometric Test" etc.
-      if (metricType === "Maximum Rate of Force Development") value = pick(["rfd_max", "avg_rfd"]);
-      if (metricType === "Force at Max Rate of Force Development") value = pick(["force_150ms", "force_100ms", "force_50ms", "force_peak"]);
-      if (metricType === "Peak Force" || metricType === "ISO Peak Force") value = pick(["peak_force", "force_peak"]);
-      break;
-  }
-
-  // try to get number
-  if (value !== undefined && value !== null && !isNaN(Number(value))) {
-    return { value: Number(value), yAxisLabel };
-  }
-  return { value: null, yAxisLabel };
-};
 
 export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartProps) => {
   // Group and average data for chart: top 6 per metric value
@@ -104,9 +37,7 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
       .slice(0, 6);
   })();
 
-  // Determine max value for calculating band percentages
   const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
-  // Bands: 'The Best' 90-100% (green), 'Good' 75-90% (yellow), 'Modest' 50-75% (orange)
   const bandAreas = [
     {
       name: "The Best",
@@ -128,30 +59,16 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
     },
   ];
 
-  // Y axis label
   const yAxisLabel = chartData.length > 0 && chartData[0].value !== undefined
     ? metricCaseLogic(data[0], testName, metricType).yAxisLabel
     : metricType || "Peak Force (N)";
 
   if (chartData.length === 0) {
-    return (
-      <Card className="bg-teal-50/80 border-teal-200 mt-6">
-        <CardHeader>
-          <CardTitle className="text-center text-lg text-gray-800">
-            Comparisons Amongst Peers
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 w-full flex items-center justify-center">
-            <p className="text-gray-600">No data available for comparison</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <EmptyComparisonChart />;
   }
 
   return (
-    <Card className="bg-teal-50/80 border-teal-200 mt-6">
+    <Card className="bg-teal-50/80 border-teal-200">
       <CardHeader>
         <CardTitle className="text-center text-lg text-gray-800">
           Comparisons Amongst Peers{metricType ? ` - ${metricType}` : " - Peak Force"}
@@ -168,7 +85,7 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
                 left: 20,
                 bottom: 70,
               }}
-              barCategoryGap="25%" // 5% increase over default (was 30%)
+              barCategoryGap="25%"
             >
               {/* Colored achievement bands */}
               {maxValue > 0 &&
@@ -215,11 +132,7 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
               />
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex gap-3 mt-2 items-center justify-center text-xs">
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#bbf7d0'}}></span> The Best (90-100%)</span>
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fde68a'}}></span> Good (75-90%)</span>
-            <span className="flex items-center"><span className="w-4 h-3 rounded mr-1" style={{background:'#fed7aa'}}></span> Modest (50-75%)</span>
-          </div>
+          <ChartLegend />
         </div>
       </CardContent>
     </Card>
