@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
@@ -106,7 +107,7 @@ const Dashboard = () => {
         handleRefresh={handleRefresh}
         handleResetFilters={handleResetFilters}
       />
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="w-full">
         <div className="flex gap-6">
           <DashboardSidebar
             orgData={orgData}
@@ -117,7 +118,7 @@ const Dashboard = () => {
             navigationItems={navigationItems}
             handleLogout={handleLogout}
           />
-          <div className="flex-1">
+          <div className="flex-1 pr-6">
             <DashboardContent
               data={data || []}
               isLoading={isLoading}
