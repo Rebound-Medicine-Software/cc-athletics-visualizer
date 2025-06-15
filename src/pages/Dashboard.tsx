@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
@@ -18,6 +19,7 @@ import {
   Menu,
   X,
   RotateCw,
+  Database
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -28,6 +30,7 @@ const Dashboard = () => {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
+  const [isSyncingElite, setIsSyncingElite] = useState(false);
 
   useEffect(() => {
     const apiKey = localStorage.getItem("cc-athletics-api-key");
@@ -51,6 +54,27 @@ const Dashboard = () => {
   const handleResetFilters = () => {
     setResetFiltersKey(prev => prev + 1);
     setSelectedTeams([]);
+  };
+
+  const handleSyncEliteMetrics = async () => {
+    setIsSyncingElite(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke("sync-elite-metrics-from-sheets", {
+        method: "POST",
+      });
+      if (error) {
+        toast.error(`Elite Metrics Sync failed: ${error.message}`);
+      } else if (result && result.success) {
+        toast.success(`Sync completed: ${result.rows_inserted} rows inserted.`);
+        // Optionally: refetch();
+      } else {
+        toast.error(result?.error || "Unknown sync error.");
+      }
+    } catch (e: any) {
+      toast.error(`Elite Metrics Sync failed: ${e?.message || e}`);
+    } finally {
+      setIsSyncingElite(false);
+    }
   };
 
   const getOrganizationData = () => {
@@ -107,6 +131,21 @@ const Dashboard = () => {
         handleResetFilters={handleResetFilters}
       />
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* TEMPORARY: Sync Elite Metrics Button for testing */}
+        <div className="flex justify-end mb-2">
+          {/* Remove this block after testing */}
+          <button
+            onClick={handleSyncEliteMetrics}
+            disabled={isSyncingElite}
+            className="flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white font-medium px-4 py-2 rounded shadow-sm transition border border-purple-900"
+            style={{ zIndex: 50 }}
+            title="Trigger a one-time import from Google Sheets (temporary test only)"
+          >
+            <Database className="w-4 h-4" />
+            {isSyncingElite ? "Syncing Elite Metrics..." : "Sync Elite Metrics"}
+          </button>
+        </div>
+        {/* End temporary block */}
         <div className="flex gap-6">
           <DashboardSidebar
             orgData={orgData}
