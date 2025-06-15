@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw } from "lucide-react";
@@ -25,7 +24,7 @@ export const DashboardHeader = ({
         boxShadow: "0 4px 12px 0 rgba(0,0,0,0.03)",
       }}
     >
-      <div className="container mx-auto px-4 py-4 overflow-x-auto max-w-full">
+      <div className="w-full px-4 py-4">
         <div className="flex items-center justify-between min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <Activity className="w-8 h-8 text-blue-600 shrink-0" />
