@@ -59,9 +59,9 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     id: index + 1,
     teamName: test.team_name ?? "",
     athleteName: test.athlete_name ?? "",
-    sex: (test.sex ?? (test.metrics?.sex ?? "")) || "",         // support both formats
-    sport: test.sport ?? (test.metrics?.sport ?? "") || "",
-    ageGroup: test.age_group ?? (test.metrics?.age_group ?? "") || "",
+    sex: test.sex ?? test.metrics?.sex ?? "",
+    sport: test.sport ?? test.metrics?.sport ?? "",
+    ageGroup: test.age_group ?? test.metrics?.age_group ?? "",
     weightCategory: test.weight_category_kg ?? (test.metrics?.weight_category_kg ?? null),
     // Metrics: look for the metric in the 'metrics' field if present
     cmjJumpHeight:
