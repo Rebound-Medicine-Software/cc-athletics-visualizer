@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,19 +63,40 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
 
   // Handlers for elite
   const handleEliteChange = (field: string, val: any) => {
-    setSelectedEliteFilters((prev: any) => ({ ...prev, [field]: val }));
+    // Fix: if user selects 'ALL', treat as no filter (set to empty array for multi, or '' for single)
+    setSelectedEliteFilters((prev: any) => ({
+      ...prev,
+      [field]:
+        Array.isArray(val)
+          ? val.includes("ALL")
+            ? []
+            : val
+          : val === "ALL"
+          ? ""
+          : val
+    }));
     onFilterChange();
   };
 
   // Handlers for individual
   const handleIndividualChange = (field: string, val: any) => {
-    setSelectedIndividualFilters((prev: any) => ({ ...prev, [field]: val }));
+    setSelectedIndividualFilters((prev: any) => ({
+      ...prev,
+      [field]:
+        Array.isArray(val)
+          ? val.includes("ALL")
+            ? []
+            : val
+          : val === "ALL"
+          ? ""
+          : val
+    }));
     onFilterChange();
   };
 
   // Handlers for metricType
   const handleMetricTypeChange = (val: string) => {
-    setMetricType(val);
+    setMetricType(val === "ALL" ? "" : val);
     onFilterChange();
   };
 
@@ -93,12 +113,12 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           <div className="text-sm font-medium text-center pb-0 pt-2">Comparison Filters</div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Sport</label>
-            <Select value={selectedEliteFilters.sport} onValueChange={v => handleEliteChange('sport', v)}>
+            <Select value={selectedEliteFilters.sport || "ALL"} onValueChange={v => handleEliteChange('sport', v)}>
               <SelectTrigger className="bg-white text-center w-full">
                 <SelectValue placeholder="All Sports" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Sports</SelectItem>
+                <SelectItem value="ALL">All Sports</SelectItem>
                 {sports.map(sport => (
                   <SelectItem key={sport} value={sport}>{sport}</SelectItem>
                 ))}
@@ -107,12 +127,12 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Sex</label>
-            <Select value={selectedEliteFilters.sex} onValueChange={v => handleEliteChange('sex', v)}>
+            <Select value={selectedEliteFilters.sex || "ALL"} onValueChange={v => handleEliteChange('sex', v)}>
               <SelectTrigger className="bg-white text-center w-full">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="ALL">All</SelectItem>
                 {sexes.map(sex => (
                   <SelectItem key={sex} value={sex}>{sex}</SelectItem>
                 ))}
@@ -122,8 +142,8 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Weight Category (kg)</label>
             <MultiSelectDropdown
-              options={weightCats.map(cat => ({ value: cat, label: cat }))}
-              value={selectedEliteFilters.weight_category_kg || []}
+              options={[{ value: "ALL", label: "All" }, ...weightCats.map(cat => ({ value: cat, label: cat }))]}
+              value={selectedEliteFilters.weight_category_kg?.length === 0 ? ["ALL"] : selectedEliteFilters.weight_category_kg || []}
               onChange={v => handleEliteChange('weight_category_kg', v)}
               placeholder="All"
               className="text-center bg-white"
@@ -132,8 +152,8 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Age Group</label>
             <MultiSelectDropdown
-              options={ageGroups.map(ag => ({ value: ag, label: ag }))}
-              value={selectedEliteFilters.age_group || []}
+              options={[{ value: "ALL", label: "All" }, ...ageGroups.map(ag => ({ value: ag, label: ag }))]}
+              value={selectedEliteFilters.age_group?.length === 0 ? ["ALL"] : selectedEliteFilters.age_group || []}
               onChange={v => handleEliteChange('age_group', v)}
               placeholder="All"
               className="text-center bg-white"
@@ -146,8 +166,8 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Athlete Name</label>
             <MultiSelectDropdown
-              options={athleteNames.map(n => ({ value: n, label: n }))}
-              value={selectedIndividualFilters.athlete_names || []}
+              options={[{ value: "ALL", label: "All" }, ...athleteNames.map(n => ({ value: n, label: n }))]}
+              value={selectedIndividualFilters.athlete_names?.length === 0 ? ["ALL"] : selectedIndividualFilters.athlete_names || []}
               onChange={v => handleIndividualChange('athlete_names', v)}
               placeholder="All"
               className="text-center bg-white"
@@ -156,8 +176,8 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Weight (kg)</label>
             <MultiSelectDropdown
-              options={athleteWeights.map(w => ({ value: w, label: w }))}
-              value={selectedIndividualFilters.weights || []}
+              options={[{ value: "ALL", label: "All" }, ...athleteWeights.map(w => ({ value: w, label: w }))]}
+              value={selectedIndividualFilters.weights?.length === 0 ? ["ALL"] : selectedIndividualFilters.weights || []}
               onChange={v => handleIndividualChange('weights', v)}
               placeholder="All"
               className="text-center bg-white"
@@ -165,12 +185,12 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Test Name</label>
-            <Select value={selectedIndividualFilters.test_name || ""} onValueChange={v => handleIndividualChange('test_name', v)}>
+            <Select value={selectedIndividualFilters.test_name || "ALL"} onValueChange={v => handleIndividualChange('test_name', v)}>
               <SelectTrigger className="bg-white text-center w-full">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="ALL">All</SelectItem>
                 {testNames.map(test => (
                   <SelectItem key={test} value={test}>{test}</SelectItem>
                 ))}
@@ -179,12 +199,12 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Metric Type</label>
-            <Select value={metricType || ""} onValueChange={handleMetricTypeChange}>
+            <Select value={metricType || "ALL"} onValueChange={handleMetricTypeChange}>
               <SelectTrigger className="bg-white text-center w-full">
                 <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All</SelectItem>
+                <SelectItem value="ALL">All</SelectItem>
                 {metricTypes.map(mt => (
                   <SelectItem key={mt} value={mt}>{mt}</SelectItem>
                 ))}
