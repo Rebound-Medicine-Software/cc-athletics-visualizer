@@ -15,7 +15,6 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Load environment variables from Supabase Secrets
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -23,18 +22,15 @@ serve(async (req: Request) => {
     }
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get Service Account JSON from Supabase secret
     const GOOGLE_CRED = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
     if (!GOOGLE_CRED) {
-      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not set. Please add your Google Service Account JSON as a Supabase secret.");
+      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not set.");
     }
 
-    // Parse Google credentials
     let googleCred;
     try {
       googleCred = JSON.parse(GOOGLE_CRED);
     } catch (e) {
-      // Sometimes, secrets are base64-encoded by mistake - try to decode
       try {
         googleCred = JSON.parse(new TextDecoder().decode(fromBase64(GOOGLE_CRED)));
       } catch {
@@ -42,78 +38,89 @@ serve(async (req: Request) => {
       }
     }
 
-    // Get sheet ID and worksheet/tab
-    // For now you should hardcode this (tell user how to change), or ask them in future!
-    // You can get your Google Sheet ID from its URL: https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit#gid=XXX
     const SHEET_ID = "<PUT-YOUR-SHEET-ID-HERE>";
-    const WORKSHEET_TITLE = "Comparison Table"; // You can change as needed
+    const WORKSHEET_TITLE = "Comparison Table"; // Adjust as needed
 
-    // If the user hasn't entered the sheet ID, return error
     if (SHEET_ID === "<PUT-YOUR-SHEET-ID-HERE>") {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "You must update the code for sync-elite-metrics-from-sheets with your actual Google Sheet ID. Please provide your Sheet ID to your AI assistant so they can update it!",
+          error: "You must update the code for sync-elite-metrics-from-sheets with your actual Google Sheet ID.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    // Connect to Google Sheets
     const doc = new GoogleSpreadsheet(SHEET_ID);
     await doc.useServiceAccountAuth(googleCred);
     await doc.loadInfo();
 
-    // Get the right worksheet/tab
     const sheet = Object.values(doc.sheetsByIndex).find(ws => ws.title === WORKSHEET_TITLE);
     if (!sheet) {
-      throw new Error(`Worksheet/tab "${WORKSHEET_TITLE}" not found in your Google Sheet.`);
+      throw new Error(`Worksheet/tab "${WORKSHEET_TITLE}" not found.`);
     }
 
-    // Load all rows!
     const rows = await sheet.getRows();
     if (!rows.length) {
       throw new Error("No data rows found in the Comparison Table worksheet.");
     }
 
-    // Build the elite_athlete_metrics row array from sheet data
-    // You'll need to tailor this block if your comparison table uses different column names!
-    const metricsToInsert = [];
-    for (const row of rows) {
-      // Try to handle common columns -- update as needed for your real columns!
-      const team_name = row["Team"] ?? row["team_name"] ?? "";
-      const athlete_name = row["Athlete"] ?? row["athlete_name"] ?? "";
-      const sex = row["Sex"] ?? row["sex"] ?? null;
-      const sport = row["Sport"] ?? row["sport"] ?? null;
-      const age_group = row["Age Group"] ?? row["age_group"] ?? null;
-      const weight_category_kg = row["Weight (kg)"] ?? row["weight_category_kg"] ?? null;
-      const exercise = row["Exercise"] ?? row["exercise"] ?? "";
-      // For metric_type/value, you might have many rows per athlete/metric type. For now, we expect one row = one metric.
-      const metric_type = row["Metric Type"] ?? row["metric_type"] ?? "";
-      const metric_value = row["Metric Value"] ?? row["metric_value"] ?? null;
-      // Optionally, add test_date if available
-      const test_date = row["Test Date"] ?? row["test_date"] ?? null;
-
-      // Skip rows with missing required fields
-      if (!team_name || !athlete_name || !exercise || !metric_type || metric_value === null || metric_value === "") {
-        continue;
+    // HEADER MAPPING
+    const getString = (row, key) => row[key]?.toString().trim() || null;
+    const getNumber = (row, key) => {
+      const val = row[key];
+      if (typeof val === "number") return val;
+      if (typeof val === "string") {
+        const parsed = parseFloat(val.replace(/[^\d.-]/g, ''));
+        return isNaN(parsed) ? null : parsed;
       }
+      return null;
+    };
 
-      metricsToInsert.push({
-        team_name,
-        athlete_name,
-        sex,
-        sport,
-        age_group,
-        weight_category_kg: weight_category_kg ? Number(weight_category_kg) : null,
-        exercise,
-        metric_type,
-        metric_value: Number(metric_value),
-        test_date: test_date ? new Date(test_date) : null,
-      });
+    // Column names expected from user sample
+    const metricsColumnMap = [
+      // { column: [sheet-col-name], exercise, metric_type }
+      { column: "CMJ Jump Height (cm)", exercise: "CMJ", metric_type: "Jump Height (cm)" },
+      { column: "CMJ Peak Power (W)", exercise: "CMJ", metric_type: "Peak Power (W)" },
+      { column: "CMJ Relative Peak Power (W/kg)", exercise: "CMJ", metric_type: "Relative Peak Power (W/kg)" },
+      { column: "CMJ Reactive Strength Index", exercise: "CMJ", metric_type: "Reactive Strength Index" },
+      { column: "IMTP Peak Force (N)", exercise: "IMTP", metric_type: "Peak Force (N)" },
+      { column: "IMTP Relative Peak Force (N/kg)", exercise: "IMTP", metric_type: "Relative Peak Force (N/kg)" },
+    ];
+
+    const metricsToInsert = [];
+
+    for (const row of rows) {
+      const base = {
+        team_name: getString(row, "Team Name") ?? getString(row, "Team") ?? "",
+        athlete_name: getString(row, "Athlete Name") ?? getString(row, "Athlete") ?? "",
+        sex: getString(row, "Sex"),
+        sport: getString(row, "Sport"),
+        age_group: getString(row, "Age Group"),
+        weight_category_kg: getNumber(row, "Weight Category (kg)"),
+        test_date: row["Test Date"] ? new Date(row["Test Date"]) : null,
+      };
+
+      // Required: team and athlete name
+      if (!base.team_name || !base.athlete_name) continue;
+
+      // For each metric, create a row if the value exists
+      for (const m of metricsColumnMap) {
+        const rawVal = row[m.column];
+        const metric_value = getNumber(row, m.column);
+        if (metric_value !== null && metric_value !== undefined && rawVal !== "" && rawVal !== null) {
+          metricsToInsert.push({
+            ...base,
+            exercise: m.exercise,
+            metric_type: m.metric_type,
+            metric_value,
+            // test_date is already handled in base
+          });
+        }
+      }
     }
 
-    // Insert into Supabase DB in batches if needed
+    // Insert rows in batches for efficiency
     let insertCount = 0;
     const batchSize = 100;
     for (let i = 0; i < metricsToInsert.length; i += batchSize) {
@@ -128,7 +135,8 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        rows_processed: metricsToInsert.length,
+        rows_processed: rows.length,
+        metrics_inserted: metricsToInsert.length,
         rows_inserted: insertCount,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
