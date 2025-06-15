@@ -85,27 +85,39 @@ export const ReportFilters = ({
     availableMetricTypes = getMetricTypesForTest(filters.testNames);
   }
 
-  // --- DROPDOWN CHANGE HANDLERS ---
-  const handleAthleteChange = (next: string[]) => {
-    setFilters(prev => ({
-      ...prev,
-      selectedAthletes: next,
-    }));
-  };
-  const handleDateChange = (val: string) => {
-    setFilters(prev => ({
-      ...prev,
-      testDates: val,
-    }));
-  };
+  // --- DROPDOWN CHANGE HANDLERS WITH CASCADE RESET ---
+  // Change Test Name: reset all filters after Test Name (Athlete, Date, Metric)
   const handleTestNameChange = (val: string) => {
     setFilters(prev => ({
       ...prev,
       testNames: val,
-      metricTypes: "" // Reset metricTypes if tests changed
+      selectedAthletes: [],
+      testDates: "",
+      metricTypes: ""
     }));
     onTestSelect(val);
   };
+
+  // Change Athlete: reset Date and Metric filters below it
+  const handleAthleteChange = (next: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      selectedAthletes: next,
+      testDates: "",
+      metricTypes: ""
+    }));
+  };
+
+  // Change Date: reset Metric filter below it
+  const handleDateChange = (val: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testDates: val,
+      metricTypes: ""
+    }));
+  };
+
+  // Metric change normal
   const handleMetricTypeChange = (val: string) => {
     setFilters(prev => ({
       ...prev,
@@ -114,21 +126,36 @@ export const ReportFilters = ({
   };
 
   // Reset handlers for each filter
-  const handleResetAthlete = () => setFilters(prev => ({ ...prev, selectedAthletes: [] }));
-  const handleResetDate = () => setFilters(prev => ({ ...prev, testDates: "" }));
+  const handleResetAthlete = () => setFilters(prev => ({
+    ...prev,
+    selectedAthletes: [],
+    testDates: "",
+    metricTypes: ""
+  }));
+  const handleResetDate = () => setFilters(prev => ({
+    ...prev,
+    testDates: "",
+    metricTypes: ""
+  }));
   const handleResetTestName = () => {
-    setFilters(prev => ({ ...prev, testNames: "", metricTypes: "" }));
+    setFilters(prev => ({
+      ...prev,
+      testNames: "",
+      selectedAthletes: [],
+      testDates: "",
+      metricTypes: ""
+    }));
     onTestSelect("");
   };
   const handleResetMetricType = () => setFilters(prev => ({ ...prev, metricTypes: "" }));
 
   // ----- Disable logic for sequential filters -----
   // 1. Test Name (always enabled)
-  // 2. Athlete Name (enabled after test name picked)
+  // 2. Athlete Name (enabled after Test Name is selected)
   const athleteEnabled = !!filters.testNames;
-  // 3. Test Date (enabled after athlete selected)
+  // 3. Test Date (enabled after Athlete Name)
   const testDateEnabled = filters.selectedAthletes.length > 0;
-  // 4. Metric Type (enabled after test date picked)
+  // 4. Metric Type (enabled after Test Date)
   const metricTypeEnabled = !!filters.testDates;
 
   // --- Compute filtered data for chart ---
