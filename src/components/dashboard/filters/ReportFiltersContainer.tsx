@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,12 @@ export function ReportFiltersContainer({
   const filteredAthletes = useMemo(() => {
     return data.filter(d =>
       (selectedIndividualFilters.athlete_names.length === 0 || selectedIndividualFilters.athlete_names.includes(d.athlete_name)) &&
-      (selectedIndividualFilters.weights.length === 0 || (d.metrics && d.metrics.body_mass && selectedIndividualFilters.weights.includes(String(d.metrics.body_mass)))) &&
+      (selectedIndividualFilters.weights.length === 0 || (
+        d.metrics &&
+        "body_mass" in d.metrics &&
+        d.metrics.body_mass !== undefined &&
+        selectedIndividualFilters.weights.includes(String(d.metrics.body_mass))
+      )) &&
       (!selectedIndividualFilters.test_name || d.test_name === selectedIndividualFilters.test_name) &&
       (!metricType || (d.metrics && Object.keys(d.metrics).includes(metricType)))
     );
@@ -113,8 +119,15 @@ export function ReportFiltersContainer({
   const individualChartData = useMemo(() => {
     return filteredAthletes
       .map(d => {
-        const value = d.metrics && metricType ? Number(d.metrics[metricType]) : null;
-        return value !== null && !isNaN(value) ? { name: d.athlete_name, value, team: d.team_name } : null;
+        let value = d.metrics && metricType ? Number(d.metrics[metricType]) : null;
+        // Only include value if it's valid, and safely access team_name, athlete_name
+        return value !== null && !isNaN(value)
+          ? {
+              name: d.athlete_name,
+              value,
+              team: d.team_name
+            }
+          : null;
       })
       .filter(Boolean)
       .sort((a, b) => (b!.value - a!.value))

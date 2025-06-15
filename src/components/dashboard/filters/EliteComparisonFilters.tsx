@@ -36,7 +36,24 @@ export const EliteComparisonFilters: React.FC<EliteComparisonFiltersProps> = ({
   const ageGroups = useMemo(() => Array.from(new Set(eliteMetrics.map(r => r.age_group).filter(Boolean))), [eliteMetrics]);
   // Individual metric dropdown values
   const athleteNames = useMemo(() => Array.from(new Set(athleteData.map(d => d.athlete_name).filter(Boolean))), [athleteData]);
-  const athleteWeights = useMemo(() => Array.from(new Set(athleteData.map(d => d.metrics && d.metrics.body_mass ? String(d.metrics.body_mass): undefined).filter(Boolean))), [athleteData]);
+  // Fix: only include body_mass if present; ensure it's a string
+  const athleteWeights = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          athleteData
+            .map(d => {
+              const metrics = d.metrics;
+              if (metrics && "body_mass" in metrics && metrics.body_mass !== undefined) {
+                return String(metrics.body_mass);
+              }
+              return undefined;
+            })
+            .filter(Boolean)
+        )
+      ),
+    [athleteData]
+  );
   const testNames = useMemo(() => Array.from(new Set(athleteData.map(d => d.test_name).filter(Boolean))), [athleteData]);
   const metricTypes = useMemo(() => {
     // Both sources can provide metric types

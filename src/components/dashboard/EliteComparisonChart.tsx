@@ -3,6 +3,13 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell } from "recharts";
 
+interface ChartIndividual {
+  name: string;
+  value: number;
+  team?: string;
+  elite?: boolean;
+}
+
 interface EliteComparisonChartProps {
   individuals: { name: string; value: number; team?: string }[];
   eliteValue: number | null;
@@ -15,7 +22,7 @@ export const EliteComparisonChart: React.FC<EliteComparisonChartProps> = ({
   metricType,
 }) => {
   // Compose chart data: individuals to left, elite value far right
-  const chartData = [
+  const chartData: ChartIndividual[] = [
     ...individuals,
     ...(eliteValue !== null
       ? [
