@@ -45,7 +45,7 @@ serve(async (req: Request) => {
     // Get sheet ID and worksheet/tab
     // For now you should hardcode this (tell user how to change), or ask them in future!
     // You can get your Google Sheet ID from its URL: https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit#gid=XXX
-    const SHEET_ID = "<PUT-YOUR-SHEET-ID-HERE>";
+    const SHEET_ID = "1h6EodU1uaNMBSCno-wLcCISprfGBECu-ybfpTmvCXGo";
     const WORKSHEET_TITLE = "Comparison Table"; // You can change as needed
 
     // If the user hasn't entered the sheet ID, return error
