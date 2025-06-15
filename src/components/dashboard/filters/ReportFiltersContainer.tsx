@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,11 @@ import { ComparisonChart } from "../ComparisonChart";
 import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
 import { TestData } from "@/types/forcePlateTypes";
+import { EliteComparisonFilters } from "./EliteComparisonFilters";
+import { EliteComparisonChart } from "../EliteComparisonChart";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useMemo } from "react";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -55,6 +59,73 @@ export function ReportFiltersContainer({
     });
   };
 
+  // --- NEW FEATURE: ELITE COMPARISON FILTERS ---
+  // Fetch elite metrics via react-query
+  const { data: eliteMetricsRaw = [], isLoading: eliteLoading } = useQuery({
+    queryKey: ['elite_athlete_metrics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("elite_athlete_metrics")
+        .select("*");
+      if (error) { throw error; }
+      return data;
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 10 * 60 * 1000, // 10m
+  });
+
+  // State for comparison + individual filter values
+  const [selectedEliteFilters, setSelectedEliteFilters] = useState({
+    sport: "",
+    sex: "",
+    weight_category_kg: [],
+    age_group: [],
+  });
+  const [selectedIndividualFilters, setSelectedIndividualFilters] = useState({
+    athlete_names: [],
+    weights: [],
+    test_name: "",
+  });
+  const [metricType, setMetricType] = useState("");
+
+  // Compute filtered elite metric value (rightmost, gold)
+  const comparisonEliteRow = useMemo(() => {
+    return eliteMetricsRaw.find(row =>
+      (!selectedEliteFilters.sport || row.sport === selectedEliteFilters.sport) &&
+      (!selectedEliteFilters.sex || row.sex === selectedEliteFilters.sex) &&
+      (selectedEliteFilters.weight_category_kg.length === 0 || selectedEliteFilters.weight_category_kg.includes(String(row.weight_category_kg))) &&
+      (selectedEliteFilters.age_group.length === 0 || selectedEliteFilters.age_group.includes(row.age_group)) &&
+      (!metricType || row.metric_type === metricType)
+    ) || null;
+  }, [eliteMetricsRaw, selectedEliteFilters, metricType]);
+
+  // Filter individual data
+  const filteredAthletes = useMemo(() => {
+    return data.filter(d =>
+      (selectedIndividualFilters.athlete_names.length === 0 || selectedIndividualFilters.athlete_names.includes(d.athlete_name)) &&
+      (selectedIndividualFilters.weights.length === 0 || (d.metrics && d.metrics.body_mass && selectedIndividualFilters.weights.includes(String(d.metrics.body_mass)))) &&
+      (!selectedIndividualFilters.test_name || d.test_name === selectedIndividualFilters.test_name) &&
+      (!metricType || (d.metrics && Object.keys(d.metrics).includes(metricType)))
+    );
+  }, [data, selectedIndividualFilters, metricType]);
+
+  // Compose chart data for individuals: top 6
+  const individualChartData = useMemo(() => {
+    return filteredAthletes
+      .map(d => {
+        const value = d.metrics && metricType ? Number(d.metrics[metricType]) : null;
+        return value !== null && !isNaN(value) ? { name: d.athlete_name, value, team: d.team_name } : null;
+      })
+      .filter(Boolean)
+      .sort((a, b) => (b!.value - a!.value))
+      .slice(0, 6) as { name: string; value: number; team?: string }[];
+  }, [filteredAthletes, metricType]);
+
+  // Called when any filter updates
+  const handleEliteFilterUpdate = () => {
+    // Just for now - no extra effect
+  };
+
   return (
     <Card className="bg-white border-teal-200">
       <CardContent className="p-4">
@@ -76,35 +147,41 @@ export function ReportFiltersContainer({
           resetFiltersKey={resetFiltersKey}
         />
 
-        {/* Metric Cards */}
+        {/* --- COPY: Comparisons Amongst Elites --- */}
+        <EliteComparisonFilters
+          eliteMetrics={eliteMetricsRaw}
+          athleteData={allData}
+          selectedEliteFilters={selectedEliteFilters}
+          setSelectedEliteFilters={setSelectedEliteFilters}
+          selectedIndividualFilters={selectedIndividualFilters}
+          setSelectedIndividualFilters={setSelectedIndividualFilters}
+          metricType={metricType}
+          setMetricType={setMetricType}
+          onFilterChange={handleEliteFilterUpdate}
+        />
+
+        {/* EliteComparisonChart replaces MetricCards/Video! */}
+        <EliteComparisonChart
+          individuals={individualChartData}
+          eliteValue={comparisonEliteRow && metricType ? Number(comparisonEliteRow.metric_value) : null}
+          metricType={metricType}
+        />
+
+        {/* Chart and Video from original block REMOVED */}
+        {/* <ComparisonChart ... /> and <VideoBox ... /> are removed from this part */}
+
+        {/* Metric Cards from original INDIVIDUAL filters REMAIN (if any, above only) */}
         {metricCardsSlot && (
           <div className="mb-6">
             {metricCardsSlot}
           </div>
         )}
-
-        {/* Chart and Video */}
-        <div className="flex flex-col md:flex-row gap-8 mt-2">
-          {/* Chart */}
-          <div className="flex-1 min-w-0">
-            <div
-              className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col"
-              style={{
-                boxSizing: "border-box",
-              }}
-            >
-              <ComparisonChart
+        {/* The Region Comparison stays as in the original layout, nothing changes here */}
+        <ComparisonChart
                 data={getFilteredDataForChart()}
                 testName={filters.testNames}
                 metricType={filters.metricTypes}
               />
-            </div>
-          </div>
-          {/* Video box */}
-          <div className="w-full md:w-[420px] shrink-0">
-            <VideoBox testName={filters.testNames} />
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
