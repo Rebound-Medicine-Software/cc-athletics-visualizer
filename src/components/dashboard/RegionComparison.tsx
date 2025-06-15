@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TestData } from "@/types/forcePlateTypes";
@@ -43,46 +44,58 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     ? data.filter(d => selectedTeams.includes(d.team_name))
     : data;
 
+  // Group data by unique athlete/team for summary row
+  const groupedMap = new Map<string, any>();
+  for (const row of filteredByTeam) {
+    // Prefer extracting fields from hypothetical elite_athlete_metrics, or fallback to TestData
+    const key = `${row.team_name}|||${row.athlete_name}`;
+    // We'll only take first matching row for now, ideally would aggregate.
+    if (!groupedMap.has(key)) groupedMap.set(key, row);
+  }
+  const summaryRows = Array.from(groupedMap.values());
+
+  // Build table rows matching the requested columns
+  const tableData = summaryRows.map((test, index) => ({
+    id: index + 1,
+    teamName: test.team_name ?? "",
+    athleteName: test.athlete_name ?? "",
+    sex: (test.sex ?? (test.metrics?.sex ?? "")) || "",         // support both formats
+    sport: test.sport ?? (test.metrics?.sport ?? "") || "",
+    ageGroup: test.age_group ?? (test.metrics?.age_group ?? "") || "",
+    weightCategory: test.weight_category_kg ?? (test.metrics?.weight_category_kg ?? null),
+    // Metrics: look for the metric in the 'metrics' field if present
+    cmjJumpHeight:
+      test.metric_type === "Jump Height (cm)"
+        ? test.metric_value
+        : test.metrics?.jump_height_ft != null
+          ? test.metrics.jump_height_ft * 30.48 // convert feet to cm
+          : null,
+    cmjPeakPower:
+      test.metric_type === "Peak Power (W)"
+        ? test.metric_value
+        : test.metrics?.peak_power ?? null,
+    cmjRelPeakPower:
+      test.metric_type === "Relative Peak Power (W/kg)"
+        ? test.metric_value
+        : test.metrics?.rel_peak_power ?? null,
+    cmjRSI: 
+      test.metric_type === "Reactive Strength Index"
+        ? test.metric_value
+        : test.metrics?.rsi ?? null,
+    imtpPeakForce:
+      test.metric_type === "Peak Force (N)"
+        ? test.metric_value
+        : test.metrics?.peak_force ?? test.metrics?.force_peak ?? null,
+    imtpRelPeakForce:
+      test.metric_type === "Relative Peak Force (N/kg)"
+        ? test.metric_value
+        : test.metrics?.rel_peak_force ?? null,
+  })).slice(0, 10);
+
   // Get unique values for dropdowns from filtered data
   const uniqueAthletes = [...new Set(filteredByTeam.map(d => d.athlete_name))];
   const uniqueTests = [...new Set(filteredByTeam.map(d => d.test_name))];
   const uniqueTeams = [...new Set(filteredByTeam.map(d => d.team_name))];
-
-  // Filter data based on current selections
-  const filteredData = filteredByTeam.filter(test => {
-    if (filters.athleteName && filters.athleteName !== "all" && test.athlete_name !== filters.athleteName) return false;
-    if (filters.testName && filters.testName !== "all" && test.test_name !== filters.testName) return false;
-    if (filters.teamName && filters.teamName !== "all" && test.team_name !== filters.teamName) return false;
-    return true;
-  });
-
-  // Get the selected metric value for each athlete
-  const getMetricValue = (test: TestData, metricType: string) => {
-    if (!test.metrics || typeof test.metrics !== 'object') return 'N/A';
-    const metrics = test.metrics as any;
-    switch (metricType) {
-      case 'Peak Force':
-        return metrics.peak_force || metrics.force_peak || 'N/A';
-      case 'Peak Power':
-        return metrics.peak_power || 'N/A';
-      case 'Jump Height':
-        return metrics.jump_height_ft || metrics.avg_jump_height || 'N/A';
-      case 'RSI':
-        return metrics.rsi || metrics.avg_rsi || 'N/A';
-      default:
-        return 'N/A';
-    }
-  };
-
-  // Create table data from filtered results
-  const tableData = filteredData.slice(0, 10).map((test, index) => ({
-    id: index + 1,
-    sport: "Performance Testing", // Default since we don't have sport data
-    teamName: test.team_name,
-    athleteName: test.athlete_name,
-    metricSelected: filters.metricType || 'Peak Force',
-    value: getMetricValue(test, filters.metricType || 'Peak Force')
-  }));
 
   return (
     <Card className="bg-gray-100 border-gray-300">
@@ -113,3 +126,4 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     </Card>
   );
 };
+
