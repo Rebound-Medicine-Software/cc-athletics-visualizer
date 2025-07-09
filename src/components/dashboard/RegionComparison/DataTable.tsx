@@ -20,8 +20,9 @@ interface DataTableProps {
 }
 
 export const DataTable = ({ tableData }: DataTableProps) => (
-  <div className="min-w-0 w-full">
-    <table className="w-full table-fixed md:table-auto min-w-0 border-collapse">
+  <div className="w-full overflow-x-auto">
+    <div className="min-w-[1200px]">
+      <table className="w-full border-collapse">
       <thead className="bg-gray-800 text-white">
         <tr>
           <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">#</th>
@@ -67,5 +68,6 @@ export const DataTable = ({ tableData }: DataTableProps) => (
         )}
       </tbody>
     </table>
+    </div>
   </div>
 );
