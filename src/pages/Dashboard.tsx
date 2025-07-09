@@ -107,8 +107,8 @@ const Dashboard = () => {
         handleRefresh={handleRefresh}
         handleResetFilters={handleResetFilters}
       />
-      <div className="w-full">
-        <div className="flex gap-6 max-w-none">
+      <div className="w-full max-w-7xl mx-auto">
+        <div className="flex gap-6">
           <DashboardSidebar
             orgData={orgData}
             isNavigationCollapsed={isNavigationCollapsed}
