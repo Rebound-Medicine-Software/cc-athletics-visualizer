@@ -25,7 +25,7 @@ export const DashboardSidebar = ({
     <div
       className={`
         transition-all duration-300
-        ${isNavigationCollapsed ? "w-16" : "w-80"}
+        ${isNavigationCollapsed ? "w-16" : "w-64"}
         sticky top-8 self-start z-40
       `}>
       <div className="space-y-6">

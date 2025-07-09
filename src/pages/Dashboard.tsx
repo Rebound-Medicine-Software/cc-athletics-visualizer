@@ -108,7 +108,7 @@ const Dashboard = () => {
         handleResetFilters={handleResetFilters}
       />
       <div className="w-full">
-        <div className="flex gap-6">
+        <div className="flex gap-6 max-w-none">
           <DashboardSidebar
             orgData={orgData}
             isNavigationCollapsed={isNavigationCollapsed}
@@ -118,7 +118,7 @@ const Dashboard = () => {
             navigationItems={navigationItems}
             handleLogout={handleLogout}
           />
-          <div className="flex-1 pr-6">
+          <div className="flex-1 min-w-0 px-4 xl:px-8 2xl:px-12">
             <DashboardContent
               data={data || []}
               isLoading={isLoading}

@@ -72,7 +72,7 @@ export const DashboardContent = ({
     ? data
     : data.filter(d => selectedTeams.includes(d.team_name));
   return (
-    <div>
+    <div className="space-y-6 w-full">
       {/* Performance Highlights */}
       <HighlightsSection
         data={data}
