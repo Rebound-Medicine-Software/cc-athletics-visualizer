@@ -139,6 +139,27 @@ export type Database = {
         }
         Relationships: []
       }
+      "Region Testing": {
+        Row: {
+          Address: string | null
+          Country: string
+          Region: string | null
+          "Team Name": string
+        }
+        Insert: {
+          Address?: string | null
+          Country: string
+          Region?: string | null
+          "Team Name": string
+        }
+        Update: {
+          Address?: string | null
+          Country?: string
+          Region?: string | null
+          "Team Name"?: string
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           cc_team_id: string

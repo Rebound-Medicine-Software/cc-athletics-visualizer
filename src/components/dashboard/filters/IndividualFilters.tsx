@@ -40,20 +40,30 @@ export function IndividualFilters({
   resetFiltersKey
 }: IndividualFiltersProps) {
 
-  // Filtering logic: Dropdown options
-  // Athlete dropdown: only athletes in the filtered 'data' based on selected Team(s)
-  const filteredAthleteNames = selectedTeams.length > 0
-    ? Array.from(new Set(allData.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name)))
-    : Array.from(new Set(allData.map(d => d.athlete_name)));
+  // Cascading filtering logic with mutual connections
+  // 1. Apply team filter from Performance Insights first
+  const teamFilteredData = selectedTeams.length > 0
+    ? allData.filter(d => selectedTeams.includes(d.team_name))
+    : allData;
+
+  // 2. Test Names - only from team-filtered data
   const uniqueTestNames = Array.from(
-    new Set(data.map(d => d.test_name))
+    new Set(teamFilteredData.map(d => d.test_name))
   ).filter(t => t !== "All Tests" && t !== "Isometric Test");
-  const filtered = data.filter(d =>
-    (filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(d.athlete_name)) &&
-    (!filters.testDates || d.test_date === filters.testDates) &&
-    (!filters.testNames || d.test_name === filters.testNames)
-  );
-  const uniqueTestDates = Array.from(new Set(filtered.map(d => d.test_date))).sort();
+
+  // 3. Athletes - filtered by team + test name (if selected)
+  const testNameFilteredData = filters.testNames
+    ? teamFilteredData.filter(d => d.test_name === filters.testNames)
+    : teamFilteredData;
+  const filteredAthleteNames = Array.from(new Set(testNameFilteredData.map(d => d.athlete_name)));
+
+  // 4. Test Dates - filtered by team + test name + athletes (if selected)
+  const athleteFilteredData = filters.selectedAthletes.length > 0
+    ? testNameFilteredData.filter(d => filters.selectedAthletes.includes(d.athlete_name))
+    : testNameFilteredData;
+  const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
+
+  // 5. Metric Types - based on selected test name only (these are predefined)
   const availableMetricTypes = filters.testNames
     ? getMetricTypesForTest(filters.testNames)
     : [];
