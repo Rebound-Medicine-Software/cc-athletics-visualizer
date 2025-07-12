@@ -156,7 +156,7 @@ export function IndividualFilters({
             </SelectTrigger>
             <SelectContent className="w-[750px]">
               {testNameOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                <SelectItem key={opt.value} value={opt.value} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start whitespace-normal break-words">
                   {opt.label}
                 </SelectItem>
               ))}
@@ -215,7 +215,7 @@ export function IndividualFilters({
               </SelectTrigger>
               <SelectContent className="w-[750px]">
                 {dateOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                  <SelectItem key={opt.value} value={opt.value} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start whitespace-normal break-words">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -247,7 +247,7 @@ export function IndividualFilters({
               </SelectTrigger>
               <SelectContent className="w-[750px]">
                 {metricTypeOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                  <SelectItem key={opt.value} value={opt.value} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start whitespace-normal break-words">
                     {opt.label}
                   </SelectItem>
                 ))}
