@@ -62,11 +62,11 @@ export const Filters = ({
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-visible">
       {/* All Filters in One Row */}
       <div className="flex items-end justify-center gap-3 flex-wrap">
-        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 h-[52px]">
+        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 h-[36px]">
           Individual Filters
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Athlete Name</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Athlete Name</label>
           <MultiSelectDropdown
             options={athleteOptions}
             value={filters.athleteName}
@@ -77,7 +77,7 @@ export const Filters = ({
           />
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Sex</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Sex</label>
           <Select value={filters.sex} onValueChange={value => setFilters(prev => ({ ...prev, sex: value }))}>
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Sex" className="text-center" />
@@ -90,7 +90,7 @@ export const Filters = ({
           </Select>
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Test Name</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Test Name</label>
           <Select value={filters.testName} onValueChange={value => setFilters(prev => ({ ...prev, testName: value }))}>
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Test Name" className="text-center" />
@@ -106,7 +106,7 @@ export const Filters = ({
           </Select>
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Metric Type</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Metric Type</label>
           <Select value={filters.metricType} onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}>
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Metric Type" className="text-center" />
@@ -120,11 +120,11 @@ export const Filters = ({
           </Select>
         </div>
         
-        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 ml-4 h-[52px]">
+        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 ml-4 h-[36px]">
           Region Filters
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Country</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Country</label>
           <MultiSelectDropdown
             options={countryOptions}
             value={filters.country}
@@ -135,7 +135,7 @@ export const Filters = ({
           />
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Region</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Region</label>
           <MultiSelectDropdown
             options={regionOptions}
             value={filters.region}
@@ -146,7 +146,7 @@ export const Filters = ({
           />
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Address</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Address</label>
           <MultiSelectDropdown
             options={addressOptions}
             value={filters.address}
@@ -157,7 +157,7 @@ export const Filters = ({
           />
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center">Team Name</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Team Name</label>
           <MultiSelectDropdown
             options={teamNameOptions}
             value={filters.teamName}

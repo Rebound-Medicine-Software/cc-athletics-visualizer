@@ -42,23 +42,30 @@ export const DataTable = ({ tableData }: DataTableProps) => (
       </thead>
       <tbody>
         {tableData.length > 0 ? (
-          tableData.map((row, index) => (
-            <tr key={row.id} className={index % 2 === 0 ? "bg-teal-100" : "bg-white"}>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.id}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.teamName}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.athleteName}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sex ?? ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sport ?? ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.ageGroup ?? ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.weightCategory != null ? row.weightCategory.toFixed(1) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjJumpHeight != null ? row.cmjJumpHeight.toFixed(2) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjPeakPower != null ? row.cmjPeakPower.toFixed(0) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRelPeakPower != null ? row.cmjRelPeakPower.toFixed(2) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRSI != null ? row.cmjRSI.toFixed(2) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpPeakForce != null ? row.imtpPeakForce.toFixed(0) : ""}</td>
-              <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpRelPeakForce != null ? row.imtpRelPeakForce.toFixed(2) : ""}</td>
-            </tr>
-          ))
+          tableData.map((row, index) => {
+            const rowNumber = index + 1;
+            const isBlurred = rowNumber >= 4;
+            const rowClassName = index % 2 === 0 ? "bg-teal-100" : "bg-white";
+            const blurClassName = isBlurred ? "blur-sm" : "";
+            
+            return (
+              <tr key={row.id} className={`${rowClassName} ${blurClassName}`}>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.id}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.teamName}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.athleteName}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sex ?? ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sport ?? ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.ageGroup ?? ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.weightCategory != null ? row.weightCategory.toFixed(1) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjJumpHeight != null ? row.cmjJumpHeight.toFixed(2) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjPeakPower != null ? row.cmjPeakPower.toFixed(0) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRelPeakPower != null ? row.cmjRelPeakPower.toFixed(2) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRSI != null ? row.cmjRSI.toFixed(2) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpPeakForce != null ? row.imtpPeakForce.toFixed(0) : ""}</td>
+                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpRelPeakForce != null ? row.imtpRelPeakForce.toFixed(2) : ""}</td>
+              </tr>
+            );
+          })
         ) : (
           <tr>
             <td colSpan={13} className="px-2 md:px-4 py-8 text-center text-gray-500 text-xs md:text-sm">
