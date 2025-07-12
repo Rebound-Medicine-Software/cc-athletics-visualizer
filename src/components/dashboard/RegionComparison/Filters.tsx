@@ -61,7 +61,7 @@ export const Filters = ({
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm space-y-4 mb-4 max-w-full overflow-hidden">
       {/* Individual Filters Row */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-center gap-4">
         <div className="flex items-center justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0">
           Individual Filters
         </div>
@@ -124,7 +124,7 @@ export const Filters = ({
       </div>
 
       {/* Region Filters Row */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-center gap-4">
         <div className="flex items-center justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0">
           Region Filters
         </div>
