@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Filters } from "./RegionComparison/Filters";
 import { DataTable } from "./RegionComparison/DataTable";
 import { MapPlaceholder } from "./RegionComparison/MapPlaceholder";
+import { useRegionData } from "@/hooks/useRegionData";
 
 interface RegionComparisonProps {
   data: TestData[];
@@ -14,30 +15,40 @@ interface RegionComparisonProps {
 }
 
 export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: RegionComparisonProps) => {
+  const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
+  
   const [filters, setFilters] = useState({
-    athleteName: "",
+    athleteName: [] as string[],
     sex: "",
     testName: "",
     metricType: "",
-    country: "UK",
-    region: "Wales",
-    address: "Swansea",
-    teamName: ""
+    country: [] as string[],
+    region: [] as string[],
+    address: [] as string[],
+    teamName: [] as string[]
   });
 
   // Reset all filters when key changes
   useEffect(() => {
     setFilters({
-      athleteName: "",
+      athleteName: [],
       sex: "",
       testName: "",
       metricType: "",
-      country: "UK",
-      region: "Wales",
-      address: "Swansea",
-      teamName: ""
+      country: [],
+      region: [],
+      address: [],
+      teamName: []
     });
   }, [resetFiltersKey]);
+
+  // Process region data for dropdowns
+  const regionData = {
+    countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.Country))] : [],
+    regions: regionTestingData ? [...new Set(regionTestingData.map(item => item.Region).filter(Boolean))] : [],
+    addresses: regionTestingData ? [...new Set(regionTestingData.map(item => item.Address).filter(Boolean))] : [],
+    teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]))] : []
+  };
 
   // Only include teams matching selectedTeams/global filter
   const filteredByTeam = selectedTeams.length > 0
@@ -100,20 +111,13 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
   return (
     <Card className="bg-gray-100 border-gray-300">
       <CardHeader>
-        <div className="flex gap-4 mb-4">
-          <Button variant="default" className="bg-white text-gray-800 border-gray-300">
-            Individual Filters
-          </Button>
-          <Button variant="outline" className="border-gray-300">
-            Region Filters
-          </Button>
-        </div>
         <Filters
           filters={filters}
           setFilters={setFilters}
           uniqueAthletes={uniqueAthletes}
           uniqueTests={uniqueTests}
           uniqueTeams={uniqueTeams}
+          regionData={regionData}
         />
         <CardTitle className="text-center text-lg text-gray-800 mb-4">
           Comparisons Amongst Regions
