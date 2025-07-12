@@ -50,8 +50,6 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))] : []
   };
 
-  console.log('Region data processed:', regionData);
-
   // Only include teams matching selectedTeams/global filter
   const filteredByTeam = selectedTeams.length > 0
     ? data.filter(d => selectedTeams.includes(d.team_name))

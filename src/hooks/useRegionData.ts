@@ -16,12 +16,7 @@ export const useRegionData = () => {
       
       const { data, error } = await supabase
         .from('Region Testing')
-        .select(`
-          "Team Name",
-          "Country", 
-          "Region",
-          "Address"
-        `);
+        .select('*');
 
       if (error) {
         console.error('Error fetching region data:', error);
@@ -29,6 +24,7 @@ export const useRegionData = () => {
       }
 
       console.log(`Fetched ${data?.length || 0} region records`);
+      console.log('Region data:', data);
       return data || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
