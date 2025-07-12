@@ -5,7 +5,7 @@ import { TestData } from "@/types/forcePlateTypes";
 import { useState, useEffect } from "react";
 import { Filters } from "./RegionComparison/Filters";
 import { DataTable } from "./RegionComparison/DataTable";
-import { MapPlaceholder } from "./RegionComparison/MapPlaceholder";
+import { SatelliteMap } from "../SatelliteMap";
 import { useRegionData } from "@/hooks/useRegionData";
 
 interface RegionComparisonProps {
@@ -125,7 +125,22 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
       </CardHeader>
       <CardContent>
         <DataTable tableData={tableData} />
-        <MapPlaceholder />
+        <SatelliteMap 
+          regionFilters={{
+            country: filters.country,
+            region: filters.region,
+            address: filters.address,
+            teamName: filters.teamName
+          }}
+          individualFilters={{
+            athleteName: filters.athleteName,
+            sex: filters.sex,
+            testName: filters.testName,
+            metricType: filters.metricType
+          }}
+          data={filteredByTeam}
+          regionData={regionData}
+        />
       </CardContent>
     </Card>
   );
