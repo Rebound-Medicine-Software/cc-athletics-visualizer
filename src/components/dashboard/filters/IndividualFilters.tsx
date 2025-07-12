@@ -147,11 +147,11 @@ export function IndividualFilters({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
       {/* 1. Test Name (always enabled) */}
-      <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
+      <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
         <div className="flex items-center gap-2">
           <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-white text-center w-full">
+            <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
               <SelectValue placeholder="All Tests" />
             </SelectTrigger>
             <SelectContent className="w-[750px]">
@@ -176,7 +176,7 @@ export function IndividualFilters({
       </div>
 
       {/* 2. Athlete Name (enabled after Test Name is selected) */}
-      <div className={`w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center`}>
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
@@ -185,8 +185,8 @@ export function IndividualFilters({
               value={filters.selectedAthletes}
               onChange={athleteEnabled ? handleAthleteChange : () => {}}
               placeholder="All Athletes"
-              className={`text-center ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} whitespace-normal break-words overflow-hidden resize-none`}
+              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
               dropdownClassName="w-[750px]"
             />
           </div>
@@ -205,12 +205,12 @@ export function IndividualFilters({
       </div>
 
       {/* 3. Test Date (enabled after Athlete Name) */}
-      <div className={`w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center`}>
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full whitespace-normal break-words overflow-hidden resize-none`}>
+              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
               <SelectContent className="w-[750px]">
@@ -237,12 +237,12 @@ export function IndividualFilters({
       </div>
 
       {/* 4. Metric Type (enabled after Test Date) */}
-      <div className={`w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center`}>
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
-              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full whitespace-normal break-words overflow-hidden resize-none`}>
+              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
                 <SelectValue placeholder="All Metrics" />
               </SelectTrigger>
               <SelectContent className="w-[750px]">
