@@ -145,130 +145,126 @@ export function IndividualFilters({
   const metricTypeEnabled = !!filters.testDates;
 
   return (
-    <div className="bg-blue-50/80 border-blue-200 border rounded-lg p-6 mb-6">
-      <div className="flex gap-4 justify-center">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* 1. Test Name (always enabled) */}
-          <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
-            <div className="flex items-center gap-2">
-              <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-                <SelectTrigger className="flex items-center justify-between w-full border border-gray-300 rounded-md bg-white py-2 px-3 text-sm text-gray-700 text-center h-10 min-h-[40px] max-h-[40px]">
-                  <SelectValue placeholder="All Tests" className="whitespace-normal break-words text-center flex-1" />
-                </SelectTrigger>
-                <SelectContent className="w-[750px]">
-                  {testNameOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Test Name"
-                className="p-2"
-                onClick={handleResetTestName}
-                type="button"
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
-          </div>
+    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
+      {/* 1. Test Name (always enabled) */}
+      <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+        <div className="flex items-center gap-2">
+          <Select value={filters.testNames} onValueChange={handleTestNameChange}>
+            <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
+              <SelectValue placeholder="All Tests" />
+            </SelectTrigger>
+            <SelectContent className="w-[750px]">
+              {testNameOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Reset Test Name"
+            className="p-2"
+            onClick={handleResetTestName}
+            type="button"
+          >
+            <RefreshCcw className="w-4 h-4 text-gray-500" />
+          </Button>
+        </div>
+      </div>
 
-          {/* 2. Athlete Name (enabled after Test Name is selected) */}
-          <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
-            <div className="flex items-center gap-2">
-              <div className={athleteEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={athleteOptions}
-                  value={filters.selectedAthletes}
-                  onChange={athleteEnabled ? handleAthleteChange : () => {}}
-                  placeholder="All Athletes"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[750px]"
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Athlete Name"
-                className={`p-2 ${!athleteEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={athleteEnabled ? handleResetAthlete : undefined}
-                type="button"
-                disabled={!athleteEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
+      {/* 2. Athlete Name (enabled after Test Name is selected) */}
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+        <div className="flex items-center gap-2">
+          <div className={athleteEnabled ? "" : "pointer-events-none"}>
+            <MultiSelectDropdown
+              options={athleteOptions}
+              value={filters.selectedAthletes}
+              onChange={athleteEnabled ? handleAthleteChange : () => {}}
+              placeholder="All Athletes"
+              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+              dropdownClassName="w-[750px]"
+            />
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Reset Athlete Name"
+            className={`p-2 ${!athleteEnabled ? "pointer-events-none opacity-50" : ""}`}
+            onClick={athleteEnabled ? handleResetAthlete : undefined}
+            type="button"
+            disabled={!athleteEnabled}
+          >
+            <RefreshCcw className="w-4 h-4 text-gray-500" />
+          </Button>
+        </div>
+      </div>
 
-          {/* 3. Test Date (enabled after Athlete Name) */}
-          <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
-            <div className="flex items-center gap-2">
-              <div className={testDateEnabled ? "" : "pointer-events-none"}>
-                <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-                  <SelectTrigger className={`flex items-center justify-between w-full border border-gray-300 rounded-md py-2 px-3 text-sm text-center h-10 min-h-[40px] max-h-[40px] ${testDateEnabled ? "bg-white text-gray-700" : "bg-black opacity-60 text-gray-300"}`}>
-                    <SelectValue placeholder="All Dates" className="whitespace-normal break-words text-center flex-1" />
-                  </SelectTrigger>
-                  <SelectContent className="w-[750px]">
-                    {dateOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Test Date"
-                className={`p-2 ${!testDateEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={testDateEnabled ? handleResetDate : undefined}
-                type="button"
-                disabled={!testDateEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
+      {/* 3. Test Date (enabled after Athlete Name) */}
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
+        <div className="flex items-center gap-2">
+          <div className={testDateEnabled ? "" : "pointer-events-none"}>
+            <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
+              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                <SelectValue placeholder="All Dates" />
+              </SelectTrigger>
+              <SelectContent className="w-[750px]">
+                {dateOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Reset Test Date"
+            className={`p-2 ${!testDateEnabled ? "pointer-events-none opacity-50" : ""}`}
+            onClick={testDateEnabled ? handleResetDate : undefined}
+            type="button"
+            disabled={!testDateEnabled}
+          >
+            <RefreshCcw className="w-4 h-4 text-gray-500" />
+          </Button>
+        </div>
+      </div>
 
-          {/* 4. Metric Type (enabled after Test Date) */}
-          <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
-            <div className="flex items-center gap-2">
-              <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
-                <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
-                  <SelectTrigger className={`flex items-center justify-between w-full border border-gray-300 rounded-md py-2 px-3 text-sm text-center h-10 min-h-[40px] max-h-[40px] ${metricTypeEnabled ? "bg-white text-gray-700" : "bg-black opacity-60 text-gray-300"}`}>
-                    <SelectValue placeholder="All Metrics" className="whitespace-normal break-words text-center flex-1" />
-                  </SelectTrigger>
-                  <SelectContent className="w-[750px]">
-                    {metricTypeOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Metric Type"
-                className={`p-2 ${!metricTypeEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={metricTypeEnabled ? handleResetMetricType : undefined}
-                type="button"
-                disabled={!metricTypeEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
+      {/* 4. Metric Type (enabled after Test Date) */}
+      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
+        <div className="flex items-center gap-2">
+          <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
+            <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
+              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                <SelectValue placeholder="All Metrics" />
+              </SelectTrigger>
+              <SelectContent className="w-[750px]">
+                {metricTypeOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Reset Metric Type"
+            className={`p-2 ${!metricTypeEnabled ? "pointer-events-none opacity-50" : ""}`}
+            onClick={metricTypeEnabled ? handleResetMetricType : undefined}
+            type="button"
+            disabled={!metricTypeEnabled}
+          >
+            <RefreshCcw className="w-4 h-4 text-gray-500" />
+          </Button>
         </div>
       </div>
     </div>
