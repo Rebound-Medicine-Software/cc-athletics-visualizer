@@ -59,7 +59,7 @@ export const Filters = ({
   const teamNameOptions = regionData.teamNames.map(team => ({ value: team, label: team }));
 
   return (
-    <div className="space-y-6 mb-4">
+    <div className="bg-white rounded-lg border border-gray-300 p-6 shadow-sm space-y-6 mb-4">
       {/* Individual Filters Row */}
       <div className="flex items-center justify-center gap-6">
         <div className="flex items-center justify-center text-lg font-semibold text-gray-800 min-w-[140px]">

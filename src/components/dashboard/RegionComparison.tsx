@@ -44,11 +44,13 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
 
   // Process region data for dropdowns
   const regionData = {
-    countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.Country))] : [],
+    countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.Country).filter(Boolean))] : [],
     regions: regionTestingData ? [...new Set(regionTestingData.map(item => item.Region).filter(Boolean))] : [],
     addresses: regionTestingData ? [...new Set(regionTestingData.map(item => item.Address).filter(Boolean))] : [],
-    teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]))] : []
+    teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))] : []
   };
+
+  console.log('Region data processed:', regionData);
 
   // Only include teams matching selectedTeams/global filter
   const filteredByTeam = selectedTeams.length > 0

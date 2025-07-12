@@ -16,7 +16,12 @@ export const useRegionData = () => {
       
       const { data, error } = await supabase
         .from('Region Testing')
-        .select('*');
+        .select(`
+          "Team Name",
+          "Country", 
+          "Region",
+          "Address"
+        `);
 
       if (error) {
         console.error('Error fetching region data:', error);
