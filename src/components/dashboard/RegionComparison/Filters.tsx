@@ -59,10 +59,10 @@ export const Filters = ({
   const teamNameOptions = regionData.teamNames.map(team => ({ value: team, label: team }));
 
   return (
-    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-visible">
       {/* All Filters in One Row */}
-      <div className="flex items-center justify-center gap-3 flex-wrap">
-        <div className="flex items-center justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0">
+      <div className="flex items-end justify-center gap-3 flex-wrap">
+        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 h-[52px]">
           Individual Filters
         </div>
         <div className="w-36 flex-shrink-0">
@@ -73,7 +73,7 @@ export const Filters = ({
             onChange={(value) => setFilters(prev => ({ ...prev, athleteName: value }))}
             placeholder="Select Athletes"
             labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-50"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
         <div className="w-36 flex-shrink-0">
@@ -82,7 +82,7 @@ export const Filters = ({
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Sex" className="text-center" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-[100]">
               <SelectItem value="all" className="text-center text-xs">All</SelectItem>
               <SelectItem value="male" className="text-center text-xs">Male</SelectItem>
               <SelectItem value="female" className="text-center text-xs">Female</SelectItem>
@@ -95,7 +95,7 @@ export const Filters = ({
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Test Name" className="text-center" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-[100]">
               <SelectItem value="all" className="text-center text-xs">All Tests</SelectItem>
               {uniqueTests.map(test => (
                 <SelectItem key={test} value={test} className="text-center text-xs">
@@ -111,7 +111,7 @@ export const Filters = ({
             <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Metric Type" className="text-center" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-[100]">
               <SelectItem value="Peak Force" className="text-center text-xs">Peak Force</SelectItem>
               <SelectItem value="Peak Power" className="text-center text-xs">Peak Power</SelectItem>
               <SelectItem value="Jump Height" className="text-center text-xs">Jump Height</SelectItem>
@@ -120,7 +120,7 @@ export const Filters = ({
           </Select>
         </div>
         
-        <div className="flex items-center justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 ml-4">
+        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 ml-4 h-[52px]">
           Region Filters
         </div>
         <div className="w-36 flex-shrink-0">
@@ -131,7 +131,7 @@ export const Filters = ({
             onChange={(value) => setFilters(prev => ({ ...prev, country: value }))}
             placeholder="Select Countries"
             labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-50"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
         <div className="w-36 flex-shrink-0">
@@ -142,7 +142,7 @@ export const Filters = ({
             onChange={(value) => setFilters(prev => ({ ...prev, region: value }))}
             placeholder="Select Regions"
             labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-50"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
         <div className="w-36 flex-shrink-0">
@@ -153,7 +153,7 @@ export const Filters = ({
             onChange={(value) => setFilters(prev => ({ ...prev, address: value }))}
             placeholder="Select Addresses"
             labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-50"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
         <div className="w-36 flex-shrink-0">
@@ -164,7 +164,7 @@ export const Filters = ({
             onChange={(value) => setFilters(prev => ({ ...prev, teamName: value }))}
             placeholder="Select Teams"
             labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-50"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
       </div>
