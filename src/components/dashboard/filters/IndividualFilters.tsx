@@ -151,8 +151,8 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
         <div className="flex items-center gap-2">
           <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-              <SelectValue placeholder="All Tests" />
+            <SelectTrigger className="flex items-center justify-between w-full border border-gray-300 rounded-md bg-white py-2 px-3 text-sm text-gray-700 text-center h-10 min-h-[40px] max-h-[40px]">
+              <SelectValue placeholder="All Tests" className="whitespace-normal break-words text-center flex-1" />
             </SelectTrigger>
             <SelectContent className="w-[750px]">
               {testNameOptions.map(opt => (
@@ -210,8 +210,8 @@ export function IndividualFilters({
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Dates" />
+              <SelectTrigger className={`flex items-center justify-between w-full border border-gray-300 rounded-md py-2 px-3 text-sm text-center h-10 min-h-[40px] max-h-[40px] ${testDateEnabled ? "bg-white text-gray-700" : "bg-black opacity-60 text-gray-300"}`}>
+                <SelectValue placeholder="All Dates" className="whitespace-normal break-words text-center flex-1" />
               </SelectTrigger>
               <SelectContent className="w-[750px]">
                 {dateOptions.map(opt => (
@@ -242,8 +242,8 @@ export function IndividualFilters({
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
-              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Metrics" />
+              <SelectTrigger className={`flex items-center justify-between w-full border border-gray-300 rounded-md py-2 px-3 text-sm text-center h-10 min-h-[40px] max-h-[40px] ${metricTypeEnabled ? "bg-white text-gray-700" : "bg-black opacity-60 text-gray-300"}`}>
+                <SelectValue placeholder="All Metrics" className="whitespace-normal break-words text-center flex-1" />
               </SelectTrigger>
               <SelectContent className="w-[750px]">
                 {metricTypeOptions.map(opt => (
