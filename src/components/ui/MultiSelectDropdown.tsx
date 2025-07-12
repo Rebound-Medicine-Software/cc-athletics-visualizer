@@ -84,7 +84,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               onClick={() => toggleOption(opt.value)}
             >
               <span className={cn(
-                "inline-flex h-5 w-5 items-center justify-center border border-border rounded mr-2",
+                "inline-flex h-4 w-4 items-center justify-center border border-border rounded mr-2",
                 value.includes(opt.value) ? "bg-primary text-primary-foreground border-primary" : "bg-background"
               )}>
                 {value.includes(opt.value) && <Check className="w-3 h-3" />}
