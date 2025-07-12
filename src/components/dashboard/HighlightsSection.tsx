@@ -96,35 +96,19 @@ export const HighlightsSection = ({
       <CardHeader>
         <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
         <div className="flex gap-4 justify-center">
-          <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown 
-                options={teamOptions} 
-                value={selectedTeams} 
-                onChange={setSelectedTeams} 
-                placeholder="All Teams" 
-                className="text-center h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none" 
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[750px]"
-              />
+              <MultiSelectDropdown options={teamOptions} value={selectedTeams} onChange={setSelectedTeams} placeholder="All Teams" className="text-center" labelClassName="bg-white" />
               <Button variant="ghost" size="icon" aria-label="Reset Team Name" className="p-2" onClick={handleResetTeams} type="button">
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
           </div>
-          <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown 
-                options={athleteOptions} 
-                value={selectedAthletes} 
-                onChange={setSelectedAthletes} 
-                placeholder="All Athletes" 
-                className="text-center h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none" 
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[750px]"
-              />
+              <MultiSelectDropdown options={athleteOptions} value={selectedAthletes} onChange={setSelectedAthletes} placeholder="All Athletes" className="text-center" labelClassName="bg-white" />
               <Button variant="ghost" size="icon" aria-label="Reset Athlete Name" className="p-2" onClick={handleResetAthletes} type="button">
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
