@@ -87,7 +87,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 "inline-flex h-4 w-4 items-center justify-center border border-border rounded mr-2",
                 value.includes(opt.value) ? "bg-primary text-primary-foreground border-primary" : "bg-background"
               )}>
-                {value.includes(opt.value) && <Check className="w-3 h-3" />}
+                {value.includes(opt.value) && <Check className="h-4 w-4" />}
               </span>
               <span className="truncate">{opt.label}</span>
             </button>
