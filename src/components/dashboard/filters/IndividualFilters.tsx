@@ -154,9 +154,9 @@ export function IndividualFilters({
             <SelectTrigger className="bg-white text-center w-full">
               <SelectValue placeholder="All Tests" />
             </SelectTrigger>
-            <SelectContent className="w-[375px]">
+            <SelectContent className="w-[750px]">
               {testNameOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
                   {opt.label}
                 </SelectItem>
               ))}
@@ -186,8 +186,8 @@ export function IndividualFilters({
               onChange={athleteEnabled ? handleAthleteChange : () => {}}
               placeholder="All Athletes"
               className={`text-center ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-              labelClassName={athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"}
-              dropdownClassName="w-[375px]"
+              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} whitespace-normal break-words overflow-hidden resize-none`}
+              dropdownClassName="w-[750px]"
             />
           </div>
           <Button
@@ -210,12 +210,12 @@ export function IndividualFilters({
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full`}>
+              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full whitespace-normal break-words overflow-hidden resize-none`}>
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
-              <SelectContent className="w-[375px]">
+              <SelectContent className="w-[750px]">
                 {dateOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -242,12 +242,12 @@ export function IndividualFilters({
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
             <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
-              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full`}>
+              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full whitespace-normal break-words overflow-hidden resize-none`}>
                 <SelectValue placeholder="All Metrics" />
               </SelectTrigger>
-              <SelectContent className="w-[375px]">
+              <SelectContent className="w-[750px]">
                 {metricTypeOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
                     {opt.label}
                   </SelectItem>
                 ))}
