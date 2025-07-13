@@ -27,7 +27,6 @@ export function ReportFiltersContainer({
 
   // FILTER STATE
   const [filters, setFilters] = useState({
-    selectedSex: [] as string[],
     selectedAthletes: [] as string[],
     testDates: "",
     testNames: "",
@@ -37,7 +36,6 @@ export function ReportFiltersContainer({
   // Reset filters if resetFiltersKey changes
   useEffect(() => {
     setFilters({
-      selectedSex: [],
       selectedAthletes: [],
       testDates: "",
       testNames: "",

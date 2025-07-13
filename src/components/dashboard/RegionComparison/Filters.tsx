@@ -79,9 +79,25 @@ export const Filters = ({
     };
   };
 
-  // Create dependent dropdown options for Region Filters  
+  // Create dependent dropdown options for Region Filters with Sex dependency
   const getFilteredRegionData = () => {
-    // Start with all region data, then filter based on selections
+    // Filter testData based on selected region filters to get available sex options
+    let filteredTestData = testData;
+    
+    if (filters.country.length > 0 || filters.region.length > 0 || filters.address.length > 0 || filters.teamName.length > 0) {
+      filteredTestData = testData.filter(test => {
+        const countryMatch = filters.country.length === 0 || filters.country.includes(test.country || "");
+        const regionMatch = filters.region.length === 0 || filters.region.includes(test.region || "");
+        const addressMatch = filters.address.length === 0 || filters.address.includes(test.address || "");
+        const teamMatch = filters.teamName.length > 0 ? filters.teamName.includes(test.team_name) : true;
+        return countryMatch && regionMatch && addressMatch && teamMatch;
+      });
+    }
+    
+    // Get available sex options from filtered test data
+    const availableSexOptions = [...new Set(filteredTestData.map(d => d.gender).filter(Boolean))];
+    
+    // Start with all region data, then filter based on selections  
     let availableCountries = regionData.countries;
     let availableRegions = regionData.regions;
     let availableAddresses = regionData.addresses;
@@ -108,6 +124,7 @@ export const Filters = ({
     }
     
     return {
+      sexOptions: availableSexOptions,
       countries: availableCountries,
       regions: availableRegions,
       addresses: availableAddresses,
@@ -150,8 +167,11 @@ export const Filters = ({
             </SelectTrigger>
             <SelectContent className="z-[100]">
               <SelectItem value="all" className="text-center text-xs">All</SelectItem>
-              <SelectItem value="male" className="text-center text-xs">Male</SelectItem>
-              <SelectItem value="female" className="text-center text-xs">Female</SelectItem>
+              {filteredRegionData.sexOptions.map(sex => (
+                <SelectItem key={sex} value={sex} className="text-center text-xs">
+                  {sex}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
