@@ -143,6 +143,7 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
           uniqueTests={uniqueTests}
           uniqueTeams={uniqueTeams}
           regionData={regionData}
+          testData={filteredByTeam}
         />
         <CardTitle className="text-center text-lg text-gray-800 mb-4">
           Comparisons Amongst Regions

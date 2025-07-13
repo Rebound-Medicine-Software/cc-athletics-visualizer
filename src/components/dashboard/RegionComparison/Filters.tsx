@@ -40,6 +40,7 @@ interface FiltersProps {
     addresses: string[];
     teamNames: string[];
   };
+  testData: any[];
 }
 
 export const Filters = ({
@@ -49,22 +50,28 @@ export const Filters = ({
   uniqueTests,
   uniqueTeams,
   regionData,
+  testData,
 }: FiltersProps) => {
   // Create dependent dropdown options for Individual Filters
   const getFilteredIndividualData = () => {
-    // Start with all available data
-    let availableAthletes = uniqueAthletes;
-    let availableTests = uniqueTests;
+    let filteredData = testData;
     
-    // If athletes are selected, filter tests to only those taken by selected athletes
+    // Apply current filters to get available options
+    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
+      filteredData = filteredData.filter(d => d.gender === filters.sex);
+    }
+    
+    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
+      filteredData = filteredData.filter(d => d.test_name === filters.testName);
+    }
+    
     if (filters.athleteName.length > 0) {
-      availableTests = uniqueTests; // For now, keep all tests
+      filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
     
-    // If tests are selected, filter athletes to only those who took selected tests
-    if (filters.testName && filters.testName !== "all") {
-      availableAthletes = uniqueAthletes; // For now, keep all athletes
-    }
+    // Extract unique values from filtered data
+    const availableAthletes = [...new Set(filteredData.map(d => d.athlete_name))];
+    const availableTests = [...new Set(filteredData.map(d => d.test_name))];
     
     return {
       athletes: availableAthletes,
