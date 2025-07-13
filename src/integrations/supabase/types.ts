@@ -143,18 +143,21 @@ export type Database = {
         Row: {
           Address: string | null
           Country: string
+          Logo: string | null
           Region: string | null
           "Team Name": string
         }
         Insert: {
           Address?: string | null
           Country: string
+          Logo?: string | null
           Region?: string | null
           "Team Name": string
         }
         Update: {
           Address?: string | null
           Country?: string
+          Logo?: string | null
           Region?: string | null
           "Team Name"?: string
         }

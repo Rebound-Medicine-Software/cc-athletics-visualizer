@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
+import { useRegionData } from "@/hooks/useRegionData";
 
-declare global {
-  interface Window {
-    google: typeof google;
-  }
-}
+// Fix Leaflet default markers
+import 'leaflet/dist/leaflet.css';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface SatelliteMapProps {
   regionFilters: {
@@ -41,192 +43,123 @@ export const SatelliteMap = ({
   regionData 
 }: SatelliteMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<google.maps.Map | null>(null);
-  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
-  const [isApiKeySet, setIsApiKeySet] = useState(false);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [infoWindows, setInfoWindows] = useState<google.maps.InfoWindow[]>([]);
+  const map = useRef<L.Map | null>(null);
+  const [markers, setMarkers] = useState<L.Marker[]>([]);
+  const { data: regionTestingData } = useRegionData();
 
-  // Initialize map when API key is set
+  // Initialize map
   useEffect(() => {
-    if (!mapContainer.current || !isApiKeySet || !googleMapsApiKey) return;
+    if (!mapContainer.current) return;
 
-    const loader = new Loader({
-      apiKey: googleMapsApiKey,
-      version: 'weekly',
-    });
+    // Create map centered on UK
+    map.current = L.map(mapContainer.current).setView([54.5, -4.5], 6);
 
-    loader.load().then(() => {
-      if (!mapContainer.current) return;
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 18,
+    }).addTo(map.current);
 
-      map.current = new google.maps.Map(mapContainer.current, {
-        zoom: 2,
-        center: { lat: 20, lng: 0 },
-        mapTypeId: google.maps.MapTypeId.SATELLITE,
-        mapTypeControl: true,
-        streetViewControl: false,
-        fullscreenControl: true,
-        zoomControl: true,
-      });
-    }).catch((error) => {
-      console.error('Error loading Google Maps:', error);
-    });
-
-    // Cleanup
+    // Cleanup function
     return () => {
-      markers.forEach(marker => marker.setMap(null));
-      infoWindows.forEach(infoWindow => infoWindow.close());
-    };
-  }, [isApiKeySet, googleMapsApiKey]);
-
-  // Update markers based on filters
-  useEffect(() => {
-    if (!map.current) return;
-
-    // Clear existing markers and info windows
-    markers.forEach(marker => marker.setMap(null));
-    infoWindows.forEach(infoWindow => infoWindow.close());
-    setMarkers([]);
-    setInfoWindows([]);
-
-    // Filter data based on region filters
-    let filteredData = data;
-    
-    // Apply individual filters first
-    if (individualFilters.athleteName.length > 0) {
-      filteredData = filteredData.filter(d => 
-        individualFilters.athleteName.includes(d.athlete_name)
-      );
-    }
-    
-    if (individualFilters.testName && individualFilters.testName !== 'all') {
-      filteredData = filteredData.filter(d => d.test_name === individualFilters.testName);
-    }
-
-    // Apply region filters
-    if (regionFilters.teamName.length > 0) {
-      filteredData = filteredData.filter(d => 
-        regionFilters.teamName.includes(d.team_name)
-      );
-    }
-
-    // Group by team/location for marker placement
-    const locationGroups = new Map<string, TestData[]>();
-    filteredData.forEach(item => {
-      const key = `${item.team_name}`;
-      if (!locationGroups.has(key)) {
-        locationGroups.set(key, []);
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
       }
-      locationGroups.get(key)!.push(item);
-    });
+    };
+  }, []);
 
-    // Create markers for each location group
-    const newMarkers: google.maps.Marker[] = [];
-    const newInfoWindows: google.maps.InfoWindow[] = [];
+  // Update markers based on filters and data
+  useEffect(() => {
+    if (!map.current || !regionTestingData) return;
+
+    // Clear existing markers
+    markers.forEach(marker => marker.remove());
+    setMarkers([]);
+
+    // Filter region data based on region filters
+    let filteredRegionData = regionTestingData;
     
-    locationGroups.forEach((tests, teamName) => {
-      const coordinates = getTeamCoordinates(teamName);
+    if (regionFilters.teamName.length > 0) {
+      filteredRegionData = filteredRegionData.filter(region => 
+        regionFilters.teamName.includes(region["Team Name"])
+      );
+    }
+    
+    if (regionFilters.country.length > 0) {
+      filteredRegionData = filteredRegionData.filter(region => 
+        regionFilters.country.includes(region.Country)
+      );
+    }
+    
+    if (regionFilters.region.length > 0) {
+      filteredRegionData = filteredRegionData.filter(region => 
+        region.Region && regionFilters.region.includes(region.Region)
+      );
+    }
+
+    // Create markers for each filtered region
+    const newMarkers: L.Marker[] = [];
+    const bounds = L.latLngBounds([]);
+
+    filteredRegionData.forEach((regionItem) => {
+      const coordinates = getTeamCoordinates(regionItem["Team Name"]);
       if (!coordinates) return;
 
-      const uniqueAthletes = [...new Set(tests.map(t => t.athlete_name))];
-      const testCount = tests.length;
+      // Filter test data for this team based on individual filters
+      let teamTestData = data.filter(testData => testData.team_name === regionItem["Team Name"]);
       
-      // Create info window content
-      const infoWindowContent = `
-        <div style="padding: 8px; font-family: Arial, sans-serif;">
-          <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px;">${teamName}</h3>
-          <div style="font-size: 12px;">
-            <div style="margin-bottom: 4px;"><strong>Athletes:</strong> ${uniqueAthletes.length}</div>
-            <div style="margin-bottom: 4px;"><strong>Tests:</strong> ${testCount}</div>
-            <div style="max-height: 80px; overflow-y: auto;">
-              <strong>Athletes:</strong><br/>
-              ${uniqueAthletes.slice(0, 5).join(', ')}
-              ${uniqueAthletes.length > 5 ? '...' : ''}
-            </div>
-          </div>
-        </div>
-      `;
+      if (individualFilters.athleteName.length > 0) {
+        teamTestData = teamTestData.filter(testData => 
+          individualFilters.athleteName.includes(testData.athlete_name)
+        );
+      }
+      
+      if (individualFilters.testName && individualFilters.testName !== 'all') {
+        teamTestData = teamTestData.filter(testData => testData.test_name === individualFilters.testName);
+      }
 
-      const infoWindow = new google.maps.InfoWindow({
-        content: infoWindowContent,
+      // Skip if no data after filtering
+      if (teamTestData.length === 0) return;
+
+      const [lng, lat] = coordinates;
+      const position = L.latLng(lat, lng);
+      bounds.extend(position);
+
+      // Create custom colored icon based on team
+      const teamColor = getTeamColor(regionItem["Team Name"]);
+      const customIcon = L.divIcon({
+        html: `<div style="background-color: ${teamColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+        className: 'custom-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
       });
 
-      // Create marker with custom icon based on data count
-      const markerSize = Math.min(Math.max(testCount * 2, 20), 60);
-      const marker = new google.maps.Marker({
-        position: { lat: coordinates[1], lng: coordinates[0] },
-        map: map.current,
-        title: teamName,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: markerSize / 4,
-          fillColor: '#ef4444',
-          fillOpacity: 0.8,
-          strokeColor: '#ffffff',
-          strokeWeight: 2,
-        },
-      });
+      const marker = L.marker(position, { icon: customIcon });
 
-      marker.addListener('click', () => {
-        // Close all other info windows
-        newInfoWindows.forEach(iw => iw.close());
-        infoWindow.open(map.current!, marker);
-      });
+      // Create popup content with athlete data
+      const popupContent = createPopupContent(regionItem, teamTestData, individualFilters.metricType);
+      marker.bindPopup(popupContent, { maxWidth: 300 });
 
+      marker.addTo(map.current!);
       newMarkers.push(marker);
-      newInfoWindows.push(infoWindow);
     });
 
     setMarkers(newMarkers);
-    setInfoWindows(newInfoWindows);
-  }, [regionFilters, individualFilters, data, isApiKeySet]);
 
-  const handleApiKeySubmit = () => {
-    if (googleMapsApiKey.trim()) {
-      setIsApiKeySet(true);
+    // Fit map to show all markers, or center on UK if no markers
+    if (newMarkers.length > 0) {
+      map.current.fitBounds(bounds, { padding: [20, 20] });
+    } else {
+      map.current.setView([54.5, -4.5], 6);
     }
-  };
-
-  if (!isApiKeySet) {
-    return (
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-center">Google Maps Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center text-sm text-gray-600 mb-4">
-            Please enter your Google Maps API key to view the satellite map.
-            <br />
-            Get your API key from: <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="google-maps-api-key">Google Maps API Key</Label>
-            <Input
-              id="google-maps-api-key"
-              type="text"
-              placeholder="AIzaSyB..."
-              value={googleMapsApiKey}
-              onChange={(e) => setGoogleMapsApiKey(e.target.value)}
-              className="font-mono text-sm"
-            />
-          </div>
-          <Button 
-            onClick={handleApiKeySubmit}
-            disabled={!googleMapsApiKey.trim()}
-            className="w-full"
-          >
-            Initialize Map
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [regionFilters, individualFilters, data, regionTestingData]);
 
   return (
     <div className="mt-6 relative">
       <div ref={mapContainer} className="h-96 w-full rounded-lg shadow-lg" />
       <div className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded text-sm">
-        Locations based on Region Filters | Data from Individual Filters
+        OpenStreetMap | Filtered by Region & Individual Filters
       </div>
     </div>
   );
@@ -274,4 +207,93 @@ function getTeamCoordinates(teamName: string): [number, number] | null {
 
   // Default to random location if no match found
   return [Math.random() * 360 - 180, Math.random() * 120 - 60];
+}
+
+// Helper function to get team colors based on team name
+function getTeamColor(teamName: string): string {
+  const teamColors: Record<string, string> = {
+    'Team USA': '#FF0000',
+    'Team Canada': '#FF0000',
+    'Team UK': '#0066CC',
+    'Team Australia': '#FFAA00',
+    'Team Germany': '#000000',
+    'Team France': '#0055AA',
+    'Team Italy': '#009900',
+    'Team Spain': '#FFAA00',
+    'Team Brazil': '#00AA00',
+    'Team Japan': '#CC0000',
+    'Team South Korea': '#CC0000',
+    'Team China': '#CC0000',
+    'Team India': '#FF6600',
+    'Team South Africa': '#00AA00',
+    'Team Mexico': '#00AA00',
+    'Team Argentina': '#66CCFF',
+    'Team Russia': '#CC0000',
+    'Team Sweden': '#FFCC00',
+    'Team Norway': '#CC0000',
+    'Team Finland': '#0066CC',
+  };
+
+  return teamColors[teamName] || '#666666';
+}
+
+// Helper function to create popup content with athlete data
+function createPopupContent(regionItem: any, teamTestData: TestData[], selectedMetricType: string): string {
+  const teamName = regionItem["Team Name"];
+  const country = regionItem.Country;
+  const region = regionItem.Region;
+  const address = regionItem.Address;
+
+  // Group data by athlete
+  const athleteData = new Map<string, TestData[]>();
+  teamTestData.forEach(test => {
+    if (!athleteData.has(test.athlete_name)) {
+      athleteData.set(test.athlete_name, []);
+    }
+    athleteData.get(test.athlete_name)!.push(test);
+  });
+
+  let athleteHtml = '';
+  athleteData.forEach((tests, athleteName) => {
+    // Get the selected metric type value if specified
+    let metricValue = 'N/A';
+    if (selectedMetricType && selectedMetricType !== 'all') {
+      const testWithMetric = tests.find(test => {
+        const metrics = typeof test.metrics === 'string' ? JSON.parse(test.metrics) : test.metrics;
+        return metrics && metrics[selectedMetricType] !== undefined;
+      });
+      
+      if (testWithMetric) {
+        const metrics = typeof testWithMetric.metrics === 'string' ? JSON.parse(testWithMetric.metrics) : testWithMetric.metrics;
+        metricValue = metrics[selectedMetricType]?.toFixed(2) || 'N/A';
+      }
+    }
+
+    athleteHtml += `
+      <div style="margin-bottom: 8px; padding: 4px; background: #f8f9fa; border-radius: 4px;">
+        <div><strong>Athlete:</strong> ${athleteName}</div>
+        ${selectedMetricType && selectedMetricType !== 'all' ? 
+          `<div><strong>${selectedMetricType}:</strong> ${metricValue}</div>` : 
+          `<div><strong>Tests:</strong> ${tests.length}</div>`
+        }
+      </div>
+    `;
+  });
+
+  return `
+    <div style="padding: 8px; font-family: Arial, sans-serif; max-width: 250px;">
+      <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px; color: #333;">${teamName}</h3>
+      <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
+        <div><strong>Country:</strong> ${country}</div>
+        ${region ? `<div><strong>Region:</strong> ${region}</div>` : ''}
+        ${address ? `<div><strong>Address:</strong> ${address}</div>` : ''}
+      </div>
+      <div style="max-height: 120px; overflow-y: auto; font-size: 11px;">
+        ${athleteHtml}
+      </div>
+      <div style="font-size: 10px; color: #999; margin-top: 8px; text-align: center;">
+        Total Athletes: ${athleteData.size} | Total Tests: ${teamTestData.length}
+      </div>
+    </div>
+  `;
 }
