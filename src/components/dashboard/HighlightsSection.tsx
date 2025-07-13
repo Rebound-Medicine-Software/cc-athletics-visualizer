@@ -16,19 +16,61 @@ export const HighlightsSection = ({
   setSelectedTeams,
   resetFiltersKey
 }: HighlightsSectionProps) => {
-  // All Teams
-  const allTeams = Array.from(new Set(data.map(d => d.team_name)));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+  
   useEffect(() => {
     setSelectedAthletes([]);
   }, [selectedTeams, resetFiltersKey]);
-  // Filter athletes by selected teams
-  const filteredAthletes = selectedTeams.length > 0 ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name))) : Array.from(new Set(data.map(d => d.athlete_name)));
-  const teamOptions = allTeams.map(t => ({
+
+  // Create dependent dropdown options
+  const getFilteredData = () => {
+    let filteredData = data;
+    
+    // Apply team filter first
+    if (selectedTeams.length > 0) {
+      filteredData = filteredData.filter(d => selectedTeams.includes(d.team_name));
+    }
+    
+    // Apply athlete filter
+    if (selectedAthletes.length > 0) {
+      filteredData = filteredData.filter(d => selectedAthletes.includes(d.athlete_name));
+    }
+    
+    return filteredData;
+  };
+
+  // Get available options based on current selections
+  const getAvailableOptions = () => {
+    let teamFilteredData = data;
+    let athleteFilteredData = data;
+    
+    // For team options: filter by selected athletes
+    if (selectedAthletes.length > 0) {
+      teamFilteredData = data.filter(d => selectedAthletes.includes(d.athlete_name));
+    }
+    
+    // For athlete options: filter by selected teams
+    if (selectedTeams.length > 0) {
+      athleteFilteredData = data.filter(d => selectedTeams.includes(d.team_name));
+    }
+    
+    const availableTeams = [...new Set(teamFilteredData.map(d => d.team_name))];
+    const availableAthletes = [...new Set(athleteFilteredData.map(d => d.athlete_name))];
+    
+    return {
+      teams: availableTeams,
+      athletes: availableAthletes
+    };
+  };
+
+  const availableOptions = getAvailableOptions();
+  
+  const teamOptions = availableOptions.teams.map(t => ({
     value: t,
     label: t
   }));
-  const athleteOptions = filteredAthletes.map(a => ({
+  
+  const athleteOptions = availableOptions.athletes.map(a => ({
     value: a,
     label: a
   }));
@@ -37,12 +79,8 @@ export const HighlightsSection = ({
   const handleResetTeams = () => setSelectedTeams([]);
   const handleResetAthletes = () => setSelectedAthletes([]);
 
-  // Filtering logic
-  const filteredData = data.filter(test => {
-    const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
-    const athleteMatch = selectedAthletes.length === 0 || selectedAthletes.includes(test.athlete_name);
-    return teamMatch && athleteMatch;
-  });
+  // Use the filtered data from dependent dropdown logic
+  const filteredData = getFilteredData();
 
   // Calculate highlights based on filtered data
   const highlights = (() => {
