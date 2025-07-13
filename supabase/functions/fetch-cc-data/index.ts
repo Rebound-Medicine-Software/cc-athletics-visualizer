@@ -107,6 +107,7 @@ serve(async (req) => {
     // Process jump data
     console.log('Processing jump data...')
     for (const athlete of jumpData.athletes || []) {
+      const demographics = extractDemographics(athlete)
       Object.values(athlete.recordings || {}).forEach(recording => {
         const jumps = recording.jump_analysis || []
         
@@ -124,6 +125,7 @@ serve(async (req) => {
             test_date: new Date(jump.date).toISOString().split('T')[0],
             test_name: testName,
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: jump.metric_table,
           })
         })
@@ -133,6 +135,7 @@ serve(async (req) => {
     // Process isometric data
     console.log('Processing isometric data...')
     for (const athlete of isometricData.athletes || []) {
+      const demographics = extractDemographics(athlete)
       Object.values(athlete.recordings || {}).forEach(recording => {
         const analysis = recording.isometric_analysis
         if (!analysis?.trials) return
@@ -145,6 +148,7 @@ serve(async (req) => {
             test_date: new Date(recording.date).toISOString().split('T')[0],
             test_name: recording.exercise_name || 'Isometric Test',
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: trial.total_metrics,
           })
         })
@@ -154,6 +158,7 @@ serve(async (req) => {
     // Process pogo data
     console.log('Processing pogo data...')
     for (const athlete of pogoData.athletes || []) {
+      const demographics = extractDemographics(athlete)
       Object.values(athlete.recordings || {}).forEach(recording => {
         const analysis = recording.pogo_jump_analysis
         if (!analysis) return
@@ -167,6 +172,7 @@ serve(async (req) => {
             test_date: new Date(recording.date).toISOString().split('T')[0],
             test_name: 'Pogo Jump',
             repetition_number: 0, // 0 indicates average
+            gender: demographics.gender,
             metrics: analysis.avg_metrics,
           })
         }
@@ -180,6 +186,7 @@ serve(async (req) => {
             test_date: new Date(recording.date).toISOString().split('T')[0],
             test_name: 'Pogo Jump',
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: jump,
           })
         })

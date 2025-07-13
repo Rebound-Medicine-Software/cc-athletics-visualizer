@@ -54,6 +54,7 @@ export interface TestData {
   test_date: string;
   test_name: string;
   repetition_number: number;
+  gender?: string;
   metrics: JumpMetrics | IsometricMetrics | PogoMetrics;
 }
 

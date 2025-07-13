@@ -14,12 +14,14 @@ interface IndividualFiltersProps {
   allData: TestData[];
   selectedTeams: string[];
   filters: {
+    selectedSex: string[];
     selectedAthletes: string[];
     testDates: string;
     testNames: string;
     metricTypes: string;
   };
   setFilters: React.Dispatch<React.SetStateAction<{
+    selectedSex: string[];
     selectedAthletes: string[];
     testDates: string;
     testNames: string;
@@ -46,47 +48,72 @@ export function IndividualFilters({
     ? allData.filter(d => selectedTeams.includes(d.team_name))
     : allData;
 
-  // 2. Test Names - only from team-filtered data
+  // 2. Sex/Gender - from team-filtered data
+  const uniqueSexOptions = Array.from(
+    new Set(teamFilteredData.map(d => d.gender).filter(Boolean))
+  );
+
+  // 3. Test Names - filtered by team + sex (if selected)
+  const sexFilteredData = filters.selectedSex.length > 0
+    ? teamFilteredData.filter(d => {
+        const gender = d.gender;
+        return gender && filters.selectedSex.includes(gender);
+      })
+    : teamFilteredData;
   const uniqueTestNames = Array.from(
-    new Set(teamFilteredData.map(d => d.test_name))
+    new Set(sexFilteredData.map(d => d.test_name))
   ).filter(t => t !== "All Tests" && t !== "Isometric Test");
 
-  // 3. Athletes - filtered by team + test name (if selected)
+  // 4. Athletes - filtered by team + sex + test name (if selected)
   const testNameFilteredData = filters.testNames
-    ? teamFilteredData.filter(d => d.test_name === filters.testNames)
-    : teamFilteredData;
+    ? sexFilteredData.filter(d => d.test_name === filters.testNames)
+    : sexFilteredData;
   const filteredAthleteNames = Array.from(new Set(testNameFilteredData.map(d => d.athlete_name)));
 
-  // 4. Test Dates - filtered by team + test name + athletes (if selected)
+  // 5. Test Dates - filtered by team + sex + test name + athletes (if selected)
   const athleteFilteredData = filters.selectedAthletes.length > 0
     ? testNameFilteredData.filter(d => filters.selectedAthletes.includes(d.athlete_name))
     : testNameFilteredData;
   const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
 
-  // 5. Metric Types - based on selected test name only (these are predefined)
+  // 6. Metric Types - based on selected test name only (these are predefined)
   const availableMetricTypes = filters.testNames
     ? getMetricTypesForTest(filters.testNames)
     : [];
 
   // Convert to option shape
+  const sexOptions = uniqueSexOptions.map(s => ({ value: s, label: s }));
   const athleteOptions = filteredAthleteNames.map(a => ({ value: a, label: a }));
   const dateOptions = uniqueTestDates.map(d => ({ value: d, label: formatDate(d) }));
   const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
   const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
 
   // --- Handlers: Cascade Reset (sequenced) ---
-  // 1. Test Name
-  const handleTestNameChange = (val: string) => {
+  // 1. Sex
+  const handleSexChange = (next: string[]) => {
     setFilters({
-      testNames: val,
+      selectedSex: next,
+      testNames: "",
       selectedAthletes: [],
       testDates: "",
       metricTypes: ""
     });
+    onTestSelect("");
+  };
+
+  // 2. Test Name
+  const handleTestNameChange = (val: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testNames: val,
+      selectedAthletes: [],
+      testDates: "",
+      metricTypes: ""
+    }));
     onTestSelect(val);
   };
 
-  // 2. Athlete Name
+  // 3. Athlete Name
   const handleAthleteChange = (next: string[]) => {
     setFilters(prev => ({
       ...prev,
@@ -96,7 +123,7 @@ export function IndividualFilters({
     }));
   };
 
-  // 3. Test Date
+  // 4. Test Date
   const handleDateChange = (val: string) => {
     setFilters(prev => ({
       ...prev,
@@ -105,7 +132,7 @@ export function IndividualFilters({
     }));
   };
 
-  // 4. Metric Type
+  // 5. Metric Type
   const handleMetricTypeChange = (val: string) => {
     setFilters(prev => ({
       ...prev,
@@ -114,13 +141,24 @@ export function IndividualFilters({
   };
 
   // Reset handlers (with correct cascade)
-  const handleResetTestName = () => {
+  const handleResetSex = () => {
     setFilters({
+      selectedSex: [],
       testNames: "",
       selectedAthletes: [],
       testDates: "",
       metricTypes: ""
     });
+    onTestSelect("");
+  };
+  const handleResetTestName = () => {
+    setFilters(prev => ({
+      ...prev,
+      testNames: "",
+      selectedAthletes: [],
+      testDates: "",
+      metricTypes: ""
+    }));
     onTestSelect("");
   };
   const handleResetAthlete = () => setFilters(prev => ({
@@ -140,34 +178,32 @@ export function IndividualFilters({
   }));
 
   // Enable/disable (sequential)
+  const testNameEnabled = filters.selectedSex.length > 0;
   const athleteEnabled = !!filters.testNames;
   const testDateEnabled = filters.selectedAthletes.length > 0;
   const metricTypeEnabled = !!filters.testDates;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
-      {/* 1. Test Name (always enabled) */}
-      <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
-        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+    <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
+      {/* 1. Sex (always enabled) */}
+      <div className="w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
         <div className="flex items-center gap-2">
-          <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-              <SelectValue placeholder="All Tests" />
-            </SelectTrigger>
-            <SelectContent className="w-[750px]">
-              {testNameOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelectDropdown
+            options={sexOptions}
+            value={filters.selectedSex}
+            onChange={handleSexChange}
+            placeholder="All Sexes"
+            className="text-center h-10 min-h-[40px] max-h-[40px] bg-white"
+            labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+            dropdownClassName="w-[600px]"
+          />
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Reset Test Name"
+            aria-label="Reset Sex"
             className="p-2"
-            onClick={handleResetTestName}
+            onClick={handleResetSex}
             type="button"
           >
             <RefreshCcw className="w-4 h-4 text-gray-500" />
@@ -175,8 +211,40 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 2. Athlete Name (enabled after Test Name is selected) */}
-      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+      {/* 2. Test Name (enabled after Sex is selected) */}
+      <div className="w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+        <div className="flex items-center gap-2">
+          <div className={testNameEnabled ? "" : "pointer-events-none"}>
+            <Select value={filters.testNames} onValueChange={testNameEnabled ? handleTestNameChange : () => {}}>
+              <SelectTrigger className={`${testNameEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                <SelectValue placeholder="All Tests" />
+              </SelectTrigger>
+              <SelectContent className="w-[600px]">
+                {testNameOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Reset Test Name"
+            className={`p-2 ${!testNameEnabled ? "pointer-events-none opacity-50" : ""}`}
+            onClick={testNameEnabled ? handleResetTestName : undefined}
+            type="button"
+            disabled={!testNameEnabled}
+          >
+            <RefreshCcw className="w-4 h-4 text-gray-500" />
+          </Button>
+        </div>
+      </div>
+
+      {/* 3. Athlete Name (enabled after Test Name is selected) */}
+      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
@@ -187,7 +255,7 @@ export function IndividualFilters({
               placeholder="All Athletes"
               className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
               labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-              dropdownClassName="w-[750px]"
+              dropdownClassName="w-[600px]"
             />
           </div>
           <Button
@@ -204,8 +272,8 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 3. Test Date (enabled after Athlete Name) */}
-      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+      {/* 4. Test Date (enabled after Athlete Name) */}
+      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
@@ -213,7 +281,7 @@ export function IndividualFilters({
               <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
                 <SelectValue placeholder="All Dates" />
               </SelectTrigger>
-              <SelectContent className="w-[750px]">
+              <SelectContent className="w-[600px]">
                 {dateOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
                     {opt.label}
@@ -236,8 +304,8 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 4. Metric Type (enabled after Test Date) */}
-      <div className={`w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center`}>
+      {/* 5. Metric Type (enabled after Test Date) */}
+      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
@@ -245,7 +313,7 @@ export function IndividualFilters({
               <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
                 <SelectValue placeholder="All Metrics" />
               </SelectTrigger>
-              <SelectContent className="w-[750px]">
+              <SelectContent className="w-[600px]">
                 {metricTypeOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
                     {opt.label}
