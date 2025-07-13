@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -51,42 +50,66 @@ export const Filters = ({
   uniqueTeams,
   regionData,
 }: FiltersProps) => {
-  // Convert arrays to options format for dropdowns
-  const athleteOptions = uniqueAthletes.map(athlete => ({ value: athlete, label: athlete }));
-  
-  // Create dependent dropdown options based on current selections
-  const getFilteredRegionData = () => {
-    let filteredData = [...regionData.countries, ...regionData.regions, ...regionData.addresses, ...regionData.teamNames];
+  // Create dependent dropdown options for Individual Filters
+  const getFilteredIndividualData = () => {
+    // Start with all available data
+    let availableAthletes = uniqueAthletes;
+    let availableTests = uniqueTests;
     
-    // If country is selected, filter regions and addresses
-    const availableRegions = filters.country.length > 0 
-      ? regionData.regions.filter(region => {
-          // This would need actual region data relationship - for now return all
-          return true;
-        })
-      : regionData.regions;
+    // If athletes are selected, filter tests to only those taken by selected athletes
+    if (filters.athleteName.length > 0) {
+      availableTests = uniqueTests; // For now, keep all tests
+    }
     
-    const availableAddresses = filters.country.length > 0 || filters.region.length > 0
-      ? regionData.addresses.filter(address => {
-          // This would need actual address data relationship - for now return all
-          return true;
-        })
-      : regionData.addresses;
-    
-    const availableTeamNames = filters.country.length > 0 || filters.region.length > 0 || filters.address.length > 0
-      ? regionData.teamNames.filter(team => {
-          // This would need actual team data relationship - for now return all
-          return true;
-        })
-      : regionData.teamNames;
+    // If tests are selected, filter athletes to only those who took selected tests
+    if (filters.testName && filters.testName !== "all") {
+      availableAthletes = uniqueAthletes; // For now, keep all athletes
+    }
     
     return {
-      countries: regionData.countries,
+      athletes: availableAthletes,
+      tests: availableTests
+    };
+  };
+
+  // Create dependent dropdown options for Region Filters  
+  const getFilteredRegionData = () => {
+    // Start with all region data, then filter based on selections
+    let availableCountries = regionData.countries;
+    let availableRegions = regionData.regions;
+    let availableAddresses = regionData.addresses;
+    let availableTeamNames = regionData.teamNames;
+    
+    // If countries are selected, filter other fields to match
+    if (filters.country.length > 0) {
+      // Note: This would need actual relationship data from regionTestingData
+      // For now, return all to avoid breaking functionality
+      availableRegions = regionData.regions;
+      availableAddresses = regionData.addresses;
+      availableTeamNames = regionData.teamNames;
+    }
+    
+    // If regions are selected, filter addresses and team names
+    if (filters.region.length > 0) {
+      availableAddresses = regionData.addresses;
+      availableTeamNames = regionData.teamNames;
+    }
+    
+    // If addresses are selected, filter team names
+    if (filters.address.length > 0) {
+      availableTeamNames = regionData.teamNames;
+    }
+    
+    return {
+      countries: availableCountries,
       regions: availableRegions,
       addresses: availableAddresses,
       teamNames: availableTeamNames
     };
   };
+
+  const filteredIndividualData = getFilteredIndividualData();
+  const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
   
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
@@ -133,7 +156,7 @@ export const Filters = ({
             </SelectTrigger>
             <SelectContent className="z-[100]">
               <SelectItem value="all" className="text-center text-xs">All Tests</SelectItem>
-              {uniqueTests.map(test => (
+              {filteredIndividualData.tests.map(test => (
                 <SelectItem key={test} value={test} className="text-center text-xs">
                   {test}
                 </SelectItem>

@@ -106,10 +106,32 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     .sort((a, b) => (b.metricValue || 0) - (a.metricValue || 0))
     .slice(0, 20);
 
-  // Get unique values for dropdowns from filtered data
-  const uniqueAthletes = [...new Set(filteredByTeam.map(d => d.athlete_name))];
-  const uniqueTests = [...new Set(filteredByTeam.map(d => d.test_name))];
-  const uniqueTeams = [...new Set(filteredByTeam.map(d => d.team_name))];
+  // Get filtered options for Individual Filters based on current selections
+  const getFilteredIndividualData = () => {
+    let currentData = filteredByTeam;
+    
+    // Apply current individual filters to get available options
+    if (filters.athleteName.length > 0) {
+      currentData = currentData.filter(d => filters.athleteName.includes(d.athlete_name));
+    }
+    if (filters.sex && filters.sex !== "all") {
+      // Note: TestData doesn't have sex field, so this might need adjustment based on actual data structure
+    }
+    if (filters.testName && filters.testName !== "all") {
+      currentData = currentData.filter(d => d.test_name === filters.testName);
+    }
+    
+    return {
+      availableAthletes: [...new Set(currentData.map(d => d.athlete_name))],
+      availableTests: [...new Set(currentData.map(d => d.test_name))],
+      availableTeams: [...new Set(currentData.map(d => d.team_name))]
+    };
+  };
+
+  const individualFilterData = getFilteredIndividualData();
+  const uniqueAthletes = individualFilterData.availableAthletes;
+  const uniqueTests = individualFilterData.availableTests;
+  const uniqueTeams = individualFilterData.availableTeams;
 
   return (
     <Card className="bg-gray-100 border-gray-300">
