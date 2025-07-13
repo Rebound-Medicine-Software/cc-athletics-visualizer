@@ -88,13 +88,13 @@ export const SatelliteMap = ({
     
     if (regionFilters.country.length > 0) {
       filteredRegionData = filteredRegionData.filter(region => 
-        regionFilters.country.includes(region.Country)
+        regionFilters.country.includes(region.country)
       );
     }
     
     if (regionFilters.region.length > 0) {
       filteredRegionData = filteredRegionData.filter(region => 
-        region.Region && regionFilters.region.includes(region.Region)
+        region.region && regionFilters.region.includes(region.region)
       );
     }
 
@@ -240,9 +240,9 @@ function getTeamColor(teamName: string): string {
 // Helper function to create popup content with athlete data
 function createPopupContent(regionItem: any, teamTestData: TestData[], selectedMetricType: string): string {
   const teamName = regionItem["Team Name"];
-  const country = regionItem.Country;
-  const region = regionItem.Region;
-  const address = regionItem.Address;
+  const country = regionItem.country;
+  const region = regionItem.region;
+  const address = regionItem.address;
 
   // Group data by athlete
   const athleteData = new Map<string, TestData[]>();

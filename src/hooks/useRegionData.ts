@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface RegionTestingData {
   "Team Name": string;
-  Country: string;
-  Region: string | null;
-  Address: string | null;
+  country: string;
+  region: string | null;
+  address: string | null;
 }
 
 export const useRegionData = () => {

@@ -44,9 +44,9 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
 
   // Process region data for dropdowns
   const regionData = {
-    countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.Country).filter(Boolean))] : [],
-    regions: regionTestingData ? [...new Set(regionTestingData.map(item => item.Region).filter(Boolean))] : [],
-    addresses: regionTestingData ? [...new Set(regionTestingData.map(item => item.Address).filter(Boolean))] : [],
+    countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.country).filter(Boolean))] : [],
+    regions: regionTestingData ? [...new Set(regionTestingData.map(item => item.region).filter(Boolean))] : [],
+    addresses: regionTestingData ? [...new Set(regionTestingData.map(item => item.address).filter(Boolean))] : [],
     teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))] : []
   };
 
