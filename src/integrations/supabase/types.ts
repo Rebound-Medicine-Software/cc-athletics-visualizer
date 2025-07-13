@@ -141,24 +141,27 @@ export type Database = {
       }
       "Region Testing": {
         Row: {
-          Address: string | null
-          Country: string
-          Logo: string | null
-          Region: string | null
+          address: string | null
+          country: string
+          id: string | null
+          logo: string | null
+          region: string | null
           "Team Name": string
         }
         Insert: {
-          Address?: string | null
-          Country: string
-          Logo?: string | null
-          Region?: string | null
+          address?: string | null
+          country: string
+          id?: string | null
+          logo?: string | null
+          region?: string | null
           "Team Name": string
         }
         Update: {
-          Address?: string | null
-          Country?: string
-          Logo?: string | null
-          Region?: string | null
+          address?: string | null
+          country?: string
+          id?: string | null
+          logo?: string | null
+          region?: string | null
           "Team Name"?: string
         }
         Relationships: []
