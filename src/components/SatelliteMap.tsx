@@ -97,6 +97,18 @@ export const SatelliteMap = ({
         region.region && regionFilters.region.includes(region.region)
       );
     }
+    
+    if (regionFilters.address.length > 0) {
+      filteredRegionData = filteredRegionData.filter(region => 
+        region.address && regionFilters.address.includes(region.address)
+      );
+    }
+    
+    if (regionFilters.teamName.length > 0) {
+      filteredRegionData = filteredRegionData.filter(region => 
+        regionFilters.teamName.includes(region["Team Name"])
+      );
+    }
 
     // Create markers for each filtered region
     const newMarkers: L.Marker[] = [];

@@ -53,10 +53,46 @@ export const Filters = ({
 }: FiltersProps) => {
   // Convert arrays to options format for dropdowns
   const athleteOptions = uniqueAthletes.map(athlete => ({ value: athlete, label: athlete }));
-  const countryOptions = regionData.countries.map(country => ({ value: country, label: country }));
-  const regionOptions = regionData.regions.map(region => ({ value: region, label: region }));
-  const addressOptions = regionData.addresses.map(address => ({ value: address, label: address }));
-  const teamNameOptions = regionData.teamNames.map(team => ({ value: team, label: team }));
+  
+  // Create dependent dropdown options based on current selections
+  const getFilteredRegionData = () => {
+    let filteredData = [...regionData.countries, ...regionData.regions, ...regionData.addresses, ...regionData.teamNames];
+    
+    // If country is selected, filter regions and addresses
+    const availableRegions = filters.country.length > 0 
+      ? regionData.regions.filter(region => {
+          // This would need actual region data relationship - for now return all
+          return true;
+        })
+      : regionData.regions;
+    
+    const availableAddresses = filters.country.length > 0 || filters.region.length > 0
+      ? regionData.addresses.filter(address => {
+          // This would need actual address data relationship - for now return all
+          return true;
+        })
+      : regionData.addresses;
+    
+    const availableTeamNames = filters.country.length > 0 || filters.region.length > 0 || filters.address.length > 0
+      ? regionData.teamNames.filter(team => {
+          // This would need actual team data relationship - for now return all
+          return true;
+        })
+      : regionData.teamNames;
+    
+    return {
+      countries: regionData.countries,
+      regions: availableRegions,
+      addresses: availableAddresses,
+      teamNames: availableTeamNames
+    };
+  };
+  
+  const filteredRegionData = getFilteredRegionData();
+  const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
+  const regionOptions = filteredRegionData.regions.map(region => ({ value: region, label: region }));
+  const addressOptions = filteredRegionData.addresses.map(address => ({ value: address, label: address }));
+  const teamNameOptions = filteredRegionData.teamNames.map(team => ({ value: team, label: team }));
 
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-visible">

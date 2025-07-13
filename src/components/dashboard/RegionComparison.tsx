@@ -65,43 +65,46 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
   }
   const summaryRows = Array.from(groupedMap.values());
 
-  // Build table rows matching the requested columns
-  const tableData = summaryRows.map((test, index) => ({
-    id: index + 1,
-    teamName: test.team_name ?? "",
-    athleteName: test.athlete_name ?? "",
-    sex: test.sex ?? test.metrics?.sex ?? "",
-    sport: test.sport ?? test.metrics?.sport ?? "",
-    ageGroup: test.age_group ?? test.metrics?.age_group ?? "",
-    weightCategory: test.weight_category_kg ?? (test.metrics?.weight_category_kg ?? null),
-    // Metrics: look for the metric in the 'metrics' field if present
-    cmjJumpHeight:
-      test.metric_type === "Jump Height (cm)"
-        ? test.metric_value
-        : test.metrics?.jump_height_ft != null
-          ? test.metrics.jump_height_ft * 30.48 // convert feet to cm
-          : null,
-    cmjPeakPower:
-      test.metric_type === "Peak Power (W)"
-        ? test.metric_value
-        : test.metrics?.peak_power ?? null,
-    cmjRelPeakPower:
-      test.metric_type === "Relative Peak Power (W/kg)"
-        ? test.metric_value
-        : test.metrics?.rel_peak_power ?? null,
-    cmjRSI: 
-      test.metric_type === "Reactive Strength Index"
-        ? test.metric_value
-        : test.metrics?.rsi ?? null,
-    imtpPeakForce:
-      test.metric_type === "Peak Force (N)"
-        ? test.metric_value
-        : test.metrics?.peak_force ?? test.metrics?.force_peak ?? null,
-    imtpRelPeakForce:
-      test.metric_type === "Relative Peak Force (N/kg)"
-        ? test.metric_value
-        : test.metrics?.rel_peak_force ?? null,
-  })).slice(0, 10);
+  // Filter by individual filters first
+  let filteredData = filteredByTeam;
+  
+  if (filters.athleteName.length > 0) {
+    filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
+  }
+  
+  if (filters.testName && filters.testName !== "all") {
+    filteredData = filteredData.filter(d => d.test_name === filters.testName);
+  }
+
+  // Build simplified table data - since TestData doesn't have metric_type/metric_value,
+  // we'll extract relevant metrics from the metrics object
+  const tableData = filteredData
+    .map((test, index) => {
+      let metricValue = 0;
+      let metricType = filters.metricType || "Peak Force";
+      
+      // Extract metric value based on selected metric type
+      if (filters.metricType === "Peak Force" && test.metrics) {
+        metricValue = (test.metrics as any).peak_force || (test.metrics as any).force_peak || 0;
+      } else if (filters.metricType === "Peak Power" && test.metrics) {
+        metricValue = (test.metrics as any).peak_power || (test.metrics as any).avg_power || 0;
+      } else if (filters.metricType === "Jump Height" && test.metrics) {
+        metricValue = (test.metrics as any).jump_height_ft ? (test.metrics as any).jump_height_ft * 30.48 : (test.metrics as any).avg_jump_height || 0;
+      } else if (filters.metricType === "RSI" && test.metrics) {
+        metricValue = (test.metrics as any).rsi || (test.metrics as any).avg_rsi || 0;
+      }
+      
+      return {
+        id: index + 1,
+        teamName: test.team_name ?? "",
+        athleteName: test.athlete_name ?? "",
+        metricType: metricType,
+        metricValue: metricValue,
+      };
+    })
+    .filter(row => row.metricValue > 0)
+    .sort((a, b) => (b.metricValue || 0) - (a.metricValue || 0))
+    .slice(0, 20);
 
   // Get unique values for dropdowns from filtered data
   const uniqueAthletes = [...new Set(filteredByTeam.map(d => d.athlete_name))];

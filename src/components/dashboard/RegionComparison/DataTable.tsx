@@ -1,80 +1,73 @@
 
 import React from "react";
+import { Trophy, Medal } from "lucide-react";
 
 interface DataTableProps {
   tableData: {
     id: number;
     teamName: string;
     athleteName: string;
-    sex: string | null;
-    sport: string | null;
-    ageGroup: string | null;
-    weightCategory: number | null;
-    cmjJumpHeight: number | null;
-    cmjPeakPower: number | null;
-    cmjRelPeakPower: number | null;
-    cmjRSI: number | null;
-    imtpPeakForce: number | null;
-    imtpRelPeakForce: number | null;
+    metricType: string;
+    metricValue: number | null;
   }[];
 }
 
+const getRankIcon = (position: number) => {
+  switch (position) {
+    case 1:
+      return <Trophy className="w-5 h-5 text-yellow-500" />;
+    case 2:
+      return <Medal className="w-5 h-5 text-gray-400" />;
+    case 3:
+      return <Medal className="w-5 h-5 text-amber-600" />;
+    default:
+      return null;
+  }
+};
+
 export const DataTable = ({ tableData }: DataTableProps) => (
-  <div className="w-full overflow-x-auto">
-    <div className="min-w-[1200px]">
-      <table className="w-full border-collapse">
-      <thead className="bg-gray-800 text-white">
+  <div className="w-full max-h-96 overflow-auto border border-gray-300 rounded-lg">
+    <table className="w-full border-collapse">
+      <thead className="bg-gray-800 text-white sticky top-0">
         <tr>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">#</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Team Name</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Athlete Name</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Sex</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Sport</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Age Group</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">Weight Category (kg)</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">CMJ Jump Height (cm)</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">CMJ Peak Power (W)</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">CMJ Relative Peak Power (W/kg)</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">CMJ Reactive Strength Index</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">IMTP Peak Force (N)</th>
-          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-sm">IMTP Rel Peak Force (N/kg)</th>
+          <th className="px-4 py-3 text-left text-sm font-semibold">#</th>
+          <th className="px-4 py-3 text-left text-sm font-semibold">Team Name</th>
+          <th className="px-4 py-3 text-left text-sm font-semibold">Athlete Name</th>
+          <th className="px-4 py-3 text-left text-sm font-semibold">Metric Type</th>
+          <th className="px-4 py-3 text-left text-sm font-semibold">Value</th>
         </tr>
       </thead>
       <tbody>
         {tableData.length > 0 ? (
           tableData.map((row, index) => {
-            const rowNumber = index + 1;
-            const isBlurred = rowNumber >= 4;
-            const rowClassName = index % 2 === 0 ? "bg-teal-100" : "bg-white";
-            const blurClassName = isBlurred ? "blur-sm" : "";
+            const position = index + 1;
+            const rowClassName = index % 2 === 0 ? "bg-gray-50" : "bg-white";
             
             return (
-              <tr key={row.id} className={`${rowClassName} ${blurClassName}`}>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.id}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.teamName}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.athleteName}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sex ?? ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.sport ?? ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.ageGroup ?? ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.weightCategory != null ? row.weightCategory.toFixed(1) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjJumpHeight != null ? row.cmjJumpHeight.toFixed(2) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjPeakPower != null ? row.cmjPeakPower.toFixed(0) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRelPeakPower != null ? row.cmjRelPeakPower.toFixed(2) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.cmjRSI != null ? row.cmjRSI.toFixed(2) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpPeakForce != null ? row.imtpPeakForce.toFixed(0) : ""}</td>
-                <td className="px-2 md:px-4 py-2 text-xs md:text-sm">{row.imtpRelPeakForce != null ? row.imtpRelPeakForce.toFixed(2) : ""}</td>
+              <tr key={row.id} className={`${rowClassName} hover:bg-gray-100 transition-colors`}>
+                <td className="px-4 py-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    {getRankIcon(position)}
+                    <span className="font-medium">{position}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-sm font-medium">{row.teamName}</td>
+                <td className="px-4 py-3 text-sm">{row.athleteName}</td>
+                <td className="px-4 py-3 text-sm">{row.metricType}</td>
+                <td className="px-4 py-3 text-sm font-mono">
+                  {row.metricValue != null ? row.metricValue.toFixed(2) : "N/A"}
+                </td>
               </tr>
             );
           })
         ) : (
           <tr>
-            <td colSpan={13} className="px-2 md:px-4 py-8 text-center text-gray-500 text-xs md:text-sm">
+            <td colSpan={5} className="px-4 py-8 text-center text-gray-500 text-sm">
               No data available with current filters
             </td>
           </tr>
         )}
       </tbody>
     </table>
-    </div>
   </div>
 );
