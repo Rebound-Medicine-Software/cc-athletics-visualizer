@@ -1,11 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { Loader } from '@googlemaps/js-api-loader';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
+
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
 
 interface SatelliteMapProps {
   regionFilters: {
@@ -36,58 +41,53 @@ export const SatelliteMap = ({
   regionData 
 }: SatelliteMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [isTokenSet, setIsTokenSet] = useState(false);
-  const [markers, setMarkers] = useState<mapboxgl.Marker[]>([]);
+  const map = useRef<google.maps.Map | null>(null);
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState('');
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
+  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const [infoWindows, setInfoWindows] = useState<google.maps.InfoWindow[]>([]);
 
-  // Initialize map when token is set
+  // Initialize map when API key is set
   useEffect(() => {
-    if (!mapContainer.current || !isTokenSet || !mapboxToken) return;
+    if (!mapContainer.current || !isApiKeySet || !googleMapsApiKey) return;
 
-    // Initialize map
-    mapboxgl.accessToken = mapboxToken;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-v9',
-      projection: 'globe',
-      zoom: 2,
-      center: [0, 20],
-      pitch: 0,
+    const loader = new Loader({
+      apiKey: googleMapsApiKey,
+      version: 'weekly',
     });
 
-    // Add navigation controls
-    map.current.addControl(
-      new mapboxgl.NavigationControl({
-        visualizePitch: true,
-      }),
-      'top-right'
-    );
+    loader.load().then(() => {
+      if (!mapContainer.current) return;
 
-    // Add atmosphere effects
-    map.current.on('style.load', () => {
-      map.current?.setFog({
-        color: 'rgb(18, 18, 18)',
-        'high-color': 'rgb(36, 36, 36)',
-        'horizon-blend': 0.1,
+      map.current = new google.maps.Map(mapContainer.current, {
+        zoom: 2,
+        center: { lat: 20, lng: 0 },
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true,
       });
+    }).catch((error) => {
+      console.error('Error loading Google Maps:', error);
     });
 
     // Cleanup
     return () => {
-      markers.forEach(marker => marker.remove());
-      map.current?.remove();
+      markers.forEach(marker => marker.setMap(null));
+      infoWindows.forEach(infoWindow => infoWindow.close());
     };
-  }, [isTokenSet, mapboxToken]);
+  }, [isApiKeySet, googleMapsApiKey]);
 
   // Update markers based on filters
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear existing markers
-    markers.forEach(marker => marker.remove());
+    // Clear existing markers and info windows
+    markers.forEach(marker => marker.setMap(null));
+    infoWindows.forEach(infoWindow => infoWindow.close());
     setMarkers([]);
+    setInfoWindows([]);
 
     // Filter data based on region filters
     let filteredData = data;
@@ -121,24 +121,24 @@ export const SatelliteMap = ({
     });
 
     // Create markers for each location group
-    const newMarkers: mapboxgl.Marker[] = [];
+    const newMarkers: google.maps.Marker[] = [];
+    const newInfoWindows: google.maps.InfoWindow[] = [];
+    
     locationGroups.forEach((tests, teamName) => {
-      // For demo purposes, use approximate coordinates
-      // In real implementation, you'd get these from your region data
       const coordinates = getTeamCoordinates(teamName);
       if (!coordinates) return;
 
       const uniqueAthletes = [...new Set(tests.map(t => t.athlete_name))];
       const testCount = tests.length;
       
-      // Create marker popup content
-      const popupContent = `
-        <div class="p-2">
-          <h3 class="font-bold text-sm mb-2">${teamName}</h3>
-          <div class="text-xs space-y-1">
-            <div><strong>Athletes:</strong> ${uniqueAthletes.length}</div>
-            <div><strong>Tests:</strong> ${testCount}</div>
-            <div class="max-h-20 overflow-y-auto">
+      // Create info window content
+      const infoWindowContent = `
+        <div style="padding: 8px; font-family: Arial, sans-serif;">
+          <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px;">${teamName}</h3>
+          <div style="font-size: 12px;">
+            <div style="margin-bottom: 4px;"><strong>Athletes:</strong> ${uniqueAthletes.length}</div>
+            <div style="margin-bottom: 4px;"><strong>Tests:</strong> ${testCount}</div>
+            <div style="max-height: 80px; overflow-y: auto;">
               <strong>Athletes:</strong><br/>
               ${uniqueAthletes.slice(0, 5).join(', ')}
               ${uniqueAthletes.length > 5 ? '...' : ''}
@@ -147,66 +147,72 @@ export const SatelliteMap = ({
         </div>
       `;
 
-      const popup = new mapboxgl.Popup({ 
-        offset: 25,
-        className: 'map-popup'
-      }).setHTML(popupContent);
+      const infoWindow = new google.maps.InfoWindow({
+        content: infoWindowContent,
+      });
 
-      // Create marker with size based on data count
+      // Create marker with custom icon based on data count
       const markerSize = Math.min(Math.max(testCount * 2, 20), 60);
-      const el = document.createElement('div');
-      el.className = 'marker';
-      el.style.backgroundColor = '#ef4444';
-      el.style.width = `${markerSize}px`;
-      el.style.height = `${markerSize}px`;
-      el.style.borderRadius = '50%';
-      el.style.border = '2px solid white';
-      el.style.cursor = 'pointer';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+      const marker = new google.maps.Marker({
+        position: { lat: coordinates[1], lng: coordinates[0] },
+        map: map.current,
+        title: teamName,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: markerSize / 4,
+          fillColor: '#ef4444',
+          fillOpacity: 0.8,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+      });
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat(coordinates)
-        .setPopup(popup)
-        .addTo(map.current!);
+      marker.addListener('click', () => {
+        // Close all other info windows
+        newInfoWindows.forEach(iw => iw.close());
+        infoWindow.open(map.current!, marker);
+      });
 
       newMarkers.push(marker);
+      newInfoWindows.push(infoWindow);
     });
 
     setMarkers(newMarkers);
-  }, [regionFilters, individualFilters, data, isTokenSet]);
+    setInfoWindows(newInfoWindows);
+  }, [regionFilters, individualFilters, data, isApiKeySet]);
 
-  const handleTokenSubmit = () => {
-    if (mapboxToken.trim()) {
-      setIsTokenSet(true);
+  const handleApiKeySubmit = () => {
+    if (googleMapsApiKey.trim()) {
+      setIsApiKeySet(true);
     }
   };
 
-  if (!isTokenSet) {
+  if (!isApiKeySet) {
     return (
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-center">Satellite Map Configuration</CardTitle>
+          <CardTitle className="text-center">Google Maps Configuration</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center text-sm text-gray-600 mb-4">
-            Please enter your Mapbox public token to view the satellite map.
+            Please enter your Google Maps API key to view the satellite map.
             <br />
-            Get your token from: <a href="https://mapbox.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">mapbox.com</a>
+            Get your API key from: <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="mapbox-token">Mapbox Public Token</Label>
+            <Label htmlFor="google-maps-api-key">Google Maps API Key</Label>
             <Input
-              id="mapbox-token"
+              id="google-maps-api-key"
               type="text"
-              placeholder="pk.eyJ1IjoieW91ci11c2VybmFtZSIsImEiOiJ..."
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
+              placeholder="AIzaSyB..."
+              value={googleMapsApiKey}
+              onChange={(e) => setGoogleMapsApiKey(e.target.value)}
               className="font-mono text-sm"
             />
           </div>
           <Button 
-            onClick={handleTokenSubmit}
-            disabled={!mapboxToken.trim()}
+            onClick={handleApiKeySubmit}
+            disabled={!googleMapsApiKey.trim()}
             className="w-full"
           >
             Initialize Map
