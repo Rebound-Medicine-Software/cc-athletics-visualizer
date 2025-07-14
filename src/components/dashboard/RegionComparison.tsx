@@ -98,28 +98,30 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     ? data.filter(d => selectedTeams.includes(d.team_name))
     : data;
 
-  // Apply individual filters
-  let filteredData = filteredByTeam;
+  // TABLE DATA: Apply ONLY individual filters for the leaderboard table
+  let tableFilteredData = filteredByTeam;
   
   if (filters.athleteName.length > 0) {
-    filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
+    tableFilteredData = tableFilteredData.filter(d => filters.athleteName.includes(d.athlete_name));
   }
   
   if (filters.sex && filters.sex !== "all") {
-    filteredData = filteredData.filter(d => d.gender === filters.sex);
+    tableFilteredData = tableFilteredData.filter(d => d.gender === filters.sex);
   }
   
   if (filters.testName && filters.testName !== "all") {
-    filteredData = filteredData.filter(d => d.test_name === filters.testName);
+    tableFilteredData = tableFilteredData.filter(d => d.test_name === filters.testName);
   }
 
-  // Apply region filters to test data
+  // MAP DATA: Apply ONLY region filters for the map display
+  let mapFilteredData = filteredByTeam;
+  
   if (filters.teamName.length > 0) {
-    filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
+    mapFilteredData = mapFilteredData.filter(d => filters.teamName.includes(d.team_name));
   }
 
-  // Build table data with proper metric extraction
-  const tableData = filteredData
+  // Build table data with proper metric extraction (based on individual filters only)
+  const tableData = tableFilteredData
     .map((test, index) => {
       let metricValue = 0;
       let metricType = filters.metricType || "Peak Force";
@@ -231,9 +233,12 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
           regionData={dependentRegionData}
           testData={filteredByTeam}
         />
-        <CardTitle className="text-center text-lg text-gray-800 mb-4">
-          Comparisons Amongst Regions
-        </CardTitle>
+        {/* Header in rounded box */}
+        <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm">
+          <CardTitle className="text-center text-lg text-gray-800">
+            Comparisons Amongst Regions
+          </CardTitle>
+        </div>
       </CardHeader>
       <CardContent>
         <DataTable tableData={tableData} />
@@ -250,7 +255,7 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
             testName: filters.testName,
             metricType: filters.metricType
           }}
-          data={filteredData}
+          data={mapFilteredData}
           regionData={dependentRegionData}
         />
       </CardContent>
