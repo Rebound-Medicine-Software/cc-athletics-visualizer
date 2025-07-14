@@ -41,7 +41,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     } else {
       onChange([...value, option]);
     }
-    // Don't close the dropdown after selection - keep it open for multi-select
+    // Keep dropdown open for multi-select
   };
 
   const allLabels = options
@@ -55,7 +55,11 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen(v => !v)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(v => !v);
+        }}
         className={cn(
           "flex items-center justify-between w-full border border-gray-300 rounded-md bg-white py-2 px-3 text-sm text-gray-700 text-center",
           open && "ring-2 ring-blue-400",
@@ -82,7 +86,8 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 "flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onClick={(e) => {
+              onMouseDown={(e) => {
+                // Use onMouseDown instead of onClick to prevent focus issues
                 e.preventDefault();
                 e.stopPropagation();
                 toggleOption(opt.value);
