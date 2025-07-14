@@ -17,27 +17,31 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
   const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
   
   const [filters, setFilters] = useState({
-    athleteName: [] as string[],
+    // Individual Filters - for table
+    teamName: [] as string[],
     sex: "",
+    athleteName: [] as string[],
     testName: "",
-    metricType: "",
+    // Region Filters - for map
     country: [] as string[],
     region: [] as string[],
     address: [] as string[],
-    teamName: [] as string[]
+    metricType: ""
   });
 
   // Reset all filters when key changes
   useEffect(() => {
     setFilters({
-      athleteName: [],
+      // Individual Filters
+      teamName: [],
       sex: "",
+      athleteName: [],
       testName: "",
-      metricType: "",
+      // Region Filters
       country: [],
       region: [],
       address: [],
-      teamName: []
+      metricType: ""
     });
   }, [resetFiltersKey]);
 
@@ -100,36 +104,55 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
   // TABLE DATA: Apply ONLY individual filters for the leaderboard table
   let tableFilteredData = filteredByTeam;
   
+  // Apply Individual Filters only (Team Name, Sex, Athlete Name, Test Name)
+  if (filters.teamName.length > 0) {
+    tableFilteredData = tableFilteredData.filter(d => filters.teamName.includes(d.team_name));
+  }
+  
+  if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
+    tableFilteredData = tableFilteredData.filter(d => d.gender === filters.sex);
+  }
+  
   if (filters.athleteName.length > 0) {
     tableFilteredData = tableFilteredData.filter(d => filters.athleteName.includes(d.athlete_name));
   }
   
-  if (filters.sex && filters.sex !== "all") {
-    tableFilteredData = tableFilteredData.filter(d => d.gender === filters.sex);
-  }
-  
-  if (filters.testName && filters.testName !== "all") {
+  if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
     tableFilteredData = tableFilteredData.filter(d => d.test_name === filters.testName);
   }
 
-  // MAP DATA: Apply ONLY region filters for the map display - NO INDIVIDUAL FILTERS
-  // Start with team-filtered data, then apply ONLY region-based team filtering
+  // MAP DATA: Apply ONLY region filters for the map display
+  // Start with team-filtered data, then apply ONLY region-based filtering via region team names
   let mapFilteredData = filteredByTeam;
   
-  // Only filter by team names that are selected in the Region Filters (not Individual Filters)
-  if (filters.teamName.length > 0) {
-    mapFilteredData = mapFilteredData.filter(d => filters.teamName.includes(d.team_name));
+  // Filter map data based on region filtering - use regionTestingData to get teams from region filters
+  if (regionTestingData && (filters.country.length > 0 || filters.region.length > 0 || filters.address.length > 0)) {
+    let regionFilteredTeams = regionTestingData;
+    
+    if (filters.country.length > 0) {
+      regionFilteredTeams = regionFilteredTeams.filter(item => filters.country.includes(item.country));
+    }
+    
+    if (filters.region.length > 0) {
+      regionFilteredTeams = regionFilteredTeams.filter(item => item.region && filters.region.includes(item.region));
+    }
+    
+    if (filters.address.length > 0) {
+      regionFilteredTeams = regionFilteredTeams.filter(item => item.address && filters.address.includes(item.address));
+    }
+    
+    const regionTeamNames = [...new Set(regionFilteredTeams.map(item => item["Team Name"]))];
+    mapFilteredData = mapFilteredData.filter(d => regionTeamNames.includes(d.team_name));
   }
-  // Do NOT apply individual filters (athleteName, sex, testName) to map data
 
   // Build table data with proper metric extraction (based on individual filters only)
   const tableData = tableFilteredData
     .map((test, index) => {
       let metricValue = 0;
-      let metricType = filters.metricType || "Peak Force";
+      let metricType = "Peak Force"; // Default metric for table display
       
-      // Extract metric value based on selected metric type and test name
-      if (filters.metricType && test.metrics) {
+      // For table, use a default metric or the selected region metric type if available
+      if (filters.metricType && filters.metricType !== "all" && test.metrics) {
         const metrics = test.metrics as any;
         
         switch (filters.metricType) {
@@ -137,51 +160,71 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
           case "Jump Height (Pogo)":
             metricValue = metrics.jump_height_ft ? metrics.jump_height_ft * 30.48 : 
                          metrics.jump_height || metrics.avg_jump_height || 0;
+            metricType = filters.metricType;
             break;
           case "Peak Power":
             metricValue = metrics.peak_power || 0;
+            metricType = filters.metricType;
             break;
           case "Relative Peak Power":
             const peakPower = metrics.peak_power || 0;
             const bodyMass = metrics.body_mass || 0;
             metricValue = bodyMass > 0 ? peakPower / bodyMass : 0;
+            metricType = filters.metricType;
             break;
           case "Contact Time":
             metricValue = metrics.contact_time || metrics.avg_contact_time || 0;
+            metricType = filters.metricType;
             break;
           case "Reactive Strength Index":
             metricValue = metrics.rsi || metrics.avg_rsi || 0;
+            metricType = filters.metricType;
             break;
           case "Flight Time":
             metricValue = metrics.flight_time || metrics.avg_flight_time || 0;
+            metricType = filters.metricType;
             break;
           case "Take-off Velocity":
             metricValue = metrics.takeoff_velocity || metrics.peak_velocity || 0;
+            metricType = filters.metricType;
             break;
           case "Average Rate of Force Development":
             metricValue = metrics.avg_rfd || metrics.rfd_max || 0;
+            metricType = filters.metricType;
             break;
           case "Average Propulsive Power":
             metricValue = metrics.avg_propulsive_power || metrics.avg_power || 0;
+            metricType = filters.metricType;
             break;
           case "Power":
             metricValue = metrics.power || metrics.avg_power || 0;
+            metricType = filters.metricType;
             break;
           case "Maximum Rate of Force Development":
             metricValue = metrics.rfd_max || metrics.avg_rfd || 0;
+            metricType = filters.metricType;
             break;
           case "Force at Max Rate of Force Development":
             metricValue = metrics.force_150ms || metrics.force_100ms || metrics.force_50ms || metrics.force_peak || 0;
+            metricType = filters.metricType;
             break;
           case "Peak Force":
             metricValue = metrics.peak_force || metrics.force_peak || 0;
+            metricType = filters.metricType;
             break;
           case "Early Explosive Power":
             metricValue = metrics.force_50ms || 0;
+            metricType = filters.metricType;
             break;
           default:
             metricValue = metrics.peak_force || metrics.force_peak || 0;
+            metricType = "Peak Force";
         }
+      } else {
+        // Default to Peak Force if no metric type selected
+        const metrics = test.metrics as any;
+        metricValue = metrics?.peak_force || metrics?.force_peak || 0;
+        metricType = "Peak Force";
       }
       
       return {
@@ -201,27 +244,30 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     let currentData = filteredByTeam;
     
     // Apply current individual filters to get available options
-    if (filters.sex && filters.sex !== "all") {
-      currentData = currentData.filter(d => d.gender === filters.sex);
+    if (filters.teamName.length > 0) {
+      currentData = currentData.filter(d => filters.teamName.includes(d.team_name));
     }
-    if (filters.testName && filters.testName !== "all") {
-      currentData = currentData.filter(d => d.test_name === filters.testName);
+    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
+      currentData = currentData.filter(d => d.gender === filters.sex);
     }
     if (filters.athleteName.length > 0) {
       currentData = currentData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
+    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
+      currentData = currentData.filter(d => d.test_name === filters.testName);
+    }
     
     return {
+      availableTeams: [...new Set(currentData.map(d => d.team_name))],
       availableAthletes: [...new Set(currentData.map(d => d.athlete_name))],
-      availableTests: [...new Set(currentData.map(d => d.test_name))],
-      availableTeams: [...new Set(currentData.map(d => d.team_name))]
+      availableTests: [...new Set(currentData.map(d => d.test_name))]
     };
   };
 
   const individualFilterData = getFilteredIndividualData();
+  const uniqueTeams = individualFilterData.availableTeams;
   const uniqueAthletes = individualFilterData.availableAthletes;
   const uniqueTests = individualFilterData.availableTests;
-  const uniqueTeams = individualFilterData.availableTeams;
 
   return (
     <Card className="bg-gray-100 border-gray-300">
@@ -249,13 +295,13 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
             country: filters.country,
             region: filters.region,
             address: filters.address,
-            teamName: filters.teamName
+            metricType: filters.metricType
           }}
           individualFilters={{
-            athleteName: filters.athleteName,
+            teamName: filters.teamName,
             sex: filters.sex,
-            testName: filters.testName,
-            metricType: filters.metricType
+            athleteName: filters.athleteName,
+            testName: filters.testName
           }}
           data={mapFilteredData}
           regionData={dependentRegionData}

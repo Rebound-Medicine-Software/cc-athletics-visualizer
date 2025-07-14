@@ -19,13 +19,13 @@ interface SatelliteMapProps {
     country: string[];
     region: string[];
     address: string[];
-    teamName: string[];
+    metricType: string;
   };
   individualFilters: {
-    athleteName: string[];
+    teamName: string[];
     sex: string;
+    athleteName: string[];
     testName: string;
-    metricType: string;
   };
   data: TestData[];
   regionData?: {
@@ -98,11 +98,8 @@ export const SatelliteMap = ({
       );
     }
     
-    if (regionFilters.teamName.length > 0) {
-      filteredRegionData = filteredRegionData.filter(region => 
-        regionFilters.teamName.includes(region["Team Name"])
-      );
-    }
+    // Note: No teamName filtering here since teamName is now an Individual Filter
+    // The map is filtered only by region filters (country, region, address)
 
     // Create markers for each filtered region
     const newMarkers: L.Marker[] = [];

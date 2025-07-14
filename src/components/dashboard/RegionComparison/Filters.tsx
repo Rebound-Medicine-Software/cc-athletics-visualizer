@@ -11,25 +11,25 @@ import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 
 interface FiltersProps {
   filters: {
-    athleteName: string[];
-    sex: string;
-    testName: string;
-    metricType: string;
-    country: string[];
-    region: string[];
-    address: string[];
-    teamName: string[];
+    teamName: string[]; // Individual filter
+    sex: string; // Individual filter
+    athleteName: string[]; // Individual filter
+    testName: string; // Individual filter
+    country: string[]; // Region filter
+    region: string[]; // Region filter
+    address: string[]; // Region filter
+    metricType: string; // Region filter
   };
   setFilters: React.Dispatch<
     React.SetStateAction<{
-      athleteName: string[];
+      teamName: string[];
       sex: string;
+      athleteName: string[];
       testName: string;
-      metricType: string;
       country: string[];
       region: string[];
       address: string[];
-      teamName: string[];
+      metricType: string;
     }>
   >;
   uniqueAthletes: string[];
@@ -75,24 +75,30 @@ export const Filters = ({
     let filteredData = testData;
     
     // Apply current filters to get available options
-    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
-      filteredData = filteredData.filter(d => d.gender === filters.sex);
+    if (filters.teamName.length > 0) {
+      filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
     }
     
-    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
-      filteredData = filteredData.filter(d => d.test_name === filters.testName);
+    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
+      filteredData = filteredData.filter(d => d.gender === filters.sex);
     }
     
     if (filters.athleteName.length > 0) {
       filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
     
+    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
+      filteredData = filteredData.filter(d => d.test_name === filters.testName);
+    }
+    
     // Extract unique values from filtered data
+    const availableTeams = [...new Set(filteredData.map(d => d.team_name))];
     const availableAthletes = [...new Set(filteredData.map(d => d.athlete_name))];
     const availableTests = [...new Set(filteredData.map(d => d.test_name))];
     const availableSexOptions = [...new Set(filteredData.map(d => d.gender).filter(Boolean))];
     
     return {
+      teams: availableTeams,
       athletes: availableAthletes,
       tests: availableTests,
       sexOptions: availableSexOptions
@@ -136,42 +142,55 @@ export const Filters = ({
   };
 
   const filteredIndividualData = getFilteredIndividualData();
+  const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
   const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
   
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
   const regionOptions = filteredRegionData.regions.map(region => ({ value: region, label: region }));
   const addressOptions = filteredRegionData.addresses.map(address => ({ value: address, label: address }));
-  const teamNameOptions = filteredRegionData.teamNames.map(team => ({ value: team, label: team }));
 
-  // Get available metric types based on selected test name
-  const availableMetricTypes = filters.testName && filters.testName !== "all" 
-    ? getMetricTypesForTest(filters.testName) 
-    : [];
+  // Get available metric types - available for all tests, not dependent on test selection for region filtering
+  const availableMetricTypes = [
+    "Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time",
+    "Peak Power", "Relative Peak Power", "Take-off Velocity", 
+    "Average Rate of Force Development", "Average Propulsive Power",
+    "Jump Height (Pogo)", "Power", "Maximum Rate of Force Development", 
+    "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"
+  ];
 
-  // Handle cascading filter changes
+  // Handle cascading filter changes for Individual Filters
+  const handleTeamNameChange = (value: string[]) => {
+    setFilters(prev => ({
+      ...prev,
+      teamName: value,
+      sex: "", // Reset dependent filters
+      athleteName: [],
+      testName: ""
+    }));
+  };
+
   const handleSexChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
       sex: value,
       athleteName: [], // Reset dependent filters
-      testName: "",
-      metricType: ""
-    }));
-  };
-
-  const handleTestNameChange = (value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      testName: value,
-      metricType: "" // Reset metric type when test name changes
+      testName: ""
     }));
   };
 
   const handleAthleteNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
-      athleteName: value
+      athleteName: value,
+      testName: "" // Reset dependent filters
+    }));
+  };
+
+  const handleTestNameChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testName: value
     }));
   };
 
@@ -199,7 +218,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       address: value,
-      teamName: [] // Reset dependent filters
+      metricType: "" // Reset metric type when address changes
     }));
   };
 
@@ -211,9 +230,20 @@ export const Filters = ({
           Individual Filters
         </div>
         <div className="w-36 flex-shrink-0">
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Team Name</label>
+          <MultiSelectDropdown
+            options={teamOptions}
+            value={filters.teamName}
+            onChange={handleTeamNameChange}
+            placeholder="Select Teams"
+            labelClassName="bg-black text-white text-center h-9 text-xs"
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
+          />
+        </div>
+        <div className="w-36 flex-shrink-0">
           <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Sex</label>
           <Select value={filters.sex} onValueChange={handleSexChange}>
-            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
+            <SelectTrigger className={`${filters.teamName.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
               <SelectValue placeholder="Sex" className="text-center" />
             </SelectTrigger>
             <SelectContent className="z-[100]">
@@ -227,9 +257,20 @@ export const Filters = ({
           </Select>
         </div>
         <div className="w-36 flex-shrink-0">
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Athlete Name</label>
+          <MultiSelectDropdown
+            options={athleteOptions}
+            value={filters.athleteName}
+            onChange={handleAthleteNameChange}
+            placeholder="Select Athletes"
+            labelClassName={`${filters.sex === "" ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}
+            dropdownClassName="bg-white border border-gray-200 z-[100]"
+          />
+        </div>
+        <div className="w-36 flex-shrink-0">
           <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Test Name</label>
           <Select value={filters.testName} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
+            <SelectTrigger className={`${filters.athleteName.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
               <SelectValue placeholder="Test Name" className="text-center" />
             </SelectTrigger>
             <SelectContent className="z-[100]">
@@ -237,36 +278,6 @@ export const Filters = ({
               {filteredIndividualData.tests.map(test => (
                 <SelectItem key={test} value={test} className="text-center text-xs">
                   {test}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Athlete Name</label>
-          <MultiSelectDropdown
-            options={athleteOptions}
-            value={filters.athleteName}
-            onChange={handleAthleteNameChange}
-            placeholder="Select Athletes"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Metric Type</label>
-          <Select 
-            value={filters.metricType} 
-            onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
-            disabled={!filters.testName || filters.testName === "all"}
-          >
-            <SelectTrigger className={`${!filters.testName || filters.testName === "all" ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
-              <SelectValue placeholder="Metric Type" className="text-center" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]">
-              {availableMetricTypes.map(metric => (
-                <SelectItem key={metric} value={metric} className="text-center text-xs">
-                  {metric}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -310,15 +321,23 @@ export const Filters = ({
           />
         </div>
         <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Team Name</label>
-          <MultiSelectDropdown
-            options={teamNameOptions}
-            value={filters.teamName}
-            onChange={(value) => setFilters(prev => ({ ...prev, teamName: value }))}
-            placeholder="Select Teams"
-            labelClassName={`${filters.address.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
+          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Metric Type</label>
+          <Select 
+            value={filters.metricType} 
+            onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
+          >
+            <SelectTrigger className={`${filters.address.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
+              <SelectValue placeholder="Metric Type" className="text-center" />
+            </SelectTrigger>
+            <SelectContent className="z-[100]">
+              <SelectItem value="all" className="text-center text-xs">All Metrics</SelectItem>
+              {availableMetricTypes.map(metric => (
+                <SelectItem key={metric} value={metric} className="text-center text-xs">
+                  {metric}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
