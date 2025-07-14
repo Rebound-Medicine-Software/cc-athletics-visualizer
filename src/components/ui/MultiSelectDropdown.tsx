@@ -41,7 +41,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     } else {
       onChange([...value, option]);
     }
-    // Keep dropdown open for multi-select
+    // Keep dropdown open for multi-select - do NOT call setOpen(false)
   };
 
   const allLabels = options
@@ -79,18 +79,22 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           dropdownClassName
         )}>
           {options.map(opt => (
-            <button
-              type="button"
+            <div
               key={opt.value}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start",
+                "flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
               onMouseDown={(e) => {
-                // Use onMouseDown instead of onClick to prevent focus issues
+                // Prevent any default behavior and event bubbling
                 e.preventDefault();
                 e.stopPropagation();
                 toggleOption(opt.value);
+              }}
+              onClick={(e) => {
+                // Additional prevention for onClick events
+                e.preventDefault();
+                e.stopPropagation();
               }}
             >
               <span className={cn(
@@ -100,7 +104,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 {value.includes(opt.value) && <Check className="h-4 w-4" />}
               </span>
               <span className="truncate">{opt.label}</span>
-            </button>
+            </div>
           ))}
         </div>
       )}
