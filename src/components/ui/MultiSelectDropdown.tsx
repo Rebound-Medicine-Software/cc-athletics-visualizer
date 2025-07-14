@@ -41,6 +41,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     } else {
       onChange([...value, option]);
     }
+    // Don't close the dropdown after selection - keep it open for multi-select
   };
 
   const allLabels = options
@@ -81,7 +82,11 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 "flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onClick={() => toggleOption(opt.value)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleOption(opt.value);
+              }}
             >
               <span className={cn(
                 "inline-flex h-4 w-4 shrink-0 items-center justify-center border border-primary rounded-sm mr-2",

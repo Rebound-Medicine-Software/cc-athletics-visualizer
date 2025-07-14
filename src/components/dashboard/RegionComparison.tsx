@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TestData } from "@/types/forcePlateTypes";
@@ -113,12 +112,15 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     tableFilteredData = tableFilteredData.filter(d => d.test_name === filters.testName);
   }
 
-  // MAP DATA: Apply ONLY region filters for the map display
+  // MAP DATA: Apply ONLY region filters for the map display - NO INDIVIDUAL FILTERS
+  // Start with team-filtered data, then apply ONLY region-based team filtering
   let mapFilteredData = filteredByTeam;
   
+  // Only filter by team names that are selected in the Region Filters (not Individual Filters)
   if (filters.teamName.length > 0) {
     mapFilteredData = mapFilteredData.filter(d => filters.teamName.includes(d.team_name));
   }
+  // Do NOT apply individual filters (athleteName, sex, testName) to map data
 
   // Build table data with proper metric extraction (based on individual filters only)
   const tableData = tableFilteredData

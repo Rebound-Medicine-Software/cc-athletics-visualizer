@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,7 +77,7 @@ export const SatelliteMap = ({
     markers.forEach(marker => marker.remove());
     setMarkers([]);
 
-    // Filter region data based on region filters
+    // Filter region data based on region filters ONLY
     let filteredRegionData = regionTestingData;
     
     if (regionFilters.country.length > 0) {
@@ -113,22 +112,9 @@ export const SatelliteMap = ({
       const coordinates = getTeamCoordinates(regionItem["Team Name"], regionItem.country, regionItem.region);
       if (!coordinates) return;
 
-      // Filter test data for this team based on individual filters
+      // Get test data for this team - NO INDIVIDUAL FILTER APPLIED HERE
+      // Only use the data that was already filtered by region filters in the parent component
       let teamTestData = data.filter(testData => testData.team_name === regionItem["Team Name"]);
-      
-      if (individualFilters.athleteName.length > 0) {
-        teamTestData = teamTestData.filter(testData => 
-          individualFilters.athleteName.includes(testData.athlete_name)
-        );
-      }
-      
-      if (individualFilters.sex && individualFilters.sex !== 'all') {
-        teamTestData = teamTestData.filter(testData => testData.gender === individualFilters.sex);
-      }
-      
-      if (individualFilters.testName && individualFilters.testName !== 'all') {
-        teamTestData = teamTestData.filter(testData => testData.test_name === individualFilters.testName);
-      }
 
       // Skip if no data after filtering
       if (teamTestData.length === 0) return;
@@ -148,8 +134,8 @@ export const SatelliteMap = ({
 
       const marker = L.marker(position, { icon: customIcon });
 
-      // Create popup content with athlete data
-      const popupContent = createPopupContent(regionItem, teamTestData, individualFilters.metricType);
+      // Create popup content with athlete data (no individual filters applied)
+      const popupContent = createPopupContent(regionItem, teamTestData, '');
       marker.bindPopup(popupContent, { maxWidth: 300 });
 
       marker.addTo(map.current!);
@@ -164,7 +150,7 @@ export const SatelliteMap = ({
     } else {
       map.current.setView([54.5, -4.5], 6);
     }
-  }, [regionFilters, individualFilters, data, regionTestingData]);
+  }, [regionFilters, data, regionTestingData]);
 
   return (
     <div className="mt-6 relative">
