@@ -11,7 +11,7 @@ import { useRegionData } from "@/hooks/useRegionData";
 interface RegionComparisonProps {
   data: TestData[];
   resetFiltersKey?: number;
-  selectedTeams?: string[]; // NEW
+  selectedTeams?: string[];
 }
 
 export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: RegionComparisonProps) => {
@@ -42,7 +42,7 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     });
   }, [resetFiltersKey]);
 
-  // Process region data for dropdowns
+  // Process region data for dependent dropdowns
   const regionData = {
     countries: regionTestingData ? [...new Set(regionTestingData.map(item => item.country).filter(Boolean))] : [],
     regions: regionTestingData ? [...new Set(regionTestingData.map(item => item.region).filter(Boolean))] : [],
@@ -50,48 +50,134 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     teamNames: regionTestingData ? [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))] : []
   };
 
+  // Create dependent region filtering
+  const getFilteredRegionData = () => {
+    if (!regionTestingData) return regionData;
+    
+    let filteredRegionData = regionTestingData;
+    
+    // Apply country filter
+    if (filters.country.length > 0) {
+      filteredRegionData = filteredRegionData.filter(item => 
+        filters.country.includes(item.country)
+      );
+    }
+    
+    // Apply region filter
+    if (filters.region.length > 0) {
+      filteredRegionData = filteredRegionData.filter(item => 
+        item.region && filters.region.includes(item.region)
+      );
+    }
+    
+    // Apply address filter
+    if (filters.address.length > 0) {
+      filteredRegionData = filteredRegionData.filter(item => 
+        item.address && filters.address.includes(item.address)
+      );
+    }
+    
+    return {
+      countries: [...new Set(regionTestingData.map(item => item.country).filter(Boolean))],
+      regions: filters.country.length > 0 
+        ? [...new Set(filteredRegionData.map(item => item.region).filter(Boolean))]
+        : [...new Set(regionTestingData.map(item => item.region).filter(Boolean))],
+      addresses: filters.region.length > 0 
+        ? [...new Set(filteredRegionData.map(item => item.address).filter(Boolean))]
+        : [...new Set(regionTestingData.map(item => item.address).filter(Boolean))],
+      teamNames: filters.address.length > 0 
+        ? [...new Set(filteredRegionData.map(item => item["Team Name"]).filter(Boolean))]
+        : [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))]
+    };
+  };
+
+  const dependentRegionData = getFilteredRegionData();
+
   // Only include teams matching selectedTeams/global filter
   const filteredByTeam = selectedTeams.length > 0
     ? data.filter(d => selectedTeams.includes(d.team_name))
     : data;
 
-  // Group data by unique athlete/team for summary row
-  const groupedMap = new Map<string, any>();
-  for (const row of filteredByTeam) {
-    // Prefer extracting fields from hypothetical elite_athlete_metrics, or fallback to TestData
-    const key = `${row.team_name}|||${row.athlete_name}`;
-    // We'll only take first matching row for now, ideally would aggregate.
-    if (!groupedMap.has(key)) groupedMap.set(key, row);
-  }
-  const summaryRows = Array.from(groupedMap.values());
-
-  // Filter by individual filters first
+  // Apply individual filters
   let filteredData = filteredByTeam;
   
   if (filters.athleteName.length > 0) {
     filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
   }
   
+  if (filters.sex && filters.sex !== "all") {
+    filteredData = filteredData.filter(d => d.gender === filters.sex);
+  }
+  
   if (filters.testName && filters.testName !== "all") {
     filteredData = filteredData.filter(d => d.test_name === filters.testName);
   }
 
-  // Build simplified table data - since TestData doesn't have metric_type/metric_value,
-  // we'll extract relevant metrics from the metrics object
+  // Apply region filters to test data
+  if (filters.teamName.length > 0) {
+    filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
+  }
+
+  // Build table data with proper metric extraction
   const tableData = filteredData
     .map((test, index) => {
       let metricValue = 0;
       let metricType = filters.metricType || "Peak Force";
       
-      // Extract metric value based on selected metric type
-      if (filters.metricType === "Peak Force" && test.metrics) {
-        metricValue = (test.metrics as any).peak_force || (test.metrics as any).force_peak || 0;
-      } else if (filters.metricType === "Peak Power" && test.metrics) {
-        metricValue = (test.metrics as any).peak_power || (test.metrics as any).avg_power || 0;
-      } else if (filters.metricType === "Jump Height" && test.metrics) {
-        metricValue = (test.metrics as any).jump_height_ft ? (test.metrics as any).jump_height_ft * 30.48 : (test.metrics as any).avg_jump_height || 0;
-      } else if (filters.metricType === "RSI" && test.metrics) {
-        metricValue = (test.metrics as any).rsi || (test.metrics as any).avg_rsi || 0;
+      // Extract metric value based on selected metric type and test name
+      if (filters.metricType && test.metrics) {
+        const metrics = test.metrics as any;
+        
+        switch (filters.metricType) {
+          case "Jump Height (cm)":
+          case "Jump Height (Pogo)":
+            metricValue = metrics.jump_height_ft ? metrics.jump_height_ft * 30.48 : 
+                         metrics.jump_height || metrics.avg_jump_height || 0;
+            break;
+          case "Peak Power":
+            metricValue = metrics.peak_power || 0;
+            break;
+          case "Relative Peak Power":
+            const peakPower = metrics.peak_power || 0;
+            const bodyMass = metrics.body_mass || 0;
+            metricValue = bodyMass > 0 ? peakPower / bodyMass : 0;
+            break;
+          case "Contact Time":
+            metricValue = metrics.contact_time || metrics.avg_contact_time || 0;
+            break;
+          case "Reactive Strength Index":
+            metricValue = metrics.rsi || metrics.avg_rsi || 0;
+            break;
+          case "Flight Time":
+            metricValue = metrics.flight_time || metrics.avg_flight_time || 0;
+            break;
+          case "Take-off Velocity":
+            metricValue = metrics.takeoff_velocity || metrics.peak_velocity || 0;
+            break;
+          case "Average Rate of Force Development":
+            metricValue = metrics.avg_rfd || metrics.rfd_max || 0;
+            break;
+          case "Average Propulsive Power":
+            metricValue = metrics.avg_propulsive_power || metrics.avg_power || 0;
+            break;
+          case "Power":
+            metricValue = metrics.power || metrics.avg_power || 0;
+            break;
+          case "Maximum Rate of Force Development":
+            metricValue = metrics.rfd_max || metrics.avg_rfd || 0;
+            break;
+          case "Force at Max Rate of Force Development":
+            metricValue = metrics.force_150ms || metrics.force_100ms || metrics.force_50ms || metrics.force_peak || 0;
+            break;
+          case "Peak Force":
+            metricValue = metrics.peak_force || metrics.force_peak || 0;
+            break;
+          case "Early Explosive Power":
+            metricValue = metrics.force_50ms || 0;
+            break;
+          default:
+            metricValue = metrics.peak_force || metrics.force_peak || 0;
+        }
       }
       
       return {
@@ -111,14 +197,14 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     let currentData = filteredByTeam;
     
     // Apply current individual filters to get available options
-    if (filters.athleteName.length > 0) {
-      currentData = currentData.filter(d => filters.athleteName.includes(d.athlete_name));
-    }
     if (filters.sex && filters.sex !== "all") {
-      // Note: TestData doesn't have sex field, so this might need adjustment based on actual data structure
+      currentData = currentData.filter(d => d.gender === filters.sex);
     }
     if (filters.testName && filters.testName !== "all") {
       currentData = currentData.filter(d => d.test_name === filters.testName);
+    }
+    if (filters.athleteName.length > 0) {
+      currentData = currentData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
     
     return {
@@ -142,7 +228,7 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
           uniqueAthletes={uniqueAthletes}
           uniqueTests={uniqueTests}
           uniqueTeams={uniqueTeams}
-          regionData={regionData}
+          regionData={dependentRegionData}
           testData={filteredByTeam}
         />
         <CardTitle className="text-center text-lg text-gray-800 mb-4">
@@ -164,11 +250,10 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
             testName: filters.testName,
             metricType: filters.metricType
           }}
-          data={filteredByTeam}
-          regionData={regionData}
+          data={filteredData}
+          regionData={dependentRegionData}
         />
       </CardContent>
     </Card>
   );
 };
-

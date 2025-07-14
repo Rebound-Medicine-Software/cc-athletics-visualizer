@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,12 +81,6 @@ export const SatelliteMap = ({
     // Filter region data based on region filters
     let filteredRegionData = regionTestingData;
     
-    if (regionFilters.teamName.length > 0) {
-      filteredRegionData = filteredRegionData.filter(region => 
-        regionFilters.teamName.includes(region["Team Name"])
-      );
-    }
-    
     if (regionFilters.country.length > 0) {
       filteredRegionData = filteredRegionData.filter(region => 
         regionFilters.country.includes(region.country)
@@ -115,7 +110,7 @@ export const SatelliteMap = ({
     const bounds = L.latLngBounds([]);
 
     filteredRegionData.forEach((regionItem) => {
-      const coordinates = getTeamCoordinates(regionItem["Team Name"]);
+      const coordinates = getTeamCoordinates(regionItem["Team Name"], regionItem.country, regionItem.region);
       if (!coordinates) return;
 
       // Filter test data for this team based on individual filters
@@ -125,6 +120,10 @@ export const SatelliteMap = ({
         teamTestData = teamTestData.filter(testData => 
           individualFilters.athleteName.includes(testData.athlete_name)
         );
+      }
+      
+      if (individualFilters.sex && individualFilters.sex !== 'all') {
+        teamTestData = teamTestData.filter(testData => testData.gender === individualFilters.sex);
       }
       
       if (individualFilters.testName && individualFilters.testName !== 'all') {
@@ -177,73 +176,84 @@ export const SatelliteMap = ({
   );
 };
 
-// Helper function to get approximate coordinates for teams
-// In a real implementation, this would come from your database
-function getTeamCoordinates(teamName: string): [number, number] | null {
-  const coordinatesMap: Record<string, [number, number]> = {
-    // Sample coordinates - replace with real data
-    'Team USA': [-98, 39],
-    'Team Canada': [-106, 56],
-    'Team UK': [-3, 55],
-    'Team Australia': [133, -27],
-    'Team Germany': [10, 51],
-    'Team France': [2, 46],
-    'Team Italy': [12, 42],
-    'Team Spain': [-4, 40],
-    'Team Brazil': [-55, -10],
-    'Team Japan': [138, 36],
-    'Team South Korea': [128, 36],
-    'Team China': [104, 35],
-    'Team India': [78, 20],
-    'Team South Africa': [24, -29],
-    'Team Mexico': [-102, 23],
-    'Team Argentina': [-64, -34],
-    'Team Russia': [105, 61],
-    'Team Sweden': [18, 60],
-    'Team Norway': [10, 64],
-    'Team Finland': [25, 64],
+// Helper function to get coordinates for teams based on region data
+function getTeamCoordinates(teamName: string, country: string, region?: string): [number, number] | null {
+  // More accurate coordinates based on actual location data
+  const locationMap: Record<string, [number, number]> = {
+    // Wales teams
+    'Two4 Martial Arts': [-3.9436, 51.6214], // Swansea
+    'Evolve Physiotherapy': [-3.9436, 51.6214], // Swansea
+    'Joshua Athletic': [-4.0237, 51.7130], // Pontarddulais
+    'Evolve Physiotherapy (Non-Consenting)': [-3.9436, 51.6214], // Swansea
+    'Chris Rees Academy': [-3.9436, 51.6214], // Swansea
+    'Leon Welch Academy': [-3.9436, 51.6214], // Swansea
+    'Llanelli Town Academy AFC': [-4.1619, 51.6823], // Llanelli
+    
+    // England teams
+    'Manchester United': [-2.2931, 53.4631], // Manchester
+    
+    // Scotland teams
+    'Tom Stoltman': [-4.2026, 57.6920], // Alness
+    
+    // Northern Ireland teams
+    'Conor McGregor': [-6.2603, 53.3498], // Dublin (should be Ireland)
+    
+    // Ireland teams
+    'Ian Garry': [-8.4863, 51.8979], // Cork
   };
 
-  // Try exact match first
-  if (coordinatesMap[teamName]) {
-    return coordinatesMap[teamName];
+  // Try exact team name match first
+  if (locationMap[teamName]) {
+    return locationMap[teamName];
   }
 
-  // Try partial match
-  const lowerTeamName = teamName.toLowerCase();
-  for (const [key, coords] of Object.entries(coordinatesMap)) {
-    if (key.toLowerCase().includes(lowerTeamName) || lowerTeamName.includes(key.toLowerCase())) {
-      return coords;
-    }
+  // Fallback to country/region-based coordinates
+  const countryCoordinates: Record<string, [number, number]> = {
+    'Wales': [-3.7837, 52.1307],
+    'England': [-1.1743, 52.3555],
+    'Scotland': [-4.2026, 56.4907],
+    'Northern Ireland': [-5.9301, 54.7877],
+    'Ireland': [-8.2439, 53.4129],
+  };
+
+  // Regional coordinates within countries
+  const regionCoordinates: Record<string, [number, number]> = {
+    'Swansea': [-3.9436, 51.6214],
+    'Llanelli': [-4.1619, 51.6823],
+    'Manchester': [-2.2931, 53.4631],
+    'Alness': [-4.2026, 57.6920],
+    'Dublin': [-6.2603, 53.3498],
+    'Cork': [-8.4863, 51.8979],
+  };
+
+  // Try region-based coordinates
+  if (region && regionCoordinates[region]) {
+    return regionCoordinates[region];
   }
 
-  // Default to random location if no match found
-  return [Math.random() * 360 - 180, Math.random() * 120 - 60];
+  // Try country-based coordinates
+  if (countryCoordinates[country]) {
+    return countryCoordinates[country];
+  }
+
+  // Default fallback
+  return [-3.7837, 52.1307]; // Wales center
 }
 
 // Helper function to get team colors based on team name
 function getTeamColor(teamName: string): string {
   const teamColors: Record<string, string> = {
-    'Team USA': '#FF0000',
-    'Team Canada': '#FF0000',
-    'Team UK': '#0066CC',
-    'Team Australia': '#FFAA00',
-    'Team Germany': '#000000',
-    'Team France': '#0055AA',
-    'Team Italy': '#009900',
-    'Team Spain': '#FFAA00',
-    'Team Brazil': '#00AA00',
-    'Team Japan': '#CC0000',
-    'Team South Korea': '#CC0000',
-    'Team China': '#CC0000',
-    'Team India': '#FF6600',
-    'Team South Africa': '#00AA00',
-    'Team Mexico': '#00AA00',
-    'Team Argentina': '#66CCFF',
-    'Team Russia': '#CC0000',
-    'Team Sweden': '#FFCC00',
-    'Team Norway': '#CC0000',
-    'Team Finland': '#0066CC',
+    'Two4 Martial Arts': '#FF6B6B',
+    'Evolve Physiotherapy': '#4ECDC4',
+    'Joshua Athletic': '#45B7D1',
+    'Evolve Physiotherapy (Non-Consenting)': '#96CEB4',
+    'Chris Rees Academy': '#FECA57',
+    'Leon Welch Academy': '#FF9FF3',
+    'Llanelli Town Academy AFC': '#54A0FF',
+    'Manchester United': '#DC143C',
+    'Tom Stoltman': '#00D2D3',
+    'Conor McGregor': '#FF6348',
+    'Ian Garry': '#2ED573',
   };
 
   return teamColors[teamName] || '#666666';
