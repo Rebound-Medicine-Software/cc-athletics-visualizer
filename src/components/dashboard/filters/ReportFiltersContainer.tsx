@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ComparisonChart } from "../ComparisonChart";
 import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
-import { ScoreCardSection } from "../ScoreCardSection";
 import { TestData } from "@/types/forcePlateTypes";
 
 interface ReportFiltersProps {
@@ -74,13 +73,6 @@ export function ReportFiltersContainer({
           filters={filters}
           setFilters={setFilters}
           onTestSelect={onTestSelect}
-          resetFiltersKey={resetFiltersKey}
-        />
-
-        {/* Scorecard Section */}
-        <ScoreCardSection
-          data={allData}
-          selectedTeams={selectedTeams}
           resetFiltersKey={resetFiltersKey}
         />
 
