@@ -147,7 +147,7 @@ export function IndividualFilters({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
       {/* 1. Test Name (always enabled) */}
-      <div className="w-[500px] min-w-[500px] max-w-[500px] flex flex-col items-center justify-center">
+      <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
         <div className="flex items-center gap-2">
           <Select value={filters.testNames} onValueChange={handleTestNameChange}>
@@ -176,7 +176,7 @@ export function IndividualFilters({
       </div>
 
       {/* 3. Athlete Name (enabled after Test Name is selected) */}
-      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
+      <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
@@ -205,7 +205,7 @@ export function IndividualFilters({
       </div>
 
       {/* 4. Test Date (enabled after Athlete Name) */}
-      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
+      <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
@@ -237,7 +237,7 @@ export function IndividualFilters({
       </div>
 
       {/* 5. Metric Type (enabled after Test Date) */}
-      <div className={`w-[400px] min-w-[400px] max-w-[400px] flex flex-col items-center justify-center`}>
+      <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
