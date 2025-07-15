@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TestData } from "@/types/forcePlateTypes";
@@ -96,13 +97,9 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
 
   const dependentRegionData = getFilteredRegionData();
 
-  // Only include teams matching selectedTeams/global filter
-  const filteredByTeam = selectedTeams.length > 0
-    ? data.filter(d => selectedTeams.includes(d.team_name))
-    : data;
-
   // TABLE DATA: Apply ONLY individual filters for the leaderboard table
-  let tableFilteredData = filteredByTeam;
+  // NO selectedTeams filter - this section operates independently
+  let tableFilteredData = data;
   
   // Apply Individual Filters only (Team Name, Sex, Athlete Name, Test Name)
   if (filters.teamName.length > 0) {
@@ -122,8 +119,8 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
   }
 
   // MAP DATA: Apply ONLY region filters for the map display
-  // Start with team-filtered data, then apply ONLY region-based filtering via region team names
-  let mapFilteredData = filteredByTeam;
+  // NO selectedTeams filter - this section operates independently
+  let mapFilteredData = data;
   
   // Filter map data based on region filtering - use regionTestingData to get teams from region filters
   if (regionTestingData && (filters.country.length > 0 || filters.region.length > 0 || filters.address.length > 0)) {
@@ -240,8 +237,9 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
     .slice(0, 20);
 
   // Get filtered options for Individual Filters based on current selections
+  // NO selectedTeams filter - this section operates independently
   const getFilteredIndividualData = () => {
-    let currentData = filteredByTeam;
+    let currentData = data; // Use all data, not filtered by selectedTeams
     
     // Apply current individual filters to get available options
     if (filters.teamName.length > 0) {
@@ -279,7 +277,7 @@ export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: 
           uniqueTests={uniqueTests}
           uniqueTeams={uniqueTeams}
           regionData={dependentRegionData}
-          testData={filteredByTeam}
+          testData={data} // Pass all data, not filtered by selectedTeams
         />
         {/* Header in rounded box */}
         <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm">

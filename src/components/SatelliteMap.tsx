@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,9 +98,6 @@ export const SatelliteMap = ({
         region.address && regionFilters.address.includes(region.address)
       );
     }
-    
-    // Note: No teamName filtering here since teamName is now an Individual Filter
-    // The map is filtered only by region filters (country, region, address)
 
     // Create markers for each filtered region
     const newMarkers: L.Marker[] = [];
@@ -131,8 +129,8 @@ export const SatelliteMap = ({
 
       const marker = L.marker(position, { icon: customIcon });
 
-      // Create popup content with athlete data (no individual filters applied)
-      const popupContent = createPopupContent(regionItem, teamTestData, '');
+      // Create popup content with athlete data
+      const popupContent = createPopupContent(regionItem, teamTestData, regionFilters.metricType);
       marker.bindPopup(popupContent, { maxWidth: 300 });
 
       marker.addTo(map.current!);
@@ -260,40 +258,108 @@ function createPopupContent(regionItem: any, teamTestData: TestData[], selectedM
 
   let athleteHtml = '';
   athleteData.forEach((tests, athleteName) => {
-    // Get the selected metric type value if specified
+    const testCount = tests.length;
+    
+    // Get the selected metric type value and best value if specified
     let metricValue = 'N/A';
+    let bestValue = 'N/A';
+    let metricDisplayName = selectedMetricType || 'Peak Force';
+    
     if (selectedMetricType && selectedMetricType !== 'all') {
-      const testWithMetric = tests.find(test => {
+      const allMetricValues: number[] = [];
+      
+      tests.forEach(test => {
         const metrics = typeof test.metrics === 'string' ? JSON.parse(test.metrics) : test.metrics;
-        return metrics && metrics[selectedMetricType] !== undefined;
+        if (metrics) {
+          let value = 0;
+          
+          switch (selectedMetricType) {
+            case "Jump Height (cm)":
+            case "Jump Height (Pogo)":
+              value = metrics.jump_height_ft ? metrics.jump_height_ft * 30.48 : 
+                     metrics.jump_height || metrics.avg_jump_height || 0;
+              break;
+            case "Peak Power":
+              value = metrics.peak_power || 0;
+              break;
+            case "Relative Peak Power":
+              const peakPower = metrics.peak_power || 0;
+              const bodyMass = metrics.body_mass || 0;
+              value = bodyMass > 0 ? peakPower / bodyMass : 0;
+              break;
+            case "Contact Time":
+              value = metrics.contact_time || metrics.avg_contact_time || 0;
+              break;
+            case "Reactive Strength Index":
+              value = metrics.rsi || metrics.avg_rsi || 0;
+              break;
+            case "Flight Time":
+              value = metrics.flight_time || metrics.avg_flight_time || 0;
+              break;
+            case "Take-off Velocity":
+              value = metrics.takeoff_velocity || metrics.peak_velocity || 0;
+              break;
+            case "Average Rate of Force Development":
+              value = metrics.avg_rfd || metrics.rfd_max || 0;
+              break;
+            case "Average Propulsive Power":
+              value = metrics.avg_propulsive_power || metrics.avg_power || 0;
+              break;
+            case "Power":
+              value = metrics.power || metrics.avg_power || 0;
+              break;
+            case "Maximum Rate of Force Development":
+              value = metrics.rfd_max || metrics.avg_rfd || 0;
+              break;
+            case "Force at Max Rate of Force Development":
+              value = metrics.force_150ms || metrics.force_100ms || metrics.force_50ms || metrics.force_peak || 0;
+              break;
+            case "Peak Force":
+              value = metrics.peak_force || metrics.force_peak || 0;
+              break;
+            case "Early Explosive Power":
+              value = metrics.force_50ms || 0;
+              break;
+            default:
+              value = metrics.peak_force || metrics.force_peak || 0;
+          }
+          
+          if (value > 0) {
+            allMetricValues.push(value);
+          }
+        }
       });
       
-      if (testWithMetric) {
-        const metrics = typeof testWithMetric.metrics === 'string' ? JSON.parse(testWithMetric.metrics) : testWithMetric.metrics;
-        metricValue = metrics[selectedMetricType]?.toFixed(2) || 'N/A';
+      if (allMetricValues.length > 0) {
+        // Get the most recent value (last test)
+        metricValue = allMetricValues[allMetricValues.length - 1].toFixed(2);
+        // Get the best (highest) value
+        bestValue = Math.max(...allMetricValues).toFixed(2);
       }
     }
 
     athleteHtml += `
       <div style="margin-bottom: 8px; padding: 4px; background: #f8f9fa; border-radius: 4px;">
         <div><strong>Athlete:</strong> ${athleteName}</div>
+        <div><strong>Tests:</strong> ${testCount}</div>
         ${selectedMetricType && selectedMetricType !== 'all' ? 
-          `<div><strong>${selectedMetricType}:</strong> ${metricValue}</div>` : 
-          `<div><strong>Tests:</strong> ${tests.length}</div>`
+          `<div><strong>${metricDisplayName}:</strong> ${metricValue}</div>
+           <div><strong>Best ${metricDisplayName}:</strong> ${bestValue}</div>` : 
+          ''
         }
       </div>
     `;
   });
 
   return `
-    <div style="padding: 8px; font-family: Arial, sans-serif; max-width: 250px;">
+    <div style="padding: 8px; font-family: Arial, sans-serif; max-width: 280px;">
       <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px; color: #333;">${teamName}</h3>
       <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
         <div><strong>Country:</strong> ${country}</div>
         ${region ? `<div><strong>Region:</strong> ${region}</div>` : ''}
         ${address ? `<div><strong>Address:</strong> ${address}</div>` : ''}
       </div>
-      <div style="max-height: 120px; overflow-y: auto; font-size: 11px;">
+      <div style="max-height: 160px; overflow-y: auto; font-size: 11px;">
         ${athleteHtml}
       </div>
       <div style="font-size: 10px; color: #999; margin-top: 8px; text-align: center;">
