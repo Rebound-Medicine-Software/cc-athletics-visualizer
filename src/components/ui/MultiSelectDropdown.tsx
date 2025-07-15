@@ -61,8 +61,8 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           setOpen(v => !v);
         }}
         className={cn(
-          "flex items-center justify-between w-full border border-gray-300 rounded-md bg-white py-2 px-3 text-sm text-gray-700 text-center",
-          open && "ring-2 ring-blue-400",
+          "flex items-center justify-between w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
+          open && "ring-2 ring-ring",
           labelClassName
         )}
       >
@@ -75,14 +75,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       </button>
       {open && (
         <div className={cn(
-          "absolute z-50 mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto flex flex-col",
+          "absolute z-50 mt-1 w-full bg-background rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName
         )}>
           {options.map(opt => (
             <div
               key={opt.value}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm text-gray-900 hover:bg-blue-50 rounded justify-start cursor-pointer",
+                "flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
               onMouseDown={(e) => {
