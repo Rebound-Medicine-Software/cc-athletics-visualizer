@@ -11,10 +11,10 @@ import { useRegionData } from "@/hooks/useRegionData";
 interface RegionComparisonProps {
   data: TestData[];
   resetFiltersKey?: number;
-  selectedTeams?: string[];
+  selectedTeams?: string[]; // Not used - Region Comparison operates independently
 }
 
-export const RegionComparison = ({ data, resetFiltersKey, selectedTeams = [] }: RegionComparisonProps) => {
+export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProps) => {
   const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
   
   const [filters, setFilters] = useState({

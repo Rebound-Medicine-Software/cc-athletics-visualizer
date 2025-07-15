@@ -94,9 +94,9 @@ export const DashboardContent = ({
           />
         }
       />
-      {/* RegionComparison accepts selectedTeam as prop */}
+      {/* RegionComparison operates independently with unfiltered data */}
       <RegionComparison 
-        data={filteredData} 
+        data={data} 
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
       />
