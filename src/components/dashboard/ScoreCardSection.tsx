@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,13 +16,13 @@ export function ScoreCardSection({
   selectedTeams, 
   resetFiltersKey 
 }: ScoreCardSectionProps) {
-  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
-  const [selectedTestDate, setSelectedTestDate] = useState<string>("");
+  const [selectedAthlete, setSelectedAthlete] = useState<string>("all");
+  const [selectedTestDate, setSelectedTestDate] = useState<string>("all");
 
   // Reset filters when resetFiltersKey changes
   useEffect(() => {
-    setSelectedAthlete("");
-    setSelectedTestDate("");
+    setSelectedAthlete("all");
+    setSelectedTestDate("all");
   }, [resetFiltersKey]);
 
   // Filter data based on selected teams (from Performance Insights)
@@ -35,9 +36,9 @@ export function ScoreCardSection({
   ).sort();
 
   // Get unique test dates from athlete-filtered data
-  const athleteFilteredData = selectedAthlete
-    ? teamFilteredData.filter(d => d.athlete_name === selectedAthlete)
-    : teamFilteredData;
+  const athleteFilteredData = selectedAthlete === "all"
+    ? teamFilteredData
+    : teamFilteredData.filter(d => d.athlete_name === selectedAthlete);
 
   const uniqueTestDates = Array.from(
     new Set(athleteFilteredData.map(d => d.test_date))
@@ -47,11 +48,11 @@ export function ScoreCardSection({
   const getScorecardData = () => {
     let filteredData = teamFilteredData;
 
-    if (selectedAthlete) {
+    if (selectedAthlete !== "all") {
       filteredData = filteredData.filter(d => d.athlete_name === selectedAthlete);
     }
 
-    if (selectedTestDate) {
+    if (selectedTestDate !== "all") {
       filteredData = filteredData.filter(d => d.test_date === selectedTestDate);
     }
 
@@ -107,7 +108,7 @@ export function ScoreCardSection({
                 <SelectValue placeholder="Select Athlete" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Athletes</SelectItem>
+                <SelectItem value="all">All Athletes</SelectItem>
                 {uniqueAthletes.map((athlete) => (
                   <SelectItem key={athlete} value={athlete}>
                     {athlete}
@@ -127,7 +128,7 @@ export function ScoreCardSection({
                 <SelectValue placeholder="Select Date" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Dates</SelectItem>
+                <SelectItem value="all">All Dates</SelectItem>
                 {uniqueTestDates.map((date) => (
                   <SelectItem key={date} value={date}>
                     {new Date(date).toLocaleDateString()}
