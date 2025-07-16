@@ -79,6 +79,7 @@ export const DashboardContent = ({
         selectedTeams={selectedTeams}
         setSelectedTeams={setSelectedTeams}
         resetFiltersKey={resetFiltersKey}
+        allData={data}
       />
       {/* ReportFilters with MetricCards inserted below filters */}
       <ReportFilters 
