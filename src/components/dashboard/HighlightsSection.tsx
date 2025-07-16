@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Trophy, TrendingUp, Users, Calendar, RefreshCcw } from "lucide-react";
@@ -115,6 +116,7 @@ export const HighlightsSection = ({
   const handleSecondTestSelect = (testName: string) => {
     console.log("Second Individual Filters test selected:", testName);
   };
+  
   return <>
       <Card className="bg-blue-50/80 border-blue-200 mb-6">
         <CardHeader>
@@ -178,6 +180,32 @@ export const HighlightsSection = ({
 
           {/* Individual Filters */}
           <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={secondFilters} setFilters={setSecondFilters} onTestSelect={handleSecondTestSelect} resetFiltersKey={resetFiltersKey} />
+
+          {/* Metric Cards - moved below the filters */}
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+              <div className="text-sm text-gray-600">Total Tests</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
+              <div className="text-sm text-gray-600">Primary Team</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
+              <div className="text-sm text-gray-600">Top Performer</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800">
+                {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
+              </div>
+              <div className="text-sm text-gray-600">Latest Test</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </>;
