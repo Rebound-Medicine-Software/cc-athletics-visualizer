@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,6 @@ import { HighlightsSection } from "./HighlightsSection";
 import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
-import { MetricCards } from "./MetricCards";
 
 export interface DashboardContentProps {
   data: any[];
@@ -81,19 +81,13 @@ export const DashboardContent = ({
         resetFiltersKey={resetFiltersKey}
         allData={data}
       />
-      {/* ReportFilters with MetricCards inserted below filters */}
+      {/* ReportFilters without MetricCards */}
       <ReportFilters 
         data={filteredData} 
         onTestSelect={setSelectedTest}
         allData={data}
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
-        metricCardsSlot={
-          <MetricCards
-            selectedTest={selectedTest}
-            data={filteredData}
-          />
-        }
       />
       {/* RegionComparison operates independently with unfiltered data */}
       <RegionComparison 

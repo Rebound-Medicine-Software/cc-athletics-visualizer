@@ -6,6 +6,7 @@ import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IndividualFilters } from "./filters/IndividualFilters";
+import { MetricCards } from "./MetricCards";
 
 interface HighlightsSectionProps {
   data: any[];
@@ -184,29 +185,11 @@ export const HighlightsSection = ({
           <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={secondFilters} setFilters={setSecondFilters} onTestSelect={handleSecondTestSelect} resetFiltersKey={resetFiltersKey} />
 
           {/* Metric Cards - positioned right after the filters */}
-          <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
-              <div className="text-sm text-gray-600">Total Tests</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
-              <div className="text-sm text-gray-600">Primary Team</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
-              <div className="text-sm text-gray-600">Top Performer</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800">
-                {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
-              </div>
-              <div className="text-sm text-gray-600">Latest Test</div>
-            </div>
+          <div className="mt-6">
+            <MetricCards
+              selectedTest={secondFilters.testNames}
+              data={filteredData}
+            />
           </div>
         </CardContent>
       </Card>
