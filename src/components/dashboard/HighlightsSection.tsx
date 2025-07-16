@@ -1,27 +1,49 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Trophy, TrendingUp, Users, Calendar, RefreshCcw } from "lucide-react";
 import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { IndividualFilters } from "./filters/IndividualFilters";
+
 interface HighlightsSectionProps {
   data: any[];
   selectedTeams: string[];
   setSelectedTeams: (teams: string[]) => void;
   resetFiltersKey?: number;
+  allData: any[];
 }
+
 export const HighlightsSection = ({
   data,
   selectedTeams,
   setSelectedTeams,
-  resetFiltersKey
+  resetFiltersKey,
+  allData
 }: HighlightsSectionProps) => {
   // All Teams
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
+
+  // Second Individual Filters state
+  const [secondFilters, setSecondFilters] = useState({
+    selectedAthletes: [] as string[],
+    testDates: "",
+    testNames: "",
+    metricTypes: ""
+  });
+
   useEffect(() => {
     setSelectedAthletes([]);
+    setSecondFilters({
+      selectedAthletes: [],
+      testDates: "",
+      testNames: "",
+      metricTypes: ""
+    });
   }, [selectedTeams, resetFiltersKey]);
+
   // Filter athletes by selected teams
   const filteredAthletes = selectedTeams.length > 0 ? Array.from(new Set(data.filter(d => selectedTeams.includes(d.team_name)).map(d => d.athlete_name))) : Array.from(new Set(data.map(d => d.athlete_name)));
   const teamOptions = allTeams.map(t => ({
@@ -92,55 +114,88 @@ export const HighlightsSection = ({
       latestTest
     };
   })();
-  return <Card className="bg-blue-50/80 border-blue-200 mb-6">
-      <CardHeader>
-        <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
-        <div className="flex gap-4 justify-center">
-          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
-            <div className="flex items-center gap-2">
-              <MultiSelectDropdown options={teamOptions} value={selectedTeams} onChange={setSelectedTeams} placeholder="All Teams" className="text-center" labelClassName="bg-white" />
-              <Button variant="ghost" size="icon" aria-label="Reset Team Name" className="p-2" onClick={handleResetTeams} type="button">
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+
+  // Dummy handlers for second Individual Filters (no functionality yet)
+  const handleSecondTestSelect = (testName: string) => {
+    console.log("Second Individual Filters test selected:", testName);
+  };
+
+  return (
+    <>
+      <Card className="bg-blue-50/80 border-blue-200 mb-6">
+        <CardHeader>
+          <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
+          <div className="flex gap-4 justify-center">
+            <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
+              <div className="flex items-center gap-2">
+                <MultiSelectDropdown options={teamOptions} value={selectedTeams} onChange={setSelectedTeams} placeholder="All Teams" className="text-center" labelClassName="bg-white" />
+                <Button variant="ghost" size="icon" aria-label="Reset Team Name" className="p-2" onClick={handleResetTeams} type="button">
+                  <RefreshCcw className="w-4 h-4 text-gray-500" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+              <div className="flex items-center gap-2">
+                <MultiSelectDropdown options={athleteOptions} value={selectedAthletes} onChange={setSelectedAthletes} placeholder="All Athletes" className="text-center" labelClassName="bg-white" />
+                <Button variant="ghost" size="icon" aria-label="Reset Athlete Name" className="p-2" onClick={handleResetAthletes} type="button">
+                  <RefreshCcw className="w-4 h-4 text-gray-500" />
+                </Button>
+              </div>
             </div>
           </div>
-          <div className="flex-1 max-w-xs w-[220px] min-w-[200px]">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <div className="flex items-center gap-2">
-              <MultiSelectDropdown options={athleteOptions} value={selectedAthletes} onChange={setSelectedAthletes} placeholder="All Athletes" className="text-center" labelClassName="bg-white" />
-              <Button variant="ghost" size="icon" aria-label="Reset Athlete Name" className="p-2" onClick={handleResetAthletes} type="button">
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-4">
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
+              <div className="text-sm text-gray-600">Total Tests</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
+              <div className="text-sm text-gray-600">Primary Team</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
+              <div className="text-sm text-gray-600">Top Performer</div>
+            </div>
+            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+              <div className="text-xl font-bold text-gray-800">
+                {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
+              </div>
+              <div className="text-sm text-gray-600">Latest Test</div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
-            <div className="text-sm text-gray-600">Total Tests</div>
+        </CardContent>
+      </Card>
+
+      {/* Second Individual Filters Section */}
+      <Card className="bg-white border-teal-200 mb-6">
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex justify-center mb-4">
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
+              Individual Filters
+            </Button>
           </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
-            <div className="text-sm text-gray-600">Primary Team</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-            <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
-            <div className="text-sm text-gray-600">Top Performer</div>
-          </div>
-          <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-            <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-            <div className="text-xl font-bold text-gray-800">
-              {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
-            </div>
-            <div className="text-sm text-gray-600">Latest Test</div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>;
+
+          {/* Individual Filters */}
+          <IndividualFilters
+            data={data}
+            allData={allData}
+            selectedTeams={selectedTeams}
+            filters={secondFilters}
+            setFilters={setSecondFilters}
+            onTestSelect={handleSecondTestSelect}
+            resetFiltersKey={resetFiltersKey}
+          />
+        </CardContent>
+      </Card>
+    </>
+  );
 };
