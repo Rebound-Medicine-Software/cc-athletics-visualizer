@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ComparisonChart } from "../ComparisonChart";
 import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
+import { ScoreCardSection } from "../ScoreCardSection";
 import { TestData } from "@/types/forcePlateTypes";
 
 interface ReportFiltersProps {
@@ -76,12 +77,30 @@ export function ReportFiltersContainer({
           resetFiltersKey={resetFiltersKey}
         />
 
+        {/* First Scorecard Section */}
+        <div className="mb-6">
+          <ScoreCardSection
+            data={allData}
+            selectedTeams={selectedTeams}
+            title="Scorecard Filters"
+          />
+        </div>
+
         {/* Metric Cards */}
         {metricCardsSlot && (
           <div className="mb-6">
             {metricCardsSlot}
           </div>
         )}
+
+        {/* Second Scorecard Section */}
+        <div className="mb-6">
+          <ScoreCardSection
+            data={allData}
+            selectedTeams={selectedTeams}
+            title="Additional Scorecard"
+          />
+        </div>
 
         {/* Chart and Video */}
         <div className="flex flex-col md:flex-row gap-8 mt-2">
