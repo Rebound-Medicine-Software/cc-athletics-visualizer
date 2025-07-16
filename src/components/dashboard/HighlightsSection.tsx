@@ -6,6 +6,7 @@ import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IndividualFilters } from "./filters/IndividualFilters";
+
 interface HighlightsSectionProps {
   data: any[];
   selectedTeams: string[];
@@ -13,6 +14,7 @@ interface HighlightsSectionProps {
   resetFiltersKey?: number;
   allData: any[];
 }
+
 export const HighlightsSection = ({
   data,
   selectedTeams,
@@ -181,7 +183,7 @@ export const HighlightsSection = ({
           {/* Individual Filters */}
           <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={secondFilters} setFilters={setSecondFilters} onTestSelect={handleSecondTestSelect} resetFiltersKey={resetFiltersKey} />
 
-          {/* Metric Cards - moved below the filters */}
+          {/* Metric Cards - positioned right after the filters */}
           <div className="grid grid-cols-4 gap-4 mt-6">
             <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
               <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
