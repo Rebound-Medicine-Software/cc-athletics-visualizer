@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Trophy, TrendingUp, Users, Calendar, RefreshCcw } from "lucide-react";
@@ -6,7 +5,6 @@ import { formatDate } from "@/utils/dateUtils";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IndividualFilters } from "./filters/IndividualFilters";
-
 interface HighlightsSectionProps {
   data: any[];
   selectedTeams: string[];
@@ -14,7 +12,6 @@ interface HighlightsSectionProps {
   resetFiltersKey?: number;
   allData: any[];
 }
-
 export const HighlightsSection = ({
   data,
   selectedTeams,
@@ -33,7 +30,6 @@ export const HighlightsSection = ({
     testNames: "",
     metricTypes: ""
   });
-
   useEffect(() => {
     setSelectedAthletes([]);
     setSecondFilters({
@@ -119,9 +115,7 @@ export const HighlightsSection = ({
   const handleSecondTestSelect = (testName: string) => {
     console.log("Second Individual Filters test selected:", testName);
   };
-
-  return (
-    <>
+  return <>
       <Card className="bg-blue-50/80 border-blue-200 mb-6">
         <CardHeader>
           <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
@@ -179,23 +173,12 @@ export const HighlightsSection = ({
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex justify-center mb-4">
-            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
-              Individual Filters
-            </Button>
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Please Select a 'Test Name'</Button>
           </div>
 
           {/* Individual Filters */}
-          <IndividualFilters
-            data={data}
-            allData={allData}
-            selectedTeams={selectedTeams}
-            filters={secondFilters}
-            setFilters={setSecondFilters}
-            onTestSelect={handleSecondTestSelect}
-            resetFiltersKey={resetFiltersKey}
-          />
+          <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={secondFilters} setFilters={setSecondFilters} onTestSelect={handleSecondTestSelect} resetFiltersKey={resetFiltersKey} />
         </CardContent>
       </Card>
-    </>
-  );
+    </>;
 };
