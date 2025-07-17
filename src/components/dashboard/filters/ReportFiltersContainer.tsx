@@ -54,7 +54,7 @@ export function ReportFiltersContainer({
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex justify-center mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Individual/Between Limb Comparisons</Button>
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Comparisons Amongst Peers</Button>
         </div>
 
         {/* Individual Filters */}
