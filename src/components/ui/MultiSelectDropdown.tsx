@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,9 +30,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   // Close dropdown on outside click
   React.useEffect(() => {
     const listener = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!containerRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
-    if (open) document.addEventListener("mousedown", listener);
+    if (open) {
+      document.addEventListener("mousedown", listener);
+    }
     return () => document.removeEventListener("mousedown", listener);
   }, [open]);
 
@@ -41,7 +46,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     } else {
       onChange([...value, option]);
     }
-    // Keep dropdown open for multi-select - do NOT call setOpen(false)
+    // DO NOT close dropdown for multi-select
   };
 
   const allLabels = options
@@ -58,7 +63,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen(v => !v);
+          setOpen(prev => !prev);
         }}
         className={cn(
           "flex items-center justify-between w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
@@ -75,26 +80,20 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       </button>
       {open && (
         <div className={cn(
-          "absolute z-50 mt-1 w-full bg-background rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
+          "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName
         )}>
           {options.map(opt => (
             <div
               key={opt.value}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-accent rounded justify-start cursor-pointer",
+                "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onMouseDown={(e) => {
-                // Prevent any default behavior and event bubbling
+              onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 toggleOption(opt.value);
-              }}
-              onClick={(e) => {
-                // Additional prevention for onClick events
-                e.preventDefault();
-                e.stopPropagation();
               }}
             >
               <span className={cn(
