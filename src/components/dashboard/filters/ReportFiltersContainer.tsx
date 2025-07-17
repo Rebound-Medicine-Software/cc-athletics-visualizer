@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,9 +58,6 @@ export function ReportFiltersContainer({
         </div>
 
         {/* Individual Filters */}
-        <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={filters} setFilters={setFilters} onTestSelect={onTestSelect} resetFiltersKey={resetFiltersKey} />
-
-        {/* Individual Filters - Copy */}
         <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={filters} setFilters={setFilters} onTestSelect={onTestSelect} resetFiltersKey={resetFiltersKey} />
 
         {/* Metric Cards */}
