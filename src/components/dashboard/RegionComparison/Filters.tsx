@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -159,14 +158,16 @@ export const Filters = ({
     "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"
   ];
 
-  // Handle cascading filter changes for Individual Filters
+  // Handle cascading filter changes for Individual Filters - Less aggressive resetting
   const handleTeamNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       teamName: value,
-      sex: "", // Reset dependent filters
-      athleteName: [],
-      testName: ""
+      // Only reset sex if no teams selected
+      sex: value.length === 0 ? "" : prev.sex,
+      // Keep athlete and test selections unless no teams selected
+      athleteName: value.length === 0 ? [] : prev.athleteName,
+      testName: value.length === 0 ? "" : prev.testName
     }));
   };
 
@@ -174,8 +175,9 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       sex: value,
-      athleteName: [], // Reset dependent filters
-      testName: ""
+      // Keep existing athlete and test selections
+      athleteName: prev.athleteName,
+      testName: prev.testName
     }));
   };
 
@@ -183,7 +185,8 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: value,
-      testName: "" // Reset dependent filters
+      // Keep test selection
+      testName: prev.testName
     }));
   };
 
@@ -194,14 +197,14 @@ export const Filters = ({
     }));
   };
 
-  // Handle region filter cascading changes
+  // Handle region filter cascading changes - Less aggressive resetting
   const handleCountryChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       country: value,
-      region: [], // Reset dependent filters
-      address: [],
-      teamName: []
+      // Only reset if no countries selected
+      region: value.length === 0 ? [] : prev.region,
+      address: value.length === 0 ? [] : prev.address,
     }));
   };
 
@@ -209,8 +212,8 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       region: value,
-      address: [], // Reset dependent filters
-      teamName: []
+      // Only reset if no regions selected
+      address: value.length === 0 ? [] : prev.address,
     }));
   };
 
@@ -218,7 +221,8 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       address: value,
-      metricType: "" // Reset metric type when address changes
+      // Keep metric type when address changes
+      metricType: prev.metricType
     }));
   };
 
@@ -243,7 +247,7 @@ export const Filters = ({
         <div className="w-36 flex-shrink-0">
           <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Sex</label>
           <Select value={filters.sex} onValueChange={handleSexChange}>
-            <SelectTrigger className={`${filters.teamName.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
+            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Sex" className="text-center" />
             </SelectTrigger>
             <SelectContent className="z-[100]">
@@ -263,14 +267,14 @@ export const Filters = ({
             value={filters.athleteName}
             onChange={handleAthleteNameChange}
             placeholder="Select Athletes"
-            labelClassName={`${filters.sex === "" ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}
+            labelClassName="bg-black text-white text-center h-9 text-xs"
             dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
         <div className="w-36 flex-shrink-0">
           <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Test Name</label>
           <Select value={filters.testName} onValueChange={handleTestNameChange}>
-            <SelectTrigger className={`${filters.athleteName.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
+            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Test Name" className="text-center" />
             </SelectTrigger>
             <SelectContent className="z-[100]">
@@ -305,7 +309,7 @@ export const Filters = ({
             value={filters.region}
             onChange={handleRegionChange}
             placeholder="Select Regions"
-            labelClassName={`${filters.country.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}
+            labelClassName="bg-black text-white text-center h-9 text-xs"
             dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
@@ -316,7 +320,7 @@ export const Filters = ({
             value={filters.address}
             onChange={handleAddressChange}
             placeholder="Select Addresses"
-            labelClassName={`${filters.region.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}
+            labelClassName="bg-black text-white text-center h-9 text-xs"
             dropdownClassName="bg-white border border-gray-200 z-[100]"
           />
         </div>
@@ -326,7 +330,7 @@ export const Filters = ({
             value={filters.metricType} 
             onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
           >
-            <SelectTrigger className={`${filters.address.length === 0 ? "bg-gray-400 text-gray-600" : "bg-black text-white"} text-center h-9 text-xs`}>
+            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
               <SelectValue placeholder="Metric Type" className="text-center" />
             </SelectTrigger>
             <SelectContent className="z-[100]">
