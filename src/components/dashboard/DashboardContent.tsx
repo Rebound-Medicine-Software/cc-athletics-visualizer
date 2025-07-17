@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,8 @@ export interface DashboardContentProps {
   error: Error | null;
   errorMessage: string;
   hasNoData: boolean;
-  selectedTeams: string[]; // CHANGED
-  setSelectedTeams: (teams: string[]) => void; // CHANGED
+  selectedTeams: string[];
+  setSelectedTeams: (teams: string[]) => void;
   handleRefresh: () => void;
   orgData: any;
   navigationItems: any[];
@@ -28,6 +27,7 @@ export const DashboardContent = ({
   navigationItems, activeSection, resetFiltersKey
 }: DashboardContentProps) => {
   const [selectedTest, setSelectedTest] = useState<string>("");
+  const [selectedTest2, setSelectedTest2] = useState<string>("");
 
   // Error state
   if (error) {
@@ -71,6 +71,7 @@ export const DashboardContent = ({
   const filteredData = selectedTeams.length === 0
     ? data
     : data.filter(d => selectedTeams.includes(d.team_name));
+  
   return (
     <div className="space-y-6 w-full">
       {/* Performance Highlights */}
@@ -81,7 +82,8 @@ export const DashboardContent = ({
         resetFiltersKey={resetFiltersKey}
         allData={data}
       />
-      {/* ReportFilters without MetricCards */}
+      
+      {/* First ReportFilters section */}
       <ReportFilters 
         data={filteredData} 
         onTestSelect={setSelectedTest}
@@ -89,6 +91,16 @@ export const DashboardContent = ({
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
       />
+      
+      {/* Second ReportFilters section (duplicate) */}
+      <ReportFilters 
+        data={filteredData} 
+        onTestSelect={setSelectedTest2}
+        allData={data}
+        resetFiltersKey={resetFiltersKey} 
+        selectedTeams={selectedTeams}
+      />
+      
       {/* RegionComparison operates independently with unfiltered data */}
       <RegionComparison 
         data={data} 
