@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { RefreshCcw } from "lucide-react";
 
 interface FiltersProps {
   filters: {
@@ -226,122 +228,309 @@ export const Filters = ({
     }));
   };
 
+  // Reset handlers
+  const handleResetTeamName = () => {
+    setFilters(prev => ({
+      ...prev,
+      teamName: [],
+      sex: "",
+      athleteName: [],
+      testName: ""
+    }));
+  };
+
+  const handleResetSex = () => {
+    setFilters(prev => ({
+      ...prev,
+      sex: "",
+      athleteName: [],
+      testName: ""
+    }));
+  };
+
+  const handleResetAthleteName = () => {
+    setFilters(prev => ({
+      ...prev,
+      athleteName: [],
+      testName: ""
+    }));
+  };
+
+  const handleResetTestName = () => {
+    setFilters(prev => ({
+      ...prev,
+      testName: ""
+    }));
+  };
+
+  const handleResetCountry = () => {
+    setFilters(prev => ({
+      ...prev,
+      country: [],
+      region: [],
+      address: [],
+      metricType: ""
+    }));
+  };
+
+  const handleResetRegion = () => {
+    setFilters(prev => ({
+      ...prev,
+      region: [],
+      address: [],
+      metricType: ""
+    }));
+  };
+
+  const handleResetAddress = () => {
+    setFilters(prev => ({
+      ...prev,
+      address: [],
+      metricType: ""
+    }));
+  };
+
+  const handleResetMetricType = () => {
+    setFilters(prev => ({
+      ...prev,
+      metricType: ""
+    }));
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-visible">
-      {/* All Filters in One Row */}
-      <div className="flex items-end justify-center gap-3 flex-wrap">
-        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 h-[36px]">
-          Individual Filters
+      {/* Individual Filters Section */}
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+          {/* Team Name */}
+          <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={teamOptions}
+                value={filters.teamName}
+                onChange={handleTeamNameChange}
+                placeholder="All Teams"
+                className="text-center h-10 min-h-[40px] max-h-[40px]"
+                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+                dropdownClassName="w-[600px] z-[100]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Team Name"
+                className="p-2"
+                onClick={handleResetTeamName}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Sex */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
+            <div className="flex items-center gap-2">
+              <Select value={filters.sex} onValueChange={handleSexChange}>
+                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
+                  <SelectValue placeholder="All" />
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  <SelectItem value="all" className="text-center">All</SelectItem>
+                  {filteredIndividualData.sexOptions.map(sex => (
+                    <SelectItem key={sex} value={sex} className="text-center">
+                      {sex}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Sex"
+                className="p-2"
+                onClick={handleResetSex}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Athlete Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={filters.athleteName}
+                onChange={handleAthleteNameChange}
+                placeholder="All Athletes"
+                className="text-center h-10 min-h-[40px] max-h-[40px]"
+                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+                dropdownClassName="w-[600px] z-[100]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Athlete Name"
+                className="p-2"
+                onClick={handleResetAthleteName}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Test Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+            <div className="flex items-center gap-2">
+              <Select value={filters.testName} onValueChange={handleTestNameChange}>
+                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
+                  <SelectValue placeholder="All Tests" />
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  <SelectItem value="all" className="text-center">All Tests</SelectItem>
+                  {filteredIndividualData.tests.map(test => (
+                    <SelectItem key={test} value={test} className="text-center">
+                      {test}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Test Name"
+                className="p-2"
+                onClick={handleResetTestName}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Team Name</label>
-          <MultiSelectDropdown
-            options={teamOptions}
-            value={filters.teamName}
-            onChange={handleTeamNameChange}
-            placeholder="Select Teams"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Sex</label>
-          <Select value={filters.sex} onValueChange={handleSexChange}>
-            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
-              <SelectValue placeholder="Sex" className="text-center" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]">
-              <SelectItem value="all" className="text-center text-xs">All</SelectItem>
-              {filteredIndividualData.sexOptions.map(sex => (
-                <SelectItem key={sex} value={sex} className="text-center text-xs">
-                  {sex}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Athlete Name</label>
-          <MultiSelectDropdown
-            options={athleteOptions}
-            value={filters.athleteName}
-            onChange={handleAthleteNameChange}
-            placeholder="Select Athletes"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Test Name</label>
-          <Select value={filters.testName} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
-              <SelectValue placeholder="Test Name" className="text-center" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]">
-              <SelectItem value="all" className="text-center text-xs">All Tests</SelectItem>
-              {filteredIndividualData.tests.map(test => (
-                <SelectItem key={test} value={test} className="text-center text-xs">
-                  {test}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex items-end justify-center text-sm font-semibold text-gray-800 min-w-[120px] flex-shrink-0 ml-4 h-[36px]">
-          Region Filters
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Country</label>
-          <MultiSelectDropdown
-            options={countryOptions}
-            value={filters.country}
-            onChange={handleCountryChange}
-            placeholder="Select Countries"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Region</label>
-          <MultiSelectDropdown
-            options={regionOptions}
-            value={filters.region}
-            onChange={handleRegionChange}
-            placeholder="Select Regions"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Address</label>
-          <MultiSelectDropdown
-            options={addressOptions}
-            value={filters.address}
-            onChange={handleAddressChange}
-            placeholder="Select Addresses"
-            labelClassName="bg-black text-white text-center h-9 text-xs"
-            dropdownClassName="bg-white border border-gray-200 z-[100]"
-          />
-        </div>
-        <div className="w-36 flex-shrink-0">
-          <label className="block text-xs font-medium text-gray-700 mb-1 text-center h-[15px]">Metric Type</label>
-          <Select 
-            value={filters.metricType} 
-            onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
-          >
-            <SelectTrigger className="bg-black text-white text-center h-9 text-xs">
-              <SelectValue placeholder="Metric Type" className="text-center" />
-            </SelectTrigger>
-            <SelectContent className="z-[100]">
-              <SelectItem value="all" className="text-center text-xs">All Metrics</SelectItem>
-              {availableMetricTypes.map(metric => (
-                <SelectItem key={metric} value={metric} className="text-center text-xs">
-                  {metric}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      </div>
+
+      {/* Region Filters Section */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Region Filters</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+          {/* Country */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Country</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={countryOptions}
+                value={filters.country}
+                onChange={handleCountryChange}
+                placeholder="All Countries"
+                className="text-center h-10 min-h-[40px] max-h-[40px]"
+                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+                dropdownClassName="w-[600px] z-[100]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Country"
+                className="p-2"
+                onClick={handleResetCountry}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Region */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={regionOptions}
+                value={filters.region}
+                onChange={handleRegionChange}
+                placeholder="All Regions"
+                className="text-center h-10 min-h-[40px] max-h-[40px]"
+                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+                dropdownClassName="w-[600px] z-[100]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Region"
+                className="p-2"
+                onClick={handleResetRegion}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Address */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
+            <div className="flex items-center gap-2">
+              <MultiSelectDropdown
+                options={addressOptions}
+                value={filters.address}
+                onChange={handleAddressChange}
+                placeholder="All Addresses"
+                className="text-center h-10 min-h-[40px] max-h-[40px]"
+                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
+                dropdownClassName="w-[600px] z-[100]"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Address"
+                className="p-2"
+                onClick={handleResetAddress}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Metric Type */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
+            <div className="flex items-center gap-2">
+              <Select 
+                value={filters.metricType} 
+                onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
+              >
+                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
+                  <SelectValue placeholder="All Metrics" />
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  <SelectItem value="all" className="text-center">All Metrics</SelectItem>
+                  {availableMetricTypes.map(metric => (
+                    <SelectItem key={metric} value={metric} className="text-center">
+                      {metric}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Reset Metric Type"
+                className="p-2"
+                onClick={handleResetMetricType}
+                type="button"
+              >
+                <RefreshCcw className="w-4 h-4 text-gray-500" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
