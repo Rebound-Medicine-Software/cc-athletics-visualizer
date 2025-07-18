@@ -13,20 +13,20 @@ import { RefreshCcw } from "lucide-react";
 interface FiltersProps {
   filters: {
     teamName: string[]; // Individual filter
-    sex: string[]; // Individual filter - now multi-select
+    sex: string; // Individual filter
     athleteName: string[]; // Individual filter
-    testName: string[]; // Individual filter - now multi-select
+    testName: string; // Individual filter
     country: string[]; // Region filter
     region: string[]; // Region filter
     address: string[]; // Region filter
-    metricType: string; // Region filter - single select
+    metricType: string; // Region filter
   };
   setFilters: React.Dispatch<
     React.SetStateAction<{
       teamName: string[];
-      sex: string[];
+      sex: string;
       athleteName: string[];
-      testName: string[];
+      testName: string;
       country: string[];
       region: string[];
       address: string[];
@@ -80,16 +80,16 @@ export const Filters = ({
       filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
     }
     
-    if (filters.sex.length > 0) {
-      filteredData = filteredData.filter(d => filters.sex.includes(d.gender));
+    if (filters.sex && filters.sex !== "all") {
+      filteredData = filteredData.filter(d => d.gender === filters.sex);
     }
     
     if (filters.athleteName.length > 0) {
       filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
     
-    if (filters.testName.length > 0) {
-      filteredData = filteredData.filter(d => filters.testName.includes(d.test_name));
+    if (filters.testName && filters.testName !== "all") {
+      filteredData = filteredData.filter(d => d.test_name === filters.testName);
     }
     
     // Extract unique values from filtered data
@@ -145,8 +145,6 @@ export const Filters = ({
   const filteredIndividualData = getFilteredIndividualData();
   const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
   const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
-  const sexOptions = filteredIndividualData.sexOptions.map(sex => ({ value: sex, label: sex }));
-  const testOptions = filteredIndividualData.tests.map(test => ({ value: test, label: test }));
   
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
@@ -164,7 +162,7 @@ export const Filters = ({
 
   // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
   const sexEnabled = filters.teamName.length > 0;
-  const athleteEnabled = filters.sex.length > 0;
+  const athleteEnabled = filters.sex && filters.sex !== "all";
   const testNameEnabled = filters.athleteName.length > 0;
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
@@ -178,19 +176,19 @@ export const Filters = ({
       ...prev,
       teamName: value,
       // Reset dependent filters when team changes
-      sex: value.length === 0 ? [] : prev.sex,
+      sex: value.length === 0 ? "all" : prev.sex,
       athleteName: value.length === 0 ? [] : prev.athleteName,
-      testName: value.length === 0 ? [] : prev.testName
+      testName: value.length === 0 ? "all" : prev.testName
     }));
   };
 
-  const handleSexChange = (value: string[]) => {
+  const handleSexChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
       sex: value,
       // Reset dependent filters when sex changes
-      athleteName: value.length === 0 ? [] : prev.athleteName,
-      testName: value.length === 0 ? [] : prev.testName
+      athleteName: value === "all" ? [] : prev.athleteName,
+      testName: value === "all" ? "all" : prev.testName
     }));
   };
 
@@ -199,11 +197,11 @@ export const Filters = ({
       ...prev,
       athleteName: value,
       // Reset dependent filters when athlete changes
-      testName: value.length === 0 ? [] : prev.testName
+      testName: value.length === 0 ? "all" : prev.testName
     }));
   };
 
-  const handleTestNameChange = (value: string[]) => {
+  const handleTestNameChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
       testName: value
@@ -218,7 +216,7 @@ export const Filters = ({
       // Reset dependent filters when country changes
       region: value.length === 0 ? [] : prev.region,
       address: value.length === 0 ? [] : prev.address,
-      metricType: value.length === 0 ? "" : prev.metricType
+      metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
@@ -228,7 +226,7 @@ export const Filters = ({
       region: value,
       // Reset dependent filters when region changes
       address: value.length === 0 ? [] : prev.address,
-      metricType: value.length === 0 ? "" : prev.metricType
+      metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
@@ -237,7 +235,7 @@ export const Filters = ({
       ...prev,
       address: value,
       // Reset metric type when address changes
-      metricType: value.length === 0 ? "" : prev.metricType
+      metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
@@ -246,18 +244,18 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       teamName: [],
-      sex: [],
+      sex: "all",
       athleteName: [],
-      testName: []
+      testName: "all"
     }));
   };
 
   const handleResetSex = () => {
     setFilters(prev => ({
       ...prev,
-      sex: [],
+      sex: "all",
       athleteName: [],
-      testName: []
+      testName: "all"
     }));
   };
 
@@ -265,14 +263,14 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: [],
-      testName: []
+      testName: "all"
     }));
   };
 
   const handleResetTestName = () => {
     setFilters(prev => ({
       ...prev,
-      testName: []
+      testName: "all"
     }));
   };
 
@@ -283,7 +281,7 @@ export const Filters = ({
       country: [],
       region: [],
       address: [],
-      metricType: ""
+      metricType: "all"
     }));
   };
 
@@ -292,7 +290,7 @@ export const Filters = ({
       ...prev,
       region: [],
       address: [],
-      metricType: ""
+      metricType: "all"
     }));
   };
 
@@ -300,14 +298,14 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       address: [],
-      metricType: ""
+      metricType: "all"
     }));
   };
 
   const handleResetMetricType = () => {
     setFilters(prev => ({
       ...prev,
-      metricType: ""
+      metricType: "all"
     }));
   };
 
@@ -317,7 +315,7 @@ export const Filters = ({
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Team Name - Always enabled */}
+          {/* Team Name */}
           <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
             <div className="flex items-center gap-2">
@@ -343,20 +341,24 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Sex - Enabled after Team Name */}
+          {/* Sex */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
             <div className="flex items-center gap-2">
               <div className={sexEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={sexOptions}
-                  value={filters.sex}
-                  onChange={sexEnabled ? handleSexChange : () => {}}
-                  placeholder="All"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!sexEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${sexEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[600px] z-[100]"
-                />
+                <Select value={filters.sex} onValueChange={sexEnabled ? handleSexChange : () => {}}>
+                  <SelectTrigger className={`${sexEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="all" className="text-center">All</SelectItem>
+                    {filteredIndividualData.sexOptions.map(sex => (
+                      <SelectItem key={sex} value={sex} className="text-center">
+                        {sex}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button
                 variant="ghost"
@@ -372,7 +374,7 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Athlete Name - Enabled after Sex */}
+          {/* Athlete Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
             <div className="flex items-center gap-2">
@@ -401,20 +403,24 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Test Name - Enabled after Athlete Name */}
+          {/* Test Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
             <div className="flex items-center gap-2">
               <div className={testNameEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={testOptions}
-                  value={filters.testName}
-                  onChange={testNameEnabled ? handleTestNameChange : () => {}}
-                  placeholder="All Tests"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!testNameEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${testNameEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[600px] z-[100]"
-                />
+                <Select value={filters.testName} onValueChange={testNameEnabled ? handleTestNameChange : () => {}}>
+                  <SelectTrigger className={`${testNameEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                    <SelectValue placeholder="All Tests" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="all" className="text-center">All Tests</SelectItem>
+                    {filteredIndividualData.tests.map(test => (
+                      <SelectItem key={test} value={test} className="text-center">
+                        {test}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <Button
                 variant="ghost"
@@ -436,7 +442,7 @@ export const Filters = ({
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Region Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Country - Always enabled */}
+          {/* Country */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Country</label>
             <div className="flex items-center gap-2">
@@ -462,7 +468,7 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Region - Enabled after Country */}
+          {/* Region */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
             <div className="flex items-center gap-2">
@@ -491,7 +497,7 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Address - Enabled after Region */}
+          {/* Address */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
             <div className="flex items-center gap-2">
@@ -520,7 +526,7 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Metric Type - Enabled after Address */}
+          {/* Metric Type */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
             <div className="flex items-center gap-2">
