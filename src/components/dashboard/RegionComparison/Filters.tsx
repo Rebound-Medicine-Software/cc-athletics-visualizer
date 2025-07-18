@@ -257,7 +257,7 @@ export const Filters = ({
       ...prev,
       sex: [],
       athleteName: [],
-      testName: ""
+      testName: []
     }));
   };
 
