@@ -18,11 +18,11 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
   const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
   
   const [filters, setFilters] = useState({
-    // Individual Filters - for table
+    // Individual Filters - for table (now arrays for multi-select)
     teamName: [] as string[],
-    sex: "",
+    sex: [] as string[],
     athleteName: [] as string[],
-    testName: "",
+    testName: [] as string[],
     // Region Filters - for map
     country: [] as string[],
     region: [] as string[],
@@ -35,9 +35,9 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
     setFilters({
       // Individual Filters
       teamName: [],
-      sex: "",
+      sex: [],
       athleteName: [],
-      testName: "",
+      testName: [],
       // Region Filters
       country: [],
       region: [],
@@ -101,21 +101,21 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
   // NO selectedTeams filter - this section operates independently
   let tableFilteredData = data;
   
-  // Apply Individual Filters only (Team Name, Sex, Athlete Name, Test Name)
+  // Apply Individual Filters (now all arrays)
   if (filters.teamName.length > 0) {
     tableFilteredData = tableFilteredData.filter(d => filters.teamName.includes(d.team_name));
   }
   
-  if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
-    tableFilteredData = tableFilteredData.filter(d => d.gender === filters.sex);
+  if (filters.sex.length > 0) {
+    tableFilteredData = tableFilteredData.filter(d => filters.sex.includes(d.gender));
   }
   
   if (filters.athleteName.length > 0) {
     tableFilteredData = tableFilteredData.filter(d => filters.athleteName.includes(d.athlete_name));
   }
   
-  if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
-    tableFilteredData = tableFilteredData.filter(d => d.test_name === filters.testName);
+  if (filters.testName.length > 0) {
+    tableFilteredData = tableFilteredData.filter(d => filters.testName.includes(d.test_name));
   }
 
   // MAP DATA: Apply ONLY region filters for the map display
@@ -245,14 +245,14 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
     if (filters.teamName.length > 0) {
       currentData = currentData.filter(d => filters.teamName.includes(d.team_name));
     }
-    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
-      currentData = currentData.filter(d => d.gender === filters.sex);
+    if (filters.sex.length > 0) {
+      currentData = currentData.filter(d => filters.sex.includes(d.gender));
     }
     if (filters.athleteName.length > 0) {
       currentData = currentData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
-    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
-      currentData = currentData.filter(d => d.test_name === filters.testName);
+    if (filters.testName.length > 0) {
+      currentData = currentData.filter(d => filters.testName.includes(d.test_name));
     }
     
     return {

@@ -13,20 +13,20 @@ import { RefreshCcw } from "lucide-react";
 interface FiltersProps {
   filters: {
     teamName: string[]; // Individual filter
-    sex: string; // Individual filter
+    sex: string[]; // Individual filter - now multi-select
     athleteName: string[]; // Individual filter
-    testName: string; // Individual filter
+    testName: string[]; // Individual filter - now multi-select
     country: string[]; // Region filter
     region: string[]; // Region filter
     address: string[]; // Region filter
-    metricType: string; // Region filter
+    metricType: string; // Region filter - single select
   };
   setFilters: React.Dispatch<
     React.SetStateAction<{
       teamName: string[];
-      sex: string;
+      sex: string[];
       athleteName: string[];
-      testName: string;
+      testName: string[];
       country: string[];
       region: string[];
       address: string[];
@@ -80,16 +80,16 @@ export const Filters = ({
       filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
     }
     
-    if (filters.sex && filters.sex !== "all" && filters.sex !== "") {
-      filteredData = filteredData.filter(d => d.gender === filters.sex);
+    if (filters.sex.length > 0) {
+      filteredData = filteredData.filter(d => filters.sex.includes(d.gender));
     }
     
     if (filters.athleteName.length > 0) {
       filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
     
-    if (filters.testName && filters.testName !== "all" && filters.testName !== "") {
-      filteredData = filteredData.filter(d => d.test_name === filters.testName);
+    if (filters.testName.length > 0) {
+      filteredData = filteredData.filter(d => filters.testName.includes(d.test_name));
     }
     
     // Extract unique values from filtered data
@@ -145,6 +145,8 @@ export const Filters = ({
   const filteredIndividualData = getFilteredIndividualData();
   const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
   const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
+  const sexOptions = filteredIndividualData.sexOptions.map(sex => ({ value: sex, label: sex }));
+  const testOptions = filteredIndividualData.tests.map(test => ({ value: test, label: test }));
   
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
@@ -160,26 +162,35 @@ export const Filters = ({
     "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"
   ];
 
-  // Handle cascading filter changes for Individual Filters - Less aggressive resetting
+  // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
+  const sexEnabled = filters.teamName.length > 0;
+  const athleteEnabled = filters.sex.length > 0;
+  const testNameEnabled = filters.athleteName.length > 0;
+
+  // Region Filters: Country (always enabled) > Region > Address > Metric Type
+  const regionEnabled = filters.country.length > 0;
+  const addressEnabled = filters.region.length > 0;
+  const metricTypeEnabled = filters.address.length > 0;
+
+  // Handle cascading filter changes for Individual Filters
   const handleTeamNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       teamName: value,
-      // Only reset sex if no teams selected
-      sex: value.length === 0 ? "" : prev.sex,
-      // Keep athlete and test selections unless no teams selected
+      // Reset dependent filters when team changes
+      sex: value.length === 0 ? [] : prev.sex,
       athleteName: value.length === 0 ? [] : prev.athleteName,
-      testName: value.length === 0 ? "" : prev.testName
+      testName: value.length === 0 ? [] : prev.testName
     }));
   };
 
-  const handleSexChange = (value: string) => {
+  const handleSexChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       sex: value,
-      // Keep existing athlete and test selections
-      athleteName: prev.athleteName,
-      testName: prev.testName
+      // Reset dependent filters when sex changes
+      athleteName: value.length === 0 ? [] : prev.athleteName,
+      testName: value.length === 0 ? [] : prev.testName
     }));
   };
 
@@ -187,26 +198,27 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: value,
-      // Keep test selection
-      testName: prev.testName
+      // Reset dependent filters when athlete changes
+      testName: value.length === 0 ? [] : prev.testName
     }));
   };
 
-  const handleTestNameChange = (value: string) => {
+  const handleTestNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       testName: value
     }));
   };
 
-  // Handle region filter cascading changes - Less aggressive resetting
+  // Handle region filter cascading changes
   const handleCountryChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       country: value,
-      // Only reset if no countries selected
+      // Reset dependent filters when country changes
       region: value.length === 0 ? [] : prev.region,
       address: value.length === 0 ? [] : prev.address,
+      metricType: value.length === 0 ? "" : prev.metricType
     }));
   };
 
@@ -214,8 +226,9 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       region: value,
-      // Only reset if no regions selected
+      // Reset dependent filters when region changes
       address: value.length === 0 ? [] : prev.address,
+      metricType: value.length === 0 ? "" : prev.metricType
     }));
   };
 
@@ -223,26 +236,26 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       address: value,
-      // Keep metric type when address changes
-      metricType: prev.metricType
+      // Reset metric type when address changes
+      metricType: value.length === 0 ? "" : prev.metricType
     }));
   };
 
-  // Reset handlers
+  // Reset handlers for Individual Filters
   const handleResetTeamName = () => {
     setFilters(prev => ({
       ...prev,
       teamName: [],
-      sex: "",
+      sex: [],
       athleteName: [],
-      testName: ""
+      testName: []
     }));
   };
 
   const handleResetSex = () => {
     setFilters(prev => ({
       ...prev,
-      sex: "",
+      sex: [],
       athleteName: [],
       testName: ""
     }));
@@ -252,17 +265,18 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: [],
-      testName: ""
+      testName: []
     }));
   };
 
   const handleResetTestName = () => {
     setFilters(prev => ({
       ...prev,
-      testName: ""
+      testName: []
     }));
   };
 
+  // Reset handlers for Region Filters
   const handleResetCountry = () => {
     setFilters(prev => ({
       ...prev,
@@ -303,7 +317,7 @@ export const Filters = ({
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Team Name */}
+          {/* Team Name - Always enabled */}
           <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
             <div className="flex items-center gap-2">
@@ -329,86 +343,87 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Sex */}
+          {/* Sex - Enabled after Team Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
             <div className="flex items-center gap-2">
-              <Select value={filters.sex} onValueChange={handleSexChange}>
-                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent className="z-[100]">
-                  <SelectItem value="all" className="text-center">All</SelectItem>
-                  {filteredIndividualData.sexOptions.map(sex => (
-                    <SelectItem key={sex} value={sex} className="text-center">
-                      {sex}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className={sexEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={sexOptions}
+                  value={filters.sex}
+                  onChange={sexEnabled ? handleSexChange : () => {}}
+                  placeholder="All"
+                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!sexEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={`${sexEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+                  dropdownClassName="w-[600px] z-[100]"
+                />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Sex"
-                className="p-2"
-                onClick={handleResetSex}
+                className={`p-2 ${!sexEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={sexEnabled ? handleResetSex : undefined}
                 type="button"
+                disabled={!sexEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
           </div>
 
-          {/* Athlete Name */}
+          {/* Athlete Name - Enabled after Sex */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={athleteOptions}
-                value={filters.athleteName}
-                onChange={handleAthleteNameChange}
-                placeholder="All Athletes"
-                className="text-center h-10 min-h-[40px] max-h-[40px]"
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[600px] z-[100]"
-              />
+              <div className={athleteEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={athleteOptions}
+                  value={filters.athleteName}
+                  onChange={athleteEnabled ? handleAthleteNameChange : () => {}}
+                  placeholder="All Athletes"
+                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+                  dropdownClassName="w-[600px] z-[100]"
+                />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Athlete Name"
-                className="p-2"
-                onClick={handleResetAthleteName}
+                className={`p-2 ${!athleteEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={athleteEnabled ? handleResetAthleteName : undefined}
                 type="button"
+                disabled={!athleteEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
           </div>
 
-          {/* Test Name */}
+          {/* Test Name - Enabled after Athlete Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
             <div className="flex items-center gap-2">
-              <Select value={filters.testName} onValueChange={handleTestNameChange}>
-                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-                  <SelectValue placeholder="All Tests" />
-                </SelectTrigger>
-                <SelectContent className="z-[100]">
-                  <SelectItem value="all" className="text-center">All Tests</SelectItem>
-                  {filteredIndividualData.tests.map(test => (
-                    <SelectItem key={test} value={test} className="text-center">
-                      {test}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className={testNameEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={testOptions}
+                  value={filters.testName}
+                  onChange={testNameEnabled ? handleTestNameChange : () => {}}
+                  placeholder="All Tests"
+                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!testNameEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={`${testNameEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+                  dropdownClassName="w-[600px] z-[100]"
+                />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Test Name"
-                className="p-2"
-                onClick={handleResetTestName}
+                className={`p-2 ${!testNameEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={testNameEnabled ? handleResetTestName : undefined}
                 type="button"
+                disabled={!testNameEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
@@ -421,7 +436,7 @@ export const Filters = ({
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Region Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Country */}
+          {/* Country - Always enabled */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Country</label>
             <div className="flex items-center gap-2">
@@ -447,85 +462,94 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Region */}
+          {/* Region - Enabled after Country */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={regionOptions}
-                value={filters.region}
-                onChange={handleRegionChange}
-                placeholder="All Regions"
-                className="text-center h-10 min-h-[40px] max-h-[40px]"
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[600px] z-[100]"
-              />
+              <div className={regionEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={regionOptions}
+                  value={filters.region}
+                  onChange={regionEnabled ? handleRegionChange : () => {}}
+                  placeholder="All Regions"
+                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!regionEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={`${regionEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+                  dropdownClassName="w-[600px] z-[100]"
+                />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Region"
-                className="p-2"
-                onClick={handleResetRegion}
+                className={`p-2 ${!regionEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={regionEnabled ? handleResetRegion : undefined}
                 type="button"
+                disabled={!regionEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
           </div>
 
-          {/* Address */}
+          {/* Address - Enabled after Region */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
             <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={addressOptions}
-                value={filters.address}
-                onChange={handleAddressChange}
-                placeholder="All Addresses"
-                className="text-center h-10 min-h-[40px] max-h-[40px]"
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[600px] z-[100]"
-              />
+              <div className={addressEnabled ? "" : "pointer-events-none"}>
+                <MultiSelectDropdown
+                  options={addressOptions}
+                  value={filters.address}
+                  onChange={addressEnabled ? handleAddressChange : () => {}}
+                  placeholder="All Addresses"
+                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!addressEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+                  labelClassName={`${addressEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+                  dropdownClassName="w-[600px] z-[100]"
+                />
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Address"
-                className="p-2"
-                onClick={handleResetAddress}
+                className={`p-2 ${!addressEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={addressEnabled ? handleResetAddress : undefined}
                 type="button"
+                disabled={!addressEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
             </div>
           </div>
 
-          {/* Metric Type */}
+          {/* Metric Type - Enabled after Address */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
             <div className="flex items-center gap-2">
-              <Select 
-                value={filters.metricType} 
-                onValueChange={value => setFilters(prev => ({ ...prev, metricType: value }))}
-              >
-                <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-                  <SelectValue placeholder="All Metrics" />
-                </SelectTrigger>
-                <SelectContent className="z-[100]">
-                  <SelectItem value="all" className="text-center">All Metrics</SelectItem>
-                  {availableMetricTypes.map(metric => (
-                    <SelectItem key={metric} value={metric} className="text-center">
-                      {metric}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
+                <Select 
+                  value={filters.metricType} 
+                  onValueChange={metricTypeEnabled ? (value => setFilters(prev => ({ ...prev, metricType: value }))) : () => {}}
+                >
+                  <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                    <SelectValue placeholder="All Metrics" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]">
+                    <SelectItem value="all" className="text-center">All Metrics</SelectItem>
+                    {availableMetricTypes.map(metric => (
+                      <SelectItem key={metric} value={metric} className="text-center">
+                        {metric}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Reset Metric Type"
-                className="p-2"
-                onClick={handleResetMetricType}
+                className={`p-2 ${!metricTypeEnabled ? "pointer-events-none opacity-50" : ""}`}
+                onClick={metricTypeEnabled ? handleResetMetricType : undefined}
                 type="button"
+                disabled={!metricTypeEnabled}
               >
                 <RefreshCcw className="w-4 h-4 text-gray-500" />
               </Button>
