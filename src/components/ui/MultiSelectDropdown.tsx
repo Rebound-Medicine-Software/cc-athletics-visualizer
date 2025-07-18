@@ -90,7 +90,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
                 "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onClick={(e) => {
+              onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 toggleOption(opt.value);
