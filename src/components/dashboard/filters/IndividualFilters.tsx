@@ -183,7 +183,7 @@ export function IndividualFilters({
             <MultiSelectDropdown
               options={athleteOptions}
               value={filters.selectedAthletes}
-              onChange={handleAthleteChange}
+              onChange={athleteEnabled ? handleAthleteChange : () => {}}
               placeholder="All Athletes"
               className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
               labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
