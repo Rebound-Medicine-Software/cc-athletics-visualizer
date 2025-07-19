@@ -14,14 +14,14 @@ interface IndividualFiltersProps {
   allData: TestData[];
   selectedTeams: string[];
   filters: {
-    selectedAthletes: string[];
-    testDates: string;
+    selectedAthletes: string;
+    testDates: string[];
     testNames: string;
     metricTypes: string;
   };
   setFilters: React.Dispatch<React.SetStateAction<{
-    selectedAthletes: string[];
-    testDates: string;
+    selectedAthletes: string;
+    testDates: string[];
     testNames: string;
     metricTypes: string;
   }>>;
@@ -58,8 +58,8 @@ export function IndividualFilters({
   const filteredAthleteNames = Array.from(new Set(testNameFilteredData.map(d => d.athlete_name)));
 
   // 4. Test Dates - filtered by team + test name + athletes (if selected)
-  const athleteFilteredData = filters.selectedAthletes.length > 0
-    ? testNameFilteredData.filter(d => filters.selectedAthletes.includes(d.athlete_name))
+  const athleteFilteredData = filters.selectedAthletes
+    ? testNameFilteredData.filter(d => d.athlete_name === filters.selectedAthletes)
     : testNameFilteredData;
   const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
 
@@ -79,28 +79,28 @@ export function IndividualFilters({
   const handleTestNameChange = (val: string) => {
     setFilters({
       testNames: val,
-      selectedAthletes: [],
-      testDates: "",
+      selectedAthletes: "",
+      testDates: [],
       metricTypes: ""
     });
     onTestSelect(val);
   };
 
   // 2. Athlete Name
-  const handleAthleteChange = (next: string[]) => {
+  const handleAthleteChange = (val: string) => {
     setFilters(prev => ({
       ...prev,
-      selectedAthletes: next,
-      testDates: "",
+      selectedAthletes: val,
+      testDates: [],
       metricTypes: ""
     }));
   };
 
   // 3. Test Date
-  const handleDateChange = (val: string) => {
+  const handleDateChange = (next: string[]) => {
     setFilters(prev => ({
       ...prev,
-      testDates: val,
+      testDates: next,
       metricTypes: ""
     }));
   };
@@ -117,21 +117,21 @@ export function IndividualFilters({
   const handleResetTestName = () => {
     setFilters({
       testNames: "",
-      selectedAthletes: [],
-      testDates: "",
+      selectedAthletes: "",
+      testDates: [],
       metricTypes: ""
     });
     onTestSelect("");
   };
   const handleResetAthlete = () => setFilters(prev => ({
     ...prev,
-    selectedAthletes: [],
-    testDates: "",
+    selectedAthletes: "",
+    testDates: [],
     metricTypes: ""
   }));
   const handleResetDate = () => setFilters(prev => ({
     ...prev,
-    testDates: "",
+    testDates: [],
     metricTypes: ""
   }));
   const handleResetMetricType = () => setFilters(prev => ({
@@ -141,8 +141,8 @@ export function IndividualFilters({
 
   // Enable/disable (sequential) 
   const athleteEnabled = !!filters.testNames;
-  const testDateEnabled = filters.selectedAthletes.length > 0;
-  const metricTypeEnabled = !!filters.testDates;
+  const testDateEnabled = !!filters.selectedAthletes;
+  const metricTypeEnabled = filters.testDates.length > 0;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
@@ -180,15 +180,18 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
-            <MultiSelectDropdown
-              options={athleteOptions}
-              value={filters.selectedAthletes}
-              onChange={athleteEnabled ? handleAthleteChange : () => {}}
-              placeholder="All Athletes"
-              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-              dropdownClassName="w-[600px]"
-            />
+            <Select value={filters.selectedAthletes} onValueChange={athleteEnabled ? handleAthleteChange : () => {}}>
+              <SelectTrigger className={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
+                <SelectValue placeholder="All Athletes" />
+              </SelectTrigger>
+              <SelectContent className="w-[600px]">
+                {athleteOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button
             variant="ghost"
@@ -209,18 +212,15 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
-            <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Dates" />
-              </SelectTrigger>
-              <SelectContent className="w-[600px]">
-                {dateOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={dateOptions}
+              value={filters.testDates}
+              onChange={testDateEnabled ? handleDateChange : () => {}}
+              placeholder="All Dates"
+              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!testDateEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+              labelClassName={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+              dropdownClassName="w-[600px]"
+            />
           </div>
           <Button
             variant="ghost"

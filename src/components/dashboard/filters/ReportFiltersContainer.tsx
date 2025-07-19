@@ -26,8 +26,8 @@ export function ReportFiltersContainer({
 }: ReportFiltersProps) {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
-    selectedAthletes: [] as string[],
-    testDates: "",
+    selectedAthletes: "",
+    testDates: [] as string[],
     testNames: "",
     metricTypes: ""
   });
@@ -35,8 +35,8 @@ export function ReportFiltersContainer({
   // Reset filters if resetFiltersKey changes
   useEffect(() => {
     setFilters({
-      selectedAthletes: [],
-      testDates: "",
+      selectedAthletes: "",
+      testDates: [],
       testNames: "",
       metricTypes: ""
     });
@@ -48,8 +48,8 @@ export function ReportFiltersContainer({
   const getFilteredDataForChart = () => {
     return data.filter(test => {
       const testMatch = !filters.testNames || test.test_name === filters.testNames;
-      const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
-      const dateMatch = !filters.testDates || test.test_date === filters.testDates;
+      const athleteMatch = !filters.selectedAthletes || test.athlete_name === filters.selectedAthletes;
+      const dateMatch = filters.testDates.length === 0 || filters.testDates.includes(test.test_date);
       return testMatch && athleteMatch && dateMatch;
     });
   };
