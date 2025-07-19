@@ -29,16 +29,16 @@ export const HighlightsSection = ({
 
   // Second Individual Filters state
   const [secondFilters, setSecondFilters] = useState({
-    selectedAthletes: "",
-    testDates: [] as string[],
+    selectedAthletes: [] as string[],
+    testDates: "",
     testNames: "",
     metricTypes: ""
   });
   useEffect(() => {
     setSelectedAthletes([]);
     setSecondFilters({
-      selectedAthletes: "",
-      testDates: [],
+      selectedAthletes: [],
+      testDates: "",
       testNames: "",
       metricTypes: ""
     });
