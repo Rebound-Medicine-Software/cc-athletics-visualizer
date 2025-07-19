@@ -31,7 +31,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   // Close dropdown on outside click
   React.useEffect(() => {
     const listener = (e: MouseEvent) => {
-      if (!selectingRef.current && !containerRef.current?.contains(e.target as Node)) {
+      if (!containerRef.current?.contains(e.target as Node)) {
         setOpen(false);
       }
     };
@@ -84,22 +84,17 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName
         )}>
-          {options.map(opt => (
+           {options.map(opt => (
             <div
               key={opt.value}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onMouseDown={(e) => {
+              onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                selectingRef.current = true;
                 toggleOption(opt.value);
-                // Reset the flag after a short delay
-                setTimeout(() => {
-                  selectingRef.current = false;
-                }, 100);
               }}
             >
               <span className={cn(
