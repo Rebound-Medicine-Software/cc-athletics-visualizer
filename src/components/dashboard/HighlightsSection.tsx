@@ -27,16 +27,18 @@ export const HighlightsSection = ({
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
-  // Second Individual Filters state
-  const [secondFilters, setSecondFilters] = useState({
+  // COMPLETELY INDEPENDENT Individual Filters state for HighlightsSection
+  const [highlightsFilters, setHighlightsFilters] = useState({
     selectedAthletes: [] as string[],
     testDates: "",
     testNames: "",
     metricTypes: ""
   });
+
   useEffect(() => {
     setSelectedAthletes([]);
-    setSecondFilters({
+    // Reset HighlightsSection filters independently
+    setHighlightsFilters({
       selectedAthletes: [],
       testDates: "",
       testNames: "",
@@ -115,9 +117,9 @@ export const HighlightsSection = ({
     };
   })();
 
-  // Dummy handlers for second Individual Filters (no functionality yet)
-  const handleSecondTestSelect = (testName: string) => {
-    console.log("Second Individual Filters test selected:", testName);
+  // Independent handler for HighlightsSection Individual Filters
+  const handleHighlightsTestSelect = (testName: string) => {
+    console.log("HighlightsSection Individual Filters test selected:", testName);
   };
   
   return <>
@@ -173,21 +175,30 @@ export const HighlightsSection = ({
         </CardContent>
       </Card>
 
-      {/* Second Individual Filters Section */}
+      {/* Independent Individual Filters Section for HighlightsSection */}
       <Card className="bg-white border-teal-200 mb-6">
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex justify-center mb-4">
-            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Please Select a 'Test Name'</Button>
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Individual/Between Limb Comparisons</Button>
           </div>
 
-          {/* Individual Filters */}
-          <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={secondFilters} setFilters={setSecondFilters} onTestSelect={handleSecondTestSelect} resetFiltersKey={resetFiltersKey} />
+          {/* Independent Individual Filters with unique instanceId */}
+          <IndividualFilters 
+            data={data} 
+            allData={allData} 
+            selectedTeams={selectedTeams} 
+            filters={highlightsFilters} 
+            setFilters={setHighlightsFilters} 
+            onTestSelect={handleHighlightsTestSelect} 
+            resetFiltersKey={resetFiltersKey}
+            instanceId="highlights-section"
+          />
 
           {/* Metric Cards - positioned right after the filters */}
           <div className="mt-6">
             <MetricCards
-              selectedTest={secondFilters.testNames}
+              selectedTest={highlightsFilters.testNames}
               data={filteredData}
             />
           </div>

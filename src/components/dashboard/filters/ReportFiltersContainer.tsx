@@ -14,6 +14,7 @@ interface ReportFiltersProps {
   metricCardsSlot?: React.ReactNode;
   resetFiltersKey?: number;
   selectedTeams: string[];
+  instanceId?: string; // Add unique identifier for each instance
 }
 
 export function ReportFiltersContainer({
@@ -22,9 +23,10 @@ export function ReportFiltersContainer({
   allData,
   metricCardsSlot,
   resetFiltersKey,
-  selectedTeams = []
+  selectedTeams = [],
+  instanceId = "default"
 }: ReportFiltersProps) {
-  // INDEPENDENT FILTER STATE - each instance manages its own state
+  // COMPLETELY INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
     selectedAthletes: [] as string[],
     testDates: "",
@@ -32,7 +34,7 @@ export function ReportFiltersContainer({
     metricTypes: ""
   });
 
-  // Reset filters if resetFiltersKey changes
+  // Reset filters only when resetFiltersKey changes for this specific instance
   useEffect(() => {
     setFilters({
       selectedAthletes: [],
@@ -41,10 +43,9 @@ export function ReportFiltersContainer({
       metricTypes: ""
     });
     onTestSelect("");
-    // eslint-disable-next-line
-  }, [resetFiltersKey]);
+  }, [resetFiltersKey, instanceId]);
 
-  // Chart Data - filtered by this component's own filter state
+  // Chart Data - filtered by this component's own independent filter state
   const getFilteredDataForChart = () => {
     return data.filter(test => {
       const testMatch = !filters.testNames || test.test_name === filters.testNames;
@@ -54,7 +55,7 @@ export function ReportFiltersContainer({
     });
   };
 
-  // Internal test select handler - only updates this component's state
+  // Internal test select handler - only updates this component's independent state
   const handleTestSelect = (testName: string) => {
     setFilters(prev => ({
       ...prev,
@@ -73,7 +74,7 @@ export function ReportFiltersContainer({
           </Button>
         </div>
 
-        {/* Individual Filters - using independent state */}
+        {/* Individual Filters - using completely independent state */}
         <IndividualFilters 
           data={data} 
           allData={allData} 
@@ -81,7 +82,8 @@ export function ReportFiltersContainer({
           filters={filters} 
           setFilters={setFilters} 
           onTestSelect={handleTestSelect} 
-          resetFiltersKey={resetFiltersKey} 
+          resetFiltersKey={resetFiltersKey}
+          instanceId={instanceId}
         />
 
         {/* Metric Cards */}
