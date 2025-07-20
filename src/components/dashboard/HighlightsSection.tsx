@@ -26,17 +26,18 @@ export const HighlightsSection = ({
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
-  // Second Individual Filters state
+  // Second Individual Filters state - updated to match IndividualFilters interface
   const [secondFilters, setSecondFilters] = useState({
-    selectedAthletes: [] as string[],
+    selectedAthlete: "", // Changed from selectedAthletes array to single string
     testDates: "",
     testNames: "",
     metricTypes: ""
   });
+
   useEffect(() => {
     setSelectedAthletes([]);
     setSecondFilters({
-      selectedAthletes: [],
+      selectedAthlete: "", // Changed from selectedAthletes array to single string
       testDates: "",
       testNames: "",
       metricTypes: ""
@@ -177,7 +178,7 @@ export const HighlightsSection = ({
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex justify-center mb-4">
-            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Please Select a 'Test Name'</Button>
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Individual/Between Limb Differences</Button>
           </div>
 
           {/* Individual Filters */}
