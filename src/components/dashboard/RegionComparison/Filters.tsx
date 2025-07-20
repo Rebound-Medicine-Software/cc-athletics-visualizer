@@ -473,11 +473,11 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
             <div className="flex items-center gap-2">
               <div className={regionEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={regionOptions}
-                  value={filters.region}
-                  onChange={regionEnabled ? handleRegionChange : () => {}}
-                  placeholder="All Regions"
+                 <MultiSelectDropdown
+                   options={regionOptions}
+                   value={filters.region}
+                   onChange={handleRegionChange}
+                   placeholder="All Regions"
                   className={`text-center h-10 min-h-[40px] max-h-[40px] ${!regionEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
                   labelClassName={`${regionEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
                   dropdownClassName="w-[600px] z-[100]"
@@ -502,11 +502,11 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
             <div className="flex items-center gap-2">
               <div className={addressEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={addressOptions}
-                  value={filters.address}
-                  onChange={addressEnabled ? handleAddressChange : () => {}}
-                  placeholder="All Addresses"
+                 <MultiSelectDropdown
+                   options={addressOptions}
+                   value={filters.address}
+                   onChange={handleAddressChange}
+                   placeholder="All Addresses"
                   className={`text-center h-10 min-h-[40px] max-h-[40px] ${!addressEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
                   labelClassName={`${addressEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
                   dropdownClassName="w-[600px] z-[100]"

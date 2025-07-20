@@ -83,24 +83,22 @@ export const DashboardContent = ({
         allData={data}
       />
       
-      {/* First ReportFilters section - completely independent */}
+      {/* First ReportFilters section */}
       <ReportFilters 
         data={filteredData} 
         onTestSelect={setSelectedTest}
         allData={data}
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
-        instanceId="report-filters-1"
       />
       
-      {/* Second ReportFilters section - completely independent */}
+      {/* Second ReportFilters section (duplicate) */}
       <ReportFilters 
         data={filteredData} 
         onTestSelect={setSelectedTest2}
         allData={data}
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
-        instanceId="report-filters-2"
       />
       
       {/* RegionComparison operates independently with unfiltered data */}

@@ -27,7 +27,6 @@ interface IndividualFiltersProps {
   }>>;
   onTestSelect: (testName: string) => void;
   resetFiltersKey?: number;
-  instanceId?: string;
 }
 
 // Main component for all 4 filters, sequential/cascading
@@ -38,12 +37,11 @@ export function IndividualFilters({
   filters,
   setFilters,
   onTestSelect,
-  resetFiltersKey,
-  instanceId = "default"
+  resetFiltersKey
 }: IndividualFiltersProps) {
 
   // Cascading filtering logic with mutual connections
-  // 1. Apply team filter from Performance Insights first (ONLY shared dependency)
+  // 1. Apply team filter from Performance Insights first
   const teamFilteredData = selectedTeams.length > 0
     ? allData.filter(d => selectedTeams.includes(d.team_name))
     : allData;
@@ -53,19 +51,19 @@ export function IndividualFilters({
     new Set(teamFilteredData.map(d => d.test_name))
   ).filter(t => t !== "All Tests" && t !== "Isometric Test");
 
-  // 3. Athletes - filtered by team + test name (if selected) - INDEPENDENT per instance
+  // 3. Athletes - filtered by team + test name (if selected)
   const testNameFilteredData = filters.testNames
     ? teamFilteredData.filter(d => d.test_name === filters.testNames)
     : teamFilteredData;
   const filteredAthleteNames = Array.from(new Set(testNameFilteredData.map(d => d.athlete_name)));
 
-  // 4. Test Dates - filtered by team + test name + athletes (if selected) - INDEPENDENT per instance
+  // 4. Test Dates - filtered by team + test name + athletes (if selected)
   const athleteFilteredData = filters.selectedAthletes.length > 0
     ? testNameFilteredData.filter(d => filters.selectedAthletes.includes(d.athlete_name))
     : testNameFilteredData;
   const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
 
-  // 5. Metric Types - based on selected test name only (these are predefined) - INDEPENDENT per instance
+  // 5. Metric Types - based on selected test name only (these are predefined)
   const availableMetricTypes = filters.testNames
     ? getMetricTypesForTest(filters.testNames)
     : [];
@@ -76,7 +74,7 @@ export function IndividualFilters({
   const testNameOptions = uniqueTestNames.map(t => ({ value: t, label: t }));
   const metricTypeOptions = availableMetricTypes.map(m => ({ value: m, label: m }));
 
-  // --- Handlers: Cascade Reset (sequenced) - INDEPENDENT per instance ---
+  // --- Handlers: Cascade Reset (sequenced) ---
   // 1. Test Name
   const handleTestNameChange = (val: string) => {
     setFilters({
@@ -115,7 +113,7 @@ export function IndividualFilters({
     }));
   };
 
-  // Reset handlers (with correct cascade) - INDEPENDENT per instance
+  // Reset handlers (with correct cascade)
   const handleResetTestName = () => {
     setFilters({
       testNames: "",
@@ -141,7 +139,7 @@ export function IndividualFilters({
     metricTypes: ""
   }));
 
-  // Enable/disable (sequential) - INDEPENDENT per instance
+  // Enable/disable (sequential) 
   const athleteEnabled = !!filters.testNames;
   const testDateEnabled = filters.selectedAthletes.length > 0;
   const metricTypeEnabled = !!filters.testDates;
@@ -185,7 +183,7 @@ export function IndividualFilters({
             <MultiSelectDropdown
               options={athleteOptions}
               value={filters.selectedAthletes}
-              onChange={athleteEnabled ? handleAthleteChange : () => {}}
+              onChange={handleAthleteChange}
               placeholder="All Athletes"
               className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
               labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
