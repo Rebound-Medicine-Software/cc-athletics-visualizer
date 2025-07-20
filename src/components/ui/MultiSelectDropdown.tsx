@@ -26,7 +26,6 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 }) => {
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const selectingRef = React.useRef(false);
 
   // Close dropdown on outside click
   React.useEffect(() => {
@@ -84,14 +83,14 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName
         )}>
-           {options.map(opt => (
+          {options.map(opt => (
             <div
               key={opt.value}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-start cursor-pointer",
                 value.includes(opt.value) && "font-semibold"
               )}
-              onClick={(e) => {
+              onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 toggleOption(opt.value);

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getMetricTypesForTest } from "./filterUtils";
 import { formatDate } from "@/utils/dateUtils";
@@ -13,13 +14,13 @@ interface IndividualFiltersProps {
   allData: TestData[];
   selectedTeams: string[];
   filters: {
-    selectedAthlete: string; // Changed from selectedAthletes array to single string
+    selectedAthletes: string[];
     testDates: string;
     testNames: string;
     metricTypes: string;
   };
   setFilters: React.Dispatch<React.SetStateAction<{
-    selectedAthlete: string; // Changed from selectedAthletes array to single string
+    selectedAthletes: string[];
     testDates: string;
     testNames: string;
     metricTypes: string;
@@ -56,9 +57,9 @@ export function IndividualFilters({
     : teamFilteredData;
   const filteredAthleteNames = Array.from(new Set(testNameFilteredData.map(d => d.athlete_name)));
 
-  // 4. Test Dates - filtered by team + test name + athlete (if selected)
-  const athleteFilteredData = filters.selectedAthlete
-    ? testNameFilteredData.filter(d => d.athlete_name === filters.selectedAthlete)
+  // 4. Test Dates - filtered by team + test name + athletes (if selected)
+  const athleteFilteredData = filters.selectedAthletes.length > 0
+    ? testNameFilteredData.filter(d => filters.selectedAthletes.includes(d.athlete_name))
     : testNameFilteredData;
   const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
 
@@ -78,18 +79,18 @@ export function IndividualFilters({
   const handleTestNameChange = (val: string) => {
     setFilters({
       testNames: val,
-      selectedAthlete: "", // Reset to empty string
+      selectedAthletes: [],
       testDates: "",
       metricTypes: ""
     });
     onTestSelect(val);
   };
 
-  // 2. Athlete Name - now single select
-  const handleAthleteChange = (val: string) => {
+  // 2. Athlete Name
+  const handleAthleteChange = (next: string[]) => {
     setFilters(prev => ({
       ...prev,
-      selectedAthlete: val, // Single value instead of array
+      selectedAthletes: next,
       testDates: "",
       metricTypes: ""
     }));
@@ -116,7 +117,7 @@ export function IndividualFilters({
   const handleResetTestName = () => {
     setFilters({
       testNames: "",
-      selectedAthlete: "", // Reset to empty string
+      selectedAthletes: [],
       testDates: "",
       metricTypes: ""
     });
@@ -124,7 +125,7 @@ export function IndividualFilters({
   };
   const handleResetAthlete = () => setFilters(prev => ({
     ...prev,
-    selectedAthlete: "", // Reset to empty string
+    selectedAthletes: [],
     testDates: "",
     metricTypes: ""
   }));
@@ -140,7 +141,7 @@ export function IndividualFilters({
 
   // Enable/disable (sequential) 
   const athleteEnabled = !!filters.testNames;
-  const testDateEnabled = !!filters.selectedAthlete; // Changed condition
+  const testDateEnabled = filters.selectedAthletes.length > 0;
   const metricTypeEnabled = !!filters.testDates;
 
   return (
@@ -174,26 +175,20 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 2. Athlete Name (enabled after Test Name is selected) - now single select */}
+      {/* 3. Athlete Name (enabled after Test Name is selected) */}
       <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
-            <Select 
-              value={filters.selectedAthlete} 
-              onValueChange={athleteEnabled ? handleAthleteChange : () => {}}
-            >
-              <SelectTrigger className={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Athletes" />
-              </SelectTrigger>
-              <SelectContent className="w-[600px]">
-                {athleteOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={athleteOptions}
+              value={filters.selectedAthletes}
+              onChange={athleteEnabled ? handleAthleteChange : () => {}}
+              placeholder="All Athletes"
+              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
+              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
+              dropdownClassName="w-[600px]"
+            />
           </div>
           <Button
             variant="ghost"
@@ -209,7 +204,7 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 3. Test Date (enabled after Athlete Name) */}
+      {/* 4. Test Date (enabled after Athlete Name) */}
       <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
@@ -241,7 +236,7 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 4. Metric Type (enabled after Test Date) */}
+      {/* 5. Metric Type (enabled after Test Date) */}
       <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
         <div className="flex items-center gap-2">
