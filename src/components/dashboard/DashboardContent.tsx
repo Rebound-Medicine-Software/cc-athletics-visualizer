@@ -28,6 +28,8 @@ export const DashboardContent = ({
 }: DashboardContentProps) => {
   const [selectedTest, setSelectedTest] = useState<string>("");
   const [selectedTest2, setSelectedTest2] = useState<string>("");
+  const [resetKey1, setResetKey1] = useState<number>(0);
+  const [resetKey2, setResetKey2] = useState<number>(0);
 
   // Error state
   if (error) {
@@ -89,7 +91,7 @@ export const DashboardContent = ({
         data={filteredData} 
         onTestSelect={setSelectedTest}
         allData={data}
-        resetFiltersKey={resetFiltersKey} 
+        resetFiltersKey={resetKey1} 
         selectedTeams={selectedTeams}
       />
       
@@ -99,7 +101,7 @@ export const DashboardContent = ({
         data={filteredData} 
         onTestSelect={setSelectedTest2}
         allData={data}
-        resetFiltersKey={resetFiltersKey} 
+        resetFiltersKey={resetKey2} 
         selectedTeams={selectedTeams}
       />
       
