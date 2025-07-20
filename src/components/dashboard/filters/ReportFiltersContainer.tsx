@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ export function ReportFiltersContainer({
 }: ReportFiltersProps) {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
-    selectedAthletes: [] as string[],
+    selectedAthletes: "",
     testDates: "",
     testNames: "",
     metricTypes: ""
@@ -32,7 +33,7 @@ export function ReportFiltersContainer({
   // Reset filters if resetFiltersKey changes
   useEffect(() => {
     setFilters({
-      selectedAthletes: [],
+      selectedAthletes: "",
       testDates: "",
       testNames: "",
       metricTypes: ""
@@ -45,7 +46,7 @@ export function ReportFiltersContainer({
   const getFilteredDataForChart = () => {
     return data.filter(test => {
       const testMatch = !filters.testNames || test.test_name === filters.testNames;
-      const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
+      const athleteMatch = !filters.selectedAthletes || test.athlete_name === filters.selectedAthletes;
       const dateMatch = !filters.testDates || test.test_date === filters.testDates;
       return testMatch && athleteMatch && dateMatch;
     });
