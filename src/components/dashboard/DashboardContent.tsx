@@ -85,6 +85,7 @@ export const DashboardContent = ({
       
       {/* First ReportFilters section */}
       <ReportFilters 
+        key="section-1"
         data={filteredData} 
         onTestSelect={setSelectedTest}
         allData={data}
@@ -92,8 +93,9 @@ export const DashboardContent = ({
         selectedTeams={selectedTeams}
       />
       
-      {/* Second ReportFilters section (duplicate) */}
+      {/* Second ReportFilters section */}
       <ReportFilters 
+        key="section-2"
         data={filteredData} 
         onTestSelect={setSelectedTest2}
         allData={data}
