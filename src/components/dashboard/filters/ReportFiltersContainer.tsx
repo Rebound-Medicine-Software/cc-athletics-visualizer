@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,6 @@ import { ComparisonChart } from "../ComparisonChart";
 import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
 import { TestData } from "@/types/forcePlateTypes";
-
 interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
@@ -15,7 +13,6 @@ interface ReportFiltersProps {
   resetFiltersKey?: number;
   selectedTeams: string[];
 }
-
 export function ReportFiltersContainer({
   data,
   onTestSelect,
@@ -62,47 +59,29 @@ export function ReportFiltersContainer({
     }));
     onTestSelect(testName);
   };
-
-  return (
-    <Card className="bg-white border-teal-200">
+  return <Card className="bg-white border-teal-200">
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex justify-center mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
-            Individual/Between Limb Comparisons
-          </Button>
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Comparisons Amongst Peers</Button>
         </div>
 
         {/* Individual Filters - using independent state */}
-        <IndividualFilters 
-          data={data} 
-          allData={allData} 
-          selectedTeams={selectedTeams} 
-          filters={filters} 
-          setFilters={setFilters} 
-          onTestSelect={handleTestSelect} 
-          resetFiltersKey={resetFiltersKey} 
-        />
+        <IndividualFilters data={data} allData={allData} selectedTeams={selectedTeams} filters={filters} setFilters={setFilters} onTestSelect={handleTestSelect} resetFiltersKey={resetFiltersKey} />
 
         {/* Metric Cards */}
-        {metricCardsSlot && (
-          <div className="mb-6">
+        {metricCardsSlot && <div className="mb-6">
             {metricCardsSlot}
-          </div>
-        )}
+          </div>}
 
         {/* Chart and Video */}
         <div className="flex flex-col md:flex-row gap-8 mt-2">
           {/* Chart */}
           <div className="flex-1 min-w-0">
             <div className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col" style={{
-              boxSizing: "border-box"
-            }}>
-              <ComparisonChart 
-                data={getFilteredDataForChart()} 
-                testName={filters.testNames} 
-                metricType={filters.metricTypes} 
-              />
+            boxSizing: "border-box"
+          }}>
+              <ComparisonChart data={getFilteredDataForChart()} testName={filters.testNames} metricType={filters.metricTypes} />
             </div>
           </div>
           {/* Video box */}
@@ -111,8 +90,7 @@ export function ReportFiltersContainer({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
 
 // Re-export under old name for compatibility
