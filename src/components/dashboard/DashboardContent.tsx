@@ -108,6 +108,7 @@ export const DashboardContent = ({
         allData={section1Data}
         resetFiltersKey={resetKey1} 
         selectedTeams={selectedTeams1}
+        buttonText="Jump & Isometric Tests"
       />
       
       {/* Second Independent ReportFilters section - Pogo & Other Tests */}
@@ -118,6 +119,7 @@ export const DashboardContent = ({
         allData={section2Data}
         resetFiltersKey={resetKey2} 
         selectedTeams={selectedTeams2}
+        buttonText="Pogo & Other Tests"
       />
       
       {/* RegionComparison operates independently with unfiltered data */}

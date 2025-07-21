@@ -5,6 +5,7 @@ import { ComparisonChart } from "../ComparisonChart";
 import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
 import { TestData } from "@/types/forcePlateTypes";
+
 interface ReportFiltersProps {
   data: TestData[];
   onTestSelect: (testName: string) => void;
@@ -12,14 +13,17 @@ interface ReportFiltersProps {
   metricCardsSlot?: React.ReactNode;
   resetFiltersKey?: number;
   selectedTeams: string[];
+  buttonText?: string;
 }
+
 export function ReportFiltersContainer({
   data,
   onTestSelect,
   allData,
   metricCardsSlot,
   resetFiltersKey,
-  selectedTeams = []
+  selectedTeams = [],
+  buttonText = "Please Select a 'Test Name'"
 }: ReportFiltersProps) {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
@@ -63,7 +67,7 @@ export function ReportFiltersContainer({
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex justify-center mb-4">
-          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Is this working?</Button>
+          <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">{buttonText}</Button>
         </div>
 
         {/* Individual Filters - using independent state */}
