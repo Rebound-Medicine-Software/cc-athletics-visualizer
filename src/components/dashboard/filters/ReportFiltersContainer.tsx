@@ -35,14 +35,14 @@ export function ReportFiltersContainer({
     metricTypes: ""
   });
 
-  // State for editable button text
+  // State for editable button text - initialize with prop only once
   const [isEditing, setIsEditing] = useState(false);
   const [currentButtonText, setCurrentButtonText] = useState(buttonText);
 
-  // Update currentButtonText when buttonText prop changes
+  // Only set initial text once when component mounts
   useEffect(() => {
     setCurrentButtonText(buttonText);
-  }, [buttonText]);
+  }, []); // Remove buttonText dependency to prevent overwrites
 
   // Reset filters if resetFiltersKey changes
   useEffect(() => {
@@ -89,7 +89,7 @@ export function ReportFiltersContainer({
     if (e.key === 'Enter') {
       setIsEditing(false);
     } else if (e.key === 'Escape') {
-      setCurrentButtonText(buttonText);
+      // Reset to current value instead of prop
       setIsEditing(false);
     }
   };
