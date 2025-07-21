@@ -26,10 +26,13 @@ export const DashboardContent = ({
   selectedTeams, setSelectedTeams, handleRefresh, orgData,
   navigationItems, activeSection, resetFiltersKey
 }: DashboardContentProps) => {
-  const [selectedTest, setSelectedTest] = useState<string>("");
+  // Independent state for each section
+  const [selectedTest1, setSelectedTest1] = useState<string>("");
   const [selectedTest2, setSelectedTest2] = useState<string>("");
   const [resetKey1, setResetKey1] = useState<number>(0);
   const [resetKey2, setResetKey2] = useState<number>(0);
+  const [selectedTeams1, setSelectedTeams1] = useState<string[]>([]);
+  const [selectedTeams2, setSelectedTeams2] = useState<string[]>([]);
 
   // Error state
   if (error) {
@@ -69,10 +72,22 @@ export const DashboardContent = ({
     );
   }
 
-  // Success state with data
-  const filteredData = selectedTeams.length === 0
-    ? data
-    : data.filter(d => selectedTeams.includes(d.team_name));
+  // Create completely separate data sources for each section
+  // Section 1: Jump and Isometric tests
+  const section1Data = data.filter(d => 
+    d.test_type === 'jump' || d.test_type === 'isometric'
+  );
+  const filteredData1 = selectedTeams1.length === 0
+    ? section1Data
+    : section1Data.filter(d => selectedTeams1.includes(d.team_name));
+
+  // Section 2: Pogo tests and any remaining types
+  const section2Data = data.filter(d => 
+    d.test_type === 'pogo' || (d.test_type !== 'jump' && d.test_type !== 'isometric')
+  );
+  const filteredData2 = selectedTeams2.length === 0
+    ? section2Data
+    : section2Data.filter(d => selectedTeams2.includes(d.team_name));
   
   return (
     <div className="space-y-6 w-full">
@@ -85,24 +100,24 @@ export const DashboardContent = ({
         allData={data}
       />
       
-      {/* First ReportFilters section */}
+      {/* First Independent ReportFilters section - Jump & Isometric Tests */}
       <ReportFilters 
         key="section-1"
-        data={filteredData} 
-        onTestSelect={setSelectedTest}
-        allData={data}
+        data={filteredData1} 
+        onTestSelect={setSelectedTest1}
+        allData={section1Data}
         resetFiltersKey={resetKey1} 
-        selectedTeams={selectedTeams}
+        selectedTeams={selectedTeams1}
       />
       
-      {/* Second ReportFilters section */}
+      {/* Second Independent ReportFilters section - Pogo & Other Tests */}
       <ReportFilters 
         key="section-2"
-        data={filteredData} 
+        data={filteredData2} 
         onTestSelect={setSelectedTest2}
-        allData={data}
+        allData={section2Data}
         resetFiltersKey={resetKey2} 
-        selectedTeams={selectedTeams}
+        selectedTeams={selectedTeams2}
       />
       
       {/* RegionComparison operates independently with unfiltered data */}
