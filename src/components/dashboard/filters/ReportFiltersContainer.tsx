@@ -153,9 +153,13 @@ export function ReportFiltersContainer({
               />
             </div>
           </div>
-          {/* Video box */}
+          {/* Limb Symmetry Chart (replaced Video Box) */}
           <div className="w-full md:w-[420px] shrink-0">
-            <VideoBox testName={filters.testNames} />
+            <VideoBox 
+              testName={filters.testNames} 
+              data={getFilteredDataForChart()} 
+              metricType={filters.metricTypes} 
+            />
           </div>
         </div>
       </CardContent>
