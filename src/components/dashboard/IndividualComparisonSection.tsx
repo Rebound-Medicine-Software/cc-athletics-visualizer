@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +20,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedMetricType, setSelectedMetricType] = useState<string>("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentButtonText, setCurrentButtonText] = useState("Individual / Between Limb Comparisons");
 
   // Filter data and get unique options
   const uniqueTestNames = getUniqueTestNames(data);
@@ -65,15 +66,53 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
     setSelectedMetricType("");
   };
 
+  // Handle button text editing
+  const handleButtonClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleTextSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      setIsEditing(false);
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-xl font-semibold">Individual / Between Limb Comparisons</CardTitle>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
+    <Card className="bg-white border-teal-200">
+      <CardContent className="p-4">
+        {/* Header */}
+        <div className="flex justify-center mb-4">
+          {isEditing ? (
+            <form onSubmit={handleTextSubmit} className="w-auto min-w-[220px]">
+              <Input
+                value={currentButtonText}
+                onChange={(e) => setCurrentButtonText(e.target.value)}
+                onBlur={() => setIsEditing(false)}
+                onKeyDown={handleKeyDown}
+                className="text-center text-lg font-semibold bg-teal-600 text-white border-teal-700 focus:border-teal-500 focus:ring-teal-500"
+                autoFocus
+              />
+            </form>
+          ) : (
+            <Button 
+              variant="default" 
+              className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-pointer"
+              onClick={handleButtonClick}
+            >
+              {currentButtonText}
+            </Button>
+          )}
+        </div>
+
         {/* Filters Row */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-6">
           {/* Test Name Filter */}
           <div className="space-y-2">
             <Label>Test Name</Label>
@@ -194,60 +233,75 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
           </Button>
         </div>
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Side: Limb Symmetry Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Limb Symmetry (Left vs Right)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={limbSymmetryData}
-                    layout="horizontal"
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" />
-                    <YAxis dataKey="limb" type="category" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar dataKey="value" fill="hsl(var(--chart-1))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+        {/* Chart and Video */}
+        <div className="flex flex-col md:flex-row gap-8 mt-2">
+          {/* Chart */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col" style={{
+              boxSizing: "border-box"
+            }}>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
+                {/* Left Side: Limb Symmetry Bar Chart */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="p-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold">Limb Symmetry (Left vs Right)</h3>
+                  </div>
+                  <div className="p-4">
+                    <ChartContainer config={chartConfig} className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={limbSymmetryData}
+                          layout="horizontal"
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis dataKey="limb" type="category" />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey="value" fill="hsl(var(--chart-1))" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </div>
+                </div>
 
-          {/* Right Side: Individual Athlete Progression Line Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Individual Athlete Progression</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={progressionData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="hsl(var(--chart-1))" 
-                      strokeWidth={2}
-                      dot={{ fill: "hsl(var(--chart-1))" }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+                {/* Right Side: Individual Athlete Progression Line Chart */}
+                <div className="bg-white rounded-lg border border-gray-200">
+                  <div className="p-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold">Individual Athlete Progression</h3>
+                  </div>
+                  <div className="p-4">
+                    <ChartContainer config={chartConfig} className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                          data={progressionData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Line 
+                            type="monotone" 
+                            dataKey="value" 
+                            stroke="hsl(var(--chart-1))" 
+                            strokeWidth={2}
+                            dot={{ fill: "hsl(var(--chart-1))" }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Video box */}
+          <div className="w-full md:w-[420px] shrink-0">
+            <div className="bg-gray-100 rounded-lg p-4 h-[480px] flex items-center justify-center">
+              <span className="text-gray-500">Video Box Placeholder</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
