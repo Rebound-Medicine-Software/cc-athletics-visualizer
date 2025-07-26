@@ -113,7 +113,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     // Access the metrics from TestData
     const metrics = testRecord.metrics as any;
 
-    // Apply data logic based on test name and metric type
+    // Apply data logic based on test name and metric type - using the correct metric keys from console logs
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
       leftValue = metrics.fp1_peak_force || 0;
       rightValue = metrics.fp2_peak_force || 0;
@@ -147,6 +147,29 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   };
 
   const limbSymmetryData = calculateLimbSymmetry();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Current selections:', {
+      selectedTestName,
+      selectedMetricType,
+      selectedAthleteName,
+      selectedTestDate
+    });
+    console.log('API Data length:', apiData.length);
+    console.log('Limb symmetry result:', limbSymmetryData);
+    if (selectedTestName && selectedAthleteName && selectedTestDate) {
+      const testRecord = apiData.find(d => 
+        d.test_name === selectedTestName && 
+        d.athlete_name === selectedAthleteName && 
+        d.test_date === selectedTestDate
+      );
+      console.log('Found test record:', testRecord);
+      if (testRecord?.metrics) {
+        console.log('Available metrics:', Object.keys(testRecord.metrics));
+      }
+    }
+  }, [selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate, apiData, limbSymmetryData]);
 
   // Prepare chart data
   const chartData = limbSymmetryData ? [
