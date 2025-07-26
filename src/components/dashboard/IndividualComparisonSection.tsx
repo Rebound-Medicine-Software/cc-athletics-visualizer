@@ -13,13 +13,6 @@ interface IndividualComparisonSectionProps {
   selectedTeams: string[];
 }
 
-interface AthleteApiData {
-  id: string;
-  name: string;
-  team_id: string;
-  recordings?: { [key: string]: any };
-}
-
 interface LimbSymmetryData {
   name: string;
   leftPercentage: number;
@@ -36,7 +29,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   const [selectedTestDate, setSelectedTestDate] = useState("");
 
   // API data state
-  const [apiData, setApiData] = useState<AthleteApiData[]>([]);
+  const [apiData, setApiData] = useState<TestData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // State for editable button text
@@ -51,16 +44,24 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     setSelectedTestDate("");
   }, [resetFiltersKey]);
 
-  // Fetch API data
+  // Fetch API data using Supabase edge function
   const fetchApiData = async () => {
-    if (!selectedTestName) return;
-    
     setIsLoading(true);
     try {
-      const response = await fetch('https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes');
+      const response = await fetch('https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2aWVxb2V2cWt3ZGtwaHViYWJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDA4OTksImV4cCI6MjA2NDk3Njg5OX0.5_zOSAnBSxzg5zdcmTWjTjdbvScQ5VE_HKx0-PBCtc0`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2aWVxb2V2cWt3ZGtwaHViYWJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDA4OTksImV4cCI6MjA2NDk3Njg5OX0.5_zOSAnBSxzg5zdcmTWjTjdbvScQ5VE_HKx0-PBCtc0'
+        }
+      });
+      
       if (response.ok) {
         const result = await response.json();
-        setApiData(result.athletes || []);
+        if (result.success && result.data) {
+          setApiData(result.data);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch API data:', error);
@@ -71,12 +72,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
   useEffect(() => {
     fetchApiData();
-  }, [selectedTestName]);
+  }, []);
 
-  // Filter options
+  // Filter options - use apiData instead of data prop
   const teamFilteredData = selectedTeams.length > 0
-    ? data.filter(d => selectedTeams.includes(d.team_name))
-    : data;
+    ? apiData.filter(d => selectedTeams.includes(d.team_name))
+    : apiData;
 
   const uniqueTestNames = getUniqueTestNames(teamFilteredData);
   const uniqueAthleteNames = selectedTestName 
@@ -91,42 +92,43 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
   const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
 
-  // Calculate limb symmetry data
+  // Calculate limb symmetry data based on TestData metrics
   const calculateLimbSymmetry = (): LimbSymmetryData | null => {
     if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate || !apiData.length) {
       return null;
     }
 
-    // Find the athlete in API data
-    const athlete = apiData.find(a => a.name === selectedAthleteName);
-    if (!athlete || !athlete.recordings) return null;
+    // Find the test record that matches our filters
+    const testRecord = apiData.find(d => 
+      d.test_name === selectedTestName && 
+      d.athlete_name === selectedAthleteName && 
+      d.test_date === selectedTestDate
+    );
 
-    // Find the recording for the selected date
-    const recording = Object.values(athlete.recordings).find((rec: any) => {
-      return rec.date === selectedTestDate;
-    });
-
-    if (!recording) return null;
+    if (!testRecord || !testRecord.metrics) return null;
 
     let leftValue = 0;
     let rightValue = 0;
 
+    // Access the metrics from TestData
+    const metrics = testRecord.metrics as any;
+
     // Apply data logic based on test name and metric type
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-      leftValue = recording.p1_avg_force || 0;
-      rightValue = recording.p2_avg_force || 0;
+      leftValue = metrics.fp1_peak_force || 0;
+      rightValue = metrics.fp2_peak_force || 0;
     } else if (selectedTestName === "Countermovement Jump") {
-      leftValue = recording.p1_avg_force || 0;
-      rightValue = recording.p2_avg_force || 0;
+      leftValue = metrics.fp1_peak_force || 0;
+      rightValue = metrics.fp2_peak_force || 0;
     } else if (selectedTestName === "Squat Jump") {
-      leftValue = recording.p1_avg_force || 0;
-      rightValue = recording.p2_avg_force || 0;
+      leftValue = metrics.fp1_peak_force || 0;
+      rightValue = metrics.fp2_peak_force || 0;
     } else if (selectedTestName === "Pogo Jump") {
-      leftValue = recording.fp1_avg_rfd || 0;
-      rightValue = recording.fp2_avg_rfd || 0;
+      leftValue = metrics.fp1_avg_rfd || 0;
+      rightValue = metrics.fp2_avg_rfd || 0;
     } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
-      leftValue = recording.force_peak_left || 0;
-      rightValue = recording.force_peak_right || 0;
+      leftValue = metrics.fp1_peak_force || 0;
+      rightValue = metrics.fp2_peak_force || 0;
     }
 
     const total = leftValue + rightValue;
