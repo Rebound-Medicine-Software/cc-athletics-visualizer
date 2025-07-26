@@ -26,12 +26,9 @@ export const DashboardContent = ({
   selectedTeams, setSelectedTeams, handleRefresh, orgData,
   navigationItems, activeSection, resetFiltersKey
 }: DashboardContentProps) => {
-  // Independent state for each section
-  const [selectedTest1, setSelectedTest1] = useState<string>("");
+  // State for remaining section
   const [selectedTest2, setSelectedTest2] = useState<string>("");
-  const [resetKey1, setResetKey1] = useState<number>(0);
   const [resetKey2, setResetKey2] = useState<number>(0);
-  const [selectedTeams1, setSelectedTeams1] = useState<string[]>([]);
   const [selectedTeams2, setSelectedTeams2] = useState<string[]>([]);
 
   // Error state
@@ -72,22 +69,13 @@ export const DashboardContent = ({
     );
   }
 
-  // Create completely separate data sources for each section
-  // Section 1: Jump and Isometric tests
-  const section1Data = data.filter(d => 
-    d.test_type === 'jump' || d.test_type === 'isometric'
-  );
-  const filteredData1 = selectedTeams1.length === 0
-    ? section1Data
-    : section1Data.filter(d => selectedTeams1.includes(d.team_name));
-
-  // Section 2: Pogo tests and any remaining types
-  const section2Data = data.filter(d => 
+  // Section data: Pogo tests and any remaining types
+  const sectionData = data.filter(d => 
     d.test_type === 'pogo' || (d.test_type !== 'jump' && d.test_type !== 'isometric')
   );
-  const filteredData2 = selectedTeams2.length === 0
-    ? section2Data
-    : section2Data.filter(d => selectedTeams2.includes(d.team_name));
+  const filteredData = selectedTeams2.length === 0
+    ? sectionData
+    : sectionData.filter(d => selectedTeams2.includes(d.team_name));
   
   return (
     <div className="space-y-6 w-full">
@@ -100,23 +88,12 @@ export const DashboardContent = ({
         allData={data}
       />
       
-      {/* First Independent ReportFilters section - Jump & Isometric Tests */}
+      {/* Pogo & Other Tests */}
       <ReportFilters 
-        key="section-1"
-        data={filteredData1} 
-        onTestSelect={setSelectedTest1}
-        allData={section1Data}
-        resetFiltersKey={resetKey1} 
-        selectedTeams={selectedTeams1}
-        buttonText="Jump & Isometric Tests"
-      />
-      
-      {/* Second Independent ReportFilters section - Pogo & Other Tests */}
-      <ReportFilters 
-        key="section-2"
-        data={filteredData2} 
+        key="pogo-section"
+        data={filteredData} 
         onTestSelect={setSelectedTest2}
-        allData={section2Data}
+        allData={sectionData}
         resetFiltersKey={resetKey2} 
         selectedTeams={selectedTeams2}
         buttonText="Pogo & Other Tests"
