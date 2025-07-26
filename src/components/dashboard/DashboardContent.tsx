@@ -69,7 +69,7 @@ export const DashboardContent = ({
     );
   }
 
-  // Section data: Pogo tests and any remaining types
+  // Filter data for Pogo tests and other test types (excluding jump/isometric)
   const sectionData = data.filter(d => 
     d.test_type === 'pogo' || (d.test_type !== 'jump' && d.test_type !== 'isometric')
   );
