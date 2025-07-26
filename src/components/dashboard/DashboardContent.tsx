@@ -30,7 +30,6 @@ export const DashboardContent = ({
   // State for remaining section
   const [selectedTest2, setSelectedTest2] = useState<string>("");
   const [resetKey2, setResetKey2] = useState<number>(0);
-  const [selectedTeams2, setSelectedTeams2] = useState<string[]>([]);
 
   // Error state
   if (error) {
@@ -74,9 +73,9 @@ export const DashboardContent = ({
   const sectionData = data.filter(d => 
     d.test_type === 'pogo' || (d.test_type !== 'jump' && d.test_type !== 'isometric')
   );
-  const filteredData = selectedTeams2.length === 0
+  const filteredData = selectedTeams.length === 0
     ? sectionData
-    : sectionData.filter(d => selectedTeams2.includes(d.team_name));
+    : sectionData.filter(d => selectedTeams.includes(d.team_name));
   
   return (
     <div className="space-y-6 w-full">
@@ -96,14 +95,15 @@ export const DashboardContent = ({
         onTestSelect={setSelectedTest2}
         allData={sectionData}
         resetFiltersKey={resetKey2} 
-        selectedTeams={selectedTeams2}
+        selectedTeams={selectedTeams}
         buttonText="Pogo & Other Tests"
       />
       
       {/* Individual / Between Limb Comparisons */}
       <IndividualComparisonSection 
         data={data} 
-        resetFiltersKey={resetFiltersKey} 
+        resetFiltersKey={resetFiltersKey}
+        selectedTeams={selectedTeams}
       />
       
       {/* RegionComparison operates independently with unfiltered data */}

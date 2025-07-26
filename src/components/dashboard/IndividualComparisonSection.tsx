@@ -10,9 +10,10 @@ import { IndividualFilters } from "./filters/IndividualFilters";
 interface IndividualComparisonSectionProps {
   data: TestData[];
   resetFiltersKey: number;
+  selectedTeams: string[];
 }
 
-export const IndividualComparisonSection = ({ data, resetFiltersKey }: IndividualComparisonSectionProps) => {
+export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTeams }: IndividualComparisonSectionProps) => {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
     selectedAthletes: [],
@@ -123,7 +124,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
         <IndividualFilters 
           data={data} 
           allData={data} 
-          selectedTeams={[]} 
+          selectedTeams={selectedTeams} 
           filters={filters} 
           setFilters={setFilters} 
           onTestSelect={handleTestSelect} 
