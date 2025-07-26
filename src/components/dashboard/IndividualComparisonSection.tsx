@@ -355,38 +355,75 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               <div className="flex items-center justify-center h-full">
                 <div className="text-gray-500">Loading...</div>
               </div>
-            ) : limbSymmetryData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  layout="horizontal"
-                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                >
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" hide />
-                  <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                    <LabelList 
-                      dataKey="value" 
-                      position="center" 
-                      fill="white"
-                      fontSize={14}
-                      fontWeight="bold"
-                      formatter={(value: number) => `${value.toFixed(2)}%`}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500 text-center">
-                  {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
-                    ? "Please select all filters to view limb symmetry data"
-                    : "No data available for the selected filters"
-                  }
+              <div>
+                <div className="mb-4 text-sm text-gray-600">
+                  Debug Info: API Data: {apiData.length} records, 
+                  Selected: {selectedTestName || 'None'} / {selectedAthleteName || 'None'} / {selectedTestDate || 'None'}
+                  {limbSymmetryData && <span>, Chart Data: {chartData.length} items</span>}
                 </div>
+                
+                {limbSymmetryData ? (
+                  <ResponsiveContainer width="100%" height="80%">
+                    <BarChart
+                      data={chartData}
+                      layout="horizontal"
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                    >
+                      <XAxis type="number" domain={[0, 100]} />
+                      <YAxis dataKey="name" type="category" hide />
+                      <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                        <LabelList 
+                          dataKey="value" 
+                          position="center" 
+                          fill="white"
+                          fontSize={14}
+                          fontWeight="bold"
+                          formatter={(value: number) => `${value.toFixed(2)}%`}
+                        />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full">
+                    {/* Test chart with sample data to verify rendering works */}
+                    <div className="mb-2 text-xs text-blue-600">Testing chart rendering with sample data:</div>
+                    <ResponsiveContainer width="100%" height="60%">
+                      <BarChart
+                        data={[
+                          { name: "Left Limb %", value: 45, fill: "#000000" },
+                          { name: "Right Limb %", value: 55, fill: "#7DD3FC" }
+                        ]}
+                        layout="horizontal"
+                        margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <XAxis type="number" domain={[0, 100]} />
+                        <YAxis dataKey="name" type="category" hide />
+                        <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
+                          <Cell fill="#000000" />
+                          <Cell fill="#7DD3FC" />
+                          <LabelList 
+                            dataKey="value" 
+                            position="center" 
+                            fill="white"
+                            fontSize={12}
+                            fontWeight="bold"
+                            formatter={(value: number) => `${value}%`}
+                          />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <div className="text-center text-gray-500 text-sm">
+                      {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
+                        ? "Please select all filters to view real limb symmetry data"
+                        : "No data available for the selected filters"
+                      }
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
