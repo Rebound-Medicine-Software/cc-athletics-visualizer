@@ -82,24 +82,28 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     }
 
     const total = leftValue + rightValue;
-    if (total === 0) {
+    if (total === 0 || !isFinite(total)) {
       return { leftPercentage: 0, rightPercentage: 0 };
     }
 
     const leftPercentage = (leftValue / total) * 100;
     const rightPercentage = (rightValue / total) * 100;
 
-    return { leftPercentage, rightPercentage };
+    // Ensure values are finite and not NaN
+    return { 
+      leftPercentage: isFinite(leftPercentage) ? leftPercentage : 0, 
+      rightPercentage: isFinite(rightPercentage) ? rightPercentage : 0 
+    };
   };
 
   const { leftPercentage, rightPercentage } = calculateLimbSymmetry();
 
-  // Chart data for horizontal bar
+  // Chart data for horizontal bar - ensure no NaN values
   const chartData = [
     {
       category: "Limb Distribution",
-      leftPercentage: leftPercentage,
-      rightPercentage: rightPercentage,
+      leftPercentage: isFinite(leftPercentage) ? leftPercentage : 0,
+      rightPercentage: isFinite(rightPercentage) ? rightPercentage : 0,
     }
   ];
 
