@@ -364,29 +364,20 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                 </div>
                 
                 {limbSymmetryData ? (
-                  <ResponsiveContainer width="100%" height="80%">
-                    <BarChart
-                      data={chartData}
-                      layout="horizontal"
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                    >
-                      <XAxis type="number" domain={[0, 100]} />
-                      <YAxis dataKey="name" type="category" hide />
-                      <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
-                        {chartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                        <LabelList 
-                          dataKey="value" 
-                          position="center" 
-                          fill="white"
-                          fontSize={14}
-                          fontWeight="bold"
-                          formatter={(value: number) => `${value.toFixed(2)}%`}
-                        />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div className="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <div className="mb-2 text-sm font-medium">Limb Symmetry Data:</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between bg-black text-white px-3 py-2 rounded" style={{width: `${limbSymmetryData.leftPercentage}%`}}>
+                        <span className="text-sm font-bold">Left: {limbSymmetryData.leftPercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-sky-300 text-black px-3 py-2 rounded" style={{width: `${limbSymmetryData.rightPercentage}%`}}>
+                        <span className="text-sm font-bold">Right: {limbSymmetryData.rightPercentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">
+                      Raw values: Left={limbSymmetryData.leftValue.toFixed(1)}, Right={limbSymmetryData.rightValue.toFixed(1)}
+                    </div>
+                  </div>
                 ) : (
                   <div className="h-full">
                     {/* Test chart with sample data to verify rendering works */}
