@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HighlightsSection } from "./HighlightsSection";
 import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
+import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -97,6 +98,12 @@ export const DashboardContent = ({
         resetFiltersKey={resetKey2} 
         selectedTeams={selectedTeams2}
         buttonText="Pogo & Other Tests"
+      />
+      
+      {/* Individual / Between Limb Comparisons */}
+      <IndividualComparisonSection 
+        data={data} 
+        resetFiltersKey={resetFiltersKey} 
       />
       
       {/* RegionComparison operates independently with unfiltered data */}
