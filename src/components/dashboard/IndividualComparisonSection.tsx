@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { IndividualFilters } from "./filters/IndividualFilters";
+import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates } from "./filters/filterUtils";
 
 interface IndividualComparisonSectionProps {
   data: TestData[];
@@ -13,67 +13,152 @@ interface IndividualComparisonSectionProps {
   selectedTeams: string[];
 }
 
+interface AthleteApiData {
+  id: string;
+  name: string;
+  team_id: string;
+  recordings?: { [key: string]: any };
+}
+
+interface LimbSymmetryData {
+  name: string;
+  leftPercentage: number;
+  rightPercentage: number;
+  leftValue: number;
+  rightValue: number;
+}
+
 export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTeams }: IndividualComparisonSectionProps) => {
-  // INDEPENDENT FILTER STATE - each instance manages its own state
-  const [filters, setFilters] = useState({
-    selectedAthletes: [],
-    testDates: "",
-    testNames: "",
-    metricTypes: ""
-  });
+  // Filter states
+  const [selectedTestName, setSelectedTestName] = useState("");
+  const [selectedMetricType, setSelectedMetricType] = useState("");
+  const [selectedAthleteName, setSelectedAthleteName] = useState("");
+  const [selectedTestDate, setSelectedTestDate] = useState("");
+
+  // API data state
+  const [apiData, setApiData] = useState<AthleteApiData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // State for editable button text
   const [isEditing, setIsEditing] = useState(false);
   const [currentButtonText, setCurrentButtonText] = useState("Individual / Between Limb Comparisons");
 
-  // Reset filters if resetFiltersKey changes
+  // Reset filters when resetFiltersKey changes
   useEffect(() => {
-    setFilters({
-      selectedAthletes: [],
-      testDates: "",
-      testNames: "",
-      metricTypes: ""
-    });
-    // eslint-disable-next-line
+    setSelectedTestName("");
+    setSelectedMetricType("");
+    setSelectedAthleteName("");
+    setSelectedTestDate("");
   }, [resetFiltersKey]);
 
-  // Mock data for limb symmetry chart (Left vs Right)
-  const limbSymmetryData = [
-    { limb: "Left", value: 85, color: "hsl(var(--chart-1))" },
-    { limb: "Right", value: 78, color: "hsl(var(--chart-2))" },
-  ];
-
-  // Mock data for athlete progression over time
-  const progressionData = [
-    { date: "2024-01-15", value: 82 },
-    { date: "2024-02-15", value: 85 },
-    { date: "2024-03-15", value: 87 },
-    { date: "2024-04-15", value: 83 },
-    { date: "2024-05-15", value: 89 },
-  ];
-
-  const chartConfig = {
-    value: {
-      label: "Value",
-      color: "hsl(var(--chart-1))",
-    },
-    left: {
-      label: "Left",
-      color: "hsl(var(--chart-1))",
-    },
-    right: {
-      label: "Right",
-      color: "hsl(var(--chart-2))",
-    },
+  // Fetch API data
+  const fetchApiData = async () => {
+    if (!selectedTestName) return;
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes');
+      if (response.ok) {
+        const result = await response.json();
+        setApiData(result.athletes || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch API data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Internal test select handler - only updates this component's state
-  const handleTestSelect = (testName: string) => {
-    setFilters(prev => ({
-      ...prev,
-      testNames: testName
-    }));
+  useEffect(() => {
+    fetchApiData();
+  }, [selectedTestName]);
+
+  // Filter options
+  const teamFilteredData = selectedTeams.length > 0
+    ? data.filter(d => selectedTeams.includes(d.team_name))
+    : data;
+
+  const uniqueTestNames = getUniqueTestNames(teamFilteredData);
+  const uniqueAthleteNames = selectedTestName 
+    ? getUniqueAthleteNames(teamFilteredData.filter(d => d.test_name === selectedTestName))
+    : [];
+  
+  const uniqueTestDates = selectedAthleteName && selectedTestName
+    ? getUniqueTestDates(teamFilteredData.filter(d => 
+        d.test_name === selectedTestName && d.athlete_name === selectedAthleteName
+      ))
+    : [];
+
+  const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
+
+  // Calculate limb symmetry data
+  const calculateLimbSymmetry = (): LimbSymmetryData | null => {
+    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate || !apiData.length) {
+      return null;
+    }
+
+    // Find the athlete in API data
+    const athlete = apiData.find(a => a.name === selectedAthleteName);
+    if (!athlete || !athlete.recordings) return null;
+
+    // Find the recording for the selected date
+    const recording = Object.values(athlete.recordings).find((rec: any) => {
+      return rec.date === selectedTestDate;
+    });
+
+    if (!recording) return null;
+
+    let leftValue = 0;
+    let rightValue = 0;
+
+    // Apply data logic based on test name and metric type
+    if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
+      leftValue = recording.p1_avg_force || 0;
+      rightValue = recording.p2_avg_force || 0;
+    } else if (selectedTestName === "Countermovement Jump") {
+      leftValue = recording.p1_avg_force || 0;
+      rightValue = recording.p2_avg_force || 0;
+    } else if (selectedTestName === "Squat Jump") {
+      leftValue = recording.p1_avg_force || 0;
+      rightValue = recording.p2_avg_force || 0;
+    } else if (selectedTestName === "Pogo Jump") {
+      leftValue = recording.fp1_avg_rfd || 0;
+      rightValue = recording.fp2_avg_rfd || 0;
+    } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
+      leftValue = recording.force_peak_left || 0;
+      rightValue = recording.force_peak_right || 0;
+    }
+
+    const total = leftValue + rightValue;
+    if (total === 0) return null;
+
+    const leftPercentage = Math.round((leftValue / total) * 100 * 100) / 100;
+    const rightPercentage = Math.round((rightValue / total) * 100 * 100) / 100;
+
+    return {
+      name: "Limb Symmetry",
+      leftPercentage,
+      rightPercentage,
+      leftValue,
+      rightValue
+    };
   };
+
+  const limbSymmetryData = calculateLimbSymmetry();
+
+  // Prepare chart data
+  const chartData = limbSymmetryData ? [
+    {
+      name: "Left Limb %",
+      value: limbSymmetryData.leftPercentage,
+      fill: "#000000"
+    },
+    {
+      name: "Right Limb %", 
+      value: limbSymmetryData.rightPercentage,
+      fill: "#7DD3FC"
+    }
+  ] : [];
 
   // Handle button text editing
   const handleButtonClick = () => {
@@ -91,6 +176,27 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     } else if (e.key === 'Escape') {
       setIsEditing(false);
     }
+  };
+
+  // Filter handlers
+  const handleTestNameChange = (value: string) => {
+    setSelectedTestName(value);
+    setSelectedMetricType("");
+    setSelectedAthleteName("");
+    setSelectedTestDate("");
+  };
+
+  const handleMetricTypeChange = (value: string) => {
+    setSelectedMetricType(value);
+  };
+
+  const handleAthleteNameChange = (value: string) => {
+    setSelectedAthleteName(value);
+    setSelectedTestDate("");
+  };
+
+  const handleTestDateChange = (value: string) => {
+    setSelectedTestDate(value);
   };
 
   return (
@@ -120,78 +226,144 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           )}
         </div>
 
-        {/* Individual Filters - using independent state */}
-        <IndividualFilters 
-          data={data} 
-          allData={data} 
-          selectedTeams={selectedTeams} 
-          filters={filters} 
-          setFilters={setFilters} 
-          onTestSelect={handleTestSelect} 
-          resetFiltersKey={resetFiltersKey} 
-        />
+        {/* Filters */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+          {/* Test Name */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+            <Select value={selectedTestName} onValueChange={handleTestNameChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Select Test" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {uniqueTestNames.map(testName => (
+                  <SelectItem key={testName} value={testName}>
+                    {testName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        {/* Charts - Side by Side Layout */}
-        <div className="flex flex-col md:flex-row gap-8 mt-2">
-          <div className="flex-1 min-w-0">
-            <div className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col" style={{
-              boxSizing: "border-box"
-            }}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 h-full">
-                {/* Left Side: Limb Symmetry Bar Chart */}
-                <div className="bg-white rounded-lg border border-gray-200 flex flex-col">
-                  <div className="p-4 border-b border-gray-200 shrink-0">
-                    <h3 className="text-lg font-semibold">Limb Symmetry (Left vs Right)</h3>
-                  </div>
-                  <div className="p-3 flex-1">
-                    <ChartContainer config={chartConfig} className="h-full w-full">
-                      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                        <BarChart
-                          data={limbSymmetryData}
-                          layout="horizontal"
-                          margin={{ top: 10, right: 15, left: 15, bottom: 10 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" />
-                          <YAxis dataKey="limb" type="category" />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey="value" fill="hsl(var(--chart-1))" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </div>
-                </div>
+          {/* Metric Type */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
+            <Select 
+              value={selectedMetricType} 
+              onValueChange={handleMetricTypeChange}
+              disabled={!selectedTestName}
+            >
+              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Metric" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {availableMetricTypes.map(metricType => (
+                  <SelectItem key={metricType} value={metricType}>
+                    {metricType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-                {/* Right Side: Individual Athlete Progression Line Chart */}
-                <div className="bg-white rounded-lg border border-gray-200 flex flex-col">
-                  <div className="p-4 border-b border-gray-200 shrink-0">
-                    <h3 className="text-lg font-semibold">Individual Athlete Progression</h3>
-                  </div>
-                  <div className="p-3 flex-1">
-                    <ChartContainer config={chartConfig} className="h-full w-full">
-                      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                        <LineChart
-                          data={progressionData}
-                          margin={{ top: 10, right: 15, left: 15, bottom: 10 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Line 
-                            type="monotone" 
-                            dataKey="value" 
-                            stroke="hsl(var(--chart-1))" 
-                            strokeWidth={2}
-                            dot={{ fill: "hsl(var(--chart-1))" }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  </div>
+          {/* Athlete Name */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
+            <Select 
+              value={selectedAthleteName} 
+              onValueChange={handleAthleteNameChange}
+              disabled={!selectedTestName}
+            >
+              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Athlete" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {uniqueAthleteNames.map(athleteName => (
+                  <SelectItem key={athleteName} value={athleteName}>
+                    {athleteName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Test Date */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
+            <Select 
+              value={selectedTestDate} 
+              onValueChange={handleTestDateChange}
+              disabled={!selectedAthleteName}
+            >
+              <SelectTrigger className={`${!selectedAthleteName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Date" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {uniqueTestDates.map(testDate => (
+                  <SelectItem key={testDate} value={testDate}>
+                    {testDate}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Legend */}
+        {limbSymmetryData && (
+          <div className="flex justify-center items-center gap-6 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-black"></div>
+              <span className="text-sm font-medium">Left Limb %</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-sky-300"></div>
+              <span className="text-sm font-medium">Right Limb %</span>
+            </div>
+          </div>
+        )}
+
+        {/* Chart */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="h-[200px] w-full">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500">Loading...</div>
+              </div>
+            ) : limbSymmetryData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  layout="horizontal"
+                  margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                >
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="name" type="category" hide />
+                  <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                    <LabelList 
+                      dataKey="value" 
+                      position="center" 
+                      fill="white"
+                      fontSize={14}
+                      fontWeight="bold"
+                      formatter={(value: number) => `${value.toFixed(2)}%`}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500 text-center">
+                  {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
+                    ? "Please select all filters to view limb symmetry data"
+                    : "No data available for the selected filters"
+                  }
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </CardContent>
