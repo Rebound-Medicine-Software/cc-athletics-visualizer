@@ -107,6 +107,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     }
   ];
 
+  // Debug logging
+  console.log('Chart data:', chartData);
+  console.log('Left percentage:', leftPercentage);
+  console.log('Right percentage:', rightPercentage);
+
   const chartConfig = {
     leftPercentage: {
       label: "Left Limb %",
@@ -245,24 +250,34 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         {/* Horizontal Bar Chart */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold mb-4 text-center">Limb Symmetry Distribution</h3>
-          <div className="h-[200px]">
-            <ChartContainer config={chartConfig} className="h-full w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={chartData}
-                  layout="horizontal"
-                  margin={{ top: 20, right: 30, left: 40, bottom: 20 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="category" type="category" hide />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="leftPercentage" stackId="limb" fill="#000000" />
-                  <Bar dataKey="rightPercentage" stackId="limb" fill="#60A5FA" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </div>
+          {(leftPercentage > 0 || rightPercentage > 0) ? (
+            <div className="h-[200px]">
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={[
+                      { name: "Left Limb", value: leftPercentage, fill: "#000000" },
+                      { name: "Right Limb", value: rightPercentage, fill: "#60A5FA" }
+                    ]}
+                    layout="horizontal"
+                    margin={{ top: 20, right: 30, left: 80, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" domain={[0, 100]} />
+                    <YAxis dataKey="name" type="category" width={70} />
+                    <Tooltip 
+                      formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Percentage']}
+                    />
+                    <Bar dataKey="value" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-gray-500">
+              Select all filters to view limb symmetry data
+            </div>
+          )}
           
           {/* Percentage labels */}
           {(leftPercentage > 0 || rightPercentage > 0) && (
