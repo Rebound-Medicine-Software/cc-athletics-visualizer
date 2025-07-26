@@ -143,7 +143,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Limb Symmetry (Left vs Right)</h3>
                   </div>
-                  <div className="p-2 flex-1">
+                  <div className="p-1 flex-1 overflow-hidden">
                     <ChartContainer config={chartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
@@ -167,7 +167,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Individual Athlete Progression</h3>
                   </div>
-                  <div className="p-2 flex-1">
+                  <div className="p-1 flex-1 overflow-hidden">
                     <ChartContainer config={chartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
