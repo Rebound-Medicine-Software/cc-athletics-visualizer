@@ -143,13 +143,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Limb Symmetry (Left vs Right)</h3>
                   </div>
-                  <div className="p-1 flex-1 overflow-hidden">
-                    <ChartContainer config={chartConfig} className="h-full">
-                      <ResponsiveContainer width="100%" height="100%">
+                  <div className="p-3 flex-1">
+                    <ChartContainer config={chartConfig} className="h-full w-full">
+                      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                         <BarChart
                           data={limbSymmetryData}
                           layout="horizontal"
-                          margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                          margin={{ top: 10, right: 15, left: 15, bottom: 10 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis type="number" />
@@ -167,12 +167,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Individual Athlete Progression</h3>
                   </div>
-                  <div className="p-1 flex-1 overflow-hidden">
-                    <ChartContainer config={chartConfig} className="h-full">
-                      <ResponsiveContainer width="100%" height="100%">
+                  <div className="p-3 flex-1">
+                    <ChartContainer config={chartConfig} className="h-full w-full">
+                      <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                         <LineChart
                           data={progressionData}
-                          margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                          margin={{ top: 10, right: 15, left: 15, bottom: 10 }}
                         >
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="date" />
