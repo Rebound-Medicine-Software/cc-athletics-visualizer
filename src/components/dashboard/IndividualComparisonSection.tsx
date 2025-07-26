@@ -1,14 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { TestData } from "@/types/forcePlateTypes";
-import { getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates, getMetricTypesForTest } from "./filters/filterUtils";
-import { X } from "lucide-react";
+import { IndividualFilters } from "./filters/IndividualFilters";
 
 interface IndividualComparisonSectionProps {
   data: TestData[];
@@ -16,18 +13,28 @@ interface IndividualComparisonSectionProps {
 }
 
 export const IndividualComparisonSection = ({ data, resetFiltersKey }: IndividualComparisonSectionProps) => {
-  const [selectedTestName, setSelectedTestName] = useState<string>("");
-  const [selectedAthlete, setSelectedAthlete] = useState<string>("");
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [selectedMetricType, setSelectedMetricType] = useState<string>("");
+  // INDEPENDENT FILTER STATE - each instance manages its own state
+  const [filters, setFilters] = useState({
+    selectedAthletes: [],
+    testDates: "",
+    testNames: "",
+    metricTypes: ""
+  });
+
+  // State for editable button text
   const [isEditing, setIsEditing] = useState(false);
   const [currentButtonText, setCurrentButtonText] = useState("Individual / Between Limb Comparisons");
 
-  // Filter data and get unique options
-  const uniqueTestNames = getUniqueTestNames(data);
-  const uniqueAthleteNames = getUniqueAthleteNames(data);
-  const uniqueTestDates = getUniqueTestDates(data);
-  const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
+  // Reset filters if resetFiltersKey changes
+  useEffect(() => {
+    setFilters({
+      selectedAthletes: [],
+      testDates: "",
+      testNames: "",
+      metricTypes: ""
+    });
+    // eslint-disable-next-line
+  }, [resetFiltersKey]);
 
   // Mock data for limb symmetry chart (Left vs Right)
   const limbSymmetryData = [
@@ -59,11 +66,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
     },
   };
 
-  const handleReset = () => {
-    setSelectedTestName("");
-    setSelectedAthlete("");
-    setSelectedDate("");
-    setSelectedMetricType("");
+  // Internal test select handler - only updates this component's state
+  const handleTestSelect = (testName: string) => {
+    setFilters(prev => ({
+      ...prev,
+      testNames: testName
+    }));
   };
 
   // Handle button text editing
@@ -111,143 +119,31 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
           )}
         </div>
 
-        {/* Filters Row */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-6">
-          {/* Test Name Filter */}
-          <div className="space-y-2">
-            <Label>Test Name</Label>
-            <div className="flex gap-2">
-              <Select value={selectedTestName} onValueChange={setSelectedTestName}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select test" />
-                </SelectTrigger>
-                <SelectContent>
-                  {uniqueTestNames.map((testName) => (
-                    <SelectItem key={testName} value={testName}>
-                      {testName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTestName && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedTestName("")}
-                  className="px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
+        {/* Individual Filters - using independent state */}
+        <IndividualFilters 
+          data={data} 
+          allData={data} 
+          selectedTeams={[]} 
+          filters={filters} 
+          setFilters={setFilters} 
+          onTestSelect={handleTestSelect} 
+          resetFiltersKey={resetFiltersKey} 
+        />
 
-          {/* Athlete Name Filter */}
-          <div className="space-y-2">
-            <Label>Athlete Name</Label>
-            <div className="flex gap-2">
-              <Select value={selectedAthlete} onValueChange={setSelectedAthlete}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select athlete" />
-                </SelectTrigger>
-                <SelectContent>
-                  {uniqueAthleteNames.map((athleteName) => (
-                    <SelectItem key={athleteName} value={athleteName}>
-                      {athleteName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedAthlete && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedAthlete("")}
-                  className="px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Test Date Filter */}
-          <div className="space-y-2">
-            <Label>Test Date</Label>
-            <div className="flex gap-2">
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                placeholder="Select date"
-              />
-              {selectedDate && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedDate("")}
-                  className="px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Metric Type Filter */}
-          <div className="space-y-2">
-            <Label>Metric Type</Label>
-            <div className="flex gap-2">
-              <Select 
-                value={selectedMetricType} 
-                onValueChange={setSelectedMetricType}
-                disabled={!selectedTestName}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select metric" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableMetricTypes.map((metricType) => (
-                    <SelectItem key={metricType} value={metricType}>
-                      {metricType}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedMetricType && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedMetricType("")}
-                  className="px-2"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Reset Button */}
-          <Button variant="outline" onClick={handleReset}>
-            Reset All
-          </Button>
-        </div>
-
-        {/* Chart and Video */}
+        {/* Charts - Side by Side Layout */}
         <div className="flex flex-col md:flex-row gap-8 mt-2">
-          {/* Chart */}
           <div className="flex-1 min-w-0">
             <div className="bg-transparent rounded-lg h-[480px] min-h-[370px] max-h-[480px] overflow-y-auto flex flex-col" style={{
               boxSizing: "border-box"
             }}>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 h-full">
                 {/* Left Side: Limb Symmetry Bar Chart */}
-                <div className="bg-white rounded-lg border border-gray-200">
-                  <div className="p-4 border-b border-gray-200">
+                <div className="bg-white rounded-lg border border-gray-200 flex flex-col">
+                  <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Limb Symmetry (Left vs Right)</h3>
                   </div>
-                  <div className="p-4">
-                    <ChartContainer config={chartConfig} className="h-[300px]">
+                  <div className="p-4 flex-1">
+                    <ChartContainer config={chartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={limbSymmetryData}
@@ -266,12 +162,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
                 </div>
 
                 {/* Right Side: Individual Athlete Progression Line Chart */}
-                <div className="bg-white rounded-lg border border-gray-200">
-                  <div className="p-4 border-b border-gray-200">
+                <div className="bg-white rounded-lg border border-gray-200 flex flex-col">
+                  <div className="p-4 border-b border-gray-200 shrink-0">
                     <h3 className="text-lg font-semibold">Individual Athlete Progression</h3>
                   </div>
-                  <div className="p-4">
-                    <ChartContainer config={chartConfig} className="h-[300px]">
+                  <div className="p-4 flex-1">
+                    <ChartContainer config={chartConfig} className="h-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={progressionData}
@@ -294,12 +190,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey }: Individua
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-          {/* Video box */}
-          <div className="w-full md:w-[420px] shrink-0">
-            <div className="bg-gray-100 rounded-lg p-4 h-[480px] flex items-center justify-center">
-              <span className="text-gray-500">Video Box Placeholder</span>
             </div>
           </div>
         </div>
