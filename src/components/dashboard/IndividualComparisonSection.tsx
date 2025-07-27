@@ -262,51 +262,82 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         console.log('Current test selection:', selectedTestName);
         console.log('Current date selection:', selectedTestDate);
         
-        // Check if any trial has dual stance - use force_peak_left vs force_peak_right
-        const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
-        console.log('Dual trial found:', dualTrial);
+        // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
+        // Since right_leg trials may be in different test_name records
+        const matchingRecords = teamFilteredData.filter((record: TestData) => 
+          record.athlete_name === selectedAthleteName &&
+          record.test_date === selectedTestDate &&
+          record.test_name.includes('Isometric') // Look for any isometric test variations
+        );
         
-        if (dualTrial) {
-          // Try explicit force_peak_left/right first, then derive from channels
-          leftValue = dualTrial.total_metrics?.force_peak_left || 
-                     dualTrial.cha1_metrics?.force_peak || 0;
-          rightValue = dualTrial.total_metrics?.force_peak_right || 
-                      dualTrial.cha2_metrics?.force_peak || 0;
-          console.log('Dual stance values - Left:', leftValue, 'Right:', rightValue);
-        } else {
-          // Use separate left_leg and right_leg trials - average their force_peak values
-          const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-            trial.stance === 'left_leg' || trial.stance === 'left'
-          );
-          const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-            trial.stance === 'right_leg' || trial.stance === 'right'
-          );
+        console.log('All matching isometric records for limb symmetry:', matchingRecords.length);
+        
+        let allLeftTrials: any[] = [];
+        let allRightTrials: any[] = [];
+        let foundDualTrial = false;
+        
+        // Collect all left_leg and right_leg trials from all matching records
+        matchingRecords.forEach((record: TestData, recordIndex: number) => {
+          console.log(`Record ${recordIndex}: ${record.test_name}`);
           
-          console.log('Left trials found:', leftTrials.length, leftTrials);
-          console.log('Right trials found:', rightTrials.length, rightTrials);
-          
-          if (leftTrials.length > 0) {
-            leftValue = leftTrials.reduce((sum: number, trial: any) => {
+          const recordMetrics = record.metrics as any;
+          if (recordMetrics?.isometric_analysis?.trials) {
+            const leftTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+              trial.stance === 'left_leg' || trial.stance === 'left'
+            );
+            const rightTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+              trial.stance === 'right_leg' || trial.stance === 'right'
+            );
+            const dualTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'dual');
+            
+            console.log(`  - Left trials: ${leftTrials.length}, Right trials: ${rightTrials.length}, Dual trials: ${dualTrials.length}`);
+            
+            allLeftTrials.push(...leftTrials);
+            allRightTrials.push(...rightTrials);
+            
+            // Handle dual trials (prefer these over separate trials)
+            dualTrials.forEach((dualTrial: any) => {
+              if (dualTrial?.total_metrics?.force_peak_left && dualTrial?.total_metrics?.force_peak_right) {
+                console.log('Found dual trial with separate left/right values');
+                leftValue = dualTrial.total_metrics.force_peak_left;
+                rightValue = dualTrial.total_metrics.force_peak_right;
+                foundDualTrial = true;
+              } else if (dualTrial?.cha1_metrics?.force_peak && dualTrial?.cha2_metrics?.force_peak) {
+                console.log('Found dual trial with channel-based left/right values');
+                leftValue = dualTrial.cha1_metrics.force_peak;
+                rightValue = dualTrial.cha2_metrics.force_peak;
+                foundDualTrial = true;
+              }
+            });
+          }
+        });
+        
+        console.log('Total collected - Left trials:', allLeftTrials.length, 'Right trials:', allRightTrials.length);
+
+        // Only calculate from separate trials if we didn't find dual trial values
+        if (!foundDualTrial) {
+          if (allLeftTrials.length > 0) {
+            leftValue = allLeftTrials.reduce((sum: number, trial: any) => {
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
               console.log('Left trial value:', value, 'from trial:', trial.stance);
               return sum + value;
-            }, 0) / leftTrials.length;
+            }, 0) / allLeftTrials.length;
           }
-          
-          if (rightTrials.length > 0) {
-            rightValue = rightTrials.reduce((sum: number, trial: any) => {
+
+          if (allRightTrials.length > 0) {
+            rightValue = allRightTrials.reduce((sum: number, trial: any) => {
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
               console.log('Right trial value:', value, 'from trial:', trial.stance);
               return sum + value;
-            }, 0) / rightTrials.length;
+            }, 0) / allRightTrials.length;
           }
-            
-          console.log('Final calculated values - Left:', leftValue, 'Right:', rightValue);
         }
+        
+        console.log('Final calculated values - Left:', leftValue, 'Right:', rightValue);
       } else {
         console.log('No isometric_analysis.trials found');
         leftValue = 0;
