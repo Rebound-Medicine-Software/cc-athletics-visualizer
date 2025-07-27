@@ -198,6 +198,10 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       return null;
     }
 
+    console.log('=== LIMB SYMMETRY CALCULATION ===');
+    console.log('Filters:', { selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate });
+    console.log('Available apiData records:', apiData.length);
+
     // Find the test record that matches our filters
     const testRecord = apiData.find(d => 
       d.test_name === selectedTestName && 
@@ -205,7 +209,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       d.test_date === selectedTestDate
     );
 
-    if (!testRecord || !testRecord.metrics) return null;
+    console.log('Found test record:', testRecord);
+    if (!testRecord || !testRecord.metrics) {
+      console.log('No matching test record found or no metrics');
+      return null;
+    }
 
     let leftValue = 0;
     let rightValue = 0;
