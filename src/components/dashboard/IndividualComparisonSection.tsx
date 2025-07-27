@@ -127,6 +127,15 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       let leftValue = 0;
       let rightValue = 0;
 
+      // Safety check - skip if metrics is undefined
+      if (!metrics) {
+        return {
+          date: formatDate(testRecord.test_date),
+          leftPercentage: 0,
+          rightPercentage: 0
+        };
+      }
+
       // Use same logic as limb symmetry calculation - using exact API metric names
       if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
         // Case 1: Drop Jump with specific metrics
