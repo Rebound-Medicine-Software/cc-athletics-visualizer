@@ -118,20 +118,25 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
       // Use same logic as limb symmetry calculation
       if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-        leftValue = metrics.fp1_peak_force || 0;
-        rightValue = metrics.fp2_peak_force || 0;
+        // Case 1: Drop Jump with specific metrics
+        leftValue = metrics.p1_avg_force || 0;
+        rightValue = metrics.p2_avg_force || 0;
       } else if (selectedTestName === "Countermovement Jump") {
-        leftValue = metrics.fp1_peak_force || 0;
-        rightValue = metrics.fp2_peak_force || 0;
+        // Case 2: CMJ with any metrics
+        leftValue = metrics.p1_avg_force || 0;
+        rightValue = metrics.p2_avg_force || 0;
       } else if (selectedTestName === "Squat Jump") {
-        leftValue = metrics.fp1_peak_force || 0;
-        rightValue = metrics.fp2_peak_force || 0;
+        // Case 3: Squat Jump
+        leftValue = metrics.p1_avg_force || 0;
+        rightValue = metrics.p2_avg_force || 0;
       } else if (selectedTestName === "Pogo Jump") {
+        // Case 4: Pogo Jump
         leftValue = metrics.fp1_avg_rfd || 0;
         rightValue = metrics.fp2_avg_rfd || 0;
       } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
-        leftValue = metrics.fp1_peak_force || 0;
-        rightValue = metrics.fp2_peak_force || 0;
+        // Case 5: Default for specific metric types
+        leftValue = metrics.force_peak_left || 0;
+        rightValue = metrics.force_peak_right || 0;
       }
 
       const total = leftValue + rightValue;
@@ -172,22 +177,27 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     // Access the metrics from TestData
     const metrics = testRecord.metrics as any;
 
-    // Apply data logic based on test name and metric type - using the correct metric keys from console logs
+    // Apply data logic based on test name and metric type
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-      leftValue = metrics.fp1_peak_force || 0;
-      rightValue = metrics.fp2_peak_force || 0;
+      // Case 1: Drop Jump with specific metrics
+      leftValue = metrics.p1_avg_force || 0;
+      rightValue = metrics.p2_avg_force || 0;
     } else if (selectedTestName === "Countermovement Jump") {
-      leftValue = metrics.fp1_peak_force || 0;
-      rightValue = metrics.fp2_peak_force || 0;
+      // Case 2: CMJ with any metrics
+      leftValue = metrics.p1_avg_force || 0;
+      rightValue = metrics.p2_avg_force || 0;
     } else if (selectedTestName === "Squat Jump") {
-      leftValue = metrics.fp1_peak_force || 0;
-      rightValue = metrics.fp2_peak_force || 0;
+      // Case 3: Squat Jump
+      leftValue = metrics.p1_avg_force || 0;
+      rightValue = metrics.p2_avg_force || 0;
     } else if (selectedTestName === "Pogo Jump") {
+      // Case 4: Pogo Jump
       leftValue = metrics.fp1_avg_rfd || 0;
       rightValue = metrics.fp2_avg_rfd || 0;
     } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
-      leftValue = metrics.fp1_peak_force || 0;
-      rightValue = metrics.fp2_peak_force || 0;
+      // Case 5: Default for specific metric types
+      leftValue = metrics.force_peak_left || 0;
+      rightValue = metrics.force_peak_right || 0;
     }
 
     const total = leftValue + rightValue;
