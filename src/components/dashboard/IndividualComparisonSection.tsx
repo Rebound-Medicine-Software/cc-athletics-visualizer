@@ -131,8 +131,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         rightValue = metrics.p2_avg_force || 0;
       } else if (selectedTestName === "Pogo Jump") {
         // Case 4: Pogo Jump
-        leftValue = metrics.fp1_avg_rfd || 0;
-        rightValue = metrics.fp2_avg_rfd || 0;
+        leftValue = metrics.avg_fp1_contribution || 0;
+        rightValue = metrics.avg_fp2_contribution || 0;
       } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
         // Case 5: Default for specific metric types
         leftValue = metrics.force_peak_left || 0;
@@ -192,8 +192,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       rightValue = metrics.p2_avg_force || 0;
     } else if (selectedTestName === "Pogo Jump") {
       // Case 4: Pogo Jump
-      leftValue = metrics.fp1_avg_rfd || 0;
-      rightValue = metrics.fp2_avg_rfd || 0;
+      leftValue = metrics.avg_fp1_contribution || 0;
+      rightValue = metrics.avg_fp2_contribution || 0;
     } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
       // Case 5: Default for specific metric types
       leftValue = metrics.force_peak_left || 0;
