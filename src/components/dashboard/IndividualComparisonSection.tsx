@@ -251,21 +251,34 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         } else {
           // Use separate left_leg and right_leg trials - average their force_peak values
           const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-            trial.stance === 'left_leg'
+            trial.stance === 'left_leg' || trial.stance === 'left'
           );
           const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-            trial.stance === 'right_leg'
+            trial.stance === 'right_leg' || trial.stance === 'right'
           );
           
           console.log('Left trials:', leftTrials);
           console.log('Right trials:', rightTrials);
           
-          leftValue = leftTrials.length > 0 
-            ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
-            : 0;
-          rightValue = rightTrials.length > 0 
-            ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
-            : 0;
+          if (leftTrials.length > 0) {
+            leftValue = leftTrials.reduce((sum: number, trial: any) => {
+              const value = trial.total_metrics?.force_peak || 
+                           trial.total_metrics?.[selectedMetricType] || 
+                           trial.max_force || 0;
+              console.log('Left trial value:', value, 'from trial:', trial);
+              return sum + value;
+            }, 0) / leftTrials.length;
+          }
+          
+          if (rightTrials.length > 0) {
+            rightValue = rightTrials.reduce((sum: number, trial: any) => {
+              const value = trial.total_metrics?.force_peak || 
+                           trial.total_metrics?.[selectedMetricType] || 
+                           trial.max_force || 0;
+              console.log('Right trial value:', value, 'from trial:', trial);
+              return sum + value;
+            }, 0) / rightTrials.length;
+          }
             
           console.log('Separate stance values - Left:', leftValue, 'Right:', rightValue);
         }
