@@ -231,21 +231,29 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       leftValue = metrics.avg_fp1_contribution || 0;
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
-      // Case 5: Isometric tests - average trials by stance within the same test
+      // Case 5: Isometric tests
       if (metrics.isometric_analysis?.trials) {
-        const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-          trial.stance === 'left_leg'
-        );
-        const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-          trial.stance === 'right_leg'
-        );
-        
-        leftValue = leftTrials.length > 0 
-          ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
-          : 0;
-        rightValue = rightTrials.length > 0 
-          ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
-          : 0;
+        // Check if any trial has dual stance - use force_peak_left vs force_peak_right
+        const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
+        if (dualTrial) {
+          leftValue = dualTrial.total_metrics?.force_peak_left || 0;
+          rightValue = dualTrial.total_metrics?.force_peak_right || 0;
+        } else {
+          // Use separate left_leg and right_leg trials - average their force_peak values
+          const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+            trial.stance === 'left_leg'
+          );
+          const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+            trial.stance === 'right_leg'
+          );
+          
+          leftValue = leftTrials.length > 0 
+            ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
+            : 0;
+          rightValue = rightTrials.length > 0 
+            ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
+            : 0;
+        }
       } else {
         leftValue = 0;
         rightValue = 0;
