@@ -145,9 +145,22 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         leftValue = metrics.avg_fp1_contribution || 0;
         rightValue = metrics.avg_fp2_contribution || 0;
       } else {
-        // Case 5: All other tests (isometric tests) - use total_metrics path
-        leftValue = metrics.stance?.left_leg?.total_metrics?.force_peak || 0;
-        rightValue = metrics.stance?.right_leg?.total_metrics?.force_peak || 0;
+        // Case 5: All other tests (isometric tests) - aggregate trials by stance
+        if (metrics.isometric_analysis?.trials) {
+          const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'left_leg');
+          const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'right_leg');
+          
+          leftValue = leftTrials.length > 0 
+            ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
+            : 0;
+          rightValue = rightTrials.length > 0 
+            ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
+            : 0;
+        } else {
+          // Fallback to direct metrics if isometric_analysis not available
+          leftValue = metrics.force_peak_left || 0;
+          rightValue = metrics.force_peak_right || 0;
+        }
       }
 
       const total = leftValue + rightValue;
@@ -206,9 +219,22 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       leftValue = metrics.avg_fp1_contribution || 0;
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
-      // Case 5: All other tests (isometric tests) - use total_metrics path
-      leftValue = metrics.stance?.left_leg?.total_metrics?.force_peak || 0;
-      rightValue = metrics.stance?.right_leg?.total_metrics?.force_peak || 0;
+      // Case 5: All other tests (isometric tests) - aggregate trials by stance
+      if (metrics.isometric_analysis?.trials) {
+        const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'left_leg');
+        const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'right_leg');
+        
+        leftValue = leftTrials.length > 0 
+          ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
+          : 0;
+        rightValue = rightTrials.length > 0 
+          ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
+          : 0;
+      } else {
+        // Fallback to direct metrics if isometric_analysis not available
+        leftValue = metrics.force_peak_left || 0;
+        rightValue = metrics.force_peak_right || 0;
+      }
     }
 
     const total = leftValue + rightValue;
