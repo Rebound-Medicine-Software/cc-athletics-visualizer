@@ -145,27 +145,25 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         leftValue = metrics.avg_fp1_contribution || 0;
         rightValue = metrics.avg_fp2_contribution || 0;
       } else {
-        // Case 5: Isometric tests - find matching left/right tests by date
-        const testDate = testRecord.test_date;
-        const testName = testRecord.test_name;
-        const athleteName = testRecord.athlete_name;
-        
-        // Find corresponding left/right tests on the same date
-        const sameDataTests = apiData.filter(test => 
-          test.test_date === testDate && 
-          test.test_name === testName && 
-          test.athlete_name === athleteName
+      // Case 5: Isometric tests - average trials by stance within the same test
+      if (metrics.isometric_analysis?.trials) {
+        const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+          trial.stance === 'left_leg'
+        );
+        const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+          trial.stance === 'right_leg'
         );
         
-        const leftTest = sameDataTests.find(test => 
-          (test.metrics as any)?.isometric_analysis?.trials?.[0]?.stance === 'left_leg'
-        );
-        const rightTest = sameDataTests.find(test => 
-          (test.metrics as any)?.isometric_analysis?.trials?.[0]?.stance === 'right_leg'
-        );
-        
-        leftValue = (leftTest?.metrics as any)?.isometric_analysis?.trials?.[0]?.total_metrics?.force_peak || 0;
-        rightValue = (rightTest?.metrics as any)?.isometric_analysis?.trials?.[0]?.total_metrics?.force_peak || 0;
+        leftValue = leftTrials.length > 0 
+          ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
+          : 0;
+        rightValue = rightTrials.length > 0 
+          ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
+          : 0;
+      } else {
+        leftValue = 0;
+        rightValue = 0;
+      }
       }
 
       const total = leftValue + rightValue;
@@ -224,27 +222,25 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       leftValue = metrics.avg_fp1_contribution || 0;
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
-      // Case 5: Isometric tests - find matching left/right tests by date
-      const testDate = testRecord.test_date;
-      const testName = testRecord.test_name;
-      const athleteName = testRecord.athlete_name;
-      
-      // Find corresponding left/right tests on the same date
-      const sameDataTests = apiData.filter(test => 
-        test.test_date === testDate && 
-        test.test_name === testName && 
-        test.athlete_name === athleteName
-      );
-      
-      const leftTest = sameDataTests.find(test => 
-        (test.metrics as any)?.isometric_analysis?.trials?.[0]?.stance === 'left_leg'
-      );
-      const rightTest = sameDataTests.find(test => 
-        (test.metrics as any)?.isometric_analysis?.trials?.[0]?.stance === 'right_leg'
-      );
-      
-      leftValue = (leftTest?.metrics as any)?.isometric_analysis?.trials?.[0]?.total_metrics?.force_peak || 0;
-      rightValue = (rightTest?.metrics as any)?.isometric_analysis?.trials?.[0]?.total_metrics?.force_peak || 0;
+      // Case 5: Isometric tests - average trials by stance within the same test
+      if (metrics.isometric_analysis?.trials) {
+        const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+          trial.stance === 'left_leg'
+        );
+        const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
+          trial.stance === 'right_leg'
+        );
+        
+        leftValue = leftTrials.length > 0 
+          ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
+          : 0;
+        rightValue = rightTrials.length > 0 
+          ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
+          : 0;
+      } else {
+        leftValue = 0;
+        rightValue = 0;
+      }
     }
 
     const total = leftValue + rightValue;
