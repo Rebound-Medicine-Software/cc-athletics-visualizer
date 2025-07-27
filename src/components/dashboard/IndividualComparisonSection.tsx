@@ -44,11 +44,19 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     setSelectedTestDate("");
   }, [resetFiltersKey]);
 
-  // Fetch API data using Supabase edge function
+  // Fetch API data using appropriate endpoint based on test type
   const fetchApiData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data', {
+      // Determine endpoint based on test type
+      let endpoint = 'https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data';
+      
+      if (selectedTestName && !["Countermovement Jump", "Drop Jump", "Pogo Jump", "Squat Jump"].includes(selectedTestName)) {
+        // For isometric tests, use different endpoint
+        endpoint = 'https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes?analysis_type=isometric';
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -61,6 +69,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         const result = await response.json();
         if (result.success && result.data) {
           setApiData(result.data);
+        } else if (Array.isArray(result)) {
+          // Handle direct API response format
+          setApiData(result);
         }
       }
     } catch (error) {
@@ -133,8 +144,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         // Case 4: Pogo Jump
         leftValue = metrics.avg_fp1_contribution || 0;
         rightValue = metrics.avg_fp2_contribution || 0;
-      } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
-        // Case 5: Default for specific metric types
+      } else {
+        // Case 5: All other tests (isometric tests) - use force_peak_left vs force_peak_right
         leftValue = metrics.force_peak_left || 0;
         rightValue = metrics.force_peak_right || 0;
       }
@@ -194,8 +205,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       // Case 4: Pogo Jump
       leftValue = metrics.avg_fp1_contribution || 0;
       rightValue = metrics.avg_fp2_contribution || 0;
-    } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
-      // Case 5: Default for specific metric types
+    } else {
+      // Case 5: All other tests (isometric tests) - use force_peak_left vs force_peak_right
       leftValue = metrics.force_peak_left || 0;
       rightValue = metrics.force_peak_right || 0;
     }
