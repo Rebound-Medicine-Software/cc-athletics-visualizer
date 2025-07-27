@@ -236,8 +236,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         // Check if any trial has dual stance - use force_peak_left vs force_peak_right
         const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
         if (dualTrial) {
-          leftValue = dualTrial.total_metrics?.force_peak_left || 0;
-          rightValue = dualTrial.total_metrics?.force_peak_right || 0;
+          // Try explicit force_peak_left/right first, then derive from channels
+          leftValue = dualTrial.total_metrics?.force_peak_left || 
+                     dualTrial.cha1_metrics?.force_peak || 0;
+          rightValue = dualTrial.total_metrics?.force_peak_right || 
+                      dualTrial.cha2_metrics?.force_peak || 0;
         } else {
           // Use separate left_leg and right_leg trials - average their force_peak values
           const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
