@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates } from "./filters/filterUtils";
 
@@ -89,6 +89,65 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         d.test_name === selectedTestName && d.athlete_name === selectedAthleteName
       ))
     : [];
+
+  // Format dates as DD/MM/YYYY for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  // Get historical data for the trend chart (Task 3)
+  const getHistoricalData = () => {
+    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !apiData.length) {
+      return [];
+    }
+
+    // Get all test records for the selected athlete and test name
+    const athleteTests = apiData.filter(d => 
+      d.test_name === selectedTestName && 
+      d.athlete_name === selectedAthleteName
+    );
+
+    return athleteTests.map(testRecord => {
+      const metrics = testRecord.metrics as any;
+      let leftValue = 0;
+      let rightValue = 0;
+
+      // Use same logic as limb symmetry calculation
+      if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
+        leftValue = metrics.fp1_peak_force || 0;
+        rightValue = metrics.fp2_peak_force || 0;
+      } else if (selectedTestName === "Countermovement Jump") {
+        leftValue = metrics.fp1_peak_force || 0;
+        rightValue = metrics.fp2_peak_force || 0;
+      } else if (selectedTestName === "Squat Jump") {
+        leftValue = metrics.fp1_peak_force || 0;
+        rightValue = metrics.fp2_peak_force || 0;
+      } else if (selectedTestName === "Pogo Jump") {
+        leftValue = metrics.fp1_avg_rfd || 0;
+        rightValue = metrics.fp2_avg_rfd || 0;
+      } else if (["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"].includes(selectedMetricType)) {
+        leftValue = metrics.fp1_peak_force || 0;
+        rightValue = metrics.fp2_peak_force || 0;
+      }
+
+      const total = leftValue + rightValue;
+      const leftPercentage = total > 0 ? Math.round((leftValue / total) * 100 * 100) / 100 : 0;
+      const rightPercentage = total > 0 ? Math.round((rightValue / total) * 100 * 100) / 100 : 0;
+
+      return {
+        date: formatDate(testRecord.test_date),
+        leftPercentage,
+        rightPercentage,
+        rawDate: testRecord.test_date
+      };
+    }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
+  };
+
+  const historicalData = getHistoricalData();
 
   const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
 
@@ -326,7 +385,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               <SelectContent className="bg-white z-50">
                 {uniqueTestDates.map(testDate => (
                   <SelectItem key={testDate} value={testDate}>
-                    {testDate}
+                    {formatDate(testDate)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -348,75 +407,118 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           </div>
         )}
 
-        {/* Chart */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="h-[200px] w-full">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500">Loading...</div>
-              </div>
-            ) : (
-              <div>
-                <div className="mb-4 text-sm text-gray-600">
-                  Debug Info: API Data: {apiData.length} records, 
-                  Selected: {selectedTestName || 'None'} / {selectedAthleteName || 'None'} / {selectedTestDate || 'None'}
-                  {limbSymmetryData && <span>, Chart Data: {chartData.length} items</span>}
+        {/* Charts Container */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Limb Symmetry Chart */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4 text-center">Current Test Limb Symmetry</h3>
+            <div className="h-[200px] w-full">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-gray-500">Loading...</div>
                 </div>
-                
-                {limbSymmetryData ? (
-                  <div className="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4">
-                    <div className="mb-2 text-sm font-medium">Limb Symmetry Data:</div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between bg-black text-white px-3 py-2 rounded" style={{width: `${limbSymmetryData.leftPercentage}%`}}>
-                        <span className="text-sm font-bold">Left: {limbSymmetryData.leftPercentage.toFixed(1)}%</span>
+              ) : (
+                <div>
+                  {limbSymmetryData ? (
+                    <div className="w-full h-full flex flex-col justify-center">
+                      <div className="space-y-3">
+                        <div 
+                          className="flex items-center justify-start bg-black text-white px-3 py-3 rounded relative"
+                          style={{width: `${Math.max(limbSymmetryData.leftPercentage, 15)}%`}}
+                        >
+                          <span className="text-sm font-bold whitespace-nowrap">
+                            Left: {limbSymmetryData.leftPercentage.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div 
+                          className="flex items-center justify-start bg-sky-300 text-black px-3 py-3 rounded relative"
+                          style={{width: `${Math.max(limbSymmetryData.rightPercentage, 15)}%`}}
+                        >
+                          <span className="text-sm font-bold whitespace-nowrap">
+                            Right: {limbSymmetryData.rightPercentage.toFixed(1)}%
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between bg-sky-300 text-black px-3 py-2 rounded" style={{width: `${limbSymmetryData.rightPercentage}%`}}>
-                        <span className="text-sm font-bold">Right: {limbSymmetryData.rightPercentage.toFixed(1)}%</span>
+                      <div className="mt-4 text-xs text-gray-600 text-center">
+                        Raw values: Left={limbSymmetryData.leftValue.toFixed(1)}, Right={limbSymmetryData.rightValue.toFixed(1)}
                       </div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-600">
-                      Raw values: Left={limbSymmetryData.leftValue.toFixed(1)}, Right={limbSymmetryData.rightValue.toFixed(1)}
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center text-gray-500 text-sm">
+                        {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
+                          ? "Please select all filters to view limb symmetry data"
+                          : "No data available for the selected filters"
+                        }
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="h-full">
-                    {/* Test chart with sample data to verify rendering works */}
-                    <div className="mb-2 text-xs text-blue-600">Testing chart rendering with sample data:</div>
-                    <ResponsiveContainer width="100%" height="60%">
-                      <BarChart
-                        data={[
-                          { name: "Left Limb %", value: 45, fill: "#000000" },
-                          { name: "Right Limb %", value: 55, fill: "#7DD3FC" }
-                        ]}
-                        layout="horizontal"
-                        margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
-                      >
-                        <XAxis type="number" domain={[0, 100]} />
-                        <YAxis dataKey="name" type="category" hide />
-                        <Bar dataKey="value" stackId="limb" radius={[0, 4, 4, 0]}>
-                          <Cell fill="#000000" />
-                          <Cell fill="#7DD3FC" />
-                          <LabelList 
-                            dataKey="value" 
-                            position="center" 
-                            fill="white"
-                            fontSize={12}
-                            fontWeight="bold"
-                            formatter={(value: number) => `${value}%`}
-                          />
-                        </Bar>
-                      </BarChart>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Historical Trend Chart */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold mb-4 text-center">Historical Trend</h3>
+            <div className="h-[200px] w-full">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-gray-500">Loading...</div>
+                </div>
+              ) : (
+                <div>
+                  {historicalData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={historicalData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="date" 
+                          fontSize={11}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis 
+                          domain={[0, 100]}
+                          fontSize={11}
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="leftPercentage" 
+                          stroke="#000000" 
+                          strokeWidth={2}
+                          dot={{ fill: "#000000", strokeWidth: 2, r: 4 }}
+                          name="Left Limb %"
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="rightPercentage" 
+                          stroke="#7DD3FC" 
+                          strokeWidth={2}
+                          dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 4 }}
+                          name="Right Limb %"
+                        />
+                      </LineChart>
                     </ResponsiveContainer>
-                    <div className="text-center text-gray-500 text-sm">
-                      {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
-                        ? "Please select all filters to view real limb symmetry data"
-                        : "No data available for the selected filters"
-                      }
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <div className="text-center text-gray-500 text-sm">
+                        {!selectedTestName || !selectedMetricType || !selectedAthleteName 
+                          ? "Please select test, metric, and athlete to view historical trends"
+                          : "No historical data available for the selected athlete and test"
+                        }
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
