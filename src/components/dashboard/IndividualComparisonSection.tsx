@@ -145,9 +145,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         leftValue = metrics.avg_fp1_contribution || 0;
         rightValue = metrics.avg_fp2_contribution || 0;
       } else {
-        // Case 5: All other tests (isometric tests) - prefer stance values, fallback to force_peak_left/right
-        leftValue = metrics.stance?.left_leg?.force_peak || metrics.force_peak_left || 0;
-        rightValue = metrics.stance?.right_leg?.force_peak || metrics.force_peak_right || 0;
+        // Case 5: All other tests (isometric tests) - use total_metrics path
+        leftValue = metrics.stance?.left_leg?.total_metrics?.force_peak || 0;
+        rightValue = metrics.stance?.right_leg?.total_metrics?.force_peak || 0;
       }
 
       const total = leftValue + rightValue;
@@ -206,9 +206,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       leftValue = metrics.avg_fp1_contribution || 0;
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
-      // Case 5: All other tests (isometric tests) - prefer stance values, fallback to force_peak_left/right
-      leftValue = metrics.stance?.left_leg?.force_peak || metrics.force_peak_left || 0;
-      rightValue = metrics.stance?.right_leg?.force_peak || metrics.force_peak_right || 0;
+      // Case 5: All other tests (isometric tests) - use total_metrics path
+      leftValue = metrics.stance?.left_leg?.total_metrics?.force_peak || 0;
+      rightValue = metrics.stance?.right_leg?.total_metrics?.force_peak || 0;
     }
 
     const total = leftValue + rightValue;
