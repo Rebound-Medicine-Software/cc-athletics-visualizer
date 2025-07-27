@@ -140,17 +140,19 @@ serve(async (req) => {
         const analysis = recording.isometric_analysis
         if (!analysis?.trials) return
 
-        analysis.trials.forEach((trial, index) => {
-          allTestData.push({
-            athlete_id: athlete.id,
-            athlete_name: athlete.name,
-            team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
-            test_date: new Date(recording.date).toISOString().split('T')[0],
-            test_name: recording.exercise_name || 'Isometric Test',
-            repetition_number: index + 1,
-            gender: demographics.gender,
-            metrics: trial.total_metrics,
-          })
+        // For isometric tests, create one record per recording (not per trial)
+        // and include the full isometric_analysis structure for limb symmetry calculations
+        allTestData.push({
+          athlete_id: athlete.id,
+          athlete_name: athlete.name,
+          team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+          test_date: new Date(recording.date).toISOString().split('T')[0],
+          test_name: recording.exercise_name || 'Isometric Test',
+          repetition_number: 1, // One record per recording session
+          gender: demographics.gender,
+          metrics: {
+            isometric_analysis: analysis
+          },
         })
       })
     }
