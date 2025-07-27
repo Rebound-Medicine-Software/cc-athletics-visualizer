@@ -240,10 +240,22 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
       // Case 5: Isometric tests
-      console.log('Isometric test data:', metrics.isometric_analysis);
+      console.log('=== ISOMETRIC DATA ANALYSIS ===');
+      console.log('Full metrics object:', JSON.stringify(metrics, null, 2));
+      console.log('isometric_analysis:', metrics.isometric_analysis);
       
       if (metrics.isometric_analysis?.trials) {
         console.log('Available trials:', metrics.isometric_analysis.trials);
+        console.log('Number of trials:', metrics.isometric_analysis.trials.length);
+        
+        // Log each trial's stance and force_peak
+        metrics.isometric_analysis.trials.forEach((trial: any, index: number) => {
+          console.log(`Trial ${index}:`, {
+            stance: trial.stance,
+            force_peak: trial.total_metrics?.force_peak,
+            total_metrics_keys: trial.total_metrics ? Object.keys(trial.total_metrics) : 'no total_metrics'
+          });
+        });
         
         // Check if any trial has dual stance - use force_peak_left vs force_peak_right
         const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
@@ -265,15 +277,15 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             trial.stance === 'right_leg' || trial.stance === 'right'
           );
           
-          console.log('Left trials:', leftTrials);
-          console.log('Right trials:', rightTrials);
+          console.log('Left trials found:', leftTrials.length, leftTrials);
+          console.log('Right trials found:', rightTrials.length, rightTrials);
           
           if (leftTrials.length > 0) {
             leftValue = leftTrials.reduce((sum: number, trial: any) => {
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
-              console.log('Left trial value:', value, 'from trial:', trial);
+              console.log('Left trial value:', value, 'from trial:', trial.stance);
               return sum + value;
             }, 0) / leftTrials.length;
           }
@@ -283,12 +295,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
-              console.log('Right trial value:', value, 'from trial:', trial);
+              console.log('Right trial value:', value, 'from trial:', trial.stance);
               return sum + value;
             }, 0) / rightTrials.length;
           }
             
-          console.log('Separate stance values - Left:', leftValue, 'Right:', rightValue);
+          console.log('Final calculated values - Left:', leftValue, 'Right:', rightValue);
         }
       } else {
         console.log('No isometric_analysis.trials found');
