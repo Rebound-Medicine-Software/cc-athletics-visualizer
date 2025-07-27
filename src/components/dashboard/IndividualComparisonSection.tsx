@@ -117,10 +117,14 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       let rightValue = 0;
 
       // Use same logic as limb symmetry calculation - using exact API metric names
-      if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-        // Case 1: Drop Jump with specific metrics
-        leftValue = metrics.p1_avg_force || 0;
-        rightValue = metrics.p2_avg_force || 0;
+      if (selectedTestName === "Drop Jump") {
+        // Drop Jump doesn't have bilateral force plate data - no limb symmetry available
+        return {
+          date: formatDate(testRecord.test_date),
+          leftPercentage: 0,
+          rightPercentage: 0,
+          rawDate: testRecord.test_date
+        };
       } else if (selectedTestName === "Countermovement Jump") {
         // Case 2: CMJ with any metrics
         leftValue = metrics.p1_avg_force || 0;
@@ -178,10 +182,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     const metrics = testRecord.metrics as any;
 
     // Apply data logic based on test name and metric type - using exact API metric names
-    if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-      // Case 1: Drop Jump with specific metrics
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+    if (selectedTestName === "Drop Jump") {
+      // Drop Jump doesn't have bilateral force plate data - no limb symmetry available
+      return null;
     } else if (selectedTestName === "Countermovement Jump") {
       // Case 2: CMJ with any metrics
       leftValue = metrics.p1_avg_force || 0;
