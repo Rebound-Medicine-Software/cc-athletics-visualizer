@@ -146,8 +146,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         rightValue = metrics.avg_fp2_contribution || 0;
       } else {
         // Case 5: All other tests (isometric tests) - use force_peak_left vs force_peak_right
-        leftValue = metrics.force_peak_left || 0;
-        rightValue = metrics.force_peak_right || 0;
+        leftValue = metrics.force_peak_left || metrics.stance?.left_leg?.force_peak || 0;
+        rightValue = metrics.force_peak_right || metrics.stance?.right_leg?.force_peak || 0;
       }
 
       const total = leftValue + rightValue;
@@ -207,8 +207,8 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
       // Case 5: All other tests (isometric tests) - use force_peak_left vs force_peak_right
-      leftValue = metrics.force_peak_left || 0;
-      rightValue = metrics.force_peak_right || 0;
+      leftValue = metrics.force_peak_left || metrics.stance?.left_leg?.force_peak || 0;
+      rightValue = metrics.force_peak_right || metrics.stance?.right_leg?.force_peak || 0;
     }
 
     const total = leftValue + rightValue;
