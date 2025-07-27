@@ -232,15 +232,22 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       rightValue = metrics.avg_fp2_contribution || 0;
     } else {
       // Case 5: Isometric tests
+      console.log('Isometric test data:', metrics.isometric_analysis);
+      
       if (metrics.isometric_analysis?.trials) {
+        console.log('Available trials:', metrics.isometric_analysis.trials);
+        
         // Check if any trial has dual stance - use force_peak_left vs force_peak_right
         const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
+        console.log('Dual trial found:', dualTrial);
+        
         if (dualTrial) {
           // Try explicit force_peak_left/right first, then derive from channels
           leftValue = dualTrial.total_metrics?.force_peak_left || 
                      dualTrial.cha1_metrics?.force_peak || 0;
           rightValue = dualTrial.total_metrics?.force_peak_right || 
                       dualTrial.cha2_metrics?.force_peak || 0;
+          console.log('Dual stance values - Left:', leftValue, 'Right:', rightValue);
         } else {
           // Use separate left_leg and right_leg trials - average their force_peak values
           const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
@@ -250,14 +257,20 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             trial.stance === 'right_leg'
           );
           
+          console.log('Left trials:', leftTrials);
+          console.log('Right trials:', rightTrials);
+          
           leftValue = leftTrials.length > 0 
             ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
             : 0;
           rightValue = rightTrials.length > 0 
             ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
             : 0;
+            
+          console.log('Separate stance values - Left:', leftValue, 'Right:', rightValue);
         }
       } else {
+        console.log('No isometric_analysis.trials found');
         leftValue = 0;
         rightValue = 0;
       }
