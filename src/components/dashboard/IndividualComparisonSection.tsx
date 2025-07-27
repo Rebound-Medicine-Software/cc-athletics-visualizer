@@ -253,9 +253,14 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           console.log(`Trial ${index}:`, {
             stance: trial.stance,
             force_peak: trial.total_metrics?.force_peak,
-            total_metrics_keys: trial.total_metrics ? Object.keys(trial.total_metrics) : 'no total_metrics'
+            total_metrics_keys: trial.total_metrics ? Object.keys(trial.total_metrics) : 'no total_metrics',
+            raw_trial: trial
           });
         });
+        
+        console.log('Current athlete selection:', selectedAthleteName);
+        console.log('Current test selection:', selectedTestName);
+        console.log('Current date selection:', selectedTestDate);
         
         // Check if any trial has dual stance - use force_peak_left vs force_peak_right
         const dualTrial = metrics.isometric_analysis.trials.find((trial: any) => trial.stance === 'dual');
