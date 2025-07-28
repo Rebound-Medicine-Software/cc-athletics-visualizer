@@ -708,56 +708,52 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                 <div className="flex items-center justify-center h-full">
                   <div className="text-gray-500">Loading...</div>
                 </div>
+              ) : historicalData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={historicalData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                    />
+                    <YAxis 
+                      domain={[0, 100]}
+                      fontSize={11}
+                      tickFormatter={(value) => `${value}%`}
+                    />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
+                      labelFormatter={(label) => `Date: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="leftPercentage" 
+                      stroke="#000000" 
+                      strokeWidth={2}
+                      dot={{ fill: "#000000", strokeWidth: 2, r: 4 }}
+                      name="Left Limb %"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="rightPercentage" 
+                      stroke="#7DD3FC" 
+                      strokeWidth={2}
+                      dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 4 }}
+                      name="Right Limb %"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               ) : (
-                <div>
-                  {historicalData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={historicalData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="date" 
-                          fontSize={11}
-                          angle={-45}
-                          textAnchor="end"
-                          height={60}
-                        />
-                        <YAxis 
-                          domain={[0, 100]}
-                          fontSize={11}
-                          tickFormatter={(value) => `${value}%`}
-                        />
-                        <Tooltip 
-                          formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
-                          labelFormatter={(label) => `Date: ${label}`}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="leftPercentage" 
-                          stroke="#000000" 
-                          strokeWidth={2}
-                          dot={{ fill: "#000000", strokeWidth: 2, r: 4 }}
-                          name="Left Limb %"
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="rightPercentage" 
-                          stroke="#7DD3FC" 
-                          strokeWidth={2}
-                          dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 4 }}
-                          name="Right Limb %"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center text-gray-500 text-sm">
-                        {!selectedTestName || !selectedMetricType || !selectedAthleteName 
-                          ? "Please select test, metric, and athlete to view historical trends"
-                          : "No historical data available for the selected athlete and test"
-                        }
-                      </div>
-                    </div>
-                  )}
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center text-gray-500 text-sm">
+                    {!selectedTestName || !selectedMetricType || !selectedAthleteName 
+                      ? "Please select test, metric, and athlete to view historical trends"
+                      : "No historical data available for the selected athlete and test"
+                    }
+                  </div>
                 </div>
               )}
             </div>
