@@ -113,26 +113,41 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   // Get historical data for the trend chart (Task 3)
   const getHistoricalData = () => {
     if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !apiData.length) {
+      console.log('Historical data missing requirements:', {
+        selectedTestName: !!selectedTestName,
+        selectedMetricType: !!selectedMetricType,
+        selectedAthleteName: !!selectedAthleteName,
+        apiDataLength: apiData.length
+      });
       return [];
     }
 
-    // Get all test records for the selected athlete and test name
-    const athleteTests = apiData.filter(d => 
+    console.log('Getting historical data for:', { selectedTestName, selectedMetricType, selectedAthleteName });
+
+    // Get all test records for the selected athlete and test name (regardless of selected test date)
+    const athleteTests = teamFilteredData.filter(d => 
       d.test_name === selectedTestName && 
       d.athlete_name === selectedAthleteName
     );
 
-    return athleteTests.map(testRecord => {
+    console.log('Found athlete tests:', athleteTests.length);
+    console.log('Athlete test dates:', athleteTests.map(t => t.test_date));
+
+    const historicalResults = athleteTests.map(testRecord => {
       const metrics = testRecord.metrics as any;
       let leftValue = 0;
       let rightValue = 0;
 
+      console.log('Processing test record for date:', testRecord.test_date);
+
       // Safety check - skip if metrics is undefined
       if (!metrics) {
+        console.log('No metrics found for', testRecord.test_date);
         return {
           date: formatDate(testRecord.test_date),
           leftPercentage: 0,
-          rightPercentage: 0
+          rightPercentage: 0,
+          rawDate: testRecord.test_date
         };
       }
 
@@ -154,30 +169,67 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         leftValue = metrics.avg_fp1_contribution || 0;
         rightValue = metrics.avg_fp2_contribution || 0;
       } else {
-      // Case 5: Isometric tests - average trials by stance within the same test
-      if (metrics.isometric_analysis?.trials) {
-        const leftTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-          trial.stance === 'left_leg'
-        );
-        const rightTrials = metrics.isometric_analysis.trials.filter((trial: any) => 
-          trial.stance === 'right_leg'
+        // Case 5: Isometric tests - search for left and right leg trials across all matching records for this date
+        const matchingRecordsForDate = teamFilteredData.filter((record: TestData) => 
+          record.athlete_name === selectedAthleteName &&
+          record.test_date === testRecord.test_date &&
+          record.test_name.includes('Isometric')
         );
         
-        leftValue = leftTrials.length > 0 
-          ? leftTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / leftTrials.length
-          : 0;
-        rightValue = rightTrials.length > 0 
-          ? rightTrials.reduce((sum: number, trial: any) => sum + (trial.total_metrics?.force_peak || 0), 0) / rightTrials.length
-          : 0;
-      } else {
-        leftValue = 0;
-        rightValue = 0;
-      }
+        let allLeftTrials: any[] = [];
+        let allRightTrials: any[] = [];
+        let foundDualTrial = false;
+        
+        matchingRecordsForDate.forEach((record: TestData) => {
+          const recordMetrics = record.metrics as any;
+          if (recordMetrics?.isometric_analysis?.trials) {
+            const leftTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+              trial.stance === 'left_leg' || trial.stance === 'left'
+            );
+            const rightTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+              trial.stance === 'right_leg' || trial.stance === 'right'
+            );
+            const dualTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'dual');
+            
+            allLeftTrials.push(...leftTrials);
+            allRightTrials.push(...rightTrials);
+            
+            // Handle dual trials (prefer these over separate trials)
+            dualTrials.forEach((dualTrial: any) => {
+              if (dualTrial?.total_metrics?.force_peak_left && dualTrial?.total_metrics?.force_peak_right) {
+                leftValue = dualTrial.total_metrics.force_peak_left;
+                rightValue = dualTrial.total_metrics.force_peak_right;
+                foundDualTrial = true;
+              } else if (dualTrial?.cha1_metrics?.force_peak && dualTrial?.cha2_metrics?.force_peak) {
+                leftValue = dualTrial.cha1_metrics.force_peak;
+                rightValue = dualTrial.cha2_metrics.force_peak;
+                foundDualTrial = true;
+              }
+            });
+          }
+        });
+        
+        // Only calculate from separate trials if we didn't find dual trial values
+        if (!foundDualTrial) {
+          if (allLeftTrials.length > 0) {
+            leftValue = allLeftTrials.reduce((sum: number, trial: any) => {
+              return sum + (trial.total_metrics?.force_peak || trial.max_force || 0);
+            }, 0) / allLeftTrials.length;
+          }
+          
+          if (allRightTrials.length > 0) {
+            rightValue = allRightTrials.reduce((sum: number, trial: any) => {
+              return sum + (trial.total_metrics?.force_peak || trial.max_force || 0);
+            }, 0) / allRightTrials.length;
+          }
+        }
       }
 
       const total = leftValue + rightValue;
       const leftPercentage = total > 0 ? Math.round((leftValue / total) * 100 * 100) / 100 : 0;
       const rightPercentage = total > 0 ? Math.round((rightValue / total) * 100 * 100) / 100 : 0;
+
+      console.log(`Date ${testRecord.test_date}: Left=${leftValue}, Right=${rightValue}, LeftPerc=${leftPercentage}%, RightPerc=${rightPercentage}%`);
 
       return {
         date: formatDate(testRecord.test_date),
@@ -186,9 +238,17 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         rawDate: testRecord.test_date
       };
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
+
+    console.log('Final historical results:', historicalResults);
+    return historicalResults;
   };
 
   const historicalData = getHistoricalData();
+  
+  // Debug historical data
+  console.log('=== HISTORICAL DATA DEBUG ===');
+  console.log('Historical data length:', historicalData.length);
+  console.log('Historical data:', historicalData);
 
   const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
 
