@@ -429,15 +429,20 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             </div>
           </div>
           
-          {/* Center 0% label */}
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-xs font-medium text-gray-600 z-20">
-            0%
-          </div>
         </div>
         
-        {/* Raw values text */}
-        <div className="text-center text-sm text-gray-600 mt-2">
-          Raw values: Left = {data.leftValue.toFixed(2)}, Right = {data.rightValue.toFixed(2)}
+        {/* Raw values as attractive scorecards */}
+        <div className="mt-6 flex justify-center gap-6">
+          <div className="bg-card rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Left Limb</div>
+            <div className="text-2xl font-bold text-foreground">{data.leftValue.toFixed(2)}</div>
+            <div className="text-xs text-muted-foreground">{data.leftPercentage.toFixed(1)}%</div>
+          </div>
+          <div className="bg-card rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
+            <div className="text-sm font-medium text-muted-foreground mb-1">Right Limb</div>
+            <div className="text-2xl font-bold text-foreground">{data.rightValue.toFixed(2)}</div>
+            <div className="text-xs text-muted-foreground">{data.rightPercentage.toFixed(1)}%</div>
+          </div>
         </div>
       </div>
     );
@@ -619,51 +624,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               ) : (
                 <div>
                   {limbSymmetryData ? (
-                    <div className="w-full h-full flex flex-col justify-center">
-                      {/* Mirrored horizontal bar chart */}
-                      <div className="relative h-16 bg-gray-50 rounded border mb-4">
-                        {/* Center line */}
-                        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 z-10"></div>
-                        
-                        {/* Left bar (black) - expanding leftward from center */}
-                        <div 
-                          className="absolute top-2 bottom-2 bg-black rounded-l flex items-center justify-end pr-2"
-                          style={{
-                            right: '50%',
-                            width: `${Math.min(limbSymmetryData.leftPercentage, 50)}%`,
-                            marginRight: '1px'
-                          }}
-                        >
-                          <span className="text-white text-sm font-medium">
-                            {limbSymmetryData.leftPercentage.toFixed(2)}%
-                          </span>
-                        </div>
-                        
-                        {/* Right bar (light blue) - expanding rightward from center */}
-                        <div 
-                          className="absolute top-2 bottom-2 bg-sky-300 rounded-r flex items-center justify-start pl-2"
-                          style={{
-                            left: '50%',
-                            width: `${Math.min(limbSymmetryData.rightPercentage, 50)}%`,
-                            marginLeft: '1px'
-                          }}
-                        >
-                          <span className="text-gray-800 text-sm font-medium">
-                            {limbSymmetryData.rightPercentage.toFixed(2)}%
-                          </span>
-                        </div>
-                        
-                        {/* Center 0% label */}
-                        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-xs font-medium text-gray-600 z-20">
-                          0%
-                        </div>
-                      </div>
-                      
-                      {/* Raw values text */}
-                      <div className="text-center text-sm text-gray-600">
-                        Raw values: Left = {limbSymmetryData.leftValue.toFixed(2)}, Right = {limbSymmetryData.rightValue.toFixed(2)}
-                      </div>
-                    </div>
+                     <MirroredBarChart data={limbSymmetryData} />
                   ) : (
                     <div className="h-full flex items-center justify-center">
                       <div className="text-center text-gray-500 text-sm">
