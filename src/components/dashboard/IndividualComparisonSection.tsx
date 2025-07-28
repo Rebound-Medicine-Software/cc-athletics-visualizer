@@ -533,27 +533,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             </Select>
           </div>
 
-          {/* Metric Type */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
-            <Select 
-              value={selectedMetricType} 
-              onValueChange={handleMetricTypeChange}
-              disabled={!selectedTestName}
-            >
-              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Metric" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {availableMetricTypes.map(metricType => (
-                  <SelectItem key={metricType} value={metricType}>
-                    {metricType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Athlete Name */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
@@ -590,6 +569,27 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                 {uniqueTestDates.map(testDate => (
                   <SelectItem key={testDate} value={testDate}>
                     {formatDate(testDate)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Metric Type */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
+            <Select 
+              value={selectedMetricType} 
+              onValueChange={handleMetricTypeChange}
+              disabled={!selectedTestName}
+            >
+              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Metric" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {availableMetricTypes.map(metricType => (
+                  <SelectItem key={metricType} value={metricType}>
+                    {metricType}
                   </SelectItem>
                 ))}
               </SelectContent>
