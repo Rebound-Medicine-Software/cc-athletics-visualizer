@@ -135,8 +135,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
     const historicalResults = athleteTests.map(testRecord => {
       const metrics = testRecord.metrics as any;
-      let leftValue = 0;
-      let rightValue = 0;
 
       console.log('Processing test record for date:', testRecord.test_date);
 
@@ -145,96 +143,26 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         console.log('No metrics found for', testRecord.test_date);
         return {
           date: formatDate(testRecord.test_date),
-          leftPercentage: 0,
-          rightPercentage: 0,
+          value: 0,
           rawDate: testRecord.test_date
         };
       }
 
-      // Use same logic as limb symmetry calculation - using exact API metric names
-      if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-        // Case 1: Drop Jump with specific metrics
-        leftValue = metrics.p1_avg_force || 0;
-        rightValue = metrics.p2_avg_force || 0;
-      } else if (selectedTestName === "Countermovement Jump") {
-        // Case 2: CMJ with any metrics
-        leftValue = metrics.p1_avg_force || 0;
-        rightValue = metrics.p2_avg_force || 0;
-      } else if (selectedTestName === "Squat Jump") {
-        // Case 3: Squat Jump
-        leftValue = metrics.p1_avg_force || 0;
-        rightValue = metrics.p2_avg_force || 0;
-      } else if (selectedTestName === "Pogo Jump") {
-        // Case 4: Pogo Jump
-        leftValue = metrics.avg_fp1_contribution || 0;
-        rightValue = metrics.avg_fp2_contribution || 0;
-      } else {
-        // Case 5: Isometric tests - search for left and right leg trials across all matching records for this date
-        const matchingRecordsForDate = teamFilteredData.filter((record: TestData) => 
-          record.athlete_name === selectedAthleteName &&
-          record.test_date === testRecord.test_date &&
-          record.test_name.includes('Isometric')
-        );
-        
-        let allLeftTrials: any[] = [];
-        let allRightTrials: any[] = [];
-        let foundDualTrial = false;
-        
-        matchingRecordsForDate.forEach((record: TestData) => {
-          const recordMetrics = record.metrics as any;
-          if (recordMetrics?.isometric_analysis?.trials) {
-            const leftTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
-              trial.stance === 'left_leg' || trial.stance === 'left'
-            );
-            const rightTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
-              trial.stance === 'right_leg' || trial.stance === 'right'
-            );
-            const dualTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'dual');
-            
-            allLeftTrials.push(...leftTrials);
-            allRightTrials.push(...rightTrials);
-            
-            // Handle dual trials (prefer these over separate trials)
-            dualTrials.forEach((dualTrial: any) => {
-              if (dualTrial?.total_metrics?.force_peak_left && dualTrial?.total_metrics?.force_peak_right) {
-                leftValue = dualTrial.total_metrics.force_peak_left;
-                rightValue = dualTrial.total_metrics.force_peak_right;
-                foundDualTrial = true;
-              } else if (dualTrial?.cha1_metrics?.force_peak && dualTrial?.cha2_metrics?.force_peak) {
-                leftValue = dualTrial.cha1_metrics.force_peak;
-                rightValue = dualTrial.cha2_metrics.force_peak;
-                foundDualTrial = true;
-              }
-            });
-          }
-        });
-        
-        // Only calculate from separate trials if we didn't find dual trial values
-        if (!foundDualTrial) {
-          if (allLeftTrials.length > 0) {
-            leftValue = allLeftTrials.reduce((sum: number, trial: any) => {
-              return sum + (trial.total_metrics?.force_peak || trial.max_force || 0);
-            }, 0) / allLeftTrials.length;
-          }
-          
-          if (allRightTrials.length > 0) {
-            rightValue = allRightTrials.reduce((sum: number, trial: any) => {
-              return sum + (trial.total_metrics?.force_peak || trial.max_force || 0);
-            }, 0) / allRightTrials.length;
-          }
-        }
+      // Get the actual metric value directly from the metrics object
+      const metricKey = selectedMetricType as keyof typeof metrics;
+      let metricValue = metrics[metricKey] || 0;
+
+      // Handle specific metric formatting
+      if (typeof metricValue === 'number') {
+        // Round to 2 decimal places for display
+        metricValue = Math.round(metricValue * 100) / 100;
       }
 
-      const total = leftValue + rightValue;
-      const leftPercentage = total > 0 ? Math.round((leftValue / total) * 100 * 100) / 100 : 0;
-      const rightPercentage = total > 0 ? Math.round((rightValue / total) * 100 * 100) / 100 : 0;
-
-      console.log(`Date ${testRecord.test_date}: Left=${leftValue}, Right=${rightValue}, LeftPerc=${leftPercentage}%, RightPerc=${rightPercentage}%`);
+      console.log(`Date ${testRecord.test_date}: ${selectedMetricType}=${metricValue}`);
 
       return {
         date: formatDate(testRecord.test_date),
-        leftPercentage,
-        rightPercentage,
+        value: metricValue,
         rawDate: testRecord.test_date
       };
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
@@ -658,18 +586,16 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         </div>
 
         {/* Legend */}
-        {limbSymmetryData && (
-          <div className="flex justify-center items-center gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-black"></div>
-              <span className="text-sm font-medium">Left Limb %</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-sky-300"></div>
-              <span className="text-sm font-medium">Right Limb %</span>
-            </div>
+        <div className="flex justify-center items-center gap-6 mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-black"></div>
+            <span className="text-sm font-medium">Left Limb %</span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-sky-300"></div>
+            <span className="text-sm font-medium">Right Limb % / Historical Trend</span>
+          </div>
+        </div>
 
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -720,29 +646,20 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                       height={60}
                     />
                     <YAxis 
-                      domain={[0, 100]}
                       fontSize={11}
-                      tickFormatter={(value) => `${value}%`}
+                      tickFormatter={(value) => `${value.toFixed(1)}`}
                     />
                     <Tooltip 
-                      formatter={(value: number, name: string) => [`${value.toFixed(1)}%`, name]}
+                      formatter={(value: number, name: string) => [`${value.toFixed(2)}`, name]}
                       labelFormatter={(label) => `Date: ${label}`}
                     />
                     <Line 
                       type="monotone" 
-                      dataKey="leftPercentage" 
-                      stroke="#000000" 
-                      strokeWidth={2}
-                      dot={{ fill: "#000000", strokeWidth: 2, r: 4 }}
-                      name="Left Limb %"
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="rightPercentage" 
+                      dataKey="value" 
                       stroke="#7DD3FC" 
-                      strokeWidth={2}
-                      dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 4 }}
-                      name="Right Limb %"
+                      strokeWidth={3}
+                      dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 5 }}
+                      name={selectedMetricType || "Metric"}
                     />
                   </LineChart>
                 </ResponsiveContainer>
