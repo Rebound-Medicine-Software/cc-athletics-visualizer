@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates } from "./filters/filterUtils";
+import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 
 interface IndividualComparisonSectionProps {
   data: TestData[];
@@ -134,36 +135,18 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     console.log('Athlete test dates:', athleteTests.map(t => t.test_date));
 
     const historicalResults = athleteTests.map(testRecord => {
-      const metrics = testRecord.metrics as any;
-
       console.log('Processing test record for date:', testRecord.test_date);
 
-      // Safety check - skip if metrics is undefined
-      if (!metrics) {
-        console.log('No metrics found for', testRecord.test_date);
-        return {
-          date: formatDate(testRecord.test_date),
-          value: 0,
-          rawDate: testRecord.test_date
-        };
-      }
+      // Use the same metricCaseLogic as the peer comparison chart
+      const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
 
-      // Get the actual metric value directly from the metrics object
-      const metricKey = selectedMetricType as keyof typeof metrics;
-      let metricValue = metrics[metricKey] || 0;
-
-      // Handle specific metric formatting
-      if (typeof metricValue === 'number') {
-        // Round to 2 decimal places for display
-        metricValue = Math.round(metricValue * 100) / 100;
-      }
-
-      console.log(`Date ${testRecord.test_date}: ${selectedMetricType}=${metricValue}`);
+      console.log(`Date ${testRecord.test_date}: ${selectedMetricType}=${value} (yAxisLabel: ${yAxisLabel})`);
 
       return {
         date: formatDate(testRecord.test_date),
-        value: metricValue,
-        rawDate: testRecord.test_date
+        value: value || 0,
+        rawDate: testRecord.test_date,
+        yAxisLabel
       };
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
 
@@ -648,6 +631,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                     <YAxis 
                       fontSize={11}
                       tickFormatter={(value) => `${value.toFixed(1)}`}
+                      label={{
+                        value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle', fontSize: 12, fill: "#374151" },
+                      }}
                     />
                     <Tooltip 
                       formatter={(value: number, name: string) => [`${value.toFixed(2)}`, name]}
