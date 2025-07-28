@@ -385,19 +385,63 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     }
   }, [selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate, apiData, limbSymmetryData]);
 
-  // Prepare chart data
-  const chartData = limbSymmetryData ? [
-    {
-      name: "Left Limb %",
-      value: limbSymmetryData.leftPercentage,
-      fill: "#000000"
-    },
-    {
-      name: "Right Limb %", 
-      value: limbSymmetryData.rightPercentage,
-      fill: "#7DD3FC"
-    }
-  ] : [];
+  // Custom mirrored bar chart component
+  const MirroredBarChart = ({ data }: { data: LimbSymmetryData | null }) => {
+    if (!data) return <div className="text-center text-gray-500">No data available</div>;
+
+    const maxPercentage = Math.max(data.leftPercentage, data.rightPercentage);
+    const scale = maxPercentage > 0 ? 50 / maxPercentage : 1; // Scale to fit 50% of each side
+
+    return (
+      <div className="w-full">
+        {/* Chart container */}
+        <div className="relative h-16 bg-gray-50 rounded border">
+          {/* Center line */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 z-10"></div>
+          
+          {/* Left bar (black) */}
+          <div 
+            className="absolute top-2 bottom-2 bg-black rounded-l"
+            style={{
+              right: '50%',
+              width: `${data.leftPercentage * scale}%`,
+              marginRight: '1px'
+            }}
+          >
+            {/* Left percentage label */}
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white text-sm font-medium">
+              {data.leftPercentage.toFixed(2)}%
+            </div>
+          </div>
+          
+          {/* Right bar (light blue) */}
+          <div 
+            className="absolute top-2 bottom-2 bg-sky-300 rounded-r"
+            style={{
+              left: '50%',
+              width: `${data.rightPercentage * scale}%`,
+              marginLeft: '1px'
+            }}
+          >
+            {/* Right percentage label */}
+            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-800 text-sm font-medium">
+              {data.rightPercentage.toFixed(2)}%
+            </div>
+          </div>
+          
+          {/* Center 0% label */}
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-xs font-medium text-gray-600 z-20">
+            0%
+          </div>
+        </div>
+        
+        {/* Raw values text */}
+        <div className="text-center text-sm text-gray-600 mt-2">
+          Raw values: Left = {data.leftValue.toFixed(2)}, Right = {data.rightValue.toFixed(2)}
+        </div>
+      </div>
+    );
+  };
 
   // Handle button text editing
   const handleButtonClick = () => {
@@ -576,26 +620,48 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                 <div>
                   {limbSymmetryData ? (
                     <div className="w-full h-full flex flex-col justify-center">
-                      <div className="space-y-3">
+                      {/* Mirrored horizontal bar chart */}
+                      <div className="relative h-16 bg-gray-50 rounded border mb-4">
+                        {/* Center line */}
+                        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 z-10"></div>
+                        
+                        {/* Left bar (black) - expanding leftward from center */}
                         <div 
-                          className="flex items-center justify-start bg-black text-white px-3 py-3 rounded relative"
-                          style={{width: `${Math.max(limbSymmetryData.leftPercentage, 15)}%`}}
+                          className="absolute top-2 bottom-2 bg-black rounded-l flex items-center justify-end pr-2"
+                          style={{
+                            right: '50%',
+                            width: `${Math.min(limbSymmetryData.leftPercentage, 50)}%`,
+                            marginRight: '1px'
+                          }}
                         >
-                          <span className="text-sm font-bold whitespace-nowrap">
-                            Left: {limbSymmetryData.leftPercentage.toFixed(1)}%
+                          <span className="text-white text-sm font-medium">
+                            {limbSymmetryData.leftPercentage.toFixed(2)}%
                           </span>
                         </div>
+                        
+                        {/* Right bar (light blue) - expanding rightward from center */}
                         <div 
-                          className="flex items-center justify-start bg-sky-300 text-black px-3 py-3 rounded relative"
-                          style={{width: `${Math.max(limbSymmetryData.rightPercentage, 15)}%`}}
+                          className="absolute top-2 bottom-2 bg-sky-300 rounded-r flex items-center justify-start pl-2"
+                          style={{
+                            left: '50%',
+                            width: `${Math.min(limbSymmetryData.rightPercentage, 50)}%`,
+                            marginLeft: '1px'
+                          }}
                         >
-                          <span className="text-sm font-bold whitespace-nowrap">
-                            Right: {limbSymmetryData.rightPercentage.toFixed(1)}%
+                          <span className="text-gray-800 text-sm font-medium">
+                            {limbSymmetryData.rightPercentage.toFixed(2)}%
                           </span>
+                        </div>
+                        
+                        {/* Center 0% label */}
+                        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-1 text-xs font-medium text-gray-600 z-20">
+                          0%
                         </div>
                       </div>
-                      <div className="mt-4 text-xs text-gray-600 text-center">
-                        Raw values: Left={limbSymmetryData.leftValue.toFixed(1)}, Right={limbSymmetryData.rightValue.toFixed(1)}
+                      
+                      {/* Raw values text */}
+                      <div className="text-center text-sm text-gray-600">
+                        Raw values: Left = {limbSymmetryData.leftValue.toFixed(2)}, Right = {limbSymmetryData.rightValue.toFixed(2)}
                       </div>
                     </div>
                   ) : (
