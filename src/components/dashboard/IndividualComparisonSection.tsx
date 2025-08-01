@@ -134,19 +134,49 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     console.log('Found athlete tests:', athleteTests.length);
     console.log('Athlete test dates:', athleteTests.map(t => t.test_date));
 
-    const historicalResults = athleteTests.map(testRecord => {
-      console.log('Processing test record for date:', testRecord.test_date);
+    // Group tests by date to get the best value per date
+    const testsByDate = athleteTests.reduce((acc, testRecord) => {
+      const date = testRecord.test_date;
+      if (!acc[date]) {
+        acc[date] = [];
+      }
+      acc[date].push(testRecord);
+      return acc;
+    }, {} as Record<string, TestData[]>);
 
-      // Use the same metricCaseLogic as the peer comparison chart
-      const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
+    // Determine if lower is better for this metric
+    const isLowerBetter = selectedMetricType === 'Reactive Strength Index' || selectedMetricType === 'Contact Time';
 
-      console.log(`Date ${testRecord.test_date}: ${selectedMetricType}=${value} (yAxisLabel: ${yAxisLabel})`);
+    const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
+      console.log(`Processing date ${date} with ${testsOnDate.length} tests`);
+
+      // Calculate metric values for all tests on this date
+      const values = testsOnDate.map(testRecord => {
+        const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
+        return { value: value || 0, yAxisLabel };
+      }).filter(result => result.value > 0); // Filter out zero values
+
+      if (values.length === 0) {
+        return {
+          date: formatDate(date),
+          value: 0,
+          rawDate: date,
+          yAxisLabel: selectedMetricType
+        };
+      }
+
+      // Get the best value (highest or lowest depending on metric)
+      const bestValue = isLowerBetter 
+        ? Math.min(...values.map(v => v.value))
+        : Math.max(...values.map(v => v.value));
+
+      console.log(`Date ${date}: ${selectedMetricType}=${bestValue} (${isLowerBetter ? 'lower' : 'higher'} is better)`);
 
       return {
-        date: formatDate(testRecord.test_date),
-        value: value || 0,
-        rawDate: testRecord.test_date,
-        yAxisLabel
+        date: formatDate(date),
+        value: bestValue,
+        rawDate: date,
+        yAxisLabel: values[0].yAxisLabel
       };
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
 
