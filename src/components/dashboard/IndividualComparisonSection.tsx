@@ -144,9 +144,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       return acc;
     }, {} as Record<string, TestData[]>);
 
-    // Determine if lower is better for this metric
-    const isLowerBetter = selectedMetricType === 'Reactive Strength Index' || selectedMetricType === 'Contact Time';
-
     const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
       console.log(`Processing date ${date} with ${testsOnDate.length} tests`);
 
@@ -165,16 +162,29 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         };
       }
 
-      // Get the best value (highest or lowest depending on metric)
-      const bestValue = isLowerBetter 
-        ? Math.min(...values.map(v => v.value))
-        : Math.max(...values.map(v => v.value));
+      // For RSI: higher is better, show max value
+      // For Contact Time: lower is better, show min value but invert for positive trend display
+      // For others: higher is better, show max value
+      let bestValue;
+      let displayValue;
+      
+      if (selectedMetricType === 'Contact Time') {
+        // Lower contact time is better, so take minimum value
+        bestValue = Math.min(...values.map(v => v.value));
+        // Invert for positive trend visualization (subtract from max possible or use negative)
+        const maxContactTime = Math.max(...values.map(v => v.value));
+        displayValue = maxContactTime - bestValue; // Invert so improvements show as positive trend
+      } else {
+        // For RSI and all other metrics, higher is better
+        bestValue = Math.max(...values.map(v => v.value));
+        displayValue = bestValue;
+      }
 
-      console.log(`Date ${date}: ${selectedMetricType}=${bestValue} (${isLowerBetter ? 'lower' : 'higher'} is better)`);
+      console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}`);
 
       return {
         date: formatDate(date),
-        value: bestValue,
+        value: displayValue,
         rawDate: date,
         yAxisLabel: values[0].yAxisLabel
       };
