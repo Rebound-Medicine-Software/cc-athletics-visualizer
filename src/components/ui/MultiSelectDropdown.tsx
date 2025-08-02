@@ -31,9 +31,12 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   // Close dropdown on outside click
   React.useEffect(() => {
     const listener = (e: MouseEvent) => {
-      if (!containerRef.current?.contains(e.target as Node)) {
+      // Check if the click is outside the container AND not on a selecting element
+      if (!containerRef.current?.contains(e.target as Node) && !selectingRef.current) {
         setOpen(false);
       }
+      // Reset selecting flag
+      selectingRef.current = false;
     };
     if (open) {
       document.addEventListener("mousedown", listener);
@@ -94,6 +97,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                selectingRef.current = true;
                 toggleOption(opt.value);
               }}
             >
