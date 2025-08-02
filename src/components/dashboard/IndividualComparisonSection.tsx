@@ -444,15 +444,15 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         
         {/* Raw values as attractive scorecards */}
         <div className="mt-6 flex justify-center gap-6">
-          <div className="bg-card rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Left Limb</div>
-            <div className="text-2xl font-bold text-foreground">{data.leftValue.toFixed(2)}</div>
-            <div className="text-xs text-muted-foreground">{data.leftPercentage.toFixed(1)}%</div>
+          <div className="bg-black rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
+            <div className="text-sm font-medium text-gray-300 mb-1">Left Limb</div>
+            <div className="text-2xl font-bold text-white">{data.leftValue.toFixed(2)}</div>
+            <div className="text-xs text-gray-300">{data.leftPercentage.toFixed(1)}%</div>
           </div>
-          <div className="bg-card rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
-            <div className="text-sm font-medium text-muted-foreground mb-1">Right Limb</div>
-            <div className="text-2xl font-bold text-foreground">{data.rightValue.toFixed(2)}</div>
-            <div className="text-xs text-muted-foreground">{data.rightPercentage.toFixed(1)}%</div>
+          <div className="bg-sky-300 rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
+            <div className="text-sm font-medium text-gray-700 mb-1">Right Limb</div>
+            <div className="text-2xl font-bold text-gray-800">{data.rightValue.toFixed(2)}</div>
+            <div className="text-xs text-gray-700">{data.rightPercentage.toFixed(1)}%</div>
           </div>
         </div>
       </div>
@@ -608,17 +608,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex justify-center items-center gap-6 mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-black"></div>
-            <span className="text-sm font-medium">Left Limb %</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-sky-300"></div>
-            <span className="text-sm font-medium">Right Limb % / Historical Trend</span>
-          </div>
-        </div>
 
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
