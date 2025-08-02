@@ -121,16 +121,18 @@ export function ReportFiltersContainer({
           )}
         </div>
 
-        {/* Individual Filters - using independent state */}
-        <IndividualFilters 
-          data={data} 
-          allData={allData} 
-          selectedTeams={selectedTeams} 
-          filters={filters} 
-          setFilters={setFilters} 
-          onTestSelect={handleTestSelect} 
-          resetFiltersKey={resetFiltersKey} 
-        />
+        {/* Individual Filters - using independent state with exact same styling as Individual/Between Limb Comparisons */}
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
+          <IndividualFilters 
+            data={data} 
+            allData={allData} 
+            selectedTeams={selectedTeams} 
+            filters={filters} 
+            setFilters={setFilters} 
+            onTestSelect={handleTestSelect} 
+            resetFiltersKey={resetFiltersKey} 
+          />
+        </div>
 
         {/* Metric Cards */}
         {metricCardsSlot && (
