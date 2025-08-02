@@ -14,6 +14,37 @@ interface IndividualComparisonSectionProps {
   selectedTeams: string[];
 }
 
+// Helper function to get metric units
+const getMetricUnit = (metricType: string | null): string => {
+  if (!metricType) return '';
+  
+  switch (metricType) {
+    case 'Jump Height (cm)':
+      return '[cm]';
+    case 'Peak Power':
+    case 'Average Propulsive Power':
+    case 'Power':
+      return '[w]';
+    case 'Relative Peak Power':
+      return '[w/kg]';
+    case 'Reactive Strength Index':
+      return '[A/U]';
+    case 'Take-off Velocity':
+      return '[m/s]';
+    case 'Average Rate of Force Development':
+    case 'Maximum Rate of Force Development':
+      return '[N/s]';
+    case 'Contact Time':
+    case 'Flight Time':
+      return '[ms]';
+    case 'Force at Max Rate of Force Development':
+    case 'Peak Force':
+      return '[N]';
+    default:
+      return '';
+  }
+};
+
 interface LimbSymmetryData {
   name: string;
   leftPercentage: number;
@@ -529,7 +560,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           {/* Test Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
             <Select value={selectedTestName} onValueChange={handleTestNameChange}>
               <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Select Test" />
@@ -546,7 +577,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
           {/* Athlete Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Athlete Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
             <Select 
               value={selectedAthleteName} 
               onValueChange={handleAthleteNameChange}
@@ -567,7 +598,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
           {/* Test Date */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Test Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
             <Select 
               value={selectedTestDate} 
               onValueChange={handleTestDateChange}
@@ -588,13 +619,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
           {/* Metric Type */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Metric Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
             <Select 
               value={selectedMetricType} 
               onValueChange={handleMetricTypeChange}
-              disabled={!selectedTestName}
+              disabled={!selectedTestDate}
             >
-              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${!selectedTestDate ? "bg-gray-100 opacity-60" : "bg-white"}`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -668,7 +699,10 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                       }}
                     />
                     <Tooltip 
-                      formatter={(value: number, name: string) => [`${value.toFixed(2)}`, name]}
+                      formatter={(value: number, name: string) => {
+                        const unit = getMetricUnit(selectedMetricType);
+                        return [`${value.toFixed(1)}${unit}`, name];
+                      }}
                       labelFormatter={(label) => `Date: ${label}`}
                     />
                     <Line 
