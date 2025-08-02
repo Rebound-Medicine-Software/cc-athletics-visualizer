@@ -8,6 +8,7 @@ import { IndividualFilters } from "./IndividualFilters";
 import { TestData } from "@/types/forcePlateTypes";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { formatDate } from "@/utils/dateUtils";
 import { getMetricTypesForTest } from "./filterUtils";
 
@@ -32,8 +33,8 @@ export function ReportFiltersContainer({
 }: ReportFiltersProps) {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
-    selectedAthletes: [],
-    testDates: "",
+    selectedAthletes: [] as string[],
+    testDates: [] as string[], // Changed to array for multi-select
     testNames: "",
     metricTypes: ""
   });
@@ -51,7 +52,7 @@ export function ReportFiltersContainer({
   useEffect(() => {
     setFilters({
       selectedAthletes: [],
-      testDates: "",
+      testDates: [], // Array for multi-select
       testNames: "",
       metricTypes: ""
     });
@@ -64,7 +65,7 @@ export function ReportFiltersContainer({
     return data.filter(test => {
       const testMatch = !filters.testNames || test.test_name === filters.testNames;
       const athleteMatch = filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(test.athlete_name);
-      const dateMatch = !filters.testDates || test.test_date === filters.testDates;
+      const dateMatch = filters.testDates.length === 0 || filters.testDates.includes(test.test_date);
       return testMatch && athleteMatch && dateMatch;
     });
   };
@@ -136,7 +137,7 @@ export function ReportFiltersContainer({
                   ...prev,
                   testNames: value,
                   selectedAthletes: [],
-                  testDates: "",
+                  testDates: [], // Reset to empty array
                   metricTypes: ""
                 }));
                 onTestSelect(value);
@@ -157,70 +158,66 @@ export function ReportFiltersContainer({
             </Select>
           </div>
 
-          {/* Athlete Name */}
+          {/* Athlete Name - Multi-Select */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select 
-              value={filters.selectedAthletes[0] || ""} 
-              onValueChange={(value) => {
-                setFilters(prev => ({
-                  ...prev,
-                  selectedAthletes: value ? [value] : [],
-                  testDates: "",
-                  metricTypes: ""
-                }));
-              }}
-              disabled={!filters.testNames}
-            >
-              <SelectTrigger className={`${!filters.testNames ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Athlete" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {Array.from(new Set(
+            {!filters.testNames ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Athletes
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={Array.from(new Set(
                   allData.filter(d => 
                     (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
                     (!filters.testNames || d.test_name === filters.testNames)
                   ).map(d => d.athlete_name)
-                )).map(athleteName => (
-                  <SelectItem key={athleteName} value={athleteName}>
-                    {athleteName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                )).map(name => ({ value: name, label: name }))}
+                value={filters.selectedAthletes}
+                onChange={(values) => {
+                  setFilters(prev => ({
+                    ...prev,
+                    selectedAthletes: values,
+                    testDates: [],
+                    metricTypes: ""
+                  }));
+                }}
+                placeholder="Select Athletes"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
-          {/* Test Date */}
+          {/* Test Date - Multi-Select */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
-            <Select 
-              value={filters.testDates} 
-              onValueChange={(value) => {
-                setFilters(prev => ({
-                  ...prev,
-                  testDates: value,
-                  metricTypes: ""
-                }));
-              }}
-              disabled={filters.selectedAthletes.length === 0}
-            >
-              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Date" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {Array.from(new Set(
+            {filters.selectedAthletes.length === 0 ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Dates
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={Array.from(new Set(
                   allData.filter(d => 
                     (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
                     (!filters.testNames || d.test_name === filters.testNames) &&
                     (filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(d.athlete_name))
                   ).map(d => d.test_date)
-                )).sort().map(testDate => (
-                  <SelectItem key={testDate} value={testDate}>
-                    {formatDate(testDate)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                )).sort().map(date => ({ value: date, label: formatDate(date) }))}
+                value={filters.testDates}
+                onChange={(values) => {
+                  setFilters(prev => ({
+                    ...prev,
+                    testDates: values,
+                    metricTypes: ""
+                  }));
+                }}
+                placeholder="Select Dates"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Metric Type */}
@@ -234,9 +231,9 @@ export function ReportFiltersContainer({
                   metricTypes: value
                 }));
               }}
-              disabled={!filters.testDates}
+              disabled={filters.testDates.length === 0}
             >
-              <SelectTrigger className={`${!filters.testDates ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${filters.testDates.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
