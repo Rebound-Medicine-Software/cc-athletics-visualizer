@@ -318,137 +318,86 @@ export const Filters = ({
           {/* Team Name */}
           <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
-            <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={teamOptions}
-                value={filters.teamName}
-                onChange={handleTeamNameChange}
-                placeholder="Select Teams"
-                className="bg-white"
-                labelClassName="bg-white"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Team Name"
-                className="p-2"
-                onClick={handleResetTeamName}
-                type="button"
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
+            <MultiSelectDropdown
+              options={teamOptions}
+              value={filters.teamName}
+              onChange={handleTeamNameChange}
+              placeholder="Select Teams"
+              className="bg-white"
+              labelClassName="bg-white"
+            />
           </div>
 
           {/* Sex */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
-            <div className="flex items-center gap-2">
-              <div className={sexEnabled ? "" : "pointer-events-none"}>
-                {!sexEnabled ? (
-                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                    Select Sex
-                  </div>
-                ) : (
-                  <Select value={filters.sex} onValueChange={handleSexChange}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select Sex" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50">
-                      <SelectItem value="all">All</SelectItem>
-                      {filteredIndividualData.sexOptions.map(sex => (
-                        <SelectItem key={sex} value={sex}>
-                          {sex}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Sex"
-                className={`p-2 ${!sexEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={sexEnabled ? handleResetSex : undefined}
-                type="button"
-                disabled={!sexEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={sexEnabled ? "" : "pointer-events-none"}>
+              {!sexEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Sex
+                </div>
+              ) : (
+                <Select value={filters.sex} onValueChange={handleSexChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Sex" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All</SelectItem>
+                    {filteredIndividualData.sexOptions.map(sex => (
+                      <SelectItem key={sex} value={sex}>
+                        {sex.charAt(0).toUpperCase() + sex.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
           {/* Athlete Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
-            <div className="flex items-center gap-2">
-              <div className={athleteEnabled ? "" : "pointer-events-none"}>
-                {!athleteEnabled ? (
-                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                    Select Athletes
-                  </div>
-                ) : (
-                  <MultiSelectDropdown
-                    options={athleteOptions}
-                    value={filters.athleteName}
-                    onChange={handleAthleteNameChange}
-                    placeholder="Select Athletes"
-                    className="bg-white"
-                    labelClassName="bg-white"
-                  />
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Athlete Name"
-                className={`p-2 ${!athleteEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={athleteEnabled ? handleResetAthleteName : undefined}
-                type="button"
-                disabled={!athleteEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={athleteEnabled ? "" : "pointer-events-none"}>
+              {!athleteEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Athletes
+                </div>
+              ) : (
+                <MultiSelectDropdown
+                  options={athleteOptions}
+                  value={filters.athleteName}
+                  onChange={handleAthleteNameChange}
+                  placeholder="Select Athletes"
+                  className="bg-white"
+                  labelClassName="bg-white"
+                />
+              )}
             </div>
           </div>
 
           {/* Test Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
-            <div className="flex items-center gap-2">
-              <div className={testNameEnabled ? "" : "pointer-events-none"}>
-                {!testNameEnabled ? (
-                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                    Select Test
-                  </div>
-                ) : (
-                  <Select value={filters.testName} onValueChange={handleTestNameChange}>
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select Test" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50">
-                      <SelectItem value="all">All Tests</SelectItem>
-                      {filteredIndividualData.tests.map(test => (
-                        <SelectItem key={test} value={test}>
-                          {test}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Test Name"
-                className={`p-2 ${!testNameEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={testNameEnabled ? handleResetTestName : undefined}
-                type="button"
-                disabled={!testNameEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={testNameEnabled ? "" : "pointer-events-none"}>
+              {!testNameEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Test
+                </div>
+              ) : (
+                <Select value={filters.testName} onValueChange={handleTestNameChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Test" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All Tests</SelectItem>
+                    {filteredIndividualData.tests.map(test => (
+                      <SelectItem key={test} value={test}>
+                        {test}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </div>
@@ -461,135 +410,84 @@ export const Filters = ({
           {/* Country */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Country</label>
-            <div className="flex items-center gap-2">
-              <MultiSelectDropdown
-                options={countryOptions}
-                value={filters.country}
-                onChange={handleCountryChange}
-                placeholder="Select Countries"
-                className="bg-white"
-                labelClassName="bg-white"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Country"
-                className="p-2"
-                onClick={handleResetCountry}
-                type="button"
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
-            </div>
+            <MultiSelectDropdown
+              options={countryOptions}
+              value={filters.country}
+              onChange={handleCountryChange}
+              placeholder="Select Countries"
+              className="bg-white"
+              labelClassName="bg-white"
+            />
           </div>
 
           {/* Region */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
-            <div className="flex items-center gap-2">
-              <div className={regionEnabled ? "" : "pointer-events-none"}>
-                 {!regionEnabled ? (
-                   <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     Select Regions
-                   </div>
-                 ) : (
-                   <MultiSelectDropdown
-                     options={regionOptions}
-                     value={filters.region}
-                     onChange={handleRegionChange}
-                     placeholder="Select Regions"
-                     className="bg-white"
-                     labelClassName="bg-white"
-                   />
-                 )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Region"
-                className={`p-2 ${!regionEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={regionEnabled ? handleResetRegion : undefined}
-                type="button"
-                disabled={!regionEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={regionEnabled ? "" : "pointer-events-none"}>
+               {!regionEnabled ? (
+                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                   Select Regions
+                 </div>
+               ) : (
+                 <MultiSelectDropdown
+                   options={regionOptions}
+                   value={filters.region}
+                   onChange={handleRegionChange}
+                   placeholder="Select Regions"
+                   className="bg-white"
+                   labelClassName="bg-white"
+                 />
+               )}
             </div>
           </div>
 
           {/* Address */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
-            <div className="flex items-center gap-2">
-              <div className={addressEnabled ? "" : "pointer-events-none"}>
-                 {!addressEnabled ? (
-                   <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                     Select Addresses
-                   </div>
-                 ) : (
-                   <MultiSelectDropdown
-                     options={addressOptions}
-                     value={filters.address}
-                     onChange={handleAddressChange}
-                     placeholder="Select Addresses"
-                     className="bg-white"
-                     labelClassName="bg-white"
-                   />
-                 )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Address"
-                className={`p-2 ${!addressEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={addressEnabled ? handleResetAddress : undefined}
-                type="button"
-                disabled={!addressEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={addressEnabled ? "" : "pointer-events-none"}>
+               {!addressEnabled ? (
+                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                   Select Addresses
+                 </div>
+               ) : (
+                 <MultiSelectDropdown
+                   options={addressOptions}
+                   value={filters.address}
+                   onChange={handleAddressChange}
+                   placeholder="Select Addresses"
+                   className="bg-white"
+                   labelClassName="bg-white"
+                 />
+               )}
             </div>
           </div>
 
           {/* Metric Type */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
-            <div className="flex items-center gap-2">
-              <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
-                {!metricTypeEnabled ? (
-                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                    Select Metric
-                  </div>
-                ) : (
-                  <Select 
-                    value={filters.metricType} 
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select Metric" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white z-50">
-                      <SelectItem value="all">All Metrics</SelectItem>
-                      {availableMetricTypes.map(metric => (
-                        <SelectItem key={metric} value={metric}>
-                          {metric}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Reset Metric Type"
-                className={`p-2 ${!metricTypeEnabled ? "pointer-events-none opacity-50" : ""}`}
-                onClick={metricTypeEnabled ? handleResetMetricType : undefined}
-                type="button"
-                disabled={!metricTypeEnabled}
-              >
-                <RefreshCcw className="w-4 h-4 text-gray-500" />
-              </Button>
+            <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
+              {!metricTypeEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Metric
+                </div>
+              ) : (
+                <Select 
+                  value={filters.metricType} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Metric" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All Metrics</SelectItem>
+                    {availableMetricTypes.map(metric => (
+                      <SelectItem key={metric} value={metric}>
+                        {metric}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </div>
