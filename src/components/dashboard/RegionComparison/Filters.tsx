@@ -323,10 +323,9 @@ export const Filters = ({
                 options={teamOptions}
                 value={filters.teamName}
                 onChange={handleTeamNameChange}
-                placeholder="All Teams"
-                className="text-center h-10 min-h-[40px] max-h-[40px]"
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[600px] z-[100]"
+                placeholder="Select Teams"
+                className="bg-white"
+                labelClassName="bg-white"
               />
               <Button
                 variant="ghost"
@@ -346,19 +345,25 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
             <div className="flex items-center gap-2">
               <div className={sexEnabled ? "" : "pointer-events-none"}>
-                <Select value={filters.sex} onValueChange={sexEnabled ? handleSexChange : () => {}}>
-                  <SelectTrigger className={`${sexEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="all" className="text-center">All</SelectItem>
-                    {filteredIndividualData.sexOptions.map(sex => (
-                      <SelectItem key={sex} value={sex} className="text-center">
-                        {sex}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!sexEnabled ? (
+                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                    Select Sex
+                  </div>
+                ) : (
+                  <Select value={filters.sex} onValueChange={handleSexChange}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select Sex" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50">
+                      <SelectItem value="all">All</SelectItem>
+                      {filteredIndividualData.sexOptions.map(sex => (
+                        <SelectItem key={sex} value={sex}>
+                          {sex}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -379,15 +384,20 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
             <div className="flex items-center gap-2">
               <div className={athleteEnabled ? "" : "pointer-events-none"}>
-                <MultiSelectDropdown
-                  options={athleteOptions}
-                  value={filters.athleteName}
-                  onChange={athleteEnabled ? handleAthleteNameChange : () => {}}
-                  placeholder="All Athletes"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[600px] z-[100]"
-                />
+                {!athleteEnabled ? (
+                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                    Select Athletes
+                  </div>
+                ) : (
+                  <MultiSelectDropdown
+                    options={athleteOptions}
+                    value={filters.athleteName}
+                    onChange={handleAthleteNameChange}
+                    placeholder="Select Athletes"
+                    className="bg-white"
+                    labelClassName="bg-white"
+                  />
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -408,19 +418,25 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
             <div className="flex items-center gap-2">
               <div className={testNameEnabled ? "" : "pointer-events-none"}>
-                <Select value={filters.testName} onValueChange={testNameEnabled ? handleTestNameChange : () => {}}>
-                  <SelectTrigger className={`${testNameEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                    <SelectValue placeholder="All Tests" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="all" className="text-center">All Tests</SelectItem>
-                    {filteredIndividualData.tests.map(test => (
-                      <SelectItem key={test} value={test} className="text-center">
-                        {test}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!testNameEnabled ? (
+                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                    Select Test
+                  </div>
+                ) : (
+                  <Select value={filters.testName} onValueChange={handleTestNameChange}>
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select Test" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50">
+                      <SelectItem value="all">All Tests</SelectItem>
+                      {filteredIndividualData.tests.map(test => (
+                        <SelectItem key={test} value={test}>
+                          {test}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -450,10 +466,9 @@ export const Filters = ({
                 options={countryOptions}
                 value={filters.country}
                 onChange={handleCountryChange}
-                placeholder="All Countries"
-                className="text-center h-10 min-h-[40px] max-h-[40px]"
-                labelClassName="bg-white h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none"
-                dropdownClassName="w-[600px] z-[100]"
+                placeholder="Select Countries"
+                className="bg-white"
+                labelClassName="bg-white"
               />
               <Button
                 variant="ghost"
@@ -473,15 +488,20 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
             <div className="flex items-center gap-2">
               <div className={regionEnabled ? "" : "pointer-events-none"}>
-                 <MultiSelectDropdown
-                   options={regionOptions}
-                   value={filters.region}
-                   onChange={handleRegionChange}
-                   placeholder="All Regions"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!regionEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${regionEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[600px] z-[100]"
-                />
+                 {!regionEnabled ? (
+                   <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                     Select Regions
+                   </div>
+                 ) : (
+                   <MultiSelectDropdown
+                     options={regionOptions}
+                     value={filters.region}
+                     onChange={handleRegionChange}
+                     placeholder="Select Regions"
+                     className="bg-white"
+                     labelClassName="bg-white"
+                   />
+                 )}
               </div>
               <Button
                 variant="ghost"
@@ -502,15 +522,20 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
             <div className="flex items-center gap-2">
               <div className={addressEnabled ? "" : "pointer-events-none"}>
-                 <MultiSelectDropdown
-                   options={addressOptions}
-                   value={filters.address}
-                   onChange={handleAddressChange}
-                   placeholder="All Addresses"
-                  className={`text-center h-10 min-h-[40px] max-h-[40px] ${!addressEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-                  labelClassName={`${addressEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-                  dropdownClassName="w-[600px] z-[100]"
-                />
+                 {!addressEnabled ? (
+                   <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                     Select Addresses
+                   </div>
+                 ) : (
+                   <MultiSelectDropdown
+                     options={addressOptions}
+                     value={filters.address}
+                     onChange={handleAddressChange}
+                     placeholder="Select Addresses"
+                     className="bg-white"
+                     labelClassName="bg-white"
+                   />
+                 )}
               </div>
               <Button
                 variant="ghost"
@@ -531,22 +556,28 @@ export const Filters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
             <div className="flex items-center gap-2">
               <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
-                <Select 
-                  value={filters.metricType} 
-                  onValueChange={metricTypeEnabled ? (value => setFilters(prev => ({ ...prev, metricType: value }))) : () => {}}
-                >
-                  <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                    <SelectValue placeholder="All Metrics" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[100]">
-                    <SelectItem value="all" className="text-center">All Metrics</SelectItem>
-                    {availableMetricTypes.map(metric => (
-                      <SelectItem key={metric} value={metric} className="text-center">
-                        {metric}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!metricTypeEnabled ? (
+                  <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                    Select Metric
+                  </div>
+                ) : (
+                  <Select 
+                    value={filters.metricType} 
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select Metric" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50">
+                      <SelectItem value="all">All Metrics</SelectItem>
+                      {availableMetricTypes.map(metric => (
+                        <SelectItem key={metric} value={metric}>
+                          {metric}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <Button
                 variant="ghost"

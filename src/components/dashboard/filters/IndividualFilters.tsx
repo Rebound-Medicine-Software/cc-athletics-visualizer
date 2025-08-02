@@ -151,12 +151,12 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
         <div className="flex items-center gap-2">
           <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-            <SelectTrigger className="bg-white text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden">
-              <SelectValue placeholder="All Tests" />
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select Test" />
             </SelectTrigger>
-            <SelectContent className="w-[750px]">
+            <SelectContent className="bg-white z-50">
               {testNameOptions.map(opt => (
-                <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
+                <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
               ))}
@@ -180,15 +180,20 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className="flex items-center gap-2">
           <div className={athleteEnabled ? "" : "pointer-events-none"}>
-            <MultiSelectDropdown
-              options={athleteOptions}
-              value={filters.selectedAthletes}
-              onChange={handleAthleteChange}
-              placeholder="All Athletes"
-              className={`text-center h-10 min-h-[40px] max-h-[40px] ${!athleteEnabled ? "bg-black opacity-60 text-gray-300" : "bg-white"}`}
-              labelClassName={`${athleteEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} h-10 min-h-[40px] max-h-[40px] overflow-hidden resize-none`}
-              dropdownClassName="w-[600px]"
-            />
+            {!athleteEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Athletes
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={filters.selectedAthletes}
+                onChange={handleAthleteChange}
+                placeholder="Select Athletes"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
           <Button
             variant="ghost"
@@ -209,18 +214,24 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
         <div className="flex items-center gap-2">
           <div className={testDateEnabled ? "" : "pointer-events-none"}>
-            <Select value={filters.testDates} onValueChange={testDateEnabled ? handleDateChange : () => {}}>
-              <SelectTrigger className={`${testDateEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Dates" />
-              </SelectTrigger>
-              <SelectContent className="w-[600px]">
-                {dateOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!testDateEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Date
+              </div>
+            ) : (
+              <Select value={filters.testDates} onValueChange={handleDateChange}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select Date" />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50">
+                  {dateOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <Button
             variant="ghost"
@@ -241,18 +252,24 @@ export function IndividualFilters({
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
         <div className="flex items-center gap-2">
           <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
-            <Select value={filters.metricTypes} onValueChange={metricTypeEnabled ? handleMetricTypeChange : () => {}}>
-              <SelectTrigger className={`${metricTypeEnabled ? "bg-white" : "bg-black opacity-60 text-gray-300"} text-center w-full h-10 min-h-[40px] max-h-[40px] overflow-hidden`}>
-                <SelectValue placeholder="All Metrics" />
-              </SelectTrigger>
-              <SelectContent className="w-[600px]">
-                {metricTypeOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value} className="whitespace-normal break-words">
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!metricTypeEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Metric
+              </div>
+            ) : (
+              <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select Metric" />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50">
+                  {metricTypeOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <Button
             variant="ghost"
