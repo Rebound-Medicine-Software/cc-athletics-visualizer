@@ -66,6 +66,7 @@ export class DataProcessor {
             test_date: this.formatDate(jump.date),
             test_name: testName,
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: jump.metric_table as JumpMetrics,
           });
         });
@@ -93,6 +94,7 @@ export class DataProcessor {
             test_date: this.formatDate(recording.date),
             test_name: recording.exercise_name || 'Isometric Test',
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: trial.total_metrics as IsometricMetrics,
           });
         });
@@ -121,6 +123,7 @@ export class DataProcessor {
             test_date: this.formatDate(recording.date),
             test_name: 'Pogo Jump',
             repetition_number: 0, // 0 indicates average
+            gender: demographics.gender,
             metrics: analysis.avg_metrics as PogoMetrics,
           });
         }
@@ -134,6 +137,7 @@ export class DataProcessor {
             test_date: this.formatDate(recording.date),
             test_name: 'Pogo Jump',
             repetition_number: index + 1,
+            gender: demographics.gender,
             metrics: jump as PogoMetrics,
           });
         });
