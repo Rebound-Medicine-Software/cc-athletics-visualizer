@@ -7,6 +7,9 @@ import { VideoBox } from "../VideoBox";
 import { IndividualFilters } from "./IndividualFilters";
 import { TestData } from "@/types/forcePlateTypes";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatDate } from "@/utils/dateUtils";
+import { getMetricTypesForTest } from "./filterUtils";
 
 interface ReportFiltersProps {
   data: TestData[];
@@ -121,17 +124,130 @@ export function ReportFiltersContainer({
           )}
         </div>
 
-        {/* Individual Filters - with exact IndividualComparisonSection styling */}
+        {/* Individual Filters - using exact IndividualComparisonSection dropdown structure */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          <IndividualFilters 
-            data={data} 
-            allData={allData} 
-            selectedTeams={selectedTeams} 
-            filters={filters} 
-            setFilters={setFilters} 
-            onTestSelect={handleTestSelect} 
-            resetFiltersKey={resetFiltersKey} 
-          />
+          {/* Test Name */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <Select 
+              value={filters.testNames} 
+              onValueChange={(value) => {
+                setFilters(prev => ({
+                  ...prev,
+                  testNames: value,
+                  selectedAthletes: [],
+                  testDates: "",
+                  metricTypes: ""
+                }));
+                onTestSelect(value);
+              }}
+            >
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Select Test" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {Array.from(new Set(allData.filter(d => 
+                  selectedTeams.length === 0 || selectedTeams.includes(d.team_name)
+                ).map(d => d.test_name))).filter(t => t !== "All Tests" && t !== "Isometric Test").map(testName => (
+                  <SelectItem key={testName} value={testName}>
+                    {testName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Athlete Name */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <Select 
+              value={filters.selectedAthletes[0] || ""} 
+              onValueChange={(value) => {
+                setFilters(prev => ({
+                  ...prev,
+                  selectedAthletes: value ? [value] : [],
+                  testDates: "",
+                  metricTypes: ""
+                }));
+              }}
+              disabled={!filters.testNames}
+            >
+              <SelectTrigger className={`${!filters.testNames ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Athlete" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {Array.from(new Set(
+                  allData.filter(d => 
+                    (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
+                    (!filters.testNames || d.test_name === filters.testNames)
+                  ).map(d => d.athlete_name)
+                )).map(athleteName => (
+                  <SelectItem key={athleteName} value={athleteName}>
+                    {athleteName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Test Date */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
+            <Select 
+              value={filters.testDates} 
+              onValueChange={(value) => {
+                setFilters(prev => ({
+                  ...prev,
+                  testDates: value,
+                  metricTypes: ""
+                }));
+              }}
+              disabled={filters.selectedAthletes.length === 0}
+            >
+              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Date" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {Array.from(new Set(
+                  allData.filter(d => 
+                    (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
+                    (!filters.testNames || d.test_name === filters.testNames) &&
+                    (filters.selectedAthletes.length === 0 || filters.selectedAthletes.includes(d.athlete_name))
+                  ).map(d => d.test_date)
+                )).sort().map(testDate => (
+                  <SelectItem key={testDate} value={testDate}>
+                    {formatDate(testDate)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Metric Type */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <Select 
+              value={filters.metricTypes} 
+              onValueChange={(value) => {
+                setFilters(prev => ({
+                  ...prev,
+                  metricTypes: value
+                }));
+              }}
+              disabled={!filters.testDates}
+            >
+              <SelectTrigger className={`${!filters.testDates ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Metric" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {getMetricTypesForTest(filters.testNames).map(metricType => (
+                  <SelectItem key={metricType} value={metricType}>
+                    {metricType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Metric Cards */}
