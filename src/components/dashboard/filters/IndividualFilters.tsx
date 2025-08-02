@@ -146,24 +146,23 @@ export function IndividualFilters({
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
-      {/* 1. Test Name (always enabled) */}
+      {/* 1. Test Name (always enabled) - Multi-Select */}
       <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
-        <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-          <SelectTrigger className="bg-white">
-            <SelectValue placeholder="Select Test" />
-          </SelectTrigger>
-          <SelectContent className="bg-white z-50">
-            {testNameOptions.map(opt => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelectDropdown
+          options={testNameOptions}
+          value={Array.isArray(filters.testNames) ? filters.testNames : (filters.testNames ? [filters.testNames] : [])}
+          onChange={(values) => {
+            const testName = values.length > 0 ? values[0] : "";
+            handleTestNameChange(testName);
+          }}
+          placeholder="Select Test"
+          className="bg-white"
+          labelClassName="bg-white"
+        />
       </div>
 
-      {/* 3. Athlete Name (enabled after Test Name is selected) */}
+      {/* 3. Athlete Name (enabled after Test Name is selected) - Multi-Select */}
       <div className={`w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center`}>
         <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
         <div className={athleteEnabled ? "" : "pointer-events-none"}>
