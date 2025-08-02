@@ -45,6 +45,24 @@ const getMetricUnit = (metricType: string | null): string => {
   }
 };
 
+// Helper function to format metric values based on type
+const formatMetricValue = (value: number, metricType: string | null): number => {
+  if (!metricType) return value;
+  
+  switch (metricType) {
+    case 'Jump Height (cm)':
+      // Convert from meters to centimeters (multiply by 100)
+      return value * 100;
+    case 'Contact Time':
+    case 'Flight Time':
+      // Convert from seconds to milliseconds (multiply by 1000)
+      return value * 1000;
+    default:
+      // No conversion needed for other metrics
+      return value;
+  }
+};
+
 interface LimbSymmetryData {
   name: string;
   leftPercentage: number;
@@ -211,11 +229,14 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         displayValue = bestValue;
       }
 
-      console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}`);
+      // Format the value based on metric type
+      const formattedValue = formatMetricValue(displayValue, selectedMetricType);
+
+      console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}, formattedValue=${formattedValue}`);
 
       return {
         date: formatDate(date),
-        value: displayValue,
+        value: formattedValue,
         rawDate: date,
         yAxisLabel: values[0].yAxisLabel
       };
@@ -678,43 +699,50 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="text-gray-500">Loading...</div>
                 </div>
               ) : historicalData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={historicalData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
-                      dataKey="date" 
-                      fontSize={11}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                    />
-                    <YAxis 
-                      fontSize={11}
-                      tickFormatter={(value) => `${value.toFixed(1)}`}
-                      label={{
-                        value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
-                        angle: -90,
-                        position: 'insideLeft',
-                        style: { textAnchor: 'middle', fontSize: 12, fill: "#374151" },
-                      }}
-                    />
-                    <Tooltip 
-                      formatter={(value: number, name: string) => {
-                        const unit = getMetricUnit(selectedMetricType);
-                        return [`${value.toFixed(1)}${unit}`, name];
-                      }}
-                      labelFormatter={(label) => `Date: ${label}`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#7DD3FC" 
-                      strokeWidth={3}
-                      dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 5 }}
-                      name={selectedMetricType || "Metric"}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="w-full overflow-x-auto">
+                  <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart 
+                        data={historicalData} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <XAxis 
+                          dataKey="date" 
+                          fontSize={11}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          interval={0}
+                        />
+                        <YAxis 
+                          fontSize={11}
+                          tickFormatter={(value) => `${value.toFixed(1)}`}
+                          label={{
+                            value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
+                            angle: -90,
+                            position: 'insideLeft',
+                            style: { textAnchor: 'middle', fontSize: 12, fill: "#374151" },
+                          }}
+                        />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => {
+                            const unit = getMetricUnit(selectedMetricType);
+                            return [`${value.toFixed(1)}${unit}`, name];
+                          }}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke="#7DD3FC" 
+                          strokeWidth={3}
+                          dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 5 }}
+                          name={selectedMetricType || "Metric"}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center text-gray-500 text-sm">
