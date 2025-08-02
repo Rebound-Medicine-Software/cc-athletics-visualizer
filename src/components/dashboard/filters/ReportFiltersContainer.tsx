@@ -122,7 +122,7 @@ export function ReportFiltersContainer({
         </div>
 
         {/* Individual Filters - with exact IndividualComparisonSection styling */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           <IndividualFilters 
             data={data} 
             allData={allData} 
