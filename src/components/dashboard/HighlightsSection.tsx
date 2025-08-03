@@ -30,18 +30,14 @@ export const HighlightsSection = ({
 
   // Second Individual Filters state
   const [secondFilters, setSecondFilters] = useState({
-    sex: "",
     selectedAthletes: [] as string[],
-    testNames: "",
-    metricTypes: ""
+    testNames: ""
   });
   useEffect(() => {
     setSelectedAthletes([]);
     setSecondFilters({
-      sex: "",
       selectedAthletes: [],
-      testNames: "",
-      metricTypes: ""
+      testNames: ""
     });
   }, [selectedTeams, resetFiltersKey]);
 
@@ -121,9 +117,8 @@ export const HighlightsSection = ({
     return data.filter(test => {
       const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
       const testMatch = !secondFilters.testNames || test.test_name === secondFilters.testNames;
-      const sexMatch = !secondFilters.sex || test.gender === secondFilters.sex.toLowerCase();
       const athleteMatch = secondFilters.selectedAthletes.length === 0 || secondFilters.selectedAthletes.includes(test.athlete_name);
-      return teamMatch && testMatch && sexMatch && athleteMatch;
+      return teamMatch && testMatch && athleteMatch;
     });
   };
 
@@ -193,8 +188,8 @@ export const HighlightsSection = ({
             <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Please Select a 'Test Name'</Button>
           </div>
 
-          {/* Individual Filters - using exact dropdown structure from ReportFiltersContainer */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+          {/* Individual Filters - simplified to only Test Name and Athlete Name */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {/* Test Name */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
@@ -204,9 +199,7 @@ export const HighlightsSection = ({
                   setSecondFilters(prev => ({
                     ...prev,
                     testNames: value,
-                    sex: "",
-                    selectedAthletes: [],
-                    metricTypes: ""
+                    selectedAthletes: []
                   }));
                   handleSecondTestSelect(value);
                 }}
@@ -226,49 +219,10 @@ export const HighlightsSection = ({
               </Select>
             </div>
 
-            {/* Sex */}
-            <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
-              {!secondFilters.testNames ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Sex
-                </div>
-              ) : (
-                <Select 
-                  value={secondFilters.sex} 
-                  onValueChange={(value) => {
-                    setSecondFilters(prev => ({
-                      ...prev,
-                      sex: value,
-                      selectedAthletes: [],
-                      metricTypes: ""
-                    }));
-                  }}
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Sex" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    {Array.from(new Set(
-                      allData.filter(d => 
-                        (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
-                        (!secondFilters.testNames || d.test_name === secondFilters.testNames) &&
-                        d.gender
-                      ).map(d => d.gender)
-                    )).map(sex => (
-                      <SelectItem key={sex} value={sex!.charAt(0).toUpperCase() + sex!.slice(1)}>
-                        {sex!.charAt(0).toUpperCase() + sex!.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
             {/* Athlete Name(s) - Multi-Select */}
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
-              {!secondFilters.sex ? (
+              {!secondFilters.testNames ? (
                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
                   Select Athletes
                 </div>
@@ -277,16 +231,14 @@ export const HighlightsSection = ({
                   options={Array.from(new Set(
                     allData.filter(d => 
                       (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
-                      (!secondFilters.testNames || d.test_name === secondFilters.testNames) &&
-                      (!secondFilters.sex || d.gender === secondFilters.sex.toLowerCase())
+                      (!secondFilters.testNames || d.test_name === secondFilters.testNames)
                     ).map(d => d.athlete_name)
                   )).map(name => ({ value: name, label: name }))}
                   value={secondFilters.selectedAthletes}
                   onChange={(values) => {
                     setSecondFilters(prev => ({
                       ...prev,
-                      selectedAthletes: values,
-                      metricTypes: ""
+                      selectedAthletes: values
                     }));
                   }}
                   placeholder="Select Athletes"
@@ -294,32 +246,6 @@ export const HighlightsSection = ({
                   labelClassName="bg-white"
                 />
               )}
-            </div>
-
-            {/* Metric Type */}
-            <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-              <Select 
-                value={secondFilters.metricTypes} 
-                onValueChange={(value) => {
-                  setSecondFilters(prev => ({
-                    ...prev,
-                    metricTypes: value
-                  }));
-                }}
-                disabled={secondFilters.selectedAthletes.length === 0}
-              >
-                <SelectTrigger className={`${secondFilters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                  <SelectValue placeholder="Select Metric" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50">
-                  {getMetricTypesForTest(secondFilters.testNames).map(metricType => (
-                    <SelectItem key={metricType} value={metricType}>
-                      {metricType}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
