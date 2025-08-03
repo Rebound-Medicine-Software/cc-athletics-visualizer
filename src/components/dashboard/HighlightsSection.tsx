@@ -30,13 +30,13 @@ export const HighlightsSection = ({
 
   // Second Individual Filters state
   const [secondFilters, setSecondFilters] = useState({
-    selectedAthletes: [] as string[],
+    selectedAthlete: "",
     testNames: ""
   });
   useEffect(() => {
     setSelectedAthletes([]);
     setSecondFilters({
-      selectedAthletes: [],
+      selectedAthlete: "",
       testNames: ""
     });
   }, [selectedTeams, resetFiltersKey]);
@@ -117,7 +117,7 @@ export const HighlightsSection = ({
     return data.filter(test => {
       const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(test.team_name);
       const testMatch = !secondFilters.testNames || test.test_name === secondFilters.testNames;
-      const athleteMatch = secondFilters.selectedAthletes.length === 0 || secondFilters.selectedAthletes.includes(test.athlete_name);
+      const athleteMatch = !secondFilters.selectedAthlete || test.athlete_name === secondFilters.selectedAthlete;
       return teamMatch && testMatch && athleteMatch;
     });
   };
@@ -185,7 +185,11 @@ export const HighlightsSection = ({
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex justify-center mb-4">
-            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">Please Select a 'Test Name'</Button>
+            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
+              {secondFilters.selectedAthlete && secondFilters.testNames 
+                ? `${secondFilters.selectedAthlete} - ${secondFilters.testNames}` 
+                : "Please Select a 'Test Name'"}
+            </Button>
           </div>
 
           {/* Individual Filters - simplified to only Test Name and Athlete Name */}
@@ -195,14 +199,14 @@ export const HighlightsSection = ({
               <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
               <Select 
                 value={secondFilters.testNames} 
-                onValueChange={(value) => {
-                  setSecondFilters(prev => ({
-                    ...prev,
-                    testNames: value,
-                    selectedAthletes: []
-                  }));
-                  handleSecondTestSelect(value);
-                }}
+                 onValueChange={(value) => {
+                   setSecondFilters(prev => ({
+                     ...prev,
+                     testNames: value,
+                     selectedAthlete: ""
+                   }));
+                   handleSecondTestSelect(value);
+                 }}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select Test" />
@@ -219,43 +223,52 @@ export const HighlightsSection = ({
               </Select>
             </div>
 
-            {/* Athlete Name(s) - Multi-Select */}
+            {/* Athlete Name - Single Select */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
               {!secondFilters.testNames ? (
                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Athletes
+                  Select Athlete
                 </div>
               ) : (
-                <MultiSelectDropdown
-                  options={Array.from(new Set(
-                    allData.filter(d => 
-                      (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
-                      (!secondFilters.testNames || d.test_name === secondFilters.testNames)
-                    ).map(d => d.athlete_name)
-                  )).map(name => ({ value: name, label: name }))}
-                  value={secondFilters.selectedAthletes}
-                  onChange={(values) => {
+                <Select 
+                  value={secondFilters.selectedAthlete} 
+                  onValueChange={(value) => {
                     setSecondFilters(prev => ({
                       ...prev,
-                      selectedAthletes: values
+                      selectedAthlete: value
                     }));
                   }}
-                  placeholder="Select Athletes"
-                  className="bg-white"
-                  labelClassName="bg-white"
-                />
+                >
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Athlete" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {Array.from(new Set(
+                      allData.filter(d => 
+                        (selectedTeams.length === 0 || selectedTeams.includes(d.team_name)) &&
+                        (!secondFilters.testNames || d.test_name === secondFilters.testNames)
+                      ).map(d => d.athlete_name)
+                    )).map(athleteName => (
+                      <SelectItem key={athleteName} value={athleteName}>
+                        {athleteName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>
 
           {/* Metric Cards - positioned right after the filters */}
-          <div className="mt-6">
-            <MetricCards
-              selectedTest={secondFilters.testNames}
-              data={getFilteredDataForChart()}
-            />
-          </div>
+          {secondFilters.testNames && secondFilters.selectedAthlete && (
+            <div className="mt-6">
+              <MetricCards
+                selectedTest={secondFilters.testNames}
+                data={getFilteredDataForChart()}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </>;
