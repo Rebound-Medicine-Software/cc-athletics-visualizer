@@ -213,7 +213,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       country: value,
-      // Reset dependent filters when country changes
+      // Only reset dependent filters when country is completely cleared
       region: value.length === 0 ? [] : prev.region,
       address: value.length === 0 ? [] : prev.address,
       metricType: value.length === 0 ? "all" : prev.metricType
@@ -224,7 +224,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       region: value,
-      // Reset dependent filters when region changes
+      // Only reset dependent filters when region is completely cleared
       address: value.length === 0 ? [] : prev.address,
       metricType: value.length === 0 ? "all" : prev.metricType
     }));
@@ -234,7 +234,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       address: value,
-      // Reset metric type when address changes
+      // Only reset metric type when address is completely cleared
       metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
