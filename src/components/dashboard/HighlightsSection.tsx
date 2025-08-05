@@ -181,7 +181,7 @@ export const HighlightsSection = ({
             <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
               {secondFilters.selectedAthlete && secondFilters.testNames 
                 ? `${secondFilters.selectedAthlete} - ${secondFilters.testNames}` 
-                : "Please Select a 'Test Name'"}
+                : "Please Select a 'Test Name' and 'Athlete Name'"}
             </Button>
           </div>
 
