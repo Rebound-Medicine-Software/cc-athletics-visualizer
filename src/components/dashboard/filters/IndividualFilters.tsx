@@ -145,15 +145,15 @@ export function IndividualFilters({
   const metricTypeEnabled = !!filters.testDates;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6 justify-items-center items-center min-h-[120px] content-center">
-      {/* 1. Test Name (always enabled) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">Test Name</label>
+    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+      {/* Test Name */}
+      <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
         <Select value={filters.testNames} onValueChange={handleTestNameChange}>
-          <SelectTrigger className="w-full bg-background">
+          <SelectTrigger className="bg-white">
             <SelectValue placeholder="Select Test Name" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white z-50">
             {testNameOptions.map(opt => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
@@ -163,12 +163,12 @@ export function IndividualFilters({
         </Select>
       </div>
 
-      {/* 3. Athlete Name (enabled after Test Name is selected) - Multi-Select */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">Athlete Name</label>
-        <div className={athleteEnabled ? "" : "pointer-events-none opacity-50"}>
+      {/* Athlete Name */}
+      <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+        <div className={athleteEnabled ? "" : "pointer-events-none"}>
           {!athleteEnabled ? (
-            <div className="h-10 px-3 py-2 bg-muted text-muted-foreground rounded-md border border-input flex items-center text-sm">
+            <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
               Select Athletes
             </div>
           ) : (
@@ -177,26 +177,27 @@ export function IndividualFilters({
               value={filters.selectedAthletes}
               onChange={handleAthleteChange}
               placeholder="Select Athletes"
-              className="w-full"
+              className="bg-white"
+              labelClassName="bg-white"
             />
           )}
         </div>
       </div>
 
-      {/* 4. Test Date (enabled after Athlete Name) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">Test Date</label>
-        <div className={testDateEnabled ? "" : "pointer-events-none opacity-50"}>
+      {/* Test Date */}
+      <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
+        <div className={testDateEnabled ? "" : "pointer-events-none"}>
           {!testDateEnabled ? (
-            <div className="h-10 px-3 py-2 bg-muted text-muted-foreground rounded-md border border-input flex items-center text-sm">
+            <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
               Select Date
             </div>
           ) : (
             <Select value={filters.testDates} onValueChange={handleDateChange}>
-              <SelectTrigger className="w-full bg-background">
+              <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Select Date" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white z-50">
                 {dateOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
@@ -208,20 +209,20 @@ export function IndividualFilters({
         </div>
       </div>
 
-      {/* 5. Metric Type (enabled after Test Date) */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-muted-foreground">Metric Type</label>
-        <div className={metricTypeEnabled ? "" : "pointer-events-none opacity-50"}>
+      {/* Metric Type */}
+      <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+        <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
+        <div className={metricTypeEnabled ? "" : "pointer-events-none"}>
           {!metricTypeEnabled ? (
-            <div className="h-10 px-3 py-2 bg-muted text-muted-foreground rounded-md border border-input flex items-center text-sm">
+            <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
               Select Metric
             </div>
           ) : (
             <Select value={filters.metricTypes} onValueChange={handleMetricTypeChange}>
-              <SelectTrigger className="w-full bg-background">
+              <SelectTrigger className="bg-white">
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white z-50">
                 {metricTypeOptions.map(opt => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
