@@ -120,7 +120,7 @@ export function ReportFiltersContainer({
               className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-pointer"
               onClick={handleButtonClick}
             >
-              {currentButtonText}
+              Comparisons Amongst Peers
             </Button>
           )}
         </div>
