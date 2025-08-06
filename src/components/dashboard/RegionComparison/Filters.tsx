@@ -16,6 +16,8 @@ interface FiltersProps {
     sex: string; // Individual filter
     athleteName: string[]; // Individual filter
     testName: string; // Individual filter
+    testDate: string; // Individual filter
+    individualMetricType: string; // Individual filter
     country: string[]; // Region filter
     region: string[]; // Region filter
     address: string[]; // Region filter
@@ -27,6 +29,8 @@ interface FiltersProps {
       sex: string;
       athleteName: string[];
       testName: string;
+      testDate: string;
+      individualMetricType: string;
       country: string[];
       region: string[];
       address: string[];
@@ -97,12 +101,14 @@ export const Filters = ({
     const availableAthletes = [...new Set(filteredData.map(d => d.athlete_name))];
     const availableTests = [...new Set(filteredData.map(d => d.test_name))];
     const availableSexOptions = [...new Set(filteredData.map(d => d.gender).filter(Boolean))];
+    const availableTestDates = [...new Set(filteredData.map(d => d.test_date))].sort();
     
     return {
       teams: availableTeams,
       athletes: availableAthletes,
       tests: availableTests,
-      sexOptions: availableSexOptions
+      sexOptions: availableSexOptions,
+      testDates: availableTestDates
     };
   };
 
@@ -160,10 +166,10 @@ export const Filters = ({
     "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"
   ];
 
-  // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
-  const sexEnabled = filters.teamName.length > 0;
-  const athleteEnabled = filters.sex && filters.sex !== "all";
-  const testNameEnabled = filters.athleteName.length > 0;
+  // Individual Filters: Test Name (always enabled) > Athlete Name > Test Date > Metric Type
+  const athleteEnabled = filters.testName && filters.testName !== "all";
+  const testDateEnabled = filters.athleteName.length > 0;
+  const metricTypeForIndividualEnabled = filters.testDate && filters.testDate !== "";
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
   const regionEnabled = filters.country.length > 0;
@@ -315,7 +321,93 @@ export const Filters = ({
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Individual filters dropdowns removed per user request */}
+          {/* Test Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+            <Select value={filters.testName} onValueChange={handleTestNameChange}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Select Test Name" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {filteredIndividualData.tests.map(test => (
+                  <SelectItem key={test} value={test}>
+                    {test}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Athlete Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+            <div className={athleteEnabled ? "" : "pointer-events-none"}>
+              {!athleteEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Athletes
+                </div>
+              ) : (
+                <MultiSelectDropdown
+                  options={athleteOptions}
+                  value={filters.athleteName}
+                  onChange={handleAthleteNameChange}
+                  placeholder="Select Athletes"
+                  className="bg-white"
+                  labelClassName="bg-white"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Test Date */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
+            <div className={testDateEnabled ? "" : "pointer-events-none"}>
+              {!testDateEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Date
+                </div>
+              ) : (
+                <Select value={filters.testDate || ""} onValueChange={(val) => setFilters(prev => ({ ...prev, testDate: val }))}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Date" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {filteredIndividualData.testDates?.map(date => (
+                      <SelectItem key={date} value={date}>
+                        {date}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+
+          {/* Metric Type */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
+            <div className={metricTypeForIndividualEnabled ? "" : "pointer-events-none"}>
+              {!metricTypeForIndividualEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Metric
+                </div>
+              ) : (
+                <Select value={filters.individualMetricType || ""} onValueChange={(val) => setFilters(prev => ({ ...prev, individualMetricType: val }))}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Metric" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {getMetricTypesForTest(filters.testName).map(metric => (
+                      <SelectItem key={metric} value={metric}>
+                        {metric}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
