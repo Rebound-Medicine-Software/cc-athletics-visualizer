@@ -310,7 +310,7 @@ export const Filters = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full overflow-visible">
+    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full">
       {/* Individual Filters Section */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
