@@ -16,8 +16,6 @@ interface FiltersProps {
     sex: string; // Individual filter
     athleteName: string[]; // Individual filter
     testName: string; // Individual filter
-    testDate: string; // Individual filter
-    individualMetricType: string; // Individual filter
     country: string[]; // Region filter
     region: string[]; // Region filter
     address: string[]; // Region filter
@@ -29,8 +27,6 @@ interface FiltersProps {
       sex: string;
       athleteName: string[];
       testName: string;
-      testDate: string;
-      individualMetricType: string;
       country: string[];
       region: string[];
       address: string[];
@@ -101,14 +97,12 @@ export const Filters = ({
     const availableAthletes = [...new Set(filteredData.map(d => d.athlete_name))];
     const availableTests = [...new Set(filteredData.map(d => d.test_name))];
     const availableSexOptions = [...new Set(filteredData.map(d => d.gender).filter(Boolean))];
-    const availableTestDates = [...new Set(filteredData.map(d => d.test_date))].sort();
     
     return {
       teams: availableTeams,
       athletes: availableAthletes,
       tests: availableTests,
-      sexOptions: availableSexOptions,
-      testDates: availableTestDates
+      sexOptions: availableSexOptions
     };
   };
 
@@ -166,10 +160,10 @@ export const Filters = ({
     "Force at Max Rate of Force Development", "Peak Force", "Early Explosive Power"
   ];
 
-  // Individual Filters: Test Name (always enabled) > Athlete Name > Test Date > Metric Type
-  const athleteEnabled = filters.testName && filters.testName !== "all";
-  const testDateEnabled = filters.athleteName.length > 0;
-  const metricTypeForIndividualEnabled = filters.testDate && filters.testDate !== "";
+  // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
+  const sexEnabled = filters.teamName.length > 0;
+  const athleteEnabled = filters.sex && filters.sex !== "all";
+  const testNameEnabled = filters.athleteName.length > 0;
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
   const regionEnabled = filters.country.length > 0;
@@ -321,21 +315,43 @@ export const Filters = ({
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
-          {/* Test Name */}
+          {/* Team Name */}
+          <div className="w-[250px] min-w-[250px] max-w-[250px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
+            <MultiSelectDropdown
+              options={teamOptions}
+              value={filters.teamName}
+              onChange={handleTeamNameChange}
+              placeholder="Select Teams"
+              className="bg-white"
+              labelClassName="bg-white"
+            />
+          </div>
+
+          {/* Sex */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
-            <Select value={filters.testName} onValueChange={handleTestNameChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Select Test Name" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {filteredIndividualData.tests.map(test => (
-                  <SelectItem key={test} value={test}>
-                    {test}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
+            <div className={sexEnabled ? "" : "pointer-events-none"}>
+              {!sexEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Sex
+                </div>
+              ) : (
+                <Select value={filters.sex} onValueChange={handleSexChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Sex" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All</SelectItem>
+                    {filteredIndividualData.sexOptions.map(sex => (
+                      <SelectItem key={sex} value={sex}>
+                        {sex.charAt(0).toUpperCase() + sex.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Athlete Name */}
@@ -359,48 +375,24 @@ export const Filters = ({
             </div>
           </div>
 
-          {/* Test Date */}
+          {/* Test Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Date</label>
-            <div className={testDateEnabled ? "" : "pointer-events-none"}>
-              {!testDateEnabled ? (
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+            <div className={testNameEnabled ? "" : "pointer-events-none"}>
+              {!testNameEnabled ? (
                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Date
+                  Select Test
                 </div>
               ) : (
-                <Select value={filters.testDate || ""} onValueChange={(val) => setFilters(prev => ({ ...prev, testDate: val }))}>
+                <Select value={filters.testName} onValueChange={handleTestNameChange}>
                   <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Date" />
+                    <SelectValue placeholder="Select Test" />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50">
-                    {filteredIndividualData.testDates?.map(date => (
-                      <SelectItem key={date} value={date}>
-                        {date}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-
-          {/* Metric Type */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
-            <div className={metricTypeForIndividualEnabled ? "" : "pointer-events-none"}>
-              {!metricTypeForIndividualEnabled ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Metric
-                </div>
-              ) : (
-                <Select value={filters.individualMetricType || ""} onValueChange={(val) => setFilters(prev => ({ ...prev, individualMetricType: val }))}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Metric" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    {getMetricTypesForTest(filters.testName).map(metric => (
-                      <SelectItem key={metric} value={metric}>
-                        {metric}
+                    <SelectItem value="all">All Tests</SelectItem>
+                    {filteredIndividualData.tests.map(test => (
+                      <SelectItem key={test} value={test}>
+                        {test}
                       </SelectItem>
                     ))}
                   </SelectContent>

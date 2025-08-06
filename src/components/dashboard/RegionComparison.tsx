@@ -23,8 +23,6 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
     sex: "all",
     athleteName: [] as string[],
     testName: "all",
-    testDate: "",
-    individualMetricType: "",
     // Region Filters - country, region, address are arrays, metricType is string
     country: [] as string[],
     region: [] as string[],
@@ -40,8 +38,6 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
       sex: "all",
       athleteName: [],
       testName: "all",
-      testDate: "",
-      individualMetricType: "",
       // Region Filters
       country: [],
       region: [],
