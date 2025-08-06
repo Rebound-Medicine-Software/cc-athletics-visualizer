@@ -175,7 +175,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       teamName: value,
-      // Reset dependent filters when team changes
+      // Only reset dependent filters when team is completely cleared
       sex: value.length === 0 ? "all" : prev.sex,
       athleteName: value.length === 0 ? [] : prev.athleteName,
       testName: value.length === 0 ? "all" : prev.testName
