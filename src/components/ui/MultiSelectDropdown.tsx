@@ -36,7 +36,10 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       }
     };
     if (open) {
-      document.addEventListener("mousedown", listener);
+      // Use capture phase and delay to avoid conflicts with option selection
+      setTimeout(() => {
+        document.addEventListener("mousedown", listener);
+      }, 0);
     }
     return () => document.removeEventListener("mousedown", listener);
   }, [open]);
