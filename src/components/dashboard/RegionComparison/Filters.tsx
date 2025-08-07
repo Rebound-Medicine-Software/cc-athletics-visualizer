@@ -75,28 +75,43 @@ export const Filters = ({
   const getFilteredIndividualData = () => {
     let filteredData = testData;
     
-    // Apply current filters to get available options
+    // Apply filters for Team options (no dependencies)
+    const teamFilteredData = testData;
+    
+    // Apply filters for Sex options (depends on team selection)
+    let sexFilteredData = testData;
     if (filters.teamName.length > 0) {
-      filteredData = filteredData.filter(d => filters.teamName.includes(d.team_name));
+      sexFilteredData = sexFilteredData.filter(d => filters.teamName.includes(d.team_name));
     }
     
+    // Apply filters for Athlete options (depends on team + sex, but NOT current athlete selection)
+    let athleteFilteredData = testData;
+    if (filters.teamName.length > 0) {
+      athleteFilteredData = athleteFilteredData.filter(d => filters.teamName.includes(d.team_name));
+    }
     if (filters.sex && filters.sex !== "all") {
-      filteredData = filteredData.filter(d => d.gender === filters.sex);
+      athleteFilteredData = athleteFilteredData.filter(d => d.gender === filters.sex);
     }
+    // DO NOT filter by current athleteName selection - this causes the circular issue
     
+    // Apply filters for Test options (depends on team + sex + athletes, but NOT current test selection)
+    let testFilteredData = testData;
+    if (filters.teamName.length > 0) {
+      testFilteredData = testFilteredData.filter(d => filters.teamName.includes(d.team_name));
+    }
+    if (filters.sex && filters.sex !== "all") {
+      testFilteredData = testFilteredData.filter(d => d.gender === filters.sex);
+    }
     if (filters.athleteName.length > 0) {
-      filteredData = filteredData.filter(d => filters.athleteName.includes(d.athlete_name));
+      testFilteredData = testFilteredData.filter(d => filters.athleteName.includes(d.athlete_name));
     }
+    // DO NOT filter by current testName selection
     
-    if (filters.testName && filters.testName !== "all") {
-      filteredData = filteredData.filter(d => d.test_name === filters.testName);
-    }
-    
-    // Extract unique values from filtered data
-    const availableTeams = [...new Set(filteredData.map(d => d.team_name))];
-    const availableAthletes = [...new Set(filteredData.map(d => d.athlete_name))];
-    const availableTests = [...new Set(filteredData.map(d => d.test_name))];
-    const availableSexOptions = [...new Set(filteredData.map(d => d.gender).filter(Boolean))];
+    // Extract unique values from appropriate filtered data
+    const availableTeams = [...new Set(teamFilteredData.map(d => d.team_name))];
+    const availableAthletes = [...new Set(athleteFilteredData.map(d => d.athlete_name))];
+    const availableTests = [...new Set(testFilteredData.map(d => d.test_name))];
+    const availableSexOptions = [...new Set(sexFilteredData.map(d => d.gender).filter(Boolean))];
     
     return {
       teams: availableTeams,
@@ -145,10 +160,6 @@ export const Filters = ({
   const filteredIndividualData = getFilteredIndividualData();
   const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
   const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
-  
-  // Debug logging
-  console.log('Individual Filters - teamOptions:', teamOptions.length, 'athleteOptions:', athleteOptions.length);
-  console.log('Current filters:', filters);
   
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
