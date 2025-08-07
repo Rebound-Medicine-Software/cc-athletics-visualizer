@@ -45,11 +45,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   }, [open]);
 
   const toggleOption = (option: string) => {
+    console.log('MultiSelectDropdown - toggleOption called:', option, 'current value:', value);
     if (value.includes(option)) {
       onChange(value.filter(val => val !== option));
     } else {
       onChange([...value, option]);
     }
+    console.log('MultiSelectDropdown - after onChange, dropdown should stay open');
     // DO NOT close dropdown for multi-select
   };
 

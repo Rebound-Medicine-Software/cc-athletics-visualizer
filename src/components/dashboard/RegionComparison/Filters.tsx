@@ -146,6 +146,10 @@ export const Filters = ({
   const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
   const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
   
+  // Debug logging
+  console.log('Individual Filters - teamOptions:', teamOptions.length, 'athleteOptions:', athleteOptions.length);
+  console.log('Current filters:', filters);
+  
   const filteredRegionData = getFilteredRegionData();
   const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
   const regionOptions = filteredRegionData.regions.map(region => ({ value: region, label: region }));
