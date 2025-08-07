@@ -357,22 +357,20 @@ export const Filters = ({
           {/* Athlete Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
-            <div className={athleteEnabled ? "" : "pointer-events-none"}>
-              {!athleteEnabled ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Athletes
-                </div>
-              ) : (
-                <MultiSelectDropdown
-                  options={athleteOptions}
-                  value={filters.athleteName}
-                  onChange={handleAthleteNameChange}
-                  placeholder="Select Athletes"
-                  className="bg-white"
-                  labelClassName="bg-white"
-                />
-              )}
-            </div>
+            {!athleteEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Athletes
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={athleteOptions}
+                value={filters.athleteName}
+                onChange={handleAthleteNameChange}
+                placeholder="Select Athletes"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Test Name */}
@@ -423,43 +421,39 @@ export const Filters = ({
           {/* Region */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
-            <div className={regionEnabled ? "" : "pointer-events-none"}>
-               {!regionEnabled ? (
-                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                   Select Regions
-                 </div>
-               ) : (
-                 <MultiSelectDropdown
-                   options={regionOptions}
-                   value={filters.region}
-                   onChange={handleRegionChange}
-                   placeholder="Select Regions"
-                   className="bg-white"
-                   labelClassName="bg-white"
-                 />
-               )}
-            </div>
+            {!regionEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Regions
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={regionOptions}
+                value={filters.region}
+                onChange={handleRegionChange}
+                placeholder="Select Regions"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Address */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
-            <div className={addressEnabled ? "" : "pointer-events-none"}>
-               {!addressEnabled ? (
-                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                   Select Addresses
-                 </div>
-               ) : (
-                 <MultiSelectDropdown
-                   options={addressOptions}
-                   value={filters.address}
-                   onChange={handleAddressChange}
-                   placeholder="Select Addresses"
-                   className="bg-white"
-                   labelClassName="bg-white"
-                 />
-               )}
-            </div>
+            {!addressEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Addresses
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={addressOptions}
+                value={filters.address}
+                onChange={handleAddressChange}
+                placeholder="Select Addresses"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Metric Type */}
