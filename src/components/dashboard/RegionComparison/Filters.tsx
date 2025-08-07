@@ -314,6 +314,93 @@ export const Filters = ({
       {/* Individual Filters Section */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+          {/* Team Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
+            <MultiSelectDropdown
+              options={teamOptions}
+              value={filters.teamName}
+              onChange={handleTeamNameChange}
+              placeholder="Select Teams"
+              className="bg-white"
+              labelClassName="bg-white"
+            />
+          </div>
+
+          {/* Sex */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
+            <div className={sexEnabled ? "" : "pointer-events-none"}>
+              {!sexEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Sex
+                </div>
+              ) : (
+                <Select value={filters.sex} onValueChange={handleSexChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Sex" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All</SelectItem>
+                    {filteredIndividualData.sexOptions.map(sex => (
+                      <SelectItem key={sex} value={sex}>
+                        {sex.charAt(0).toUpperCase() + sex.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+
+          {/* Athlete Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+            <div className={athleteEnabled ? "" : "pointer-events-none"}>
+              {!athleteEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Athletes
+                </div>
+              ) : (
+                <MultiSelectDropdown
+                  options={athleteOptions}
+                  value={filters.athleteName}
+                  onChange={handleAthleteNameChange}
+                  placeholder="Select Athletes"
+                  className="bg-white"
+                  labelClassName="bg-white"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Test Name */}
+          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
+            <div className={testNameEnabled ? "" : "pointer-events-none"}>
+              {!testNameEnabled ? (
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                  Select Test
+                </div>
+              ) : (
+                <Select value={filters.testName} onValueChange={handleTestNameChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Test" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    <SelectItem value="all">All Tests</SelectItem>
+                    {filteredIndividualData.tests.map(test => (
+                      <SelectItem key={test} value={test}>
+                        {test}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Region Filters Section */}
