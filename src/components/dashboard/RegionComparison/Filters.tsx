@@ -123,6 +123,20 @@ export const Filters = ({
 
   // Create dependent dropdown options for Region Filters
   const getFilteredRegionData = () => {
+    console.log('=== REGION FILTERS DEBUG ===');
+    console.log('Current region filters:', {
+      country: filters.country,
+      region: filters.region, 
+      address: filters.address,
+      metricType: filters.metricType
+    });
+    console.log('RegionData available:', {
+      countries: regionData.countries.length,
+      regions: regionData.regions.length,
+      addresses: regionData.addresses.length,
+      teamNames: regionData.teamNames.length
+    });
+    
     // For region filters, we don't have the same detailed relationship data as individual filters
     // So we'll use the available regionData arrays directly to avoid circular filtering issues
     return {
