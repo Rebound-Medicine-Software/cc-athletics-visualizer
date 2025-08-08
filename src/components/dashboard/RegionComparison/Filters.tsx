@@ -123,45 +123,13 @@ export const Filters = ({
 
   // Create dependent dropdown options for Region Filters
   const getFilteredRegionData = () => {
-    // Apply filters for Country options (no dependencies)
-    const countryFilteredData = regionData.countries;
-    
-    // Apply filters for Region options (depends on country selection)
-    let regionFilteredData = regionData.regions;
-    if (filters.country.length > 0) {
-      // Filter regions based on selected countries
-      // Note: This assumes regionData has proper relationships
-      regionFilteredData = regionData.regions;
-    }
-    
-    // Apply filters for Address options (depends on country + region, but NOT current address selection)
-    let addressFilteredData = regionData.addresses;
-    if (filters.country.length > 0) {
-      addressFilteredData = regionData.addresses;
-    }
-    if (filters.region.length > 0) {
-      addressFilteredData = regionData.addresses;
-    }
-    // DO NOT filter by current address selection - this causes the circular issue
-    
-    // Apply filters for TeamName options (depends on country + region + address, but NOT current team selection)
-    let teamNameFilteredData = regionData.teamNames;
-    if (filters.country.length > 0) {
-      teamNameFilteredData = regionData.teamNames;
-    }
-    if (filters.region.length > 0) {
-      teamNameFilteredData = regionData.teamNames;
-    }
-    if (filters.address.length > 0) {
-      teamNameFilteredData = regionData.teamNames;
-    }
-    // DO NOT filter by current teamName selection
-    
+    // For region filters, we don't have the same detailed relationship data as individual filters
+    // So we'll use the available regionData arrays directly to avoid circular filtering issues
     return {
-      countries: countryFilteredData,
-      regions: regionFilteredData,
-      addresses: addressFilteredData,
-      teamNames: teamNameFilteredData
+      countries: regionData.countries,
+      regions: regionData.regions, 
+      addresses: regionData.addresses,
+      teamNames: regionData.teamNames
     };
   };
 
