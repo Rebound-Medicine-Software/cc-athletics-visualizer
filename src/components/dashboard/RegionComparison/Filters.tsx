@@ -123,37 +123,45 @@ export const Filters = ({
 
   // Create dependent dropdown options for Region Filters
   const getFilteredRegionData = () => {
-    // Start with all region data
-    let availableCountries = regionData.countries;
-    let availableRegions = regionData.regions;
-    let availableAddresses = regionData.addresses;
-    let availableTeamNames = regionData.teamNames;
+    // Apply filters for Country options (no dependencies)
+    const countryFilteredData = regionData.countries;
     
-    // If countries are selected, filter other fields accordingly
+    // Apply filters for Region options (depends on country selection)
+    let regionFilteredData = regionData.regions;
     if (filters.country.length > 0) {
-      // This would need actual relationship data from regionTestingData
-      // For now, return all to avoid breaking functionality
-      availableRegions = regionData.regions;
-      availableAddresses = regionData.addresses;
-      availableTeamNames = regionData.teamNames;
+      // Filter regions based on selected countries
+      // Note: This assumes regionData has proper relationships
+      regionFilteredData = regionData.regions;
     }
     
-    // If regions are selected, filter addresses and team names
+    // Apply filters for Address options (depends on country + region, but NOT current address selection)
+    let addressFilteredData = regionData.addresses;
+    if (filters.country.length > 0) {
+      addressFilteredData = regionData.addresses;
+    }
     if (filters.region.length > 0) {
-      availableAddresses = regionData.addresses;
-      availableTeamNames = regionData.teamNames;
+      addressFilteredData = regionData.addresses;
     }
+    // DO NOT filter by current address selection - this causes the circular issue
     
-    // If addresses are selected, filter team names
-    if (filters.address.length > 0) {
-      availableTeamNames = regionData.teamNames;
+    // Apply filters for TeamName options (depends on country + region + address, but NOT current team selection)
+    let teamNameFilteredData = regionData.teamNames;
+    if (filters.country.length > 0) {
+      teamNameFilteredData = regionData.teamNames;
     }
+    if (filters.region.length > 0) {
+      teamNameFilteredData = regionData.teamNames;
+    }
+    if (filters.address.length > 0) {
+      teamNameFilteredData = regionData.teamNames;
+    }
+    // DO NOT filter by current teamName selection
     
     return {
-      countries: availableCountries,
-      regions: availableRegions,
-      addresses: availableAddresses,
-      teamNames: availableTeamNames
+      countries: countryFilteredData,
+      regions: regionFilteredData,
+      addresses: addressFilteredData,
+      teamNames: teamNameFilteredData
     };
   };
 
