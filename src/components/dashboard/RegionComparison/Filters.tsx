@@ -1,4 +1,5 @@
 
+import React from "react";
 import {
   Select,
   SelectContent,
@@ -123,20 +124,6 @@ export const Filters = ({
 
   // Create dependent dropdown options for Region Filters
   const getFilteredRegionData = () => {
-    console.log('=== REGION FILTERS DEBUG ===');
-    console.log('Current region filters:', {
-      country: filters.country,
-      region: filters.region, 
-      address: filters.address,
-      metricType: filters.metricType
-    });
-    console.log('RegionData available:', {
-      countries: regionData.countries.length,
-      regions: regionData.regions.length,
-      addresses: regionData.addresses.length,
-      teamNames: regionData.teamNames.length
-    });
-    
     // For region filters, we don't have the same detailed relationship data as individual filters
     // So we'll use the available regionData arrays directly to avoid circular filtering issues
     return {
@@ -147,14 +134,30 @@ export const Filters = ({
     };
   };
 
-  const filteredIndividualData = getFilteredIndividualData();
-  const teamOptions = filteredIndividualData.teams.map(team => ({ value: team, label: team }));
-  const athleteOptions = filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete }));
+  // Use React.useMemo to stabilize option arrays and prevent unnecessary re-renders
+  const filteredIndividualData = React.useMemo(() => getFilteredIndividualData(), [testData, filters.teamName, filters.sex]);
+  const teamOptions = React.useMemo(() => 
+    filteredIndividualData.teams.map(team => ({ value: team, label: team })), 
+    [filteredIndividualData.teams]
+  );
+  const athleteOptions = React.useMemo(() => 
+    filteredIndividualData.athletes.map(athlete => ({ value: athlete, label: athlete })), 
+    [filteredIndividualData.athletes]
+  );
   
-  const filteredRegionData = getFilteredRegionData();
-  const countryOptions = filteredRegionData.countries.map(country => ({ value: country, label: country }));
-  const regionOptions = filteredRegionData.regions.map(region => ({ value: region, label: region }));
-  const addressOptions = filteredRegionData.addresses.map(address => ({ value: address, label: address }));
+  const filteredRegionData = React.useMemo(() => getFilteredRegionData(), [regionData]);
+  const countryOptions = React.useMemo(() => 
+    filteredRegionData.countries.map(country => ({ value: country, label: country })), 
+    [filteredRegionData.countries]
+  );
+  const regionOptions = React.useMemo(() => 
+    filteredRegionData.regions.map(region => ({ value: region, label: region })), 
+    [filteredRegionData.regions]
+  );
+  const addressOptions = React.useMemo(() => 
+    filteredRegionData.addresses.map(address => ({ value: address, label: address })), 
+    [filteredRegionData.addresses]
+  );
 
   // Get available metric types - available for all tests, not dependent on test selection for region filtering
   const availableMetricTypes = [
