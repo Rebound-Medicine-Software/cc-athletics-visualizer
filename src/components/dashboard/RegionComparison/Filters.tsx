@@ -242,9 +242,7 @@ export const Filters = ({
   const handleAddressChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
-      address: value,
-      // Only reset metric type when address is completely cleared
-      metricType: value.length === 0 ? "all" : prev.metricType
+      address: value
     }));
   };
 
