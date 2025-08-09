@@ -363,7 +363,7 @@ export const Filters = ({
 
           {/* Athlete Name */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name(s)</label>
             {!athleteEnabled ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
                 Select Athletes
