@@ -174,10 +174,10 @@ export const Filters = ({
   const testNameEnabled = filters.athleteName.length > 0;
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
-  // Remove the enable/disable logic that was causing re-renders
-  const regionEnabled = true; // Always enable region selection
-  const addressEnabled = true; // Always enable address selection  
-  const metricTypeEnabled = true; // Always enable metric type selection
+  // Apply blackout logic: enable next only when previous has selection
+  const regionEnabled = filters.country.length > 0;
+  const addressEnabled = filters.region.length > 0;
+  const metricTypeEnabled = filters.address.length > 0;
 
   // Handle cascading filter changes for Individual Filters
   const handleTeamNameChange = (value: string[]) => {
@@ -428,48 +428,66 @@ export const Filters = ({
           {/* Region */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
-            <MultiSelectDropdown
-              options={regionOptions}
-              value={filters.region}
-              onChange={handleRegionChange}
-              placeholder="Select Regions"
-              className="bg-white"
-              labelClassName="bg-white"
-            />
+            {!regionEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Regions
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={regionOptions}
+                value={filters.region}
+                onChange={handleRegionChange}
+                placeholder="Select Regions"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Address */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
-            <MultiSelectDropdown
-              options={addressOptions}
-              value={filters.address}
-              onChange={handleAddressChange}
-              placeholder="Select Addresses"
-              className="bg-white"
-              labelClassName="bg-white"
-            />
+            {!addressEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Addresses
+              </div>
+            ) : (
+              <MultiSelectDropdown
+                options={addressOptions}
+                value={filters.address}
+                onChange={handleAddressChange}
+                placeholder="Select Addresses"
+                className="bg-white"
+                labelClassName="bg-white"
+              />
+            )}
           </div>
 
           {/* Metric Type */}
           <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
-            <Select 
-              value={filters.metricType} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
-            >
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Select Metric" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Metrics</SelectItem>
-                {availableMetricTypes.map(metric => (
-                  <SelectItem key={metric} value={metric}>
-                    {metric}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!metricTypeEnabled ? (
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                Select Metric
+              </div>
+            ) : (
+              <Select 
+                value={filters.metricType} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Select Metric" />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50">
+                  <SelectItem value="all">All Metrics</SelectItem>
+                  {availableMetricTypes.map(metric => (
+                    <SelectItem key={metric} value={metric}>
+                      {metric}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
