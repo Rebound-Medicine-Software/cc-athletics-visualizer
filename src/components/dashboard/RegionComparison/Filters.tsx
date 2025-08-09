@@ -219,17 +219,15 @@ export const Filters = ({
 
   // Handle region filter cascading changes
   const handleCountryChange = (value: string[]) => {
+    console.log('Country change triggered:', value);
     setFilters(prev => ({
       ...prev,
-      country: value,
-      // Only reset dependent filters when country is completely cleared
-      region: value.length === 0 ? [] : prev.region,
-      address: value.length === 0 ? [] : prev.address,
-      metricType: value.length === 0 ? "all" : prev.metricType
+      country: value
     }));
   };
 
   const handleRegionChange = (value: string[]) => {
+    console.log('Region change triggered:', value);
     setFilters(prev => ({
       ...prev,
       region: value
