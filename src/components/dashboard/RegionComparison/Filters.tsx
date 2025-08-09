@@ -232,10 +232,7 @@ export const Filters = ({
   const handleRegionChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
-      region: value,
-      // Only reset dependent filters when region is completely cleared
-      address: value.length === 0 ? [] : prev.address,
-      metricType: value.length === 0 ? "all" : prev.metricType
+      region: value
     }));
   };
 
