@@ -459,6 +459,7 @@ export const Filters = ({
                 placeholder="Select Addresses"
                 className="bg-white"
                 labelClassName="bg-white"
+                dropdownClassName="z-[60]"
               />
             )}
           </div>
