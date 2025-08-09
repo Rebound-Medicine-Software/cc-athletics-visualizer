@@ -51,7 +51,6 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       onChange([...value, option]);
     }
     // DO NOT close dropdown for multi-select
-    setOpen(true);
   };
 
   const allLabels = options
@@ -84,12 +83,10 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
       </button>
       {open && (
-        <div
-          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          className={cn(
-            "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
-            dropdownClassName
-          )}>
+        <div className={cn(
+          "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
+          dropdownClassName
+        )}>
            {options.map(opt => (
             <div
               key={opt.value}
