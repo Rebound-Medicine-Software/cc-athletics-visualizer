@@ -29,7 +29,6 @@ export function ReportFiltersContainer({
   metricCardsSlot,
   resetFiltersKey,
   selectedTeams = [],
-  buttonText = "Please Select a 'Test Name'"
 }: ReportFiltersProps) {
   // INDEPENDENT FILTER STATE - each instance manages its own state
   const [filters, setFilters] = useState({
@@ -39,14 +38,6 @@ export function ReportFiltersContainer({
     metricTypes: ""
   });
 
-  // State for editable button text - initialize with prop only once
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentButtonText, setCurrentButtonText] = useState(buttonText);
-
-  // Only set initial text once when component mounts
-  useEffect(() => {
-    setCurrentButtonText(buttonText);
-  }, []); // Remove buttonText dependency to prevent overwrites
 
   // Reset filters if resetFiltersKey changes
   useEffect(() => {
@@ -79,50 +70,19 @@ export function ReportFiltersContainer({
     onTestSelect(testName);
   };
 
-  // Handle button text editing
-  const handleButtonClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      setIsEditing(false);
-    } else if (e.key === 'Escape') {
-      // Reset to current value instead of prop
-      setIsEditing(false);
-    }
-  };
 
   return (
     <Card className="bg-white border-teal-200">
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex justify-center mb-4">
-          {isEditing ? (
-            <form onSubmit={handleTextSubmit} className="w-auto min-w-[220px]">
-              <Input
-                value={currentButtonText}
-                onChange={(e) => setCurrentButtonText(e.target.value)}
-                onBlur={() => setIsEditing(false)}
-                onKeyDown={handleKeyDown}
-                className="text-center text-lg font-semibold bg-teal-600 text-white border-teal-700 focus:border-teal-500 focus:ring-teal-500"
-                autoFocus
-              />
-            </form>
-          ) : (
-            <Button 
-              variant="default" 
-              className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-pointer"
-              onClick={handleButtonClick}
-            >
-              Comparisons Amongst Peers
-            </Button>
-          )}
+          <Button 
+            variant="default" 
+            className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default"
+            aria-label="Comparisons Amongst Peers"
+          >
+            Comparisons Amongst Peers
+          </Button>
         </div>
 
         {/* Individual Filters - using exact IndividualComparisonSection dropdown structure */}
