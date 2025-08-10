@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
@@ -82,9 +82,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   const [apiData, setApiData] = useState<TestData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // State for editable button text
-  const [isEditing, setIsEditing] = useState(false);
-  const [currentButtonText, setCurrentButtonText] = useState("Individual / Between Limb Comparisons");
 
   // Reset filters when resetFiltersKey changes
   useEffect(() => {
@@ -511,23 +508,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     );
   };
 
-  // Handle button text editing
-  const handleButtonClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      setIsEditing(false);
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-    }
-  };
 
   // Filter handlers
   const handleTestNameChange = (value: string) => {
@@ -555,26 +535,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       <CardContent className="p-4">
         {/* Header */}
         <div className="flex justify-center mb-4">
-          {isEditing ? (
-            <form onSubmit={handleTextSubmit} className="w-auto min-w-[220px]">
-              <Input
-                value={currentButtonText}
-                onChange={(e) => setCurrentButtonText(e.target.value)}
-                onBlur={() => setIsEditing(false)}
-                onKeyDown={handleKeyDown}
-                className="text-center text-lg font-semibold bg-teal-600 text-white border-teal-700 focus:border-teal-500 focus:ring-teal-500"
-                autoFocus
-              />
-            </form>
-          ) : (
-            <Button 
-              variant="default" 
-              className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-pointer"
-              onClick={handleButtonClick}
-            >
-              {currentButtonText}
-            </Button>
-          )}
+          <Button 
+            variant="default" 
+            className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default"
+            aria-label="Individual / Between Limb Comparisons"
+          >
+            Individual / Between Limb Comparisons
+          </Button>
         </div>
 
         {/* Filters */}
