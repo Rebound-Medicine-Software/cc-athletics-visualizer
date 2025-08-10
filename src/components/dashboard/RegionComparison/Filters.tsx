@@ -321,10 +321,10 @@ export const Filters = ({
       {/* Individual Filters Section */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           {/* Team Name */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Team Name</label>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
             <MultiSelectDropdown
               options={teamOptions}
               value={filters.teamName}
@@ -336,34 +336,26 @@ export const Filters = ({
           </div>
 
           {/* Sex */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Sex</label>
-            <div className={sexEnabled ? "" : "pointer-events-none"}>
-              {!sexEnabled ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Sex
-                </div>
-              ) : (
-                <Select value={filters.sex} onValueChange={handleSexChange}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Sex" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    <SelectItem value="all">All</SelectItem>
-                    {filteredIndividualData.sexOptions.map(sex => (
-                      <SelectItem key={sex} value={sex}>
-                        {sex.charAt(0).toUpperCase() + sex.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
+            <Select value={filters.sex} onValueChange={handleSexChange} disabled={!sexEnabled}>
+              <SelectTrigger className={`${!sexEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Sex" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All</SelectItem>
+                {filteredIndividualData.sexOptions.map(sex => (
+                  <SelectItem key={sex} value={sex}>
+                    {sex.charAt(0).toUpperCase() + sex.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Athlete Name */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Athlete Name(s)</label>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
             {!athleteEnabled ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
                 Select Athletes
@@ -381,29 +373,21 @@ export const Filters = ({
           </div>
 
           {/* Test Name */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Test Name</label>
-            <div className={testNameEnabled ? "" : "pointer-events-none"}>
-              {!testNameEnabled ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                  Select Test
-                </div>
-              ) : (
-                <Select value={filters.testName} onValueChange={handleTestNameChange}>
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select Test" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50">
-                    <SelectItem value="all">All Tests</SelectItem>
-                    {filteredIndividualData.tests.map(test => (
-                      <SelectItem key={test} value={test}>
-                        {test}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <Select value={filters.testName} onValueChange={handleTestNameChange} disabled={!testNameEnabled}>
+              <SelectTrigger className={`${!testNameEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Test" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All Tests</SelectItem>
+                {filteredIndividualData.tests.map(test => (
+                  <SelectItem key={test} value={test}>
+                    {test}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -411,10 +395,10 @@ export const Filters = ({
       {/* Region Filters Section */}
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Region Filters</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 justify-items-center items-center min-h-[120px] content-center">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
           {/* Country */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Country</label>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Country</label>
             <MultiSelectDropdown
               options={countryOptions}
               value={filters.country}
@@ -426,8 +410,8 @@ export const Filters = ({
           </div>
 
           {/* Region */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Region</label>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Region</label>
             {!regionEnabled ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
                 Select Regions
@@ -445,8 +429,8 @@ export const Filters = ({
           </div>
 
           {/* Address */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Address</label>
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Address</label>
             {!addressEnabled ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
                 Select Addresses
@@ -465,30 +449,25 @@ export const Filters = ({
           </div>
 
           {/* Metric Type */}
-          <div className="w-[200px] min-w-[200px] max-w-[200px] flex flex-col items-center justify-center">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center h-5">Metric Type</label>
-            {!metricTypeEnabled ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
-                Select Metric
-              </div>
-            ) : (
-              <Select 
-                value={filters.metricType} 
-                onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
-              >
-                <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Select Metric" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50">
-                  <SelectItem value="all">All Metrics</SelectItem>
-                  {availableMetricTypes.map(metric => (
-                    <SelectItem key={metric} value={metric}>
-                      {metric}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <Select 
+              value={filters.metricType} 
+              onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
+              disabled={!metricTypeEnabled}
+            >
+              <SelectTrigger className={`${!metricTypeEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                <SelectValue placeholder="Select Metric" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All Metrics</SelectItem>
+                {availableMetricTypes.map(metric => (
+                  <SelectItem key={metric} value={metric}>
+                    {metric}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
