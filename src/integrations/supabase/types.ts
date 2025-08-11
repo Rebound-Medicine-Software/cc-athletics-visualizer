@@ -64,6 +64,102 @@ export type Database = {
           },
         ]
       }
+      "Elite Athlete Data": {
+        Row: {
+          "Age Group": number
+          "Athlete Name": string
+          "CMJ Jump Height (cm)": number | null
+          "CMJ Peak Power (W)": number | null
+          "CMJ Reactive Strength Index": string | null
+          "CMJ Relative Peak Power (W/kg)": number | null
+          created_at: string
+          id: string
+          "IMTP Peak Force (N)": number | null
+          "IMTP Relative Peak Force (N/kg)": number | null
+          Sex: string
+          Sport: string
+          "Team Name": string
+          "Weight Category (kg)": string
+        }
+        Insert: {
+          "Age Group": number
+          "Athlete Name": string
+          "CMJ Jump Height (cm)"?: number | null
+          "CMJ Peak Power (W)"?: number | null
+          "CMJ Reactive Strength Index"?: string | null
+          "CMJ Relative Peak Power (W/kg)"?: number | null
+          created_at?: string
+          id?: string
+          "IMTP Peak Force (N)"?: number | null
+          "IMTP Relative Peak Force (N/kg)"?: number | null
+          Sex: string
+          Sport: string
+          "Team Name": string
+          "Weight Category (kg)": string
+        }
+        Update: {
+          "Age Group"?: number
+          "Athlete Name"?: string
+          "CMJ Jump Height (cm)"?: number | null
+          "CMJ Peak Power (W)"?: number | null
+          "CMJ Reactive Strength Index"?: string | null
+          "CMJ Relative Peak Power (W/kg)"?: number | null
+          created_at?: string
+          id?: string
+          "IMTP Peak Force (N)"?: number | null
+          "IMTP Relative Peak Force (N/kg)"?: number | null
+          Sex?: string
+          Sport?: string
+          "Team Name"?: string
+          "Weight Category (kg)"?: string
+        }
+        Relationships: []
+      }
+      "Elite Athletes New": {
+        Row: {
+          "Age Group": number | null
+          "Athlete Name": string | null
+          "CMJ Jump Height (cm)": number | null
+          "CMJ Peak Power (W)": number | null
+          "CMJ Reactive Strength Index": string | null
+          "CMJ Relative Peak Power (W/kg)": number | null
+          "IMTP Peak Force (N)": number | null
+          "IMTP Relative Peak Force (N/kg)": number | null
+          Sex: string | null
+          Sport: string | null
+          "Team Name": string
+          "Weight Category (kg)": string | null
+        }
+        Insert: {
+          "Age Group"?: number | null
+          "Athlete Name"?: string | null
+          "CMJ Jump Height (cm)"?: number | null
+          "CMJ Peak Power (W)"?: number | null
+          "CMJ Reactive Strength Index"?: string | null
+          "CMJ Relative Peak Power (W/kg)"?: number | null
+          "IMTP Peak Force (N)"?: number | null
+          "IMTP Relative Peak Force (N/kg)"?: number | null
+          Sex?: string | null
+          Sport?: string | null
+          "Team Name": string
+          "Weight Category (kg)"?: string | null
+        }
+        Update: {
+          "Age Group"?: number | null
+          "Athlete Name"?: string | null
+          "CMJ Jump Height (cm)"?: number | null
+          "CMJ Peak Power (W)"?: number | null
+          "CMJ Reactive Strength Index"?: string | null
+          "CMJ Relative Peak Power (W/kg)"?: number | null
+          "IMTP Peak Force (N)"?: number | null
+          "IMTP Relative Peak Force (N/kg)"?: number | null
+          Sex?: string | null
+          Sport?: string | null
+          "Team Name"?: string
+          "Weight Category (kg)"?: string | null
+        }
+        Relationships: []
+      }
       elite_athlete_metrics: {
         Row: {
           age_group: string | null
