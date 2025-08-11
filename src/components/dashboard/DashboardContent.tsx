@@ -5,6 +5,7 @@ import { HighlightsSection } from "./HighlightsSection";
 import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
 import { IndividualComparisonSection } from "./IndividualComparisonSection";
+import { EliteComparison } from "./EliteComparison";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -101,6 +102,13 @@ export const DashboardContent = ({
       
       {/* Individual / Between Limb Comparisons */}
       <IndividualComparisonSection 
+        data={data} 
+        resetFiltersKey={resetFiltersKey}
+        selectedTeams={selectedTeams}
+      />
+      
+      {/* Comparisons Amongst Elites */}
+      <EliteComparison 
         data={data} 
         resetFiltersKey={resetFiltersKey}
         selectedTeams={selectedTeams}
