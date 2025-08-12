@@ -26,11 +26,18 @@ const Setup = () => {
   ]);
 
   useEffect(() => {
-    // Check if user is authenticated
+    // Check if user is authenticated and setup completion status
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate('/auth');
+        return;
+      }
+      
+      // Check if setup has already been completed
+      const setupCompleted = localStorage.getItem('setup-completed');
+      if (setupCompleted === 'true') {
+        navigate('/dashboard');
       }
     };
     checkAuth();
@@ -127,6 +134,9 @@ const Setup = () => {
         ...orgData,
         practitioners: validPractitioners
       }));
+      
+      // Mark setup as completed
+      localStorage.setItem('setup-completed', 'true');
 
       toast.success("Setup complete! Welcome to Rebound Medicine & Performance");
       navigate('/dashboard');
