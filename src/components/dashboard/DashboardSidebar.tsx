@@ -10,6 +10,7 @@ interface DashboardSidebarProps {
   setActiveSection: (section: string) => void;
   navigationItems: Array<{ id: string; label: string; icon: any; description: string }>;
   handleLogout: () => void;
+  onNavigate?: (section: string) => void;
 }
 
 export const DashboardSidebar = ({
@@ -20,7 +21,15 @@ export const DashboardSidebar = ({
   setActiveSection,
   navigationItems,
   handleLogout,
+  onNavigate,
 }: DashboardSidebarProps) => {
+  const handleItemClick = (itemId: string) => {
+    if (itemId === "settings") {
+      onNavigate?.(itemId);
+    } else {
+      setActiveSection(itemId);
+    }
+  };
   return (
     <div
       className={`
@@ -72,7 +81,7 @@ export const DashboardSidebar = ({
                       ? "bg-blue-600 text-white"
                       : "text-gray-600 hover:bg-gray-100"
                   } ${isNavigationCollapsed ? "px-2" : ""}`}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => handleItemClick(item.id)}
                 >
                   <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
                   {!isNavigationCollapsed && (

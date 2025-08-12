@@ -44,6 +44,14 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const handleNavigation = (section: string) => {
+    if (section === "settings") {
+      navigate("/settings(Consumer1)");
+    } else {
+      setActiveSection(section);
+    }
+  };
+
   const handleRefresh = () => {
     refetch();
     toast.info("Refreshing data...");
@@ -117,6 +125,7 @@ const Dashboard = () => {
             setActiveSection={setActiveSection}
             navigationItems={navigationItems}
             handleLogout={handleLogout}
+            onNavigate={handleNavigation}
           />
           <div className="flex-1 min-w-0 px-4 xl:px-8 2xl:px-12">
             <DashboardContent
