@@ -64,6 +64,108 @@ export type Database = {
           },
         ]
       }
+      bookings: {
+        Row: {
+          appointment_date: string
+          client_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          team_id: string | null
+          therapist_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          appointment_date: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          team_id?: string | null
+          therapist_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          appointment_date?: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          team_id?: string | null
+          therapist_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          assigned_therapist_id: string | null
+          created_at: string | null
+          id: string
+          status: string | null
+          stripe_status: string | null
+          team_id: string | null
+          tier_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assigned_therapist_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          stripe_status?: string | null
+          team_id?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assigned_therapist_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          stripe_status?: string | null
+          team_id?: string | null
+          tier_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clients_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       "Elite Athlete Data": {
         Row: {
           "Age Group": number
@@ -234,6 +336,85 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: []
+      }
+      messages: {
+        Row: {
+          created_at: string | null
+          from_user_id: string | null
+          id: string
+          message_body: string
+          status: string | null
+          subject: string | null
+          team_id: string | null
+          to_user_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string
+          message_body: string
+          status?: string | null
+          subject?: string | null
+          team_id?: string | null
+          to_user_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string
+          message_body?: string
+          status?: string | null
+          subject?: string | null
+          team_id?: string | null
+          to_user_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metric_date: string | null
+          metric_name: string
+          metric_value: number
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metric_date?: string | null
+          metric_name: string
+          metric_value: number
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metric_date?: string | null
+          metric_name?: string
+          metric_value?: number
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_metrics_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

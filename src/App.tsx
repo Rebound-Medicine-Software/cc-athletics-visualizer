@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Setup from "./pages/Setup";
@@ -28,6 +29,8 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/settings(Consumer1)" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

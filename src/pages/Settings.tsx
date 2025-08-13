@@ -10,6 +10,7 @@ import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { DataHousingTab } from "@/components/settings/DataHousingTab";
 import { AthleteCredentialsTab } from "@/components/settings/AthleteCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
+import { BrandingTab } from "@/components/settings/BrandingTab";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -83,6 +84,12 @@ const Settings = () => {
               >
                 Tier Management
               </TabsTrigger>
+              <TabsTrigger 
+                value="branding"
+                className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 rounded-none"
+              >
+                Branding
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="api-keys" className="p-6">
@@ -107,6 +114,10 @@ const Settings = () => {
 
             <TabsContent value="tier-management" className="p-6">
               <TierManagementTab />
+            </TabsContent>
+
+            <TabsContent value="branding" className="p-6">
+              <BrandingTab />
             </TabsContent>
           </Tabs>
         </div>
