@@ -135,7 +135,7 @@ export const DemonstrationsTab = () => {
             <Video className="w-6 h-6" />
             Exercise Videos Management
           </CardTitle>
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding || editingId}>
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
             <Plus className="w-4 h-4 mr-2" />
             Add Video
           </Button>

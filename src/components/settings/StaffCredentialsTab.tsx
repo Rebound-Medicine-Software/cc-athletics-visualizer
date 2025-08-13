@@ -124,7 +124,7 @@ export const StaffCredentialsTab = () => {
             <Users className="w-6 h-6" />
             Staff Credentials Management
           </CardTitle>
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding || editingId}>
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
             <Plus className="w-4 h-4 mr-2" />
             Add Staff User
           </Button>

@@ -128,7 +128,7 @@ export const RegionTestingTable = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Region Testing Data</h3>
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding || editingId}>
+        <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
           <Plus className="w-4 h-4 mr-2" />
           Add Region
         </Button>
