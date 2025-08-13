@@ -243,6 +243,11 @@ export type Database = {
           full_name: string | null
           id: string
           role: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_status: string | null
+          team_id: string | null
+          tier_id: string | null
           updated_at: string
           user_id: string
         }
@@ -253,6 +258,11 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          team_id?: string | null
+          tier_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -263,10 +273,30 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_status?: string | null
+          team_id?: string | null
+          tier_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_tier_id_fkey"
+            columns: ["tier_id"]
+            isOneToOne: false
+            referencedRelation: "tiers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       "Region Testing": {
         Row: {
@@ -297,6 +327,8 @@ export type Database = {
       }
       teams: {
         Row: {
+          accent_color: string | null
+          admin_id: string | null
           cc_team_id: string
           city: string | null
           country: string | null
@@ -305,12 +337,18 @@ export type Database = {
           id: string
           latitude: number | null
           location: string | null
+          logo_url: string | null
           longitude: number | null
           name: string
+          primary_color: string | null
           region: string | null
+          secondary_color: string | null
+          stripe_account_id: string | null
           updated_at: string | null
         }
         Insert: {
+          accent_color?: string | null
+          admin_id?: string | null
           cc_team_id: string
           city?: string | null
           country?: string | null
@@ -319,12 +357,18 @@ export type Database = {
           id?: string
           latitude?: number | null
           location?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name: string
+          primary_color?: string | null
           region?: string | null
+          secondary_color?: string | null
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          accent_color?: string | null
+          admin_id?: string | null
           cc_team_id?: string
           city?: string | null
           country?: string | null
@@ -333,9 +377,13 @@ export type Database = {
           id?: string
           latitude?: number | null
           location?: string | null
+          logo_url?: string | null
           longitude?: number | null
           name?: string
+          primary_color?: string | null
           region?: string | null
+          secondary_color?: string | null
+          stripe_account_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -423,6 +471,56 @@ export type Database = {
         }
         Relationships: []
       }
+      tiers: {
+        Row: {
+          can_adjust_sets_reps: boolean | null
+          can_edit_programming: boolean | null
+          can_export_reports: boolean | null
+          can_view_analytics: boolean | null
+          created_at: string
+          id: string
+          max_bookings_per_month: number | null
+          name: string
+          price_monthly: number
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          can_adjust_sets_reps?: boolean | null
+          can_edit_programming?: boolean | null
+          can_export_reports?: boolean | null
+          can_view_analytics?: boolean | null
+          created_at?: string
+          id?: string
+          max_bookings_per_month?: number | null
+          name: string
+          price_monthly: number
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          can_adjust_sets_reps?: boolean | null
+          can_edit_programming?: boolean | null
+          can_export_reports?: boolean | null
+          can_view_analytics?: boolean | null
+          created_at?: string
+          id?: string
+          max_bookings_per_month?: number | null
+          name?: string
+          price_monthly?: number
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tiers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -431,7 +529,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "super_admin" | "practitioner" | "client"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -558,6 +656,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["super_admin", "practitioner", "client"],
+    },
   },
 } as const
