@@ -11,13 +11,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface StaffUser {
   id: string;
+  user_id: string;
   email: string;
-  user_metadata: {
-    full_name?: string;
-    avatar_url?: string;
-  };
+  full_name?: string;
+  avatar_url?: string;
+  role: string;
   created_at: string;
-  last_sign_in_at?: string;
+  updated_at: string;
 }
 
 export const StaffCredentialsTab = () => {
@@ -38,10 +38,13 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
-      // Note: This would typically require admin privileges
-      // For now, we'll show a placeholder message
-      setUsers([]);
-      toast.info("Staff credentials management requires admin privileges");
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error("Failed to load staff users");
@@ -55,8 +58,8 @@ export const StaffCredentialsTab = () => {
     setEditForm({
       email: user.email,
       password: '',
-      full_name: user.user_metadata.full_name || '',
-      avatar_url: user.user_metadata.avatar_url || ''
+      full_name: user.full_name || '',
+      avatar_url: user.avatar_url || ''
     });
   };
 
@@ -216,20 +219,17 @@ export const StaffCredentialsTab = () => {
                   <TableRow key={user.id}>
                     <TableCell>
                       <Avatar>
-                        <AvatarImage src={user.user_metadata.avatar_url} />
+                        <AvatarImage src={user.avatar_url} />
                         <AvatarFallback>
-                          {user.user_metadata.full_name?.substring(0, 2)?.toUpperCase() || 
+                          {user.full_name?.substring(0, 2)?.toUpperCase() || 
                            user.email.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.user_metadata.full_name || 'Not set'}</TableCell>
+                    <TableCell>{user.full_name || 'Not set'}</TableCell>
                     <TableCell>
-                      {user.last_sign_in_at ? 
-                        new Date(user.last_sign_in_at).toLocaleDateString() : 
-                        'Never'
-                      }
+                      {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
