@@ -59,10 +59,14 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Error updating profile:", profileError);
     }
 
-    // Generate password reset link
+    // Generate password reset link with correct redirect URL
+    const redirectUrl = req.headers.get('origin') || req.headers.get('referer') || 'https://your-app-domain.com';
     const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
       type: 'recovery',
       email,
+      options: {
+        redirectTo: `${redirectUrl}/admin?type=recovery`
+      }
     });
 
     if (resetError) {

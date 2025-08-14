@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending password reset to: ${email}`);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${req.headers.get('origin')}/auth?type=recovery`
+      redirectTo: `${req.headers.get('origin')}/admin?type=recovery`
     });
 
     if (error) {

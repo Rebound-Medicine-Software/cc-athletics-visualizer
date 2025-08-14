@@ -4,12 +4,24 @@ import { SuperAdminDashboard } from '@/components/admin/SuperAdminDashboard';
 import { PractitionerDashboard } from '@/components/admin/PractitionerDashboard';
 import { ClientDashboard } from '@/components/admin/ClientDashboard';
 import { CreateAdminUser } from '@/components/admin/CreateAdminUser';
-import { Navigate } from 'react-router-dom';
+import AdminLogin from '@/components/admin/AdminLogin';
+import AdminPasswordSetup from '@/components/admin/AdminPasswordSetup';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const { profile, loading } = useAuth();
+  const { profile, loading, refreshProfile } = useAuth();
+  const [searchParams] = useSearchParams();
+  
+  // Check if this is a password recovery flow
+  const isRecovery = searchParams.get('type') === 'recovery';
+  
+  // If it's a recovery flow, show the password setup component
+  if (isRecovery) {
+    return <AdminPasswordSetup />;
+  }
 
   if (loading) {
     return (
@@ -27,14 +39,32 @@ const AdminDashboard = () => {
           <CardHeader className="text-center">
             <CardTitle className="flex items-center justify-center gap-2">
               <Shield className="w-6 h-6" />
-              Admin Panel Setup
+              Admin Panel
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Create the first super admin account to access the admin panel
+              Access the admin panel or create the first super admin account
             </p>
           </CardHeader>
           <CardContent>
-            <CreateAdminUser />
+            <Tabs defaultValue="login" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Sign In</TabsTrigger>
+                <TabsTrigger value="setup">Create Admin</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="login">
+                <AdminLogin onLoginSuccess={refreshProfile} />
+              </TabsContent>
+              
+              <TabsContent value="setup">
+                <div className="space-y-4">
+                  <div className="text-center text-sm text-muted-foreground">
+                    Create the first super admin account to access the admin panel
+                  </div>
+                  <CreateAdminUser />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
