@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building2, DollarSign, AlertTriangle } from 'lucide-react';
+import { Users, Building2, DollarSign, AlertTriangle, UserCheck } from 'lucide-react';
+import { CreateAdminUser } from '@/components/admin/CreateAdminUser';
 
 export const DashboardOverview = () => {
   return (
@@ -95,6 +96,21 @@ export const DashboardOverview = () => {
                 <span className="text-sm font-semibold text-success">142ms</span>
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Admin User Management Section */}
+      <div className="mt-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Admin User Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CreateAdminUser />
           </CardContent>
         </Card>
       </div>
