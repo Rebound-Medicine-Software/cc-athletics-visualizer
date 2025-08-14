@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { CreateAdminUser } from "@/components/admin/CreateAdminUser";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -370,6 +371,10 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      
+      <div className="mt-8">
+        <CreateAdminUser />
+      </div>
     </div>
   );
 };
