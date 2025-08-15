@@ -6,6 +6,7 @@ import { ClientDashboard } from '@/components/admin/ClientDashboard';
 import { CreateAdminUser } from '@/components/admin/CreateAdminUser';
 import AdminLogin from '@/components/admin/AdminLogin';
 import AdminPasswordSetup from '@/components/admin/AdminPasswordSetup';
+import { AdminDashboardSheet } from '@/components/admin/AdminDashboardSheet';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -73,7 +74,24 @@ const AdminDashboard = () => {
 
   switch (profile.role) {
     case 'super_admin':
-      return <Navigate to="/admin-dashboard" replace />;
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <Shield className="w-6 h-6" />
+                Super Admin Panel
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Welcome! Access your dashboard below.
+              </p>
+            </CardHeader>
+            <CardContent className="text-center">
+              <AdminDashboardSheet />
+            </CardContent>
+          </Card>
+        </div>
+      );
     case 'practitioner':
       return <PractitionerDashboard />;
     case 'client':

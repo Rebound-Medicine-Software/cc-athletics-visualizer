@@ -49,11 +49,7 @@ const AdminLogin = ({ onLoginSuccess }: AdminLoginProps) => {
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
       
-      if (profile?.role === 'super_admin' && profile?.email === 'reflexsportstherapyy@gmail.com') {
-        window.location.href = '/admin-dashboard';
-      } else {
-        onLoginSuccess();
-      }
+      onLoginSuccess();
     } catch (error) {
       setError('An unexpected error occurred');
     } finally {
