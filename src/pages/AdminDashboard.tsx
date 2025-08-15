@@ -73,7 +73,7 @@ const AdminDashboard = () => {
 
   switch (profile.role) {
     case 'super_admin':
-      return <SuperAdminDashboard />;
+      return <Navigate to="/admin-dashboard" replace />;
     case 'practitioner':
       return <PractitionerDashboard />;
     case 'client':

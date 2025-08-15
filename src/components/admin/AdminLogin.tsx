@@ -41,7 +41,19 @@ const AdminLogin = ({ onLoginSuccess }: AdminLoginProps) => {
       }
 
       toast.success('Login successful!');
-      onLoginSuccess();
+      
+      // Check if user is super admin and redirect accordingly
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, email')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      
+      if (profile?.role === 'super_admin' && profile?.email === 'reflexsportstherapyy@gmail.com') {
+        window.location.href = '/admin-dashboard';
+      } else {
+        onLoginSuccess();
+      }
     } catch (error) {
       setError('An unexpected error occurred');
     } finally {
