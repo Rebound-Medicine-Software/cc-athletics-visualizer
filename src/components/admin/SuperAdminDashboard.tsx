@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from './AdminSidebar';
-import { DashboardOverview } from './super-admin/DashboardOverview';
+import { EnhancedDashboardOverview } from './super-admin/EnhancedDashboardOverview';
 import { UserManagement } from './super-admin/UserManagement';
 import { TeamManagement } from './super-admin/TeamManagement';
 import { PaymentManagement } from './super-admin/PaymentManagement';
@@ -11,20 +11,40 @@ import { AdminHeader } from './AdminHeader';
 export const SuperAdminDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
+  const handleKPIClick = (kpi: string) => {
+    // Handle KPI clicks to drill down into specific data
+    switch (kpi) {
+      case 'views':
+      case 'visits':
+        setActiveSection('analytics');
+        break;
+      case 'new-users':
+      case 'active-users':
+        setActiveSection('therapists');
+        break;
+      default:
+        break;
+    }
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <DashboardOverview />;
-      case 'users':
+        return <EnhancedDashboardOverview onKPIClick={handleKPIClick} />;
+      case 'therapists':
+        return <UserManagement />;
+      case 'clients':
         return <UserManagement />;
       case 'teams':
         return <TeamManagement />;
       case 'payments':
         return <PaymentManagement />;
+      case 'analytics':
+        return <EnhancedDashboardOverview onKPIClick={handleKPIClick} />;
       case 'support':
         return <SupportCenter />;
       default:
-        return <DashboardOverview />;
+        return <EnhancedDashboardOverview onKPIClick={handleKPIClick} />;
     }
   };
 
