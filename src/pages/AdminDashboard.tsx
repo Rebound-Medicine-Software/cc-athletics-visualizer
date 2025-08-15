@@ -74,24 +74,8 @@ const AdminDashboard = () => {
 
   switch (profile.role) {
     case 'super_admin':
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Shield className="w-6 h-6" />
-                Super Admin Panel
-              </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Welcome! Access your dashboard below.
-              </p>
-            </CardHeader>
-            <CardContent className="text-center">
-              <AdminDashboardSheet />
-            </CardContent>
-          </Card>
-        </div>
-      );
+      // Redirect to the dashboard route for super admins
+      return <Navigate to="/admin(Dashboard)" replace />;
     case 'practitioner':
       return <PractitionerDashboard />;
     case 'client':
