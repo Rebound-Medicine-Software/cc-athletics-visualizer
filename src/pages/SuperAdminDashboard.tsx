@@ -206,7 +206,7 @@ const SuperAdminDashboard: React.FC = () => {
               <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                 <div className="w-4 h-4 bg-white rounded"></div>
               </div>
-              <span className="font-semibold text-lg">snowui</span>
+              <span className="font-semibold text-lg text-blue-500">snowui</span>
             </div>
           )}
         </div>
@@ -218,15 +218,15 @@ const SuperAdminDashboard: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center px-3 py-2 mb-1 rounded-lg text-left transition-colors ${
+                className={`w-full flex items-center px-3 py-3 mb-1 rounded-lg text-left transition-colors ${
                   activeSection === item.id 
-                    ? 'bg-gray-100 text-gray-900' 
+                    ? 'bg-gray-100 text-gray-900 font-medium' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <Icon className="w-5 h-5" />
                 {!sidebarCollapsed && (
-                  <span className="ml-3 text-sm font-medium">{item.label}</span>
+                  <span className="ml-3 text-sm">{item.label}</span>
                 )}
               </button>
             );
@@ -244,6 +244,7 @@ const SuperAdminDashboard: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2"
               >
                 <Menu className="w-4 h-4" />
               </Button>
@@ -260,15 +261,15 @@ const SuperAdminDashboard: React.FC = () => {
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <Input 
                   placeholder="Search" 
-                  className="pl-10 w-64"
+                  className="pl-10 w-64 border-gray-200"
                 />
               </div>
               
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="p-2">
                 <Bell className="w-4 h-4" />
               </Button>
               
-              <Button variant="ghost" size="sm" onClick={signOut}>
+              <Button variant="ghost" size="sm" onClick={signOut} className="p-2">
                 <LogOut className="w-4 h-4" />
               </Button>
 
@@ -283,10 +284,10 @@ const SuperAdminDashboard: React.FC = () => {
         </header>
 
         {/* Dashboard Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 bg-gray-50">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-blue-100">Views</h3>
@@ -302,7 +303,7 @@ const SuperAdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-gray-700 to-gray-800 text-white">
+            <Card className="bg-gradient-to-br from-gray-700 to-gray-800 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-gray-300">Visits</h3>
@@ -318,7 +319,7 @@ const SuperAdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-blue-400 to-blue-500 text-white">
+            <Card className="bg-gradient-to-br from-blue-400 to-blue-500 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-blue-100">New Users</h3>
@@ -334,7 +335,7 @@ const SuperAdminDashboard: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-gray-600 to-gray-700 text-white">
+            <Card className="bg-gradient-to-br from-gray-600 to-gray-700 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-medium text-gray-300">Active Users</h3>
@@ -355,31 +356,31 @@ const SuperAdminDashboard: React.FC = () => {
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
             {/* Main Chart */}
             <div className="xl:col-span-2">
-              <Card>
-                <CardHeader>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="border-b border-gray-100">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-4">
-                        <Badge variant="outline" className="text-purple-600 border-purple-200">Users</Badge>
-                        <Badge variant="outline">Projects</Badge>
-                        <Badge variant="outline">Operating Status</Badge>
+                        <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50">Users</Badge>
+                        <Badge variant="outline" className="text-gray-500 border-gray-200">Projects</Badge>
+                        <Badge variant="outline" className="text-gray-500 border-gray-200">Operating Status</Badge>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span className="text-sm text-gray-500">Week</span>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="p-1">
                         <TrendingUp className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis dataKey="month" stroke="#64748b" />
-                        <YAxis stroke="#64748b" />
+                        <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                        <YAxis stroke="#64748b" fontSize={12} />
                         <Tooltip />
                         <Line 
                           type="monotone" 
@@ -399,27 +400,26 @@ const SuperAdminDashboard: React.FC = () => {
             {/* Device and Location Traffic */}
             <div className="space-y-6">
               {/* Device Traffic */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-blue-500">Device Traffic</CardTitle>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="border-b border-gray-100">
+                  <CardTitle className="text-blue-500 text-lg font-semibold">Device Traffic</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-4">
                     {deviceData.map((device, index) => (
                       <div key={device.name} className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{device.name}</span>
+                          <span className="text-sm font-medium text-gray-700">{device.name}</span>
                           {device.name === 'Android' && (
-                            <Badge className="bg-black text-white text-xs">24.3K</Badge>
+                            <Badge className="bg-black text-white text-xs px-2 py-1">24.3K</Badge>
                           )}
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-8 relative">
+                        <div className="w-full bg-gray-200 rounded-full h-6 relative">
                           <div 
-                            className={`h-8 rounded-full transition-all duration-500`}
-                            style={{ 
-                              width: `${device.value}%`,
-                              backgroundColor: device.color
-                            }}
+                            className={`h-6 rounded-full transition-all duration-500 ${
+                              device.name === 'Windows' ? 'bg-blue-500' : 'bg-gray-300'
+                            }`}
+                            style={{ width: `${device.value}%` }}
                           />
                         </div>
                       </div>
@@ -429,18 +429,18 @@ const SuperAdminDashboard: React.FC = () => {
               </Card>
 
               {/* Location Traffic */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-green-500">Location Traffic</CardTitle>
+              <Card className="border-0 shadow-sm">
+                <CardHeader className="border-b border-gray-100">
+                  <CardTitle className="text-green-500 text-lg font-semibold">Location Traffic</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-6">
                   <div className="space-y-4">
                     {locationData.map((location) => (
                       <div key={location.name} className="space-y-2">
-                        <span className="text-sm font-medium">{location.name}</span>
-                        <div className="w-full bg-gray-200 rounded-full h-8">
+                        <span className="text-sm font-medium text-gray-700">{location.name}</span>
+                        <div className="w-full bg-gray-200 rounded-full h-6">
                           <div 
-                            className="h-8 rounded-full bg-gray-300 transition-all duration-500"
+                            className="h-6 rounded-full bg-gray-400 transition-all duration-500"
                             style={{ width: `${location.value}%` }}
                           />
                         </div>
@@ -454,26 +454,26 @@ const SuperAdminDashboard: React.FC = () => {
 
           {/* Product Traffic Chart */}
           <div className="mb-8">
-            <Card>
-              <CardHeader>
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="border-b border-gray-100">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-red-500">Product Traffic</CardTitle>
+                  <CardTitle className="text-red-500 text-lg font-semibold">Product Traffic</CardTitle>
                   <div className="flex space-x-2">
-                    <Badge variant="outline">All</Badge>
-                    <Badge variant="outline">SnowUI</Badge>
-                    <Badge variant="outline" className="bg-purple-100 text-purple-700">Dashboard</Badge>
+                    <Badge variant="outline" className="text-gray-600">All</Badge>
+                    <Badge variant="outline" className="text-gray-600">SnowUI</Badge>
+                    <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200">Dashboard</Badge>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-6">
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
+                      <YAxis stroke="#64748b" fontSize={12} />
                       <Tooltip />
-                      <Bar dataKey="users" fill="#ef4444" />
+                      <Bar dataKey="users" fill="#ef4444" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -482,38 +482,38 @@ const SuperAdminDashboard: React.FC = () => {
           </div>
 
           {/* Projects Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Projects</CardTitle>
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="border-b border-gray-100">
+              <CardTitle className="text-cyan-500 text-lg font-semibold">Projects</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Manager</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Amount</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left py-4 px-6 font-medium text-gray-500 text-sm">Manager</th>
+                      <th className="text-left py-4 px-6 font-medium text-gray-500 text-sm">Date</th>
+                      <th className="text-left py-4 px-6 font-medium text-gray-500 text-sm">Amount</th>
+                      <th className="text-left py-4 px-6 font-medium text-gray-500 text-sm">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {projectData.map((project) => (
-                      <tr key={project.id} className="border-b border-gray-100">
-                        <td className="py-4 px-4">
+                    {projectData.map((project, index) => (
+                      <tr key={project.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                        <td className="py-4 px-6">
                           <div className="flex items-center space-x-3">
                             <Avatar className="w-8 h-8">
                               <AvatarImage src={project.avatar} />
-                              <AvatarFallback>
+                              <AvatarFallback className="bg-gray-200 text-gray-600">
                                 {project.manager.charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium">{project.manager}</span>
+                            <span className="font-medium text-gray-900">{project.manager}</span>
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-gray-600">{project.date}</td>
-                        <td className="py-4 px-4 font-medium">${project.amount}.00</td>
-                        <td className="py-4 px-4">
+                        <td className="py-4 px-6 text-gray-600 text-sm">{project.date}</td>
+                        <td className="py-4 px-6 font-medium text-gray-900">${project.amount}.00</td>
+                        <td className="py-4 px-6">
                           <Badge className={getStatusColor(project.status)} variant="secondary">
                             {project.status}
                           </Badge>
