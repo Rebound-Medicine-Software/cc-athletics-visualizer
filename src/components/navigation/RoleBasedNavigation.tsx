@@ -22,6 +22,59 @@ export interface NavigationItem {
   permissions?: string[];
 }
 
+// Super Admin specific navigation
+export const getSuperAdminNavigationItems = (): NavigationItem[] => [
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: Home,
+    description: 'Platform overview and KPIs',
+    roles: ['super_admin']
+  },
+  {
+    id: 'therapists',
+    label: 'Therapist Accounts',
+    icon: Users,
+    description: 'Manage practitioner accounts',
+    roles: ['super_admin']
+  },
+  {
+    id: 'clients',
+    label: 'Clients',
+    icon: Users,
+    description: 'Manage client accounts',
+    roles: ['super_admin']
+  },
+  {
+    id: 'teams',
+    label: 'Teams/Clinics',
+    icon: Shield,
+    description: 'Manage teams and clinics',
+    roles: ['super_admin']
+  },
+  {
+    id: 'payments',
+    label: 'Stripe Payments',
+    icon: CreditCard,
+    description: 'Payment and subscription management',
+    roles: ['super_admin']
+  },
+  {
+    id: 'analytics',
+    label: 'Reports & Analytics',
+    icon: BarChart3,
+    description: 'Platform-wide analytics',
+    roles: ['super_admin']
+  },
+  {
+    id: 'support',
+    label: 'Support Messages',
+    icon: MessageCircle,
+    description: 'Customer support inbox',
+    roles: ['super_admin']
+  }
+];
+
 export const getNavigationItems = (): NavigationItem[] => [
   {
     id: 'home',
@@ -116,6 +169,16 @@ export const useFilteredNavigation = () => {
       return true;
     });
   };
+
+  const getSuperAdminFilteredNavigation = () => {
+    if (!profile || profile.role !== 'super_admin') return [];
+    return getSuperAdminNavigationItems();
+  };
   
-  return { filteredNavigation: getFilteredNavigation(), profile, isRole };
+  return { 
+    filteredNavigation: getFilteredNavigation(), 
+    superAdminNavigation: getSuperAdminFilteredNavigation(),
+    profile, 
+    isRole 
+  };
 };

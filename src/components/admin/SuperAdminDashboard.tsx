@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from './AdminSidebar';
-import { DashboardOverview } from './super-admin/DashboardOverview';
+import { EnhancedDashboardOverview } from './super-admin/EnhancedDashboardOverview';
+import { TherapistAccountsSection } from './super-admin/TherapistAccountsSection';
+import { ClientsSection } from './super-admin/ClientsSection';
 import { UserManagement } from './super-admin/UserManagement';
 import { TeamManagement } from './super-admin/TeamManagement';
 import { PaymentManagement } from './super-admin/PaymentManagement';
@@ -14,17 +16,21 @@ export const SuperAdminDashboard = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <DashboardOverview />;
-      case 'users':
-        return <UserManagement />;
+        return <EnhancedDashboardOverview onSectionChange={setActiveSection} />;
+      case 'therapists':
+        return <TherapistAccountsSection />;
+      case 'clients':
+        return <ClientsSection />;
       case 'teams':
         return <TeamManagement />;
       case 'payments':
         return <PaymentManagement />;
+      case 'analytics':
+        return <UserManagement />;
       case 'support':
         return <SupportCenter />;
       default:
-        return <DashboardOverview />;
+        return <EnhancedDashboardOverview onSectionChange={setActiveSection} />;
     }
   };
 

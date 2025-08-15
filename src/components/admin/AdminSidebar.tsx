@@ -28,8 +28,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const { filteredNavigation } = useFilteredNavigation();
+  const { filteredNavigation, superAdminNavigation } = useFilteredNavigation();
   const { teamBranding } = useAuth();
+
+  // Use super admin navigation for super admin role, otherwise use regular navigation
+  const navigationItems = role === 'super_admin' ? superAdminNavigation : filteredNavigation;
 
   return (
     <Sidebar className={cn("border-r", collapsed ? "w-14" : "w-64")}>
@@ -65,7 +68,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredNavigation.map((item) => (
+              {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
