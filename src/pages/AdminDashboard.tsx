@@ -54,7 +54,10 @@ const AdminDashboard = () => {
               </TabsList>
               
               <TabsContent value="login">
-                <AdminLogin onLoginSuccess={refreshProfile} />
+                <AdminLogin onLoginSuccess={() => {
+                  refreshProfile();
+                  window.location.href = '/admin(Dashboard)';
+                }} />
               </TabsContent>
               
               <TabsContent value="setup">
