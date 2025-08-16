@@ -129,9 +129,20 @@ const Setup = () => {
       // Save API key to localStorage for now
       localStorage.setItem('cc-athletics-api-key', apiKey);
       
+      // Convert logo file to data URL if it exists
+      let logoDataUrl = null;
+      if (orgData.logo instanceof File) {
+        logoDataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.readAsDataURL(orgData.logo as File);
+        });
+      }
+      
       // Save organization data to localStorage for now
       localStorage.setItem('organization-data', JSON.stringify({
         ...orgData,
+        logo: logoDataUrl, // Store as data URL instead of File object
         practitioners: validPractitioners
       }));
       

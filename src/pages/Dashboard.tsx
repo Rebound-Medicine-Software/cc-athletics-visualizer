@@ -69,7 +69,7 @@ const Dashboard = () => {
         const parsed = JSON.parse(orgData);
         return {
           name: parsed.name || "Rebound Medicine & Performance",
-          logo: parsed.logo ? URL.createObjectURL(parsed.logo) : null,
+          logo: parsed.logo || null, // Logo is now a data URL string
         };
       }
     } catch (error) {
