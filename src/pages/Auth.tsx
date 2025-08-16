@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle, UserCheck, Heart } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle, UserCheck, Heart, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -17,6 +18,9 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [userRole, setUserRole] = useState<'clinician' | 'athlete' | null>(null);
+  const [showForgotModal, setShowForgotModal] = useState<'password' | 'email' | 'both' | null>(null);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
   
   const [loginData, setLoginData] = useState({
     email: "",
@@ -83,6 +87,98 @@ const Auth = () => {
     } catch (error) {
       console.error('Error sending welcome email:', error);
       // Don't throw here as signup was successful
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      setError("Please enter your email address");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: resetEmail }
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setResetMessage("Password reset email sent! Check your inbox.");
+      setResetEmail("");
+      setShowForgotModal(null);
+      toast.success("Password reset email sent!");
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEmailRecovery = async () => {
+    if (!resetEmail) {
+      setError("Please provide any alternate contact information you may have used");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-email-recovery', {
+        body: { 
+          contactInfo: resetEmail,
+          userRole 
+        }
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setResetMessage("Recovery request submitted! Our support team will contact you within 24 hours.");
+      setResetEmail("");
+      setShowForgotModal(null);
+      toast.success("Recovery request sent!");
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBothForgotten = async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-account-recovery', {
+        body: { 
+          contactInfo: resetEmail,
+          userRole,
+          fullRecovery: true 
+        }
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setResetMessage("Account recovery request submitted! Our support team will verify your identity and contact you within 48 hours.");
+      setResetEmail("");
+      setShowForgotModal(null);
+      toast.success("Account recovery request sent!");
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -306,6 +402,131 @@ const Auth = () => {
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
+              {resetMessage && (
+                <Alert>
+                  <AlertDescription>{resetMessage}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-2 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 text-center">Need help accessing your account?</p>
+                
+                <Dialog open={showForgotModal === 'password'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => setShowForgotModal('password')}
+                    >
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Forgotten Your Password?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Reset Your Password</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Enter your email address and we'll send you a link to reset your password.
+                      </p>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                      <Button 
+                        onClick={handlePasswordReset}
+                        disabled={isLoading}
+                        className="w-full"
+                      >
+                        {isLoading ? "Sending..." : "Send Reset Link"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showForgotModal === 'email'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => setShowForgotModal('email')}
+                    >
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Forgotten Your Email?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Recover Your Email</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Provide any alternate contact information you may have used (phone number, alternate email, etc.) and our support team will help you recover your account.
+                      </p>
+                      <Input
+                        placeholder="Phone number or alternate contact info"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                      <Button 
+                        onClick={handleEmailRecovery}
+                        disabled={isLoading}
+                        className="w-full"
+                      >
+                        {isLoading ? "Submitting..." : "Submit Recovery Request"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showForgotModal === 'both'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => setShowForgotModal('both')}
+                    >
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Forgotten Both Your Password and Email?
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Account Recovery</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        For security reasons, we'll need to verify your identity. Please provide any contact information or details about your account that you remember.
+                      </p>
+                      <Input
+                        placeholder="Any contact info or account details you remember"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                      />
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>• Phone number associated with the account</p>
+                        <p>• Approximate date you created the account</p>
+                        <p>• Name of your clinic or organization</p>
+                        <p>• Any other identifying information</p>
+                      </div>
+                      <Button 
+                        onClick={handleBothForgotten}
+                        disabled={isLoading}
+                        className="w-full"
+                      >
+                        {isLoading ? "Submitting..." : "Submit Account Recovery"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
