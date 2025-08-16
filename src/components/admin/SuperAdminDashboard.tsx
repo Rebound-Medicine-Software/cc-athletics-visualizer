@@ -14,9 +14,9 @@ export const SuperAdminDashboard = () => {
   const { profile, isRole } = useAuth();
   const [activeSection, setActiveSection] = useState('overview');
 
-  // Allow access if user is authenticated (developer access)
-  if (!profile) {
-    return <Navigate to="/admin" replace />;
+  // Redirect if not super admin
+  if (!profile || !isRole('super_admin')) {
+    return <Navigate to="/" replace />;
   }
 
   const handleKPIClick = (kpi: string) => {
