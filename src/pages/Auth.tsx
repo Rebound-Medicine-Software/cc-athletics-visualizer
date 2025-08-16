@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle, UserCheck, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState<'clinician' | 'athlete' | null>(null);
   
   const [loginData, setLoginData] = useState({
     email: "",
@@ -165,6 +166,58 @@ const Auth = () => {
 
   const passwordValidation = validatePassword(signupData.password);
 
+  // Role selection screen
+  if (!userRole) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <img 
+                src="/lovable-uploads/2e29878b-d40d-47c5-a72c-da08ce28173d.png" 
+                alt="Rebound Medicine and Performance Logo" 
+                className="w-16 h-16 rounded-full shadow-lg"
+              />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-800">
+              Welcome to Rebound Medicine & Performance
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Please select your role to continue
+            </p>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            <Button
+              onClick={() => setUserRole('clinician')}
+              variant="outline"
+              className="w-full h-16 flex items-center gap-4 text-left hover:bg-blue-50 hover:border-blue-300"
+            >
+              <UserCheck className="w-8 h-8 text-blue-600" />
+              <div>
+                <div className="font-semibold">Clinician</div>
+                <div className="text-sm text-gray-500">Healthcare provider or coach</div>
+              </div>
+            </Button>
+            
+            <Button
+              onClick={() => setUserRole('athlete')}
+              variant="outline"
+              className="w-full h-16 flex items-center gap-4 text-left hover:bg-orange-50 hover:border-orange-300"
+            >
+              <Heart className="w-8 h-8 text-orange-600" />
+              <div>
+                <div className="font-semibold">Athlete/Patient</div>
+                <div className="text-sm text-gray-500">Receiving treatment or training</div>
+              </div>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main auth screen
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
@@ -177,12 +230,20 @@ const Auth = () => {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-gray-800">
-            Rebound Medicine & Performance
+            {userRole === 'clinician' ? 'Clinician Portal' : 'Athlete/Patient Portal'}
           </CardTitle>
           <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
             <Shield className="w-4 h-4" />
             <span>HIPAA-compliant security with Row Level Security (RLS)</span>
           </div>
+          <Button
+            onClick={() => setUserRole(null)}
+            variant="ghost"
+            size="sm"
+            className="text-xs"
+          >
+            ← Change role
+          </Button>
         </CardHeader>
         
         <CardContent>
