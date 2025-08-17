@@ -420,6 +420,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          created_by: string | null
           email: string
           full_name: string | null
           id: string
@@ -435,6 +436,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          created_by?: string | null
           email: string
           full_name?: string | null
           id?: string
@@ -450,6 +452,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string
           full_name?: string | null
           id?: string
@@ -463,6 +466,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_team_id_fkey"
             columns: ["team_id"]
