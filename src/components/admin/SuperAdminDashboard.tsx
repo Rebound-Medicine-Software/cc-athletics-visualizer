@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from './AdminSidebar';
 import { EnhancedDashboardOverview } from './super-admin/EnhancedDashboardOverview';
-import { UserManagement } from './super-admin/UserManagement';
-import { TeamManagement } from './super-admin/TeamManagement';
+import { ClinicsManagement } from './super-admin/ClinicsManagement';
+import { PractitionersManagement } from './super-admin/PractitionersManagement';
+import { TeamsManagement } from './super-admin/TeamsManagement';
+import { ClientsManagement } from './super-admin/ClientsManagement';
 import { PaymentManagement } from './super-admin/PaymentManagement';
+import { AnalyticsManagement } from './super-admin/AnalyticsManagement';
 import { SupportCenter } from './super-admin/SupportCenter';
 import { AdminHeader } from './AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,16 +73,18 @@ export const SuperAdminDashboard = () => {
     switch (activeSection) {
       case 'overview':
         return <EnhancedDashboardOverview onKPIClick={handleKPIClick} />;
-      case 'therapists':
-        return <UserManagement />;
-      case 'clients':
-        return <UserManagement />;
+      case 'clinics':
+        return <ClinicsManagement />;
+      case 'practitioners':
+        return <PractitionersManagement />;
       case 'teams':
-        return <TeamManagement />;
+        return <TeamsManagement />;
+      case 'clients':
+        return <ClientsManagement />;
       case 'payments':
         return <PaymentManagement />;
       case 'analytics':
-        return <EnhancedDashboardOverview onKPIClick={handleKPIClick} />;
+        return <AnalyticsManagement />;
       case 'support':
         return <SupportCenter />;
       default:
