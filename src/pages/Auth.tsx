@@ -17,7 +17,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [userRole, setUserRole] = useState<'clinician' | 'athlete' | null>(null);
+  const [userRole, setUserRole] = useState<'clinician' | 'client' | null>(null);
   const [showForgotModal, setShowForgotModal] = useState<'password' | 'email' | 'both' | null>(null);
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState("");
@@ -232,6 +232,17 @@ const Auth = () => {
     setError("");
 
     try {
+      // Determine role based on user type
+      let role = 'client';
+      if (userRole === 'clinician') {
+        role = 'organisation'; // First-time clinician account becomes organisation
+      }
+      
+      // Check for super admin email
+      if (signupData.email === 'reflexsportstherpayy@gmail.com') {
+        role = 'super_admin';
+      }
+
       const { error } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
@@ -240,6 +251,7 @@ const Auth = () => {
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
+            role: role
           }
         }
       });
@@ -252,7 +264,13 @@ const Auth = () => {
       // Send welcome email
       await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
-      toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
+      if (role === 'organisation') {
+        toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings.");
+      } else if (role === 'super_admin') {
+        toast.success("Super Admin account created! Full platform access granted.");
+      } else {
+        toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
+      }
     } catch (error) {
       setError("An unexpected error occurred");
     } finally {
@@ -297,7 +315,7 @@ const Auth = () => {
             </Button>
             
             <Button
-              onClick={() => setUserRole('athlete')}
+              onClick={() => setUserRole('client')}
               variant="outline"
               className="w-full h-16 flex items-center gap-4 text-left hover:bg-orange-50 hover:border-orange-300"
             >
@@ -530,6 +548,9 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
+              <div className="text-center text-sm text-gray-600 mb-4">
+                {userRole === 'clinician' ? 'Create Organisation Account (for first-time Clinician setup)' : 'Create new athlete/patient account'}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first-name" className="flex items-center gap-2">

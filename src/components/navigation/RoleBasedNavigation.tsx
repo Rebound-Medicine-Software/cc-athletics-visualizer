@@ -23,7 +23,7 @@ export interface NavigationItem {
   label: string;
   icon: React.ComponentType<any>;
   description?: string;
-  roles: ('super_admin' | 'practitioner' | 'client')[];
+  roles: ('super_admin' | 'organisation' | 'clinician' | 'client')[];
   permissions?: string[];
 }
 
@@ -94,14 +94,14 @@ export const getNavigationItems = (): NavigationItem[] => [
     label: 'Home',
     icon: Home,
     description: 'Dashboard overview and social feeds',
-    roles: ['super_admin', 'practitioner', 'client']
+    roles: ['super_admin', 'organisation', 'clinician', 'client']
   },
   {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
     description: 'Performance metrics and data visualization',
-    roles: ['practitioner', 'client'],
+    roles: ['organisation', 'clinician', 'client'],
     permissions: ['can_view_analytics']
   },
   {
@@ -109,28 +109,28 @@ export const getNavigationItems = (): NavigationItem[] => [
     label: 'Bookings',
     icon: Calendar,
     description: 'Appointment scheduling and management',
-    roles: ['practitioner', 'client']
+    roles: ['organisation', 'clinician', 'client']
   },
   {
     id: 'profiles',
     label: 'Profiles',
     icon: Users,
     description: 'Team and athlete profile management',
-    roles: ['practitioner']
+    roles: ['organisation', 'clinician']
   },
   {
     id: 'reports',
     label: 'Reports',
     icon: FileText,
     description: 'Generate and view performance reports',
-    roles: ['practitioner', 'client']
+    roles: ['organisation', 'clinician', 'client']
   },
   {
     id: 'programming',
     label: 'Programming',
     icon: Dumbbell,
     description: 'Create and manage training programs',
-    roles: ['practitioner', 'client']
+    roles: ['organisation', 'clinician', 'client']
   },
   {
     id: 'payment-packages',
@@ -144,14 +144,14 @@ export const getNavigationItems = (): NavigationItem[] => [
     label: 'Settings',
     icon: Settings,
     description: 'Application preferences and configuration',
-    roles: ['practitioner']
+    roles: ['organisation', 'clinician']
   },
   {
     id: 'contact',
     label: 'Contact',
     icon: MessageCircle,
     description: 'Support and communication',
-    roles: ['practitioner', 'client']
+    roles: ['organisation', 'clinician', 'client']
   }
 ];
 
