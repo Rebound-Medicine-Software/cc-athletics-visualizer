@@ -37,36 +37,29 @@ export const getSuperAdminNavigation = (): NavigationItem[] => [
     roles: ['super_admin']
   },
   {
-    id: 'clinics',
-    label: 'Clinics',
-    icon: Building2,
-    description: 'Organisation settings and clinic management',
-    roles: ['super_admin']
-  },
-  {
-    id: 'practitioners',
-    label: 'Practitioners',
+    id: 'therapists',
+    label: 'Therapist Accounts',
     icon: UserCheck,
-    description: 'Manage practitioner accounts and credentials',
-    roles: ['super_admin']
-  },
-  {
-    id: 'teams',
-    label: 'Teams',
-    icon: Users,
-    description: 'CC Athletics teams from clinic API keys',
+    description: 'Manage Consumer 1 users (approve/revoke)',
     roles: ['super_admin']
   },
   {
     id: 'clients',
     label: 'Clients',
     icon: Users,
-    description: 'CC Athletics athletes and client data',
+    description: 'Manage Consumer 2 users',
+    roles: ['super_admin']
+  },
+  {
+    id: 'teams',
+    label: 'Teams/Clinics',
+    icon: Building2,
+    description: 'Manage branding settings, logos, colors',
     roles: ['super_admin']
   },
   {
     id: 'payments',
-    label: 'Payments',
+    label: 'Stripe Payments',
     icon: CreditCard,
     description: 'Platform MRR and payment flows',
     roles: ['super_admin']
@@ -80,9 +73,9 @@ export const getSuperAdminNavigation = (): NavigationItem[] => [
   },
   {
     id: 'support',
-    label: 'Customer Support',
+    label: 'Support Messages',
     icon: HeadphonesIcon,
-    description: 'Support center and messaging',
+    description: 'Inbox for Consumer 1 messages',
     roles: ['super_admin']
   }
 ];
