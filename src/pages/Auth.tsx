@@ -202,6 +202,32 @@ const Auth = () => {
         return;
       }
 
+      // Check if user's profile exists and organization hasn't been deleted
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*, created_by:created_by(*)')
+          .eq('user_id', user.id)
+          .single();
+
+        // If profile doesn't exist or organization was deleted
+        if (!profile) {
+          await supabase.auth.signOut();
+          setError("Your account profile has been removed. Please contact your organization or sign up again.");
+          return;
+        }
+
+        // Check if this is a clinician/client whose organization was deleted
+        if (profile.role === 'practitioner' || profile.role === 'client') {
+          if (!profile.created_by) {
+            await supabase.auth.signOut();
+            setError("Your Organization account has been removed. Please sign up again to continue.");
+            return;
+          }
+        }
+      }
+
       toast.success("Login successful!");
       navigate('/setup');
     } catch (error) {
@@ -235,12 +261,27 @@ const Auth = () => {
       // Determine role based on user type
       let role = 'client';
       if (userRole === 'clinician') {
-        role = 'organisation'; // First-time clinician account becomes organisation
+        role = 'organisation'; // Clinician signup creates organisation account
       }
       
       // Check for super admin email
       if (signupData.email === 'reflexsportstherpayy@gmail.com') {
         role = 'super_admin';
+      }
+
+      // For organization accounts, check if they previously existed
+      if (role === 'organisation') {
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', signupData.email)
+          .eq('role', 'organisation')
+          .maybeSingle();
+
+        if (existingProfile) {
+          setError("An organization account with this email already exists. Please contact support if you need to recover access.");
+          return;
+        }
       }
 
       const { error } = await supabase.auth.signUp({

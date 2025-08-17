@@ -47,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
-        role: 'clinician',
+        role: 'practitioner', // Use consistent role naming
         qualifications
       }
     });
@@ -59,6 +59,35 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // After user is created, we need to update the profile with organization relationship
+    // The profile trigger will create the basic profile, but we need to set created_by
+    if (userData.user) {
+      // Get the organization profile that's creating this clinician
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
+        
+        if (requestingUser) {
+          const { data: orgProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', requestingUser.id)
+            .eq('role', 'organisation')
+            .single();
+            
+          if (orgProfile) {
+            // Update the newly created profile with the organization relationship
+            await supabase
+              .from('profiles')
+              .update({ created_by: orgProfile.id })
+              .eq('user_id', userData.user.id);
+          }
+        }
+      }
+    }
+
 
     // Send credentials email using SendPulse API
     const emailData = {

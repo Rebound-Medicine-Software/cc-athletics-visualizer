@@ -74,18 +74,18 @@ export const StaffCredentialsTab = () => {
         // Update existing user
         toast.info("User update functionality requires admin implementation");
       } else {
-        // Create new user
-        const { data, error } = await supabase.auth.admin.createUser({
-          email: editForm.email,
-          password: editForm.password,
-          user_metadata: {
+        // Create new user via edge function to handle organization relationship
+        const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
+          body: {
+            email: editForm.email,
             full_name: editForm.full_name,
-            avatar_url: editForm.avatar_url
+            role: 'practitioner',
+            organization_name: 'Current Organization' // This should be dynamic based on current user's org
           }
         });
 
         if (error) throw error;
-        toast.success("Staff user created successfully");
+        toast.success("Clinician account created and credentials sent");
       }
 
       setEditingId(null);

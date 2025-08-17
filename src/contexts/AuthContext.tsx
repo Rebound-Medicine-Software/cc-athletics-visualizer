@@ -77,13 +77,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, created_by:created_by(*)')
         .eq('user_id', userId)
         .maybeSingle();
 
       if (profileError) throw profileError;
       
       if (profileData) {
+        // Check if this is a clinician/client whose organization was deleted
+        if (profileData.role === 'practitioner' || profileData.role === 'client') {
+          if (!profileData.created_by) {
+            console.error('Organization account was deleted');
+            await supabase.auth.signOut();
+            return;
+          }
+        }
+        
         setProfile(profileData as UserProfile);
 
         // Fetch team branding if user has a team
