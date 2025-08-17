@@ -80,13 +80,16 @@ const Auth = () => {
       
       if (error) {
         console.error('Error sending welcome email:', error);
-        // Don't throw here as signup was successful
+        // Don't block signup flow if email fails
+        return false;
       } else {
         console.log('Welcome email sent successfully');
+        return true;
       }
     } catch (error) {
       console.error('Error sending welcome email:', error);
-      // Don't throw here as signup was successful
+      // Don't block signup flow if email fails
+      return false;
     }
   };
 
@@ -302,15 +305,23 @@ const Auth = () => {
         return;
       }
 
-      // Send welcome email
-      await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
+      // Send welcome email (don't block on failure)
+      const emailSent = await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
       if (role === 'organisation') {
-        toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings.");
+        if (emailSent) {
+          toast.success("Organisation account created! Welcome email sent. You can now invite Clinicians and Clients via Settings.");
+        } else {
+          toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings. (Note: Welcome email delivery temporarily unavailable)");
+        }
       } else if (role === 'super_admin') {
         toast.success("Super Admin account created! Full platform access granted.");
       } else {
-        toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
+        if (emailSent) {
+          toast.success("Account created! Please check your email for verification.");
+        } else {
+          toast.success("Account created! Please check your email for Supabase verification link.");
+        }
       }
     } catch (error) {
       setError("An unexpected error occurred");
