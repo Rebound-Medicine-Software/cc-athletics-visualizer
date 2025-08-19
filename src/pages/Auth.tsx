@@ -63,10 +63,10 @@ const Auth = () => {
           .maybeSingle();
 
         if (profile && !profileError) {
-          // Route based on role and setup status
+          // Route based on role
           if (profile.role === 'organisation') {
-            const setupCompleted = localStorage.getItem('setup-completed');
-            if (!setupCompleted) {
+            // New organisation users (without full_name) go to setup
+            if (!profile.full_name) {
               navigate('/setup');
             } else {
               navigate('/dashboard');
@@ -273,7 +273,7 @@ const Auth = () => {
 
         toast.success("Login successful!");
         
-        // Route based on role and setup status
+        // Route based on role
         if (profile.role === 'organisation') {
           // For organization accounts, check if setup is completed (full_name indicates completion)
           if (!profile.full_name) {
