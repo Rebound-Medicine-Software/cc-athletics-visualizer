@@ -36,8 +36,17 @@ const Dashboard = () => {
     // Redirect to auth if not authenticated
     if (!loading && !user) {
       navigate("/auth");
+      return;
     }
-  }, [loading, user, navigate]);
+
+    // Check if organization user needs to complete setup
+    if (!loading && user && profile) {
+      if (profile.role === 'organisation' && !profile.full_name) {
+        navigate("/setup");
+        return;
+      }
+    }
+  }, [loading, user, profile, navigate]);
 
   const handleLogout = async () => {
     try {
