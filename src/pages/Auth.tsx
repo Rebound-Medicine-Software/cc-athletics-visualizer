@@ -65,8 +65,8 @@ const Auth = () => {
         if (profile && !profileError) {
           // Route based on role
           if (profile.role === 'organisation') {
-            // New organisation users (without full_name) go to setup
-            if (!profile.full_name) {
+            // Check if organization setup is completed (setup_completed field)
+            if (!session.user.user_metadata?.setup_completed) {
               navigate('/setup');
             } else {
               navigate('/dashboard');
@@ -275,8 +275,8 @@ const Auth = () => {
         
         // Route based on role
         if (profile.role === 'organisation') {
-          // For organization accounts, check if setup is completed (full_name indicates completion)
-          if (!profile.full_name) {
+          // Check if organization setup is completed (user_metadata setup_completed flag)
+          if (!user.user_metadata?.setup_completed) {
             navigate('/setup');
           } else {
             navigate('/dashboard');
@@ -349,11 +349,12 @@ const Auth = () => {
         email: signupData.email,
         password: signupData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/setup`,
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
-            role: role
+            role: role,
+            setup_completed: role !== 'organisation' // Only organisation needs setup
           }
         }
       });
