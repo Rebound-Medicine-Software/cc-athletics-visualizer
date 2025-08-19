@@ -126,6 +126,12 @@ const Setup = () => {
     }
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Authentication required");
+        return;
+      }
+
       // Save API key to localStorage for now
       localStorage.setItem('cc-athletics-api-key', apiKey);
       
@@ -138,13 +144,62 @@ const Setup = () => {
           reader.readAsDataURL(orgData.logo as File);
         });
       }
-      
-      // Save organization data to localStorage for now
-      localStorage.setItem('organization-data', JSON.stringify({
-        ...orgData,
-        logo: logoDataUrl, // Store as data URL instead of File object
-        practitioners: validPractitioners
-      }));
+
+      // Create or update team
+      const { data: team, error: teamError } = await supabase
+        .from('teams')
+        .upsert({
+          name: orgData.name,
+          logo_url: logoDataUrl,
+          admin_id: session.user.id,
+          cc_team_id: `org_${Date.now()}` // Temporary team ID
+        })
+        .select()
+        .single();
+
+      if (teamError) throw teamError;
+
+      // Update current user's profile with team_id
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          team_id: team.id,
+          role: 'organisation'
+        })
+        .eq('user_id', session.user.id);
+
+      if (profileError) throw profileError;
+
+      // Create practitioner profiles for the team
+      for (const practitioner of validPractitioners) {
+        // Convert practitioner image to data URL if exists
+        let practitionerAvatarUrl = null;
+        if (practitioner.image instanceof File) {
+          practitionerAvatarUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(practitioner.image as File);
+          });
+        }
+
+        // Create practitioner account via edge function
+        const { error: practitionerError } = await supabase.functions.invoke('send-clinician-credentials', {
+          body: {
+            email: practitioner.email,
+            full_name: practitioner.name,
+            role: practitioner.role,
+            qualifications: practitioner.qualifications,
+            avatar_url: practitionerAvatarUrl,
+            organization_name: orgData.name,
+            team_id: team.id
+          }
+        });
+
+        if (practitionerError) {
+          console.error('Error creating practitioner:', practitionerError);
+          // Continue with other practitioners even if one fails
+        }
+      }
       
       // Mark setup as completed
       localStorage.setItem('setup-completed', 'true');
@@ -152,6 +207,7 @@ const Setup = () => {
       toast.success("Setup complete! Welcome to Rebound Medicine & Performance");
       navigate('/dashboard');
     } catch (error) {
+      console.error('Setup completion error:', error);
       toast.error("Failed to complete setup. Please try again.");
     }
   };
