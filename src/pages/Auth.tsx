@@ -242,7 +242,7 @@ const Auth = () => {
         // Route based on role and setup status
         if (profile.role === 'organisation') {
           // For organization accounts, check if they have a team (setup completed)
-          if (profile.team_id) {
+          if (profile.full_name && profile.team_id) {
             navigate('/dashboard');
           } else {
             navigate('/setup');
