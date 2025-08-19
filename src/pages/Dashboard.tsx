@@ -42,7 +42,7 @@ const Dashboard = () => {
     // Check if organization user needs to complete setup
     if (!loading && user && profile) {
       const setupCompleted = localStorage.getItem('setup-completed');
-      if (profile.role === 'organisation' && !setupCompleted) {
+      if (profile.role === 'organisation' && !setupCompleted && !profile.full_name) {
         navigate("/setup");
         return;
       }
