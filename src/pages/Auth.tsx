@@ -210,7 +210,7 @@ const Auth = () => {
       if (user) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('*, created_by:created_by(*)')
+          .select('*, created_by:created_by(*), team_id')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -236,10 +236,27 @@ const Auth = () => {
             return;
           }
         }
-      }
 
-      toast.success("Login successful!");
-      navigate('/setup');
+        toast.success("Login successful!");
+        
+        // Route based on role and setup status
+        if (profile.role === 'organisation') {
+          // For organization accounts, check if they have a team (setup completed)
+          if (profile.team_id) {
+            navigate('/dashboard');
+          } else {
+            navigate('/setup');
+          }
+        } else if (profile.role === 'client' || profile.role === 'practitioner') {
+          // Client and practitioner accounts go directly to dashboard
+          navigate('/dashboard');
+        } else if (profile.role === 'super_admin') {
+          navigate('/admin');
+        } else {
+          // Default fallback
+          navigate('/setup');
+        }
+      }
     } catch (error) {
       setError("An unexpected error occurred");
     } finally {
