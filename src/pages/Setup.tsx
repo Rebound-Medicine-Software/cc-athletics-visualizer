@@ -176,7 +176,14 @@ const Setup = () => {
       console.log('Setup: Profile updated successfully, refreshing...');
       // Refresh the profile in AuthContext to reflect the changes
       await refreshProfile();
-      console.log('Setup: Profile refreshed');
+      console.log('Setup: Profile refreshed, navigating to dashboard');
+      
+      // Set localStorage flag to prevent redirect loop
+      localStorage.setItem('setup-completed', 'true');
+      
+      // Navigate to dashboard
+      navigate('/dashboard');
+      return;
 
       // Create practitioner profiles for the team
       for (const practitioner of validPractitioners) {
