@@ -241,11 +241,11 @@ const Auth = () => {
         
         // Route based on role and setup status
         if (profile.role === 'organisation') {
-          // For organization accounts, check if they have a team (setup completed)
-          if (profile.full_name && profile.team_id) {
-            navigate('/dashboard');
-          } else {
+          // For organization accounts, check if setup is completed (full_name indicates completion)
+          if (!profile.full_name) {
             navigate('/setup');
+          } else {
+            navigate('/dashboard');
           }
         } else if (profile.role === 'client' || profile.role === 'practitioner') {
           // Client and practitioner accounts go directly to dashboard
