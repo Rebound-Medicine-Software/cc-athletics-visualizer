@@ -173,13 +173,13 @@ const Setup = () => {
 
       if (profileError) throw profileError;
 
-      console.log('Setup: Profile updated successfully, refreshing...');
-      // Refresh the profile in AuthContext to reflect the changes
-      await refreshProfile();
-      console.log('Setup: Profile refreshed, navigating to dashboard');
+      console.log('Setup: Profile updated successfully');
       
-      // Set localStorage flag to prevent redirect loop
+      // Set localStorage flag to prevent any redirect loops
       localStorage.setItem('setup-completed', 'true');
+      
+      // Small delay to ensure database consistency
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Navigate to dashboard
       navigate('/dashboard');
