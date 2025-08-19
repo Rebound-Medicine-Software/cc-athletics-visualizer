@@ -65,7 +65,8 @@ const Auth = () => {
         if (profile && !profileError) {
           // Route based on role and setup status
           if (profile.role === 'organisation') {
-            if (!profile.full_name) {
+            const setupCompleted = localStorage.getItem('setup-completed');
+            if (!setupCompleted) {
               navigate('/setup');
             } else {
               navigate('/dashboard');
