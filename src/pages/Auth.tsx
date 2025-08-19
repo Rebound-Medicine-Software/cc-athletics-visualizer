@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,39 @@ const Auth = () => {
     
     return `${adjective}${noun}${numbers}${symbol}`;
   };
+
+  // Handle authentication state changes (for email confirmation links)
+  useEffect(() => {
+    const checkAuthState = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // User is already authenticated, check their role and route accordingly
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (profile && !profileError) {
+          // Route based on role and setup status
+          if (profile.role === 'organisation') {
+            if (!profile.full_name) {
+              navigate('/setup');
+            } else {
+              navigate('/dashboard');
+            }
+          } else if (profile.role === 'client' || profile.role === 'practitioner') {
+            navigate('/dashboard');
+          } else if (profile.role === 'super_admin') {
+            navigate('/admin');
+          }
+        }
+      }
+    };
+
+    checkAuthState();
+  }, [navigate]);
 
   const handleGeneratePassword = () => {
     const newPassword = generateSafePassword();
