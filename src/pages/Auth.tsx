@@ -208,13 +208,20 @@ const Auth = () => {
       // Check if user's profile exists and organization hasn't been deleted
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*, created_by:created_by(*)')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        // If profile doesn't exist or organization was deleted
+        // Handle any errors fetching profile
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          setError("Error accessing your profile. Please try again.");
+          return;
+        }
+
+        // If profile doesn't exist
         if (!profile) {
           await supabase.auth.signOut();
           setError("Your account profile has been removed. Please contact your organization or sign up again.");
