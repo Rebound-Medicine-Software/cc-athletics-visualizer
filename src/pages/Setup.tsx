@@ -159,12 +159,13 @@ const Setup = () => {
 
       if (teamError) throw teamError;
 
-      // Update current user's profile with team_id
+      // Update current user's profile with team_id and full_name to mark setup as complete
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
           team_id: team.id,
-          role: 'organisation'
+          role: 'organisation',
+          full_name: orgData.name // This marks setup as complete for Dashboard redirect check
         })
         .eq('user_id', session.user.id);
 
