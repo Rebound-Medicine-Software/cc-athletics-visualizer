@@ -41,7 +41,9 @@ const Dashboard = () => {
 
     // Check if organization user needs to complete setup
     if (!loading && user && profile) {
+      console.log('Dashboard: Checking org setup', { role: profile.role, full_name: profile.full_name });
       if (profile.role === 'organisation' && !profile.full_name) {
+        console.log('Dashboard: Redirecting to setup');
         navigate("/setup");
         return;
       }

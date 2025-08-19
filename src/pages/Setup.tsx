@@ -8,9 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Upload, Building2, Users, Plus, X, Key, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Setup = () => {
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [selectedSoftware, setSelectedSoftware] = useState("");
   const [apiKey, setApiKey] = useState("");
@@ -170,6 +172,11 @@ const Setup = () => {
         .eq('user_id', session.user.id);
 
       if (profileError) throw profileError;
+
+      console.log('Setup: Profile updated successfully, refreshing...');
+      // Refresh the profile in AuthContext to reflect the changes
+      await refreshProfile();
+      console.log('Setup: Profile refreshed');
 
       // Create practitioner profiles for the team
       for (const practitioner of validPractitioners) {
