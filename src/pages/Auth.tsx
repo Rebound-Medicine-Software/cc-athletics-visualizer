@@ -51,6 +51,17 @@ const Auth = () => {
 
   // Handle authentication state changes (for email confirmation links)
   useEffect(() => {
+    // Check for URL parameters to set role and tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const roleParam = urlParams.get('role');
+    const tabParam = urlParams.get('tab');
+    
+    if (roleParam === 'clinician') {
+      setUserRole('clinician');
+    } else if (roleParam === 'client') {
+      setUserRole('client');
+    }
+
     const checkAuthState = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -349,7 +360,7 @@ const Auth = () => {
         email: signupData.email,
         password: signupData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: `${window.location.origin}/auth?tab=login&role=clinician`,
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
