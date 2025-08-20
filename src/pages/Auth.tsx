@@ -66,6 +66,12 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
+        // If we're on the auth page with specific tab and role params, 
+        // don't auto-redirect - let user see the login form
+        if (tabParam === 'login' && roleParam) {
+          return; // Stay on auth page
+        }
+
         // User is already authenticated, check their role and route accordingly
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
