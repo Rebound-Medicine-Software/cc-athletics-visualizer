@@ -205,11 +205,16 @@ const Auth = () => {
       // Check if user's profile exists and organization hasn't been deleted
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
+        console.log('User ID:', user.id);
+        
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*, created_by:created_by(*)')
           .eq('user_id', user.id)
           .single();
+
+        console.log('Profile data:', profile);
+        console.log('Profile error:', profileError);
 
         // If profile doesn't exist or organization was deleted
         if (!profile) {
@@ -229,18 +234,24 @@ const Auth = () => {
 
         toast.success("Login successful!");
         
+        console.log('Redirecting based on role:', profile.role, 'setup_completed:', profile.setup_completed);
+        
         // Handle redirects based on user role and setup status
         if (profile.role === 'organisation') {
           // Check if organization has completed setup
           if (profile.setup_completed) {
+            console.log('Setup completed, redirecting to dashboard');
             navigate('/dashboard');
           } else {
+            console.log('Setup not completed, redirecting to setup');
             navigate('/setup');
           }
         } else if (profile.role === 'super_admin') {
+          console.log('Super admin, redirecting to admin');
           navigate('/admin');
         } else {
           // Clinician, Client, and other roles go to dashboard
+          console.log('Other role, redirecting to dashboard');
           navigate('/dashboard');
         }
       }
