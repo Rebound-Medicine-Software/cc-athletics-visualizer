@@ -66,12 +66,6 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // If we're on the auth page with specific tab and role params, 
-        // don't auto-redirect - let user see the login form
-        if (tabParam === 'login' && roleParam) {
-          return; // Stay on auth page
-        }
-
         // User is already authenticated, check their role and route accordingly
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -98,6 +92,37 @@ const Auth = () => {
     };
 
     checkAuthState();
+
+    // Set up auth state listener for login events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Fetch profile and route accordingly after successful login
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+
+          if (profile && !profileError) {
+            if (profile.role === 'organisation') {
+              // Check if organization setup is completed
+              if (!session.user.user_metadata?.setup_completed) {
+                navigate('/setup');
+              } else {
+                navigate('/dashboard');
+              }
+            } else if (profile.role === 'client' || profile.role === 'practitioner') {
+              navigate('/dashboard');
+            } else if (profile.role === 'super_admin') {
+              navigate('/admin');
+            }
+          }
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleGeneratePassword = () => {
