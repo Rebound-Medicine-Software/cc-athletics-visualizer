@@ -227,15 +227,21 @@ const Auth = () => {
           }
         }
 
+        console.log('Profile role:', profile.role);
+        console.log('Setup completed:', localStorage.getItem('setup-completed'));
+
         toast.success("Login successful!");
         
         // Check if organization user has completed setup
         const setupCompleted = localStorage.getItem('setup-completed');
-        if (profile.role === 'organisation' && !setupCompleted) {
+        if (profile.role === 'organisation' && setupCompleted !== 'true') {
+          console.log('Redirecting to setup');
           navigate('/setup');
         } else {
+          console.log('Redirecting to dashboard');
           navigate('/dashboard');
         }
+        return; // Prevent further execution
       }
     } catch (error) {
       setError("An unexpected error occurred");
