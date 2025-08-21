@@ -75,13 +75,14 @@ const Auth = () => {
 
         if (profile && !profileError) {
           // Route based on role
-          if (profile.role === 'organisation') {
-            // Check if organization setup is completed (setup_completed field)
-            if (!session.user.user_metadata?.setup_completed) {
-              navigate('/setup');
-            } else {
-              navigate('/dashboard');
-            }
+        if (profile.role === 'organisation') {
+          // Check if organization setup is completed via localStorage
+          const setupCompleted = localStorage.getItem('setup-completed');
+          if (setupCompleted !== 'true') {
+            navigate('/setup');
+          } else {
+            navigate('/dashboard');
+          }
           } else if (profile.role === 'client' || profile.role === 'practitioner') {
             navigate('/dashboard');
           } else if (profile.role === 'super_admin') {
@@ -106,8 +107,9 @@ const Auth = () => {
 
           if (profile && !profileError) {
             if (profile.role === 'organisation') {
-              // Check if organization setup is completed
-              if (!session.user.user_metadata?.setup_completed) {
+              // Check if organization setup is completed via localStorage
+              const setupCompleted = localStorage.getItem('setup-completed');
+              if (setupCompleted !== 'true') {
                 navigate('/setup');
               } else {
                 navigate('/dashboard');
@@ -317,8 +319,9 @@ const Auth = () => {
         
         // Route based on role
         if (profile.role === 'organisation') {
-          // Check if organization setup is completed (user_metadata setup_completed flag)
-          if (!user.user_metadata?.setup_completed) {
+          // Check if organization setup is completed via localStorage
+          const setupCompleted = localStorage.getItem('setup-completed');
+          if (setupCompleted !== 'true') {
             navigate('/setup');
           } else {
             navigate('/dashboard');
