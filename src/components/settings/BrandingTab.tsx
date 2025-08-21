@@ -19,7 +19,8 @@ export const BrandingTab = () => {
     logo_url: teamBranding?.logo_url || '',
     primary_color: teamBranding?.primary_color || '#3B82F6',
     secondary_color: teamBranding?.secondary_color || '#1E40AF',
-    accent_color: teamBranding?.accent_color || '#F59E0B'
+    accent_color: teamBranding?.accent_color || '#F59E0B',
+    font_family: teamBranding?.font_family || 'Inter'
   });
 
   const handleSave = async () => {
@@ -37,7 +38,8 @@ export const BrandingTab = () => {
           logo_url: brandingForm.logo_url,
           primary_color: brandingForm.primary_color,
           secondary_color: brandingForm.secondary_color,
-          accent_color: brandingForm.accent_color
+          accent_color: brandingForm.accent_color,
+          font_family: brandingForm.font_family
         })
         .eq('id', profile.team_id);
 
@@ -101,6 +103,27 @@ export const BrandingTab = () => {
                   <Upload className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="font-family">Font Family</Label>
+              <select
+                id="font-family"
+                value={brandingForm.font_family}
+                onChange={(e) => setBrandingForm(prev => ({ ...prev, font_family: e.target.value }))}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="Inter">Inter (Default)</option>
+                <option value="Arial">Arial</option>
+                <option value="Helvetica">Helvetica</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Lato">Lato</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Poppins">Poppins</option>
+              </select>
             </div>
 
             <div className="space-y-3">

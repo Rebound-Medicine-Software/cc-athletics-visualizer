@@ -38,9 +38,27 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
+      // Get current user's team to filter staff by team
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!currentProfile?.team_id) {
+        setUsers([]);
+        return;
+      }
+
+      // Fetch team members only
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('team_id', currentProfile.team_id)
+        .in('role', ['organisation', 'practitioner'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -69,23 +87,53 @@ export const StaffCredentialsTab = () => {
       return;
     }
 
+    if (!editForm.password.trim() && !editingId) {
+      toast.error("Password is required for new users");
+      return;
+    }
+
     try {
+      // Get current user's profile to get team info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('team_id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!currentProfile?.team_id || !['organisation', 'practitioner'].includes(currentProfile.role)) {
+        toast.error("You don't have permission to manage team members");
+        return;
+      }
+
       if (editingId) {
         // Update existing user
-        toast.info("User update functionality requires admin implementation");
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            full_name: editForm.full_name,
+            avatar_url: editForm.avatar_url
+          })
+          .eq('id', editingId);
+
+        if (error) throw error;
+        toast.success("User updated successfully");
       } else {
-        // Create new user via edge function to handle organization relationship
-        const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
+        // Create new team member via edge function
+        const { data, error } = await supabase.functions.invoke('invite-team-member', {
           body: {
             email: editForm.email,
             full_name: editForm.full_name,
             role: 'practitioner',
-            organization_name: 'Current Organization' // This should be dynamic based on current user's org
+            team_id: currentProfile.team_id,
+            inviter_name: 'Team Admin'
           }
         });
 
         if (error) throw error;
-        toast.success("Clinician account created and credentials sent");
+        toast.success(`Team member invited! Temporary password: ${data.temporary_password}`);
       }
 
       setEditingId(null);

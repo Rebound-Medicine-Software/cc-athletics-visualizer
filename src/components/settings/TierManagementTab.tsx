@@ -41,7 +41,7 @@ export const TierManagementTab = () => {
   });
 
   useEffect(() => {
-    if (profile && (isRole('organisation') || isRole('clinician') || isRole('super_admin'))) {
+    if (profile && (isRole('organisation') || isRole('practitioner') || isRole('super_admin'))) {
       fetchTiers();
     }
   }, [profile]);
@@ -99,7 +99,7 @@ export const TierManagementTab = () => {
     }
   };
 
-  if (!profile || (!isRole('organisation') && !isRole('clinician') && !isRole('super_admin'))) {
+  if (!profile || (!isRole('organisation') && !isRole('practitioner') && !isRole('super_admin'))) {
     return (
       <Card>
         <CardContent className="p-6">
