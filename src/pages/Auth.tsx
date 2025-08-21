@@ -68,7 +68,7 @@ const Auth = () => {
       if (session?.user) {
         // User is already authenticated, check their role and route accordingly
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('*')
           .eq('user_id', session.user.id)
           .maybeSingle();
@@ -99,11 +99,11 @@ const Auth = () => {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           // Fetch profile and route accordingly after successful login
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
 
           if (profile && !profileError) {
             if (profile.role === 'organisation') {
@@ -287,8 +287,8 @@ const Auth = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*, created_by:created_by(*), team_id')
+          .from('user_profiles')
+          .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
 
@@ -378,7 +378,7 @@ const Auth = () => {
       // For organization accounts, check if they previously existed
       if (role === 'organisation') {
         const { data: existingProfile } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('id')
           .eq('email', signupData.email)
           .eq('role', 'organisation')
