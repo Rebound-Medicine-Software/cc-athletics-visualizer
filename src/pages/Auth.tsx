@@ -226,10 +226,17 @@ const Auth = () => {
             return;
           }
         }
-      }
 
-      toast.success("Login successful!");
-      navigate('/setup');
+        toast.success("Login successful!");
+        
+        // Check if organization user has completed setup
+        const setupCompleted = localStorage.getItem('setup-completed');
+        if (profile.role === 'organisation' && !setupCompleted) {
+          navigate('/setup');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     } catch (error) {
       setError("An unexpected error occurred");
     } finally {
