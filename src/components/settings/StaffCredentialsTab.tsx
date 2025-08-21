@@ -5,10 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Edit, Save, X, Plus, Trash2, Shield } from "lucide-react";
+import { Users, Edit, Save, X, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface StaffUser {
   id: string;
@@ -22,7 +21,6 @@ interface StaffUser {
 }
 
 export const StaffCredentialsTab = () => {
-  const { profile } = useAuth();
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -31,34 +29,8 @@ export const StaffCredentialsTab = () => {
     email: '',
     password: '',
     full_name: '',
-    avatar_url: '',
-    role: '',
-    qualifications: ''
+    avatar_url: ''
   });
-
-  // Check if user has permission to access this section
-  const hasAccess = profile?.role === 'organisation' || profile?.role === 'super_admin';
-
-  if (!hasAccess) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-6 h-6" />
-            Access Restricted
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Shield className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600">
-              Access to staff credentials is restricted to organization administrators and super admins only.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   useEffect(() => {
     fetchUsers();
@@ -66,12 +38,9 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
-      // Only fetch practitioners from the same team
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('team_id', profile?.team_id)
-        .in('role', ['practitioner', 'staff'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -90,9 +59,7 @@ export const StaffCredentialsTab = () => {
       email: user.email,
       password: '',
       full_name: user.full_name || '',
-      avatar_url: user.avatar_url || '',
-      role: user.role || '',
-      qualifications: ''
+      avatar_url: user.avatar_url || ''
     });
   };
 
@@ -112,10 +79,8 @@ export const StaffCredentialsTab = () => {
           body: {
             email: editForm.email,
             full_name: editForm.full_name,
-            role: editForm.role || 'practitioner',
-            qualifications: editForm.qualifications,
-            avatar_url: editForm.avatar_url,
-            team_id: profile?.team_id
+            role: 'practitioner',
+            organization_name: 'Current Organization' // This should be dynamic based on current user's org
           }
         });
 
@@ -125,7 +90,7 @@ export const StaffCredentialsTab = () => {
 
       setEditingId(null);
       setIsAdding(false);
-      setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role: '', qualifications: '' });
+      setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
       fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
@@ -147,7 +112,7 @@ export const StaffCredentialsTab = () => {
   const handleCancel = () => {
     setEditingId(null);
     setIsAdding(false);
-    setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role: '', qualifications: '' });
+    setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
   };
 
   if (loading) {
@@ -210,24 +175,6 @@ export const StaffCredentialsTab = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="add-role">Role</Label>
-                  <Input
-                    id="add-role"
-                    value={editForm.role}
-                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                    placeholder="e.g., Sports Scientist, Physiotherapist"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="add-qualifications">Qualifications</Label>
-                  <Input
-                    id="add-qualifications"
-                    value={editForm.qualifications}
-                    onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
-                    placeholder="Degrees, certifications"
-                  />
-                </div>
-                <div>
                   <Label htmlFor="add-avatar">Avatar URL</Label>
                   <Input
                     id="add-avatar"
@@ -256,18 +203,17 @@ export const StaffCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Full Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Last Login</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      No staff users found. Add practitioners from the setup process or create new ones above.
-                    </TableCell>
-                  </TableRow>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    No staff users found. Admin privileges required to view user accounts.
+                  </TableCell>
+                </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
@@ -282,7 +228,6 @@ export const StaffCredentialsTab = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.full_name || 'Not set'}</TableCell>
-                    <TableCell>{user.role || 'Staff'}</TableCell>
                     <TableCell>
                       {new Date(user.created_at).toLocaleDateString()}
                     </TableCell>

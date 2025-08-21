@@ -8,16 +8,12 @@ const corsHeaders = {
 
 interface ClinicianCredentials {
   email: string;
-  full_name?: string;
-  firstName?: string;
-  lastName?: string;
+  firstName: string;
+  lastName: string;
   role: string;
   qualifications?: string;
-  password?: string;
-  organisationName?: string;
-  organization_name?: string;
-  avatar_url?: string;
-  team_id?: string;
+  password: string;
+  organisationName: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -33,38 +29,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { 
       email, 
-      full_name,
       firstName, 
       lastName, 
       role, 
       qualifications, 
-      password,
-      organisationName,
-      organization_name,
-      avatar_url,
-      team_id
+      password, 
+      organisationName 
     }: ClinicianCredentials = await req.json();
-
-    // Handle both naming conventions
-    const orgName = organisationName || organization_name || 'Your Organization';
-    const actualPassword = password || `temp${Math.random().toString(36).slice(-8)}`;
-    const firstName_ = firstName || full_name?.split(' ')[0] || 'User';
-    const lastName_ = lastName || full_name?.split(' ').slice(1).join(' ') || '';
 
     console.log(`Creating clinician account for: ${email}`);
 
     // Create the user account
     const { data: userData, error: userError } = await supabase.auth.admin.createUser({
       email,
-      password: actualPassword,
+      password,
       email_confirm: true,
       user_metadata: {
-        full_name: full_name || `${firstName_} ${lastName_}`,
-        first_name: firstName_,
-        last_name: lastName_,
+        first_name: firstName,
+        last_name: lastName,
         role: 'practitioner', // Use consistent role naming
-        qualifications,
-        avatar_url
+        qualifications
       }
     });
 
@@ -77,46 +61,28 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // After user is created, we need to update the profile with organization relationship
+    // The profile trigger will create the basic profile, but we need to set created_by
     if (userData.user) {
-      // If team_id is provided directly, use it
-      if (team_id) {
-        await supabase
-          .from('profiles')
-          .update({ 
-            team_id,
-            role: 'practitioner',
-            full_name: full_name || `${firstName_} ${lastName_}`,
-            avatar_url
-          })
-          .eq('user_id', userData.user.id);
-      } else {
-        // Get the organization profile that's creating this clinician
-        const authHeader = req.headers.get('authorization');
-        if (authHeader) {
-          const token = authHeader.replace('Bearer ', '');
-          const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
-          
-          if (requestingUser) {
-            const { data: orgProfile } = await supabase
+      // Get the organization profile that's creating this clinician
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
+        
+        if (requestingUser) {
+          const { data: orgProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', requestingUser.id)
+            .eq('role', 'organisation')
+            .single();
+            
+          if (orgProfile) {
+            // Update the newly created profile with the organization relationship
+            await supabase
               .from('profiles')
-              .select('id, team_id')
-              .eq('user_id', requestingUser.id)
-              .eq('role', 'organisation')
-              .single();
-              
-            if (orgProfile) {
-              // Update the newly created profile with the organization relationship
-              await supabase
-                .from('profiles')
-                .update({ 
-                  created_by: orgProfile.id,
-                  team_id: orgProfile.team_id,
-                  role: 'practitioner',
-                  full_name: full_name || `${firstName_} ${lastName_}`,
-                  avatar_url
-                })
-                .eq('user_id', userData.user.id);
-            }
+              .update({ created_by: orgProfile.id })
+              .eq('user_id', userData.user.id);
           }
         }
       }
@@ -131,21 +97,21 @@ const handler = async (req: Request): Promise<Response> => {
           email: "noreply@reboundmedicine.com"
         },
         to: [{
-          name: full_name || `${firstName_} ${lastName_}`,
+          name: `${firstName} ${lastName}`,
           email: email
         }],
-        subject: `Welcome to ${orgName} - Your Clinician Account`,
+        subject: `Welcome to ${organisationName} - Your Clinician Account`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #3B82F6;">Welcome to ${orgName}!</h2>
+            <h2 style="color: #3B82F6;">Welcome to ${organisationName}!</h2>
             
-            <p>Hello ${firstName_},</p>
+            <p>Hello ${firstName},</p>
             
             <p>Your clinician account has been created. Here are your login credentials:</p>
             
             <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Password:</strong> ${actualPassword}</p>
+              <p><strong>Password:</strong> ${password}</p>
               <p><strong>Role:</strong> ${role}</p>
               ${qualifications ? `<p><strong>Qualifications:</strong> ${qualifications}</p>` : ''}
             </div>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,84 +49,6 @@ const Auth = () => {
     return `${adjective}${noun}${numbers}${symbol}`;
   };
 
-  // Handle authentication state changes (for email confirmation links)
-  useEffect(() => {
-    // Check for URL parameters to set role and tab
-    const urlParams = new URLSearchParams(window.location.search);
-    const roleParam = urlParams.get('role');
-    const tabParam = urlParams.get('tab');
-    
-    if (roleParam === 'clinician') {
-      setUserRole('clinician');
-    } else if (roleParam === 'client') {
-      setUserRole('client');
-    }
-
-    const checkAuthState = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        // User is already authenticated, check their role and route accordingly
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-        if (profile && !profileError) {
-          // Route based on role
-        if (profile.role === 'organisation') {
-          // Check if organization setup is completed via localStorage
-          const setupCompleted = localStorage.getItem('setup-completed');
-          if (setupCompleted !== 'true') {
-            navigate('/setup');
-          } else {
-            navigate('/dashboard');
-          }
-          } else if (profile.role === 'client' || profile.role === 'practitioner') {
-            navigate('/dashboard');
-          } else if (profile.role === 'super_admin') {
-            navigate('/admin');
-          }
-        }
-      }
-    };
-
-    checkAuthState();
-
-    // Set up auth state listener for login events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Fetch profile and route accordingly after successful login
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-
-          if (profile && !profileError) {
-            if (profile.role === 'organisation') {
-              // Check if organization setup is completed via localStorage
-              const setupCompleted = localStorage.getItem('setup-completed');
-              if (setupCompleted !== 'true') {
-                navigate('/setup');
-              } else {
-                navigate('/dashboard');
-              }
-            } else if (profile.role === 'client' || profile.role === 'practitioner') {
-              navigate('/dashboard');
-            } else if (profile.role === 'super_admin') {
-              navigate('/admin');
-            }
-          }
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
   const handleGeneratePassword = () => {
     const newPassword = generateSafePassword();
     setSignupData(prev => ({ ...prev, password: newPassword, confirmPassword: newPassword }));
@@ -158,16 +80,13 @@ const Auth = () => {
       
       if (error) {
         console.error('Error sending welcome email:', error);
-        // Don't block signup flow if email fails
-        return false;
+        // Don't throw here as signup was successful
       } else {
         console.log('Welcome email sent successfully');
-        return true;
       }
     } catch (error) {
       console.error('Error sending welcome email:', error);
-      // Don't block signup flow if email fails
-      return false;
+      // Don't throw here as signup was successful
     }
   };
 
@@ -286,20 +205,13 @@ const Auth = () => {
       // Check if user's profile exists and organization hasn't been deleted
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('*')
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*, created_by:created_by(*)')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .single();
 
-        // Handle any errors fetching profile
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setError("Error accessing your profile. Please try again.");
-          return;
-        }
-
-        // If profile doesn't exist
+        // If profile doesn't exist or organization was deleted
         if (!profile) {
           await supabase.auth.signOut();
           setError("Your account profile has been removed. Please contact your organization or sign up again.");
@@ -314,28 +226,10 @@ const Auth = () => {
             return;
           }
         }
-
-        toast.success("Login successful!");
-        
-        // Route based on role
-        if (profile.role === 'organisation') {
-          // Check if organization setup is completed via localStorage
-          const setupCompleted = localStorage.getItem('setup-completed');
-          if (setupCompleted !== 'true') {
-            navigate('/setup');
-          } else {
-            navigate('/dashboard');
-          }
-        } else if (profile.role === 'client' || profile.role === 'practitioner') {
-          // Client and practitioner accounts go directly to dashboard
-          navigate('/dashboard');
-        } else if (profile.role === 'super_admin') {
-          navigate('/admin');
-        } else {
-          // Default fallback
-          navigate('/setup');
-        }
       }
+
+      toast.success("Login successful!");
+      navigate('/setup');
     } catch (error) {
       setError("An unexpected error occurred");
     } finally {
@@ -378,7 +272,7 @@ const Auth = () => {
       // For organization accounts, check if they previously existed
       if (role === 'organisation') {
         const { data: existingProfile } = await supabase
-          .from('user_profiles')
+          .from('profiles')
           .select('id')
           .eq('email', signupData.email)
           .eq('role', 'organisation')
@@ -394,12 +288,11 @@ const Auth = () => {
         email: signupData.email,
         password: signupData.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth?tab=login&role=clinician`,
+          emailRedirectTo: `${window.location.origin}/setup`,
           data: {
             first_name: signupData.firstName,
             last_name: signupData.lastName,
-            role: role,
-            setup_completed: role !== 'organisation' // Only organisation needs setup
+            role: role
           }
         }
       });
@@ -409,23 +302,15 @@ const Auth = () => {
         return;
       }
 
-      // Send welcome email (don't block on failure)
-      const emailSent = await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
+      // Send welcome email
+      await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
       if (role === 'organisation') {
-        if (emailSent) {
-          toast.success("Organisation account created! Welcome email sent. You can now invite Clinicians and Clients via Settings.");
-        } else {
-          toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings. (Note: Welcome email delivery temporarily unavailable)");
-        }
+        toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings.");
       } else if (role === 'super_admin') {
         toast.success("Super Admin account created! Full platform access granted.");
       } else {
-        if (emailSent) {
-          toast.success("Account created! Please check your email for verification.");
-        } else {
-          toast.success("Account created! Please check your email for Supabase verification link.");
-        }
+        toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
       }
     } catch (error) {
       setError("An unexpected error occurred");
