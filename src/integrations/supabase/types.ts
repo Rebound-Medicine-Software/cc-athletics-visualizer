@@ -418,6 +418,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          api_key: string | null
           avatar_url: string | null
           created_at: string
           created_by: string | null
@@ -435,6 +436,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          api_key?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          api_key?: string | null
           avatar_url?: string | null
           created_at?: string
           created_by?: string | null
@@ -530,6 +533,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           admin_id: string | null
+          api_key: string | null
           cc_team_id: string
           city: string | null
           country: string | null
@@ -541,15 +545,18 @@ export type Database = {
           logo_url: string | null
           longitude: number | null
           name: string
+          practitioner_count: number | null
           primary_color: string | null
           region: string | null
           secondary_color: string | null
+          setup_data: Json | null
           stripe_account_id: string | null
           updated_at: string | null
         }
         Insert: {
           accent_color?: string | null
           admin_id?: string | null
+          api_key?: string | null
           cc_team_id: string
           city?: string | null
           country?: string | null
@@ -561,15 +568,18 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           name: string
+          practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
           secondary_color?: string | null
+          setup_data?: Json | null
           stripe_account_id?: string | null
           updated_at?: string | null
         }
         Update: {
           accent_color?: string | null
           admin_id?: string | null
+          api_key?: string | null
           cc_team_id?: string
           city?: string | null
           country?: string | null
@@ -581,9 +591,11 @@ export type Database = {
           logo_url?: string | null
           longitude?: number | null
           name?: string
+          practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
           secondary_color?: string | null
+          setup_data?: Json | null
           stripe_account_id?: string | null
           updated_at?: string | null
         }

@@ -178,13 +178,34 @@ const Setup = () => {
         teamId = newTeam.id;
       }
 
-      // Save API key and other data to localStorage for now
-      localStorage.setItem('cc-athletics-api-key', apiKey);
-      localStorage.setItem('organization-data', JSON.stringify({
-        ...orgData,
-        practitioners: validPractitioners,
-        teamId
-      }));
+      // Save API key and organization data to database
+      const { error: teamUpdateError } = await supabase
+        .from('teams')
+        .update({
+          api_key: apiKey,
+          practitioner_count: parseInt(orgData.practitionerCount),
+          setup_data: {
+            practitioners: validPractitioners.map(p => ({
+              name: p.name,
+              role: p.role,
+              qualifications: p.qualifications,
+              email: p.email
+              // Note: File objects cannot be stored in JSONB, would need file upload handling
+            })),
+            logoUrl: null // Would need file upload to store logo
+          }
+        })
+        .eq('id', teamId);
+
+      if (teamUpdateError) throw teamUpdateError;
+
+      // Also save API key to profile for easy access
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ api_key: apiKey })
+        .eq('user_id', session.user.id);
+      
+      if (profileUpdateError) throw profileUpdateError;
 
       // Mark setup as completed in the database
       const { error: setupError } = await supabase

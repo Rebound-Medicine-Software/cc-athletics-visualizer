@@ -14,13 +14,38 @@ export const ApiKeysTab = () => {
   const [apiKeyValidated, setApiKeyValidated] = useState(false);
 
   useEffect(() => {
-    // Load current API key
-    const storedApiKey = localStorage.getItem('cc-athletics-api-key');
-    if (storedApiKey) {
-      setCurrentApiKey(storedApiKey);
-      setApiKey(storedApiKey);
-      setApiKeyValidated(true);
-    }
+    const loadApiKey = async () => {
+      try {
+        // First try to load from database
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('api_key')
+            .eq('user_id', session.user.id)
+            .single();
+          
+          if (profile?.api_key) {
+            setCurrentApiKey(profile.api_key);
+            setApiKey(profile.api_key);
+            setApiKeyValidated(true);
+            return;
+          }
+        }
+        
+        // Fallback to localStorage for existing users
+        const storedApiKey = localStorage.getItem('cc-athletics-api-key');
+        if (storedApiKey) {
+          setCurrentApiKey(storedApiKey);
+          setApiKey(storedApiKey);
+          setApiKeyValidated(true);
+        }
+      } catch (error) {
+        console.error('Error loading API key:', error);
+      }
+    };
+    
+    loadApiKey();
   }, []);
 
   const validateApiKey = async () => {
@@ -59,23 +84,57 @@ export const ApiKeysTab = () => {
     }
   };
 
-  const saveApiKey = () => {
+  const saveApiKey = async () => {
     if (!apiKeyValidated) {
       toast.error("Please validate your API key first");
       return;
     }
 
-    localStorage.setItem('cc-athletics-api-key', apiKey);
-    setCurrentApiKey(apiKey);
-    toast.success("API key updated successfully!");
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Save to database
+        const { error } = await supabase
+          .from('profiles')
+          .update({ api_key: apiKey })
+          .eq('user_id', session.user.id);
+        
+        if (error) throw error;
+      }
+      
+      // Also save to localStorage for backwards compatibility
+      localStorage.setItem('cc-athletics-api-key', apiKey);
+      setCurrentApiKey(apiKey);
+      toast.success("API key updated successfully!");
+    } catch (error) {
+      console.error('Error saving API key:', error);
+      toast.error("Failed to save API key");
+    }
   };
 
-  const clearApiKey = () => {
-    localStorage.removeItem('cc-athletics-api-key');
-    setCurrentApiKey("");
-    setApiKey("");
-    setApiKeyValidated(false);
-    toast.success("API key cleared successfully!");
+  const clearApiKey = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Clear from database
+        const { error } = await supabase
+          .from('profiles')
+          .update({ api_key: null })
+          .eq('user_id', session.user.id);
+        
+        if (error) throw error;
+      }
+      
+      // Also clear from localStorage
+      localStorage.removeItem('cc-athletics-api-key');
+      setCurrentApiKey("");
+      setApiKey("");
+      setApiKeyValidated(false);
+      toast.success("API key cleared successfully!");
+    } catch (error) {
+      console.error('Error clearing API key:', error);
+      toast.error("Failed to clear API key");
+    }
   };
 
   return (
