@@ -229,15 +229,18 @@ const Auth = () => {
 
         toast.success("Login successful!");
         
-        // For organization users, check setup completion from database, not localStorage
+        // Handle redirects based on user role and setup status
         if (profile.role === 'organisation') {
-          // Clear any existing localStorage setup flag to ensure fresh setup flow
-          localStorage.removeItem('setup-completed');
-          
-          // Check if organization has completed setup (you can add a setup_completed field to profiles)
-          // For now, redirect to setup for all organization logins
-          navigate('/setup');
+          // Check if organization has completed setup
+          if (profile.setup_completed) {
+            navigate('/dashboard');
+          } else {
+            navigate('/setup');
+          }
+        } else if (profile.role === 'super_admin') {
+          navigate('/admin');
         } else {
+          // Clinician, Client, and other roles go to dashboard
           navigate('/dashboard');
         }
       }

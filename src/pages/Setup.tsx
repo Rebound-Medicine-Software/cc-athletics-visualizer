@@ -34,9 +34,14 @@ const Setup = () => {
         return;
       }
       
-      // Check if setup has already been completed
-      const setupCompleted = localStorage.getItem('setup-completed');
-      if (setupCompleted === 'true') {
+      // Check if setup has already been completed from database
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('setup_completed')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      if (profile?.setup_completed) {
         navigate('/dashboard');
       }
     };
@@ -126,32 +131,73 @@ const Setup = () => {
     }
 
     try {
-      // Save API key to localStorage for now
-      localStorage.setItem('cc-athletics-api-key', apiKey);
-      
-      // Convert logo file to data URL if it exists
-      let logoDataUrl = null;
-      if (orgData.logo instanceof File) {
-        logoDataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.readAsDataURL(orgData.logo as File);
-        });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("You must be logged in to complete setup");
+        navigate('/auth');
+        return;
       }
-      
-      // Save organization data to localStorage for now
+
+      let teamId;
+
+      // Check if team already exists for this user
+      const { data: existingTeam } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('admin_id', session.user.id)
+        .single();
+
+      if (existingTeam) {
+        console.log('Team already exists, updating:', existingTeam);
+        const { error: updateError } = await supabase
+          .from('teams')
+          .update({
+            name: orgData.name,
+            location: `${orgData.practitionerCount} practitioners`, // Store practitioner count in location for now
+            // logo_url: logoDataUrl, // Can add logo upload later
+          })
+          .eq('id', existingTeam.id);
+
+        if (updateError) throw updateError;
+        
+        teamId = existingTeam.id;
+      } else {
+        // Create new team
+        const { data: newTeam, error: createError } = await supabase
+          .from('teams')
+          .insert({
+            name: orgData.name,
+            admin_id: session.user.id,
+            location: `${orgData.practitionerCount} practitioners`,
+            cc_team_id: 'temp-' + Date.now(), // Temporary ID until CC Athletics sync
+          })
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        teamId = newTeam.id;
+      }
+
+      // Save API key and other data to localStorage for now
+      localStorage.setItem('cc-athletics-api-key', apiKey);
       localStorage.setItem('organization-data', JSON.stringify({
         ...orgData,
-        logo: logoDataUrl, // Store as data URL instead of File object
-        practitioners: validPractitioners
+        practitioners: validPractitioners,
+        teamId
       }));
-      
-      // Mark setup as completed
-      localStorage.setItem('setup-completed', 'true');
 
-      toast.success("Setup complete! Welcome to Rebound Medicine & Performance");
+      // Mark setup as completed in the database
+      const { error: setupError } = await supabase
+        .from('profiles')
+        .update({ setup_completed: true })
+        .eq('user_id', session.user.id);
+      
+      if (setupError) throw setupError;
+      
+      toast.success("Setup completed successfully!");
       navigate('/dashboard');
     } catch (error) {
+      console.error('Setup error:', error);
       toast.error("Failed to complete setup. Please try again.");
     }
   };
