@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -23,6 +24,7 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, loading, signOut } = useAuth();
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
@@ -31,17 +33,26 @@ const Dashboard = () => {
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
 
   useEffect(() => {
-    const apiKey = localStorage.getItem("cc-athletics-api-key");
-    if (!apiKey) {
+    // Check authentication using Supabase auth instead of localStorage
+    if (!loading && !user) {
       navigate("/auth");
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("cc-athletics-api-key");
-    localStorage.removeItem("organization-data");
-    toast.success("Logged out successfully");
-    navigate("/auth");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      localStorage.removeItem("cc-athletics-api-key");
+      localStorage.removeItem("organization-data");
+      toast.success("Logged out successfully");
+      navigate("/auth");
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback logout
+      localStorage.removeItem("cc-athletics-api-key");
+      localStorage.removeItem("organization-data");
+      navigate("/auth");
+    }
   };
 
   const handleNavigation = (section: string) => {
