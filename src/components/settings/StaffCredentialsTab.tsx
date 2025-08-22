@@ -16,8 +16,6 @@ interface StaffUser {
   full_name?: string;
   avatar_url?: string;
   role: string;
-  role_title?: string;
-  qualifications?: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,9 +29,7 @@ export const StaffCredentialsTab = () => {
     email: '',
     password: '',
     full_name: '',
-    avatar_url: '',
-    role_title: '',
-    qualifications: ''
+    avatar_url: ''
   });
 
   useEffect(() => {
@@ -42,27 +38,9 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get current user's team to filter staff by team
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!currentProfile?.team_id) {
-        setUsers([]);
-        return;
-      }
-
-      // Fetch team members only
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('team_id', currentProfile.team_id)
-        .in('role', ['organisation', 'practitioner'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -81,9 +59,7 @@ export const StaffCredentialsTab = () => {
       email: user.email,
       password: '',
       full_name: user.full_name || '',
-      avatar_url: user.avatar_url || '',
-      role_title: user.role_title || '',
-      qualifications: user.qualifications || ''
+      avatar_url: user.avatar_url || ''
     });
   };
 
@@ -93,60 +69,28 @@ export const StaffCredentialsTab = () => {
       return;
     }
 
-    if (!editForm.password.trim() && !editingId) {
-      toast.error("Password is required for new users");
-      return;
-    }
-
     try {
-      // Get current user's profile to get team info
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!currentProfile?.team_id || !['organisation', 'practitioner'].includes(currentProfile.role)) {
-        toast.error("You don't have permission to manage team members");
-        return;
-      }
-
       if (editingId) {
         // Update existing user
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            full_name: editForm.full_name,
-            avatar_url: editForm.avatar_url,
-            role_title: editForm.role_title,
-            qualifications: editForm.qualifications
-          })
-          .eq('id', editingId);
-
-        if (error) throw error;
-        toast.success("User updated successfully");
+        toast.info("User update functionality requires admin implementation");
       } else {
-        // Create new team member via edge function
-        const { data, error } = await supabase.functions.invoke('invite-team-member', {
+        // Create new user via edge function to handle organization relationship
+        const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
             email: editForm.email,
             full_name: editForm.full_name,
             role: 'practitioner',
-            team_id: currentProfile.team_id,
-            inviter_name: 'Team Admin'
+            organization_name: 'Current Organization' // This should be dynamic based on current user's org
           }
         });
 
         if (error) throw error;
-        toast.success(`Team member invited! Temporary password: ${data.temporary_password}`);
+        toast.success("Clinician account created and credentials sent");
       }
 
       setEditingId(null);
       setIsAdding(false);
-      setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role_title: '', qualifications: '' });
+      setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
       fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
@@ -168,7 +112,7 @@ export const StaffCredentialsTab = () => {
   const handleCancel = () => {
     setEditingId(null);
     setIsAdding(false);
-    setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role_title: '', qualifications: '' });
+    setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
   };
 
   if (loading) {
@@ -231,24 +175,6 @@ export const StaffCredentialsTab = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="add-role">Role</Label>
-                  <Input
-                    id="add-role"
-                    value={editForm.role_title}
-                    onChange={(e) => setEditForm({ ...editForm, role_title: e.target.value })}
-                    placeholder="e.g., Physiotherapist, Sports Therapist"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="add-qualifications">Qualifications</Label>
-                  <Input
-                    id="add-qualifications"
-                    value={editForm.qualifications}
-                    onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
-                    placeholder="e.g., MSc Sports Therapy, MCSP"
-                  />
-                </div>
-                <div>
                   <Label htmlFor="add-avatar">Avatar URL</Label>
                   <Input
                     id="add-avatar"
@@ -277,15 +203,14 @@ export const StaffCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Full Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Qualifications</TableHead>
+                <TableHead>Last Login</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
                     No staff users found. Admin privileges required to view user accounts.
                   </TableCell>
                 </TableRow>
@@ -303,8 +228,9 @@ export const StaffCredentialsTab = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.full_name || 'Not set'}</TableCell>
-                    <TableCell>{user.role_title || 'Not set'}</TableCell>
-                    <TableCell>{user.qualifications || 'Not set'}</TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 

@@ -169,7 +169,7 @@ export const useFilteredNavigation = () => {
     // Other roles get standard navigation
     return getNavigationItems().filter(item => {
       // Check if user role is allowed
-      if (!item.roles.includes(profile.role as any)) return false;
+      if (!item.roles.includes(profile.role)) return false;
       
       // Check permissions if specified
       if (item.permissions && item.permissions.length > 0) {

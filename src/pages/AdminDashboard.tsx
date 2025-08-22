@@ -80,7 +80,7 @@ const AdminDashboard = () => {
       // Redirect to the dashboard route for super admins
       return <Navigate to="/admin(Dashboard)" replace />;
     case 'organisation':
-    case 'practitioner':
+    case 'clinician':
     case 'client':
       // Redirect Clinicians (Consumer 1) and Athletes/Patients (Consumer 2) to auth
       return <Navigate to="/auth" replace />;

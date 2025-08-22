@@ -225,7 +225,7 @@ const Auth = () => {
 
         // Check if this is a clinician/client whose organization was deleted
         if (profile.role === 'practitioner' || profile.role === 'client') {
-          if (!profile.team_id) {
+          if (!profile.created_by) {
             await supabase.auth.signOut();
             setError("Your Organization account has been removed. Please sign up again to continue.");
             return;

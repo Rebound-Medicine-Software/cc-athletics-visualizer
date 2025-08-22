@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
-export type UserRole = 'super_admin' | 'organisation' | 'practitioner' | 'client';
+export type UserRole = 'super_admin' | 'organisation' | 'clinician' | 'client';
 
 export interface UserProfile {
   id: string;
@@ -27,7 +27,6 @@ export interface TeamBranding {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
-  font_family?: string;
 }
 
 export interface UserTier {
@@ -96,26 +95,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setProfile(profileData as UserProfile);
 
-        // Fetch team branding if user has a team and user is not super admin
-        if (profileData.team_id && profileData.role !== 'super_admin') {
+        // Fetch team branding if user has a team
+        if (profileData.team_id) {
           const { data: teamData, error: teamError } = await supabase
             .from('teams')
-            .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
+            .select('id, name, logo_url, primary_color, secondary_color, accent_color')
             .eq('id', profileData.team_id)
             .maybeSingle();
 
           if (!teamError && teamData) {
-            const brandingData = {
-              ...teamData,
-              font_family: teamData.font_family || 'Inter'
-            };
-            setTeamBranding(brandingData);
-            // Apply team branding to CSS variables for dynamic theming
-            applyTeamBranding(brandingData);
+            setTeamBranding(teamData);
+            // Apply team branding to CSS variables
+            document.documentElement.style.setProperty('--team-primary', teamData.primary_color);
+            document.documentElement.style.setProperty('--team-secondary', teamData.secondary_color);
+            document.documentElement.style.setProperty('--team-accent', teamData.accent_color);
           }
-        } else {
-          // Reset to default branding for users without teams
-          resetToDefaultBranding();
         }
 
         // Fetch user tier if they have one
@@ -134,61 +128,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  };
-
-  const applyTeamBranding = (branding: TeamBranding) => {
-    // Convert hex to HSL for CSS variables
-    const hexToHsl = (hex: string) => {
-      const r = parseInt(hex.slice(1, 3), 16) / 255;
-      const g = parseInt(hex.slice(3, 5), 16) / 255;
-      const b = parseInt(hex.slice(5, 7), 16) / 255;
-      
-      const max = Math.max(r, g, b);
-      const min = Math.min(r, g, b);
-      let h, s, l = (max + min) / 2;
-      
-      if (max === min) {
-        h = s = 0;
-      } else {
-        const d = max - min;
-        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-        switch (max) {
-          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-          case g: h = (b - r) / d + 2; break;
-          case b: h = (r - g) / d + 4; break;
-          default: h = 0;
-        }
-        h /= 6;
-      }
-      
-      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-    };
-
-    // Apply branding variables to override default theme
-    document.documentElement.style.setProperty('--primary', hexToHsl(branding.primary_color));
-    document.documentElement.style.setProperty('--secondary', hexToHsl(branding.secondary_color));
-    document.documentElement.style.setProperty('--accent', hexToHsl(branding.accent_color));
-    document.documentElement.style.setProperty('--team-primary-color', hexToHsl(branding.primary_color));
-    document.documentElement.style.setProperty('--team-secondary-color', hexToHsl(branding.secondary_color));
-    document.documentElement.style.setProperty('--team-accent-color', hexToHsl(branding.accent_color));
-    
-    // Apply font family if specified
-    if (branding.font_family && branding.font_family !== 'Inter') {
-      document.documentElement.style.setProperty('--team-font-family', `'${branding.font_family}', sans-serif`);
-      document.body.style.fontFamily = `'${branding.font_family}', sans-serif`;
-    }
-  };
-
-  const resetToDefaultBranding = () => {
-    // Reset to default Lovable theme
-    document.documentElement.style.setProperty('--primary', '214 100% 50%');
-    document.documentElement.style.setProperty('--secondary', '210 40% 96.1%');
-    document.documentElement.style.setProperty('--accent', '45 100% 51%');
-    document.documentElement.style.setProperty('--team-primary-color', '214 100% 50%');
-    document.documentElement.style.setProperty('--team-secondary-color', '210 40% 96.1%');
-    document.documentElement.style.setProperty('--team-accent-color', '45 100% 51%');
-    document.documentElement.style.setProperty('--team-font-family', "'Inter', sans-serif");
-    document.body.style.fontFamily = '';
   };
 
   const refreshProfile = async () => {
@@ -211,7 +150,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setTeamBranding(null);
           setUserTier(null);
           // Reset CSS variables to defaults
-          resetToDefaultBranding();
+          document.documentElement.style.removeProperty('--team-primary');
+          document.documentElement.style.removeProperty('--team-secondary');
+          document.documentElement.style.removeProperty('--team-accent');
         }
         setLoading(false);
       }

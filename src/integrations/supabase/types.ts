@@ -425,9 +425,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
-          qualifications: string | null
           role: string | null
-          role_title: string | null
           setup_completed: boolean | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -445,9 +443,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
-          qualifications?: string | null
           role?: string | null
-          role_title?: string | null
           setup_completed?: boolean | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -465,9 +461,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
-          qualifications?: string | null
           role?: string | null
-          role_title?: string | null
           setup_completed?: boolean | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -545,7 +539,6 @@ export type Database = {
           country: string | null
           created_at: string | null
           creation_date: string | null
-          font_family: string | null
           id: string
           latitude: number | null
           location: string | null
@@ -569,7 +562,6 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
-          font_family?: string | null
           id?: string
           latitude?: number | null
           location?: string | null
@@ -593,7 +585,6 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
-          font_family?: string | null
           id?: string
           latitude?: number | null
           location?: string | null
