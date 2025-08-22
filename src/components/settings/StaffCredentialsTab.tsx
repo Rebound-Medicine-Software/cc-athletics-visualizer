@@ -16,6 +16,8 @@ interface StaffUser {
   full_name?: string;
   avatar_url?: string;
   role: string;
+  role_title?: string;
+  qualifications?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +31,8 @@ export const StaffCredentialsTab = () => {
     email: '',
     password: '',
     full_name: '',
+    role_title: '',
+    qualifications: '',
     avatar_url: ''
   });
 
@@ -38,9 +42,25 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
+      // Get current user's session to filter by team
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      // Get current user's profile to find team_id
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('team_id, role')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!currentProfile) return;
+
+      // Fetch staff users from the same team
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('team_id', currentProfile.team_id)
+        .in('role', ['practitioner', 'staff'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -59,6 +79,8 @@ export const StaffCredentialsTab = () => {
       email: user.email,
       password: '',
       full_name: user.full_name || '',
+      role_title: user.role_title || '',
+      qualifications: user.qualifications || '',
       avatar_url: user.avatar_url || ''
     });
   };
@@ -74,13 +96,16 @@ export const StaffCredentialsTab = () => {
         // Update existing user
         toast.info("User update functionality requires admin implementation");
       } else {
-        // Create new user via edge function to handle organization relationship
+        // Create new user via edge function
+        const password = generateStrongPassword();
         const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
             email: editForm.email,
             full_name: editForm.full_name,
-            role: 'practitioner',
-            organization_name: 'Current Organization' // This should be dynamic based on current user's org
+            role_title: editForm.role_title,
+            qualifications: editForm.qualifications,
+            password: password,
+            team_name: 'Current Organization' // This should be dynamic based on current user's org
           }
         });
 
@@ -90,7 +115,7 @@ export const StaffCredentialsTab = () => {
 
       setEditingId(null);
       setIsAdding(false);
-      setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
+      setEditForm({ email: '', password: '', full_name: '', role_title: '', qualifications: '', avatar_url: '' });
       fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
@@ -112,7 +137,16 @@ export const StaffCredentialsTab = () => {
   const handleCancel = () => {
     setEditingId(null);
     setIsAdding(false);
-    setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
+    setEditForm({ email: '', password: '', full_name: '', role_title: '', qualifications: '', avatar_url: '' });
+  };
+
+  const generateStrongPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
   };
 
   if (loading) {
@@ -175,6 +209,24 @@ export const StaffCredentialsTab = () => {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="add-role">Role</Label>
+                  <Input
+                    id="add-role"
+                    value={editForm.role_title}
+                    onChange={(e) => setEditForm({ ...editForm, role_title: e.target.value })}
+                    placeholder="e.g., Sports Scientist, Physiotherapist"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="add-qualifications">Qualifications</Label>
+                  <Input
+                    id="add-qualifications"
+                    value={editForm.qualifications}
+                    onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
+                    placeholder="Enter qualifications and certifications"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="add-avatar">Avatar URL</Label>
                   <Input
                     id="add-avatar"
@@ -203,15 +255,16 @@ export const StaffCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Full Name</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Qualifications</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                    No staff users found. Admin privileges required to view user accounts.
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    No staff users found. Add practitioners from the setup process or create them here.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -228,9 +281,8 @@ export const StaffCredentialsTab = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.full_name || 'Not set'}</TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell>{user.role_title || 'Not set'}</TableCell>
+                    <TableCell>{user.qualifications || 'Not set'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 

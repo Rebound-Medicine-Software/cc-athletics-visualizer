@@ -8,12 +8,11 @@ const corsHeaders = {
 
 interface ClinicianCredentials {
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
+  full_name: string;
+  role_title?: string;
   qualifications?: string;
   password: string;
-  organisationName: string;
+  team_name: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,12 +28,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { 
       email, 
-      firstName, 
-      lastName, 
-      role, 
+      full_name,
+      role_title, 
       qualifications, 
       password, 
-      organisationName 
+      team_name 
     }: ClinicianCredentials = await req.json();
 
     console.log(`Creating clinician account for: ${email}`);
@@ -45,10 +43,10 @@ const handler = async (req: Request): Promise<Response> => {
       password,
       email_confirm: true,
       user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
+        full_name: full_name,
         role: 'practitioner', // Use consistent role naming
-        qualifications
+        role_title: role_title,
+        qualifications: qualifications
       }
     });
 
@@ -97,22 +95,22 @@ const handler = async (req: Request): Promise<Response> => {
           email: "noreply@reboundmedicine.com"
         },
         to: [{
-          name: `${firstName} ${lastName}`,
+          name: full_name,
           email: email
         }],
-        subject: `Welcome to ${organisationName} - Your Clinician Account`,
+        subject: `Welcome to ${team_name} - Your Clinician Account`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #3B82F6;">Welcome to ${organisationName}!</h2>
+            <h2 style="color: #3B82F6;">Welcome to ${team_name}!</h2>
             
-            <p>Hello ${firstName},</p>
+            <p>Hello ${full_name},</p>
             
             <p>Your clinician account has been created. Here are your login credentials:</p>
             
             <div style="background: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Email:</strong> ${email}</p>
               <p><strong>Password:</strong> ${password}</p>
-              <p><strong>Role:</strong> ${role}</p>
+              ${role_title ? `<p><strong>Role:</strong> ${role_title}</p>` : ''}
               ${qualifications ? `<p><strong>Qualifications:</strong> ${qualifications}</p>` : ''}
             </div>
             

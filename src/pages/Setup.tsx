@@ -139,6 +139,25 @@ const Setup = () => {
       }
 
       let teamId;
+      let logoUrl = null;
+
+      // Upload logo if provided
+      if (orgData.logo) {
+        const fileExt = orgData.logo.name.split('.').pop();
+        const fileName = `${session.user.id}-logo.${fileExt}`;
+        
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('team-assets')
+            .upload(fileName, orgData.logo, { upsert: true });
+          
+          if (!uploadError) {
+            logoUrl = `${supabase.storage.from('team-assets').getPublicUrl(fileName).data.publicUrl}`;
+          }
+        } catch (error) {
+          console.warn('Logo upload failed, continuing without logo:', error);
+        }
+      }
 
       // Check if team already exists for this user
       const { data: existingTeam } = await supabase
@@ -153,8 +172,9 @@ const Setup = () => {
           .from('teams')
           .update({
             name: orgData.name,
-            location: `${orgData.practitionerCount} practitioners`, // Store practitioner count in location for now
-            // logo_url: logoDataUrl, // Can add logo upload later
+            location: `${orgData.practitionerCount} practitioners`,
+            logo_url: logoUrl,
+            practitioner_count: parseInt(orgData.practitionerCount),
           })
           .eq('id', existingTeam.id);
 
@@ -170,6 +190,8 @@ const Setup = () => {
             admin_id: session.user.id,
             location: `${orgData.practitionerCount} practitioners`,
             cc_team_id: 'temp-' + Date.now(), // Temporary ID until CC Athletics sync
+            logo_url: logoUrl,
+            practitioner_count: parseInt(orgData.practitionerCount),
           })
           .select()
           .single();
@@ -207,6 +229,37 @@ const Setup = () => {
       
       if (profileUpdateError) throw profileUpdateError;
 
+      // Create practitioner profiles and send credentials
+      const practitionerCredentials = [];
+      for (const practitioner of validPractitioners) {
+        // Generate a strong password
+        const password = generateStrongPassword();
+        
+        try {
+          const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
+            body: {
+              email: practitioner.email,
+              full_name: practitioner.name,
+              role_title: practitioner.role,
+              qualifications: practitioner.qualifications,
+              password: password,
+              team_name: orgData.name
+            }
+          });
+
+          if (!error) {
+            practitionerCredentials.push({
+              email: practitioner.email,
+              name: practitioner.name,
+              role: practitioner.role,
+              password: password
+            });
+          }
+        } catch (error) {
+          console.error('Failed to create practitioner account:', error);
+        }
+      }
+
       // Mark setup as completed in the database
       const { error: setupError } = await supabase
         .from('profiles')
@@ -215,11 +268,46 @@ const Setup = () => {
       
       if (setupError) throw setupError;
       
-      toast.success("Setup completed successfully!");
+      // Show success message with credentials
+      if (practitionerCredentials.length > 0) {
+        toast.success(`Setup completed! ${practitionerCredentials.length} practitioner accounts created and credentials sent via email.`);
+      } else {
+        toast.success("Setup completed successfully!");
+      }
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Setup error:', error);
       toast.error("Failed to complete setup. Please try again.");
+    }
+  };
+
+  const generateStrongPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  };
+
+  const updatePractitionerCount = (count: string) => {
+    setOrgData(prev => ({ ...prev, practitionerCount: count }));
+    
+    // Auto-populate practitioner cards based on count
+    const targetCount = parseInt(count) || 1;
+    const currentCount = practitioners.length;
+    
+    if (targetCount > currentCount) {
+      // Add more practitioners
+      const newPractitioners = [...practitioners];
+      for (let i = currentCount; i < targetCount; i++) {
+        newPractitioners.push({ name: "", role: "", qualifications: "", email: "", image: null });
+      }
+      setPractitioners(newPractitioners);
+    } else if (targetCount < currentCount) {
+      // Remove excess practitioners
+      setPractitioners(practitioners.slice(0, targetCount));
     }
   };
 
@@ -388,7 +476,7 @@ const Setup = () => {
                     type="number"
                     placeholder="How many practitioners in your organization?"
                     value={orgData.practitionerCount}
-                    onChange={(e) => setOrgData(prev => ({ ...prev, practitionerCount: e.target.value }))}
+                    onChange={(e) => updatePractitionerCount(e.target.value)}
                   />
                 </div>
               </div>
