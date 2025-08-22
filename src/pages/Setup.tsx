@@ -200,9 +200,11 @@ const Setup = () => {
       }
 
       // Create practitioner profiles via edge function
+      const practitionerCredentials: Array<{email: string, password: string, name: string}> = [];
+      
       for (const practitioner of practitioners) {
         try {
-          const { error: practitionerError } = await supabase.functions.invoke('send-clinician-credentials', {
+          const { data, error: practitionerError } = await supabase.functions.invoke('send-clinician-credentials', {
             body: {
               email: practitioner.email,
               full_name: practitioner.full_name,
@@ -215,13 +217,28 @@ const Setup = () => {
 
           if (practitionerError) {
             console.error('Error creating practitioner:', practitionerError);
+          } else if (data?.temporary_password) {
+            practitionerCredentials.push({
+              email: practitioner.email,
+              password: data.temporary_password,
+              name: practitioner.full_name
+            });
           }
         } catch (error) {
           console.error('Error invoking send-clinician-credentials:', error);
         }
       }
 
-      toast.success("Setup completed successfully! Practitioners will receive login credentials via email.");
+      // Show credentials in success message
+      let credentialsMessage = "Setup completed successfully!";
+      if (practitionerCredentials.length > 0) {
+        credentialsMessage += "\n\nPractitioner credentials (please share securely):\n";
+        practitionerCredentials.forEach(cred => {
+          credentialsMessage += `${cred.name} (${cred.email}): ${cred.password}\n`;
+        });
+      }
+
+      toast.success(credentialsMessage);
       navigate('/dashboard');
     } catch (error: any) {
       console.error('Setup error:', error);

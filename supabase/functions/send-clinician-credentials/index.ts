@@ -70,14 +70,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Log credentials for now (in production, send via email)
+    // Return password to caller (will be sent via email in frontend)
     console.log(`Clinician account created for ${email} with password: ${password}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Clinician account created successfully',
-        user_id: authData.user.id 
+        user_id: authData.user.id,
+        temporary_password: password,
+        email: email,
+        full_name: full_name
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

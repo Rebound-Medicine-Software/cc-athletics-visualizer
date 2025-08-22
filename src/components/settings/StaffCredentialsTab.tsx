@@ -16,6 +16,8 @@ interface StaffUser {
   full_name?: string;
   avatar_url?: string;
   role: string;
+  role_title?: string;
+  qualifications?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,7 +31,9 @@ export const StaffCredentialsTab = () => {
     email: '',
     password: '',
     full_name: '',
-    avatar_url: ''
+    avatar_url: '',
+    role_title: '',
+    qualifications: ''
   });
 
   useEffect(() => {
@@ -77,7 +81,9 @@ export const StaffCredentialsTab = () => {
       email: user.email,
       password: '',
       full_name: user.full_name || '',
-      avatar_url: user.avatar_url || ''
+      avatar_url: user.avatar_url || '',
+      role_title: user.role_title || '',
+      qualifications: user.qualifications || ''
     });
   };
 
@@ -114,7 +120,9 @@ export const StaffCredentialsTab = () => {
           .from('profiles')
           .update({
             full_name: editForm.full_name,
-            avatar_url: editForm.avatar_url
+            avatar_url: editForm.avatar_url,
+            role_title: editForm.role_title,
+            qualifications: editForm.qualifications
           })
           .eq('id', editingId);
 
@@ -138,7 +146,7 @@ export const StaffCredentialsTab = () => {
 
       setEditingId(null);
       setIsAdding(false);
-      setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
+      setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role_title: '', qualifications: '' });
       fetchUsers();
     } catch (error) {
       console.error('Error saving user:', error);
@@ -160,7 +168,7 @@ export const StaffCredentialsTab = () => {
   const handleCancel = () => {
     setEditingId(null);
     setIsAdding(false);
-    setEditForm({ email: '', password: '', full_name: '', avatar_url: '' });
+    setEditForm({ email: '', password: '', full_name: '', avatar_url: '', role_title: '', qualifications: '' });
   };
 
   if (loading) {
@@ -223,6 +231,24 @@ export const StaffCredentialsTab = () => {
                   />
                 </div>
                 <div>
+                  <Label htmlFor="add-role">Role</Label>
+                  <Input
+                    id="add-role"
+                    value={editForm.role_title}
+                    onChange={(e) => setEditForm({ ...editForm, role_title: e.target.value })}
+                    placeholder="e.g., Physiotherapist, Sports Therapist"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="add-qualifications">Qualifications</Label>
+                  <Input
+                    id="add-qualifications"
+                    value={editForm.qualifications}
+                    onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
+                    placeholder="e.g., MSc Sports Therapy, MCSP"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="add-avatar">Avatar URL</Label>
                   <Input
                     id="add-avatar"
@@ -251,14 +277,15 @@ export const StaffCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Full Name</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Qualifications</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
                     No staff users found. Admin privileges required to view user accounts.
                   </TableCell>
                 </TableRow>
@@ -276,9 +303,8 @@ export const StaffCredentialsTab = () => {
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.full_name || 'Not set'}</TableCell>
-                    <TableCell>
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </TableCell>
+                    <TableCell>{user.role_title || 'Not set'}</TableCell>
+                    <TableCell>{user.qualifications || 'Not set'}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
