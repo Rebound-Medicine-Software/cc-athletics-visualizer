@@ -542,6 +542,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           creation_date: string | null
+          font_family: string | null
           id: string
           latitude: number | null
           location: string | null
@@ -565,6 +566,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
+          font_family?: string | null
           id?: string
           latitude?: number | null
           location?: string | null
@@ -588,6 +590,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
+          font_family?: string | null
           id?: string
           latitude?: number | null
           location?: string | null

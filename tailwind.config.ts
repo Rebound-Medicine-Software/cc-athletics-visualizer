@@ -58,9 +58,9 @@ export default {
 					foreground: 'hsl(var(--error-foreground))'
 				},
 				team: {
-					primary: 'hsl(var(--team-primary))',
-					secondary: 'hsl(var(--team-secondary))',
-					accent: 'hsl(var(--team-accent))'
+					primary: 'hsl(var(--team-primary-color))',
+					secondary: 'hsl(var(--team-secondary-color))',
+					accent: 'hsl(var(--team-accent-color))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -107,6 +107,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			fontFamily: {
+				team: ["var(--team-font-family)", "Inter", "sans-serif"]
 			}
 		}
 	},

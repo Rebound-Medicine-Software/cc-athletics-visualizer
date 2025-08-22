@@ -45,10 +45,7 @@ export const BrandingTab = () => {
 
       if (error) throw error;
 
-      // Apply new branding immediately
-      document.documentElement.style.setProperty('--team-primary', brandingForm.primary_color);
-      document.documentElement.style.setProperty('--team-secondary', brandingForm.secondary_color);
-      document.documentElement.style.setProperty('--team-accent', brandingForm.accent_color);
+      // Refresh profile to apply new branding through AuthContext
 
       await refreshProfile();
       toast({ title: 'Success', description: 'Team branding updated successfully' });
@@ -62,8 +59,7 @@ export const BrandingTab = () => {
 
   const handleColorChange = (field: string, value: string) => {
     setBrandingForm(prev => ({ ...prev, [field]: value }));
-    // Apply color immediately for preview
-    document.documentElement.style.setProperty(`--team-${field.replace('_color', '')}`, value);
+    // Preview color changes are handled by the BrandingTab component itself
   };
 
   return (

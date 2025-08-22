@@ -96,18 +96,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setProfile(profileData as UserProfile);
 
-        // Fetch team branding if user has a team
-        if (profileData.team_id) {
+        // Fetch team branding if user has a team and user is not super admin
+        if (profileData.team_id && profileData.role !== 'super_admin') {
           const { data: teamData, error: teamError } = await supabase
             .from('teams')
-            .select('id, name, logo_url, primary_color, secondary_color, accent_color')
+            .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
             .eq('id', profileData.team_id)
             .maybeSingle();
 
           if (!teamError && teamData) {
             const brandingData = {
               ...teamData,
-              font_family: 'Inter' // Default for now since column doesn't exist yet
+              font_family: teamData.font_family || 'Inter'
             };
             setTeamBranding(brandingData);
             // Apply team branding to CSS variables for dynamic theming
@@ -164,15 +164,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
     };
 
-    // Apply branding variables
+    // Apply branding variables to override default theme
     document.documentElement.style.setProperty('--primary', hexToHsl(branding.primary_color));
     document.documentElement.style.setProperty('--secondary', hexToHsl(branding.secondary_color));
     document.documentElement.style.setProperty('--accent', hexToHsl(branding.accent_color));
+    document.documentElement.style.setProperty('--team-primary-color', hexToHsl(branding.primary_color));
+    document.documentElement.style.setProperty('--team-secondary-color', hexToHsl(branding.secondary_color));
+    document.documentElement.style.setProperty('--team-accent-color', hexToHsl(branding.accent_color));
     
     // Apply font family if specified
-    if (branding.font_family) {
-      document.documentElement.style.setProperty('--font-family', branding.font_family);
-      document.body.style.fontFamily = branding.font_family;
+    if (branding.font_family && branding.font_family !== 'Inter') {
+      document.documentElement.style.setProperty('--team-font-family', `'${branding.font_family}', sans-serif`);
+      document.body.style.fontFamily = `'${branding.font_family}', sans-serif`;
     }
   };
 
@@ -181,7 +184,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.documentElement.style.setProperty('--primary', '214 100% 50%');
     document.documentElement.style.setProperty('--secondary', '210 40% 96.1%');
     document.documentElement.style.setProperty('--accent', '45 100% 51%');
-    document.documentElement.style.removeProperty('--font-family');
+    document.documentElement.style.setProperty('--team-primary-color', '214 100% 50%');
+    document.documentElement.style.setProperty('--team-secondary-color', '210 40% 96.1%');
+    document.documentElement.style.setProperty('--team-accent-color', '45 100% 51%');
+    document.documentElement.style.setProperty('--team-font-family', "'Inter', sans-serif");
     document.body.style.fontFamily = '';
   };
 
