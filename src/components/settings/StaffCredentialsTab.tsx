@@ -53,7 +53,18 @@ export const StaffCredentialsTab = () => {
         .eq('user_id', session.user.id)
         .single();
 
-      if (!currentProfile) return;
+      if (!currentProfile) {
+        console.log('No profile found for current user');
+        setUsers([]);
+        return;
+      }
+
+      // If no team_id, show empty list (new accounts might not have team setup yet)
+      if (!currentProfile.team_id) {
+        console.log('User has no team_id set');
+        setUsers([]);
+        return;
+      }
 
       // Fetch staff users from the same team (including both practitioner and staff roles)
       const { data, error } = await supabase
