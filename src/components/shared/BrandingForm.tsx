@@ -104,6 +104,18 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-4">
+        <div>
+          <Label htmlFor="logo-upload">Organisation Logo</Label>
+          <Input
+            id="logo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleLogoFileChange}
+            className="mt-1"
+          />
+          <p className="text-sm text-gray-500 mt-1">Upload your logo to automatically extract brand colours</p>
+        </div>
+
         <div className="space-y-3">
           <Label>Brand Colors</Label>
           
