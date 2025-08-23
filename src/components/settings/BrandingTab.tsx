@@ -27,16 +27,26 @@ export const BrandingTab = () => {
   }, [profile?.team_id]);
 
   const fetchTeamBranding = async () => {
-    if (!profile?.team_id) return;
+    if (!profile?.team_id) {
+      console.log('No team_id found for profile:', profile);
+      return;
+    }
     
     try {
+      console.log('Fetching team branding for team_id:', profile.team_id);
       const { data, error } = await supabase
         .from('teams')
         .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
         .eq('id', profile.team_id)
         .single();
 
-      if (!error && data) {
+      if (error) {
+        console.error('Error fetching team branding:', error);
+        return;
+      }
+
+      if (data) {
+        console.log('Found team branding data:', data);
         setTeamBranding(data);
         setBrandingForm({
           name: data.name || '',

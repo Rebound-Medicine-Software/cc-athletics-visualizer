@@ -13,6 +13,7 @@ interface ClinicianCredentials {
   qualifications?: string;
   password: string;
   team_name: string;
+  team_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -32,7 +33,8 @@ const handler = async (req: Request): Promise<Response> => {
       role_title, 
       qualifications, 
       password, 
-      team_name 
+      team_name,
+      team_id 
     }: ClinicianCredentials = await req.json();
 
     console.log(`Creating clinician account for: ${email}`);
@@ -63,32 +65,32 @@ const handler = async (req: Request): Promise<Response> => {
     if (userData.user) {
       // Get the organization profile that's creating this clinician
       const authHeader = req.headers.get('authorization');
-      if (authHeader) {
+      if (authHeader && team_id) {
         const token = authHeader.replace('Bearer ', '');
         const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
         
         if (requestingUser) {
           const { data: orgProfile } = await supabase
             .from('profiles')
-            .select('id, team_id')
+            .select('id')
             .eq('user_id', requestingUser.id)
             .eq('role', 'organisation')
             .single();
             
-          if (orgProfile && orgProfile.team_id) {
+          if (orgProfile) {
             // Update the newly created profile with the organization relationship and team_id
             const { error: updateError } = await supabase
               .from('profiles')
               .update({ 
                 created_by: orgProfile.id,
-                team_id: orgProfile.team_id
+                team_id: team_id
               })
               .eq('user_id', userData.user.id);
               
             if (updateError) {
               console.error('Error updating practitioner profile:', updateError);
             } else {
-              console.log(`Assigned practitioner to team: ${orgProfile.team_id}`);
+              console.log(`Assigned practitioner to team: ${team_id}`);
             }
           }
         }

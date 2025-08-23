@@ -244,13 +244,17 @@ const Setup = () => {
         
         try {
           const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
             body: {
               email: practitioner.email,
               full_name: practitioner.name,
               role_title: practitioner.role,
               qualifications: practitioner.qualifications,
               password: password,
-              team_name: orgData.name
+              team_name: orgData.name,
+              team_id: teamId
             }
           });
 
