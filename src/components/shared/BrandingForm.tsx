@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload } from 'lucide-react';
+import ColorThief from 'colorthief';
 
 interface BrandingData {
   name: string;
@@ -38,6 +39,42 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
     }
   };
 
+  const rgbToHex = (r: number, g: number, b: number) => {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  };
+
+  const extractColorsFromImage = (imageElement: HTMLImageElement) => {
+    try {
+      const colorThief = new ColorThief();
+      const palette = colorThief.getPalette(imageElement, 3);
+      
+      if (palette && palette.length >= 3) {
+        const primaryColor = rgbToHex(palette[0][0], palette[0][1], palette[0][2]);
+        const secondaryColor = rgbToHex(palette[1][0], palette[1][1], palette[1][2]);
+        const accentColor = rgbToHex(palette[2][0], palette[2][1], palette[2][2]);
+        
+        // Determine font family based on color analysis
+        const brightness = (palette[0][0] * 299 + palette[0][1] * 587 + palette[0][2] * 114) / 1000;
+        const fontFamily = brightness > 128 ? 'Poppins' : 'Montserrat'; // Light colors get modern font, dark get elegant
+        
+        setBrandingForm(prev => ({
+          ...prev,
+          primaryColor,
+          secondaryColor,
+          accentColor,
+          fontFamily
+        }));
+        
+        // Apply colors immediately for preview
+        document.documentElement.style.setProperty('--team-primary', primaryColor);
+        document.documentElement.style.setProperty('--team-secondary', secondaryColor);
+        document.documentElement.style.setProperty('--team-accent', accentColor);
+      }
+    } catch (error) {
+      console.error('Error extracting colors from image:', error);
+    }
+  };
+
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -46,6 +83,14 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
         setBrandingForm(prev => ({ ...prev, logo_url: dataUrl }));
+        
+        // Create image element for color extraction
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          extractColorsFromImage(img);
+        };
+        img.src = dataUrl;
       };
       reader.readAsDataURL(file);
       
