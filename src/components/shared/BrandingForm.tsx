@@ -104,27 +104,6 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="team-name">Organization Name</Label>
-          <Input
-            id="team-name"
-            value={brandingForm.name}
-            onChange={(e) => setBrandingForm(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="Your organization name"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="logo-upload">Logo</Label>
-          <Input
-            id="logo-upload"
-            type="file"
-            accept="image/*"
-            onChange={handleLogoFileChange}
-            className="mt-1"
-          />
-        </div>
-
         <div className="space-y-3">
           <Label>Brand Colors</Label>
           
@@ -212,7 +191,7 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
                 {brandingForm.logo_url && (
                   <img 
                     src={brandingForm.logo_url} 
-                    alt="Organization Logo" 
+                    alt="Organisation Logo" 
                     className="w-10 h-10 rounded object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
@@ -221,10 +200,10 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
                 )}
                 <div>
                   <h3 className="font-semibold" style={{ color: brandingForm.primaryColor }}>
-                    {brandingForm.name || 'Your Organization Name'}
+                    Your Organisation Name
                   </h3>
                   <p className="text-sm" style={{ color: brandingForm.secondaryColor }}>
-                    Professional Performance Center
+                    Professional Performance Centre
                   </p>
                 </div>
               </div>

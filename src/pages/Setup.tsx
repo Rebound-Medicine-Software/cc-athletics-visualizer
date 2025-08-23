@@ -123,9 +123,9 @@ const Setup = () => {
   };
 
   const handleComplete = async () => {
-    // Validate organization data
+    // Validate organisation data
     if (!orgData.name || !orgData.practitionerCount) {
-      toast.error("Please fill in all organization details");
+      toast.error("Please fill in all organisation details");
       return;
     }
 
@@ -444,7 +444,7 @@ const Setup = () => {
                 disabled={!apiKeyValidated}
                 className="w-full bg-blue-600 hover:bg-blue-700"
               >
-                Continue to Organization Setup
+                Continue to Organisation Setup
               </Button>
             </CardContent>
           </Card>
@@ -455,50 +455,14 @@ const Setup = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="w-6 h-6" />
-                Organization Setup
+                Organisation Setup
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="org-name">Organization Name</Label>
-                  <Input
-                    id="org-name"
-                    placeholder="Enter your organization name"
-                    value={orgData.name}
-                    onChange={(e) => setOrgData(prev => ({ ...prev, name: e.target.value }))}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="org-logo">Organization Logo</Label>
-                  <div className="flex items-center space-x-4">
-                    <Input
-                      id="org-logo"
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setOrgData(prev => ({ ...prev, logo: e.target.files?.[0] || null }))}
-                      className="flex-1"
-                    />
-                    <Upload className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">This will be used to customize your dashboard theme</p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="practitioner-count">Number of Practitioners</Label>
-                  <Input
-                    id="practitioner-count"
-                    type="number"
-                    placeholder="How many practitioners in your organization?"
-                    value={orgData.practitionerCount}
-                    onChange={(e) => updatePractitionerCount(e.target.value)}
-                  />
-                </div>
-
                 {/* Branding Options */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">Organization Branding</h3>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Organisation Branding</h3>
                   <BrandingForm
                     brandingForm={{
                       name: orgData.name,
@@ -543,6 +507,17 @@ const Setup = () => {
                     }}
                     onLogoUpload={(file) => setOrgData(prev => ({ ...prev, logo: file }))}
                   />
+                  
+                  <div className="mt-4">
+                    <Label htmlFor="practitioner-count">Number of Practitioners</Label>
+                    <Input
+                      id="practitioner-count"
+                      type="number"
+                      placeholder="How many practitioners in your organisation?"
+                      value={orgData.practitionerCount}
+                      onChange={(e) => updatePractitionerCount(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
               
