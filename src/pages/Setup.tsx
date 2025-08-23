@@ -460,6 +460,16 @@ const Setup = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="org-name">Organisation Name</Label>
+                  <Input
+                    id="org-name"
+                    placeholder="Enter your organisation name"
+                    value={orgData.name}
+                    onChange={(e) => setOrgData(prev => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                
                 {/* Branding Options */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">Organisation Branding</h3>
