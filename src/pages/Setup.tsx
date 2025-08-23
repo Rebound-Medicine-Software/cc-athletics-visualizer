@@ -267,10 +267,13 @@ const Setup = () => {
         }
       }
 
-      // Mark setup as completed in the database
+      // Mark setup as completed and assign team_id to the organization profile
       const { error: setupError } = await supabase
         .from('profiles')
-        .update({ setup_completed: true })
+        .update({ 
+          setup_completed: true,
+          team_id: teamId
+        })
         .eq('user_id', session.user.id);
       
       if (setupError) throw setupError;

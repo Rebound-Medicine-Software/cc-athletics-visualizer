@@ -58,8 +58,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // After user is created, we need to update the profile with organization relationship
-    // The profile trigger will create the basic profile, but we need to set created_by
+    // After user is created, we need to update the profile with team_id and organization relationship
+    // The profile trigger will create the basic profile, but we need to set team_id and created_by
     if (userData.user) {
       // Get the organization profile that's creating this clinician
       const authHeader = req.headers.get('authorization');
@@ -70,17 +70,26 @@ const handler = async (req: Request): Promise<Response> => {
         if (requestingUser) {
           const { data: orgProfile } = await supabase
             .from('profiles')
-            .select('id')
+            .select('id, team_id')
             .eq('user_id', requestingUser.id)
             .eq('role', 'organisation')
             .single();
             
-          if (orgProfile) {
-            // Update the newly created profile with the organization relationship
-            await supabase
+          if (orgProfile && orgProfile.team_id) {
+            // Update the newly created profile with the organization relationship and team_id
+            const { error: updateError } = await supabase
               .from('profiles')
-              .update({ created_by: orgProfile.id })
+              .update({ 
+                created_by: orgProfile.id,
+                team_id: orgProfile.team_id
+              })
               .eq('user_id', userData.user.id);
+              
+            if (updateError) {
+              console.error('Error updating practitioner profile:', updateError);
+            } else {
+              console.log(`Assigned practitioner to team: ${orgProfile.team_id}`);
+            }
           }
         }
       }
