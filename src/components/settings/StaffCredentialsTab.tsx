@@ -55,12 +55,12 @@ export const StaffCredentialsTab = () => {
 
       if (!currentProfile) return;
 
-      // Fetch staff users from the same team
+      // Fetch staff users from the same team (including both practitioner and staff roles)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('team_id', currentProfile.team_id)
-        .in('role', ['practitioner', 'staff'])
+        .in('role', ['practitioner', 'staff', 'clinician'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -98,18 +98,37 @@ export const StaffCredentialsTab = () => {
       } else {
         // Create new user via edge function
         const password = generateStrongPassword();
-        const { data, error } = await supabase.functions.invoke('send-clinician-credentials', {
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('No active session');
+
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('team_id')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (!currentProfile?.team_id) throw new Error('No team associated with account');
+
+        const { data: teamData } = await supabase
+          .from('teams')
+          .select('name')
+          .eq('id', currentProfile.team_id)
+          .single();
+
+        const { data: credentialsData, error: credentialsError } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
             email: editForm.email,
             full_name: editForm.full_name,
             role_title: editForm.role_title,
             qualifications: editForm.qualifications,
             password: password,
-            team_name: 'Current Organization' // This should be dynamic based on current user's org
+            team_name: teamData?.name || 'Your Team',
+            avatar_url: editForm.avatar_url
           }
         });
 
-        if (error) throw error;
+        if (credentialsError) throw credentialsError;
         toast.success("Clinician account created and credentials sent");
       }
 

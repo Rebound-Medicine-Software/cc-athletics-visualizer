@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Palette, Save } from 'lucide-react';
@@ -8,18 +8,49 @@ import { useToast } from '@/hooks/use-toast';
 import { BrandingForm } from '@/components/shared/BrandingForm';
 
 export const BrandingTab = () => {
-  const { profile, teamBranding, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [teamBranding, setTeamBranding] = useState<any>(null);
   
   const [brandingForm, setBrandingForm] = useState({
-    name: teamBranding?.name || '',
-    logo_url: teamBranding?.logo_url || '',
-    primaryColor: teamBranding?.primary_color || '#3B82F6',
-    secondaryColor: teamBranding?.secondary_color || '#1E40AF',
-    accentColor: teamBranding?.accent_color || '#F59E0B',
-    fontFamily: teamBranding?.font_family || 'Inter'
+    name: '',
+    logo_url: '',
+    primaryColor: '#3B82F6',
+    secondaryColor: '#1E40AF',
+    accentColor: '#F59E0B',
+    fontFamily: 'Inter'
   });
+
+  useEffect(() => {
+    fetchTeamBranding();
+  }, [profile?.team_id]);
+
+  const fetchTeamBranding = async () => {
+    if (!profile?.team_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
+        .eq('id', profile.team_id)
+        .single();
+
+      if (!error && data) {
+        setTeamBranding(data);
+        setBrandingForm({
+          name: data.name || '',
+          logo_url: data.logo_url || '',
+          primaryColor: data.primary_color || '#3B82F6',
+          secondaryColor: data.secondary_color || '#1E40AF',
+          accentColor: data.accent_color || '#F59E0B',
+          fontFamily: data.font_family || 'Inter'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching team branding:', error);
+    }
+  };
 
   const handleSave = async () => {
     if (!profile?.team_id) {
@@ -43,14 +74,59 @@ export const BrandingTab = () => {
 
       if (error) throw error;
 
-      // Apply new branding immediately
+      // Apply new branding immediately using hex to HSL conversion
       const root = document.documentElement;
-      root.style.setProperty('--team-primary', brandingForm.primaryColor);
-      root.style.setProperty('--team-secondary', brandingForm.secondaryColor);
-      root.style.setProperty('--team-accent', brandingForm.accentColor);
+      const hexToHsl = (hex: string): string => {
+        try {
+          const r = parseInt(hex.slice(1, 3), 16) / 255;
+          const g = parseInt(hex.slice(3, 5), 16) / 255;
+          const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+          const max = Math.max(r, g, b);
+          const min = Math.min(r, g, b);
+          let h, s, l = (max + min) / 2;
+
+          if (max === min) {
+            h = s = 0;
+          } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch (max) {
+              case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+              case g: h = (b - r) / d + 2; break;
+              case b: h = (r - g) / d + 4; break;
+              default: h = 0;
+            }
+            h /= 6;
+          }
+
+          return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+        } catch {
+          return '214 100% 50%';
+        }
+      };
+
+      if (brandingForm.primaryColor) {
+        const hsl = hexToHsl(brandingForm.primaryColor);
+        root.style.setProperty('--primary', hsl);
+        root.style.setProperty('--team-primary', hsl);
+      }
+      
+      if (brandingForm.secondaryColor) {
+        const hsl = hexToHsl(brandingForm.secondaryColor);
+        root.style.setProperty('--secondary', hsl);
+        root.style.setProperty('--team-secondary', hsl);
+      }
+      
+      if (brandingForm.accentColor) {
+        const hsl = hexToHsl(brandingForm.accentColor);
+        root.style.setProperty('--accent', hsl);
+        root.style.setProperty('--team-accent', hsl);
+      }
+
       if (brandingForm.fontFamily) {
-        root.style.setProperty('--team-font-family', brandingForm.fontFamily);
-        document.body.style.fontFamily = brandingForm.fontFamily + ', sans-serif';
+        root.style.setProperty('--team-font-family', `'${brandingForm.fontFamily}', sans-serif`);
+        document.body.style.fontFamily = `'${brandingForm.fontFamily}', sans-serif`;
       }
 
       await refreshProfile();
