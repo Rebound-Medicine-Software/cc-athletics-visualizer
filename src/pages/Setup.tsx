@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, Building2, Users, Plus, X, Key, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BrandingForm } from "@/components/shared/BrandingForm";
 
 const Setup = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ const Setup = () => {
   const [orgData, setOrgData] = useState({
     name: "",
     logo: null as File | null,
+    logo_url: "",
     practitionerCount: "",
     primaryColor: '#3B82F6',
     secondaryColor: '#1E40AF',
@@ -497,61 +499,50 @@ const Setup = () => {
                 {/* Branding Options */}
                 <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold mb-4">Organization Branding</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <Label htmlFor="primary-color">Primary Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="color"
-                          id="primary-color"
-                          value={orgData.primaryColor}
-                          onChange={(e) => setOrgData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                          className="w-12 h-10 border rounded cursor-pointer"
-                        />
-                        <Input
-                          value={orgData.primaryColor}
-                          onChange={(e) => setOrgData(prev => ({ ...prev, primaryColor: e.target.value }))}
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="accent-color">Accent Color</Label>
-                      <div className="flex gap-2 items-center">
-                        <input
-                          type="color"
-                          id="accent-color"
-                          value={orgData.accentColor}
-                          onChange={(e) => setOrgData(prev => ({ ...prev, accentColor: e.target.value }))}
-                          className="w-12 h-10 border rounded cursor-pointer"
-                        />
-                        <Input
-                          value={orgData.accentColor}
-                          onChange={(e) => setOrgData(prev => ({ ...prev, accentColor: e.target.value }))}
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="font-family">Font Family</Label>
-                    <select 
-                      id="font-family"
-                      value={orgData.fontFamily}
-                      onChange={(e) => setOrgData(prev => ({ ...prev, fontFamily: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
-                    >
-                      <option value="Inter">Inter</option>
-                      <option value="Roboto">Roboto</option>
-                      <option value="Open Sans">Open Sans</option>
-                      <option value="Lato">Lato</option>
-                      <option value="Montserrat">Montserrat</option>
-                      <option value="Poppins">Poppins</option>
-                    </select>
-                  </div>
+                  <BrandingForm
+                    brandingForm={{
+                      name: orgData.name,
+                      logo_url: orgData.logo_url || '',
+                      primaryColor: orgData.primaryColor,
+                      secondaryColor: orgData.secondaryColor,
+                      accentColor: orgData.accentColor,
+                      fontFamily: orgData.fontFamily
+                    }}
+                    setBrandingForm={(data) => {
+                      if (typeof data === 'function') {
+                        setOrgData(prev => {
+                          const newData = data({
+                            name: prev.name,
+                            logo_url: prev.logo_url || '',
+                            primaryColor: prev.primaryColor,
+                            secondaryColor: prev.secondaryColor,
+                            accentColor: prev.accentColor,
+                            fontFamily: prev.fontFamily
+                          });
+                          return {
+                            ...prev,
+                            name: newData.name,
+                            logo_url: newData.logo_url,
+                            primaryColor: newData.primaryColor,
+                            secondaryColor: newData.secondaryColor,
+                            accentColor: newData.accentColor,
+                            fontFamily: newData.fontFamily
+                          };
+                        });
+                      } else {
+                        setOrgData(prev => ({
+                          ...prev,
+                          name: data.name,
+                          logo_url: data.logo_url,
+                          primaryColor: data.primaryColor,
+                          secondaryColor: data.secondaryColor,
+                          accentColor: data.accentColor,
+                          fontFamily: data.fontFamily
+                        }));
+                      }
+                    }}
+                    onLogoUpload={(file) => setOrgData(prev => ({ ...prev, logo: file }))}
+                  />
                 </div>
               </div>
               
