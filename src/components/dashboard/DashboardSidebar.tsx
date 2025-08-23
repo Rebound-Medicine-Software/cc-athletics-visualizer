@@ -54,24 +54,15 @@ export const DashboardSidebar = ({
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: branding?.primary_color || '#3B82F6' }}
-                    >
-                      <Activity className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary">
+                      <Activity className="w-6 h-6 text-primary-foreground" />
                     </div>
                   )}
                   <div>
-                    <h3 
-                      className="font-semibold text-sm" 
-                      style={{ color: branding?.primary_color || '#1F2937' }}
-                    >
+                    <h3 className="font-semibold text-sm text-primary">
                       {branding?.name || orgData.name}
                     </h3>
-                    <p 
-                      className="text-xs" 
-                      style={{ color: branding?.secondary_color || '#6B7280' }}
-                    >
+                    <p className="text-xs text-muted-foreground">
                       Performance Analytics
                     </p>
                   </div>
@@ -93,12 +84,6 @@ export const DashboardSidebar = ({
                   key={item.id}
                   variant={activeSection === item.id ? "default" : "ghost"}
                   className={`w-full justify-start text-left ${isNavigationCollapsed ? "px-2" : ""}`}
-                  style={activeSection === item.id ? {
-                    backgroundColor: branding?.primary_color || '#3B82F6',
-                    color: 'white'
-                  } : {
-                    color: branding?.secondary_color || '#6B7280'
-                  }}
                   onClick={() => handleItemClick(item.id)}
                 >
                   <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />

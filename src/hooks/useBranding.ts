@@ -2,12 +2,18 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamBranding } from '@/contexts/AuthContext';
 
-export const useBranding = (teamId: string | null | undefined) => {
+export const useBranding = (teamId: string | null | undefined, userRole?: string) => {
   const [branding, setBranding] = useState<TeamBranding | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchBranding = async () => {
     if (!teamId) return;
+    
+    // Only apply branding for organization and practitioner roles
+    if (userRole === 'super_admin') {
+      resetBranding();
+      return;
+    }
     
     setLoading(true);
     try {
@@ -35,40 +41,50 @@ export const useBranding = (teamId: string | null | undefined) => {
     
     // Apply colors as CSS variables
     if (brandingData.primary_color) {
-      root.style.setProperty('--team-primary', brandingData.primary_color);
       // Convert hex to HSL for Tailwind compatibility
       const hsl = hexToHsl(brandingData.primary_color);
-      if (hsl) root.style.setProperty('--primary', hsl);
+      if (hsl) {
+        root.style.setProperty('--primary', hsl);
+        root.style.setProperty('--team-primary', hsl);
+      }
     }
     
     if (brandingData.secondary_color) {
-      root.style.setProperty('--team-secondary', brandingData.secondary_color);
       const hsl = hexToHsl(brandingData.secondary_color);
-      if (hsl) root.style.setProperty('--secondary', hsl);
+      if (hsl) {
+        root.style.setProperty('--secondary', hsl);
+        root.style.setProperty('--team-secondary', hsl);
+      }
     }
     
     if (brandingData.accent_color) {
-      root.style.setProperty('--team-accent', brandingData.accent_color);
       const hsl = hexToHsl(brandingData.accent_color);
-      if (hsl) root.style.setProperty('--accent', hsl);
+      if (hsl) {
+        root.style.setProperty('--accent', hsl);
+        root.style.setProperty('--team-accent', hsl);
+      }
     }
 
     // Apply font family
     if (brandingData.font_family) {
-      root.style.setProperty('--team-font-family', brandingData.font_family);
-      document.body.style.fontFamily = brandingData.font_family + ', sans-serif';
+      root.style.setProperty('--team-font-family', `'${brandingData.font_family}', sans-serif`);
+      document.body.style.fontFamily = `'${brandingData.font_family}', sans-serif`;
     }
   };
 
   const resetBranding = () => {
     const root = document.documentElement;
+    
+    // Reset to original Lovable defaults
+    root.style.setProperty('--primary', '214 100% 50%');
+    root.style.setProperty('--secondary', '210 40% 96.1%');
+    root.style.setProperty('--accent', '45 100% 51%');
+    
     root.style.removeProperty('--team-primary');
     root.style.removeProperty('--team-secondary');
     root.style.removeProperty('--team-accent');
     root.style.removeProperty('--team-font-family');
-    root.style.removeProperty('--primary');
-    root.style.removeProperty('--secondary');
-    root.style.removeProperty('--accent');
+    
     document.body.style.fontFamily = '';
     setBranding(null);
   };
@@ -110,7 +126,7 @@ export const useBranding = (teamId: string | null | undefined) => {
     return () => {
       // Don't reset branding on unmount to maintain state across navigation
     };
-  }, [teamId]);
+  }, [teamId, userRole]);
 
   return {
     branding,

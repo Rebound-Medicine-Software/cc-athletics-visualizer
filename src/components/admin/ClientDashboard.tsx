@@ -8,9 +8,15 @@ import { ClientReports } from './client/ClientReports';
 import { ClientPrograms } from './client/ClientPrograms';
 import { PaymentPackages } from './client/PaymentPackages';
 import { AdminHeader } from './AdminHeader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranding } from '@/hooks/useBranding';
 
 export const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const { profile } = useAuth();
+  
+  // Apply branding for client role
+  useBranding(profile?.team_id, profile?.role);
 
   const renderContent = () => {
     switch (activeSection) {

@@ -8,9 +8,15 @@ import { ProfileManagement } from './practitioner/ProfileManagement';
 import { ReportManagement } from './practitioner/ReportManagement';
 import { ProgramManagement } from './practitioner/ProgramManagement';
 import { AdminHeader } from './AdminHeader';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBranding } from '@/hooks/useBranding';
 
 export const PractitionerDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const { profile } = useAuth();
+  
+  // Apply branding for practitioner/organization role
+  useBranding(profile?.team_id, profile?.role);
 
   const renderContent = () => {
     switch (activeSection) {

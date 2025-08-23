@@ -26,7 +26,7 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading, signOut, profile } = useAuth();
-  const { branding } = useBranding(profile?.team_id);
+  const { branding } = useBranding(profile?.team_id, profile?.role);
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
