@@ -602,6 +602,14 @@ const Setup = () => {
               <div className="flex gap-4">
                 <Button
                   variant="outline"
+                  onClick={() => setStep(3)}
+                  className="flex items-center gap-2"
+                >
+                  Previous
+                </Button>
+                
+                <Button
+                  variant="outline"
                   onClick={addPractitioner}
                   className="flex items-center gap-2"
                 >
