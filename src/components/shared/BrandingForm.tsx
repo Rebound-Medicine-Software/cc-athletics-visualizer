@@ -40,8 +40,19 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
 
   const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && onLogoUpload) {
-      onLogoUpload(file);
+    if (file) {
+      // Create data URL for immediate preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setBrandingForm(prev => ({ ...prev, logo_url: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+      
+      // Also call the optional upload handler
+      if (onLogoUpload) {
+        onLogoUpload(file);
+      }
     }
   };
 
@@ -59,30 +70,14 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
         </div>
 
         <div>
-          <Label htmlFor="logo-url">Logo</Label>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                id="logo-url"
-                value={brandingForm.logo_url}
-                onChange={(e) => setBrandingForm(prev => ({ ...prev, logo_url: e.target.value }))}
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
-            {onLogoUpload && (
-              <div className="flex gap-2">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoFileChange}
-                  className="flex-1"
-                />
-                <Button variant="outline" size="icon" disabled>
-                  <Upload className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          </div>
+          <Label htmlFor="logo-upload">Logo</Label>
+          <Input
+            id="logo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleLogoFileChange}
+            className="mt-1"
+          />
         </div>
 
         <div className="space-y-3">
