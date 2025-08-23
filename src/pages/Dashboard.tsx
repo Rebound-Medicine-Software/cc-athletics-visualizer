@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranding } from "@/hooks/useBranding";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -24,7 +25,8 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, profile } = useAuth();
+  const { branding } = useBranding(profile?.team_id);
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
@@ -129,6 +131,7 @@ const Dashboard = () => {
         <div className="flex gap-6">
           <DashboardSidebar
             orgData={orgData}
+            branding={branding}
             isNavigationCollapsed={isNavigationCollapsed}
             setIsNavigationCollapsed={setIsNavigationCollapsed}
             activeSection={activeSection}

@@ -1,9 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Menu, X } from "lucide-react";
+import { TeamBranding } from "@/contexts/AuthContext";
 
 interface DashboardSidebarProps {
   orgData: { name: string; logo: string | null };
+  branding?: TeamBranding | null;
   isNavigationCollapsed: boolean;
   setIsNavigationCollapsed: (collapsed: boolean) => void;
   activeSection: string;
@@ -15,6 +17,7 @@ interface DashboardSidebarProps {
 
 export const DashboardSidebar = ({
   orgData,
+  branding,
   isNavigationCollapsed,
   setIsNavigationCollapsed,
   activeSection,
@@ -44,20 +47,33 @@ export const DashboardSidebar = ({
             <div className="flex items-center justify-between mb-4">
               {!isNavigationCollapsed && (
                 <div className="flex items-center gap-3">
-                  {orgData.logo ? (
+                  {(branding?.logo_url || orgData.logo) ? (
                     <img
-                      src={orgData.logo}
+                      src={branding?.logo_url || orgData.logo || ''}
                       alt="Organization Logo"
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: branding?.primary_color || '#3B82F6' }}
+                    >
                       <Activity className="w-6 h-6 text-white" />
                     </div>
                   )}
                   <div>
-                    <h3 className="font-semibold text-gray-800 text-sm">{orgData.name}</h3>
-                    <p className="text-xs text-gray-600">Performance Analytics</p>
+                    <h3 
+                      className="font-semibold text-sm" 
+                      style={{ color: branding?.primary_color || '#1F2937' }}
+                    >
+                      {branding?.name || orgData.name}
+                    </h3>
+                    <p 
+                      className="text-xs" 
+                      style={{ color: branding?.secondary_color || '#6B7280' }}
+                    >
+                      Performance Analytics
+                    </p>
                   </div>
                 </div>
               )}
@@ -76,11 +92,13 @@ export const DashboardSidebar = ({
                 <Button
                   key={item.id}
                   variant={activeSection === item.id ? "default" : "ghost"}
-                  className={`w-full justify-start text-left ${
-                    activeSection === item.id
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  } ${isNavigationCollapsed ? "px-2" : ""}`}
+                  className={`w-full justify-start text-left ${isNavigationCollapsed ? "px-2" : ""}`}
+                  style={activeSection === item.id ? {
+                    backgroundColor: branding?.primary_color || '#3B82F6',
+                    color: 'white'
+                  } : {
+                    color: branding?.secondary_color || '#6B7280'
+                  }}
                   onClick={() => handleItemClick(item.id)}
                 >
                   <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
