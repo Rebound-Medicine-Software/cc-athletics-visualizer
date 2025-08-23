@@ -27,6 +27,7 @@ export interface TeamBranding {
   primary_color: string;
   secondary_color: string;
   accent_color: string;
+  font_family?: string;
 }
 
 export interface UserTier {
@@ -99,16 +100,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profileData.team_id) {
           const { data: teamData, error: teamError } = await supabase
             .from('teams')
-            .select('id, name, logo_url, primary_color, secondary_color, accent_color')
+            .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
             .eq('id', profileData.team_id)
             .maybeSingle();
 
           if (!teamError && teamData) {
             setTeamBranding(teamData);
-            // Apply team branding to CSS variables
-            document.documentElement.style.setProperty('--team-primary', teamData.primary_color);
-            document.documentElement.style.setProperty('--team-secondary', teamData.secondary_color);
-            document.documentElement.style.setProperty('--team-accent', teamData.accent_color);
+            // Apply team branding immediately
+            applyTeamBranding(teamData);
           }
         }
 
@@ -127,6 +126,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const applyTeamBranding = (branding: TeamBranding) => {
+    const root = document.documentElement;
+    
+    // Apply colors as CSS variables
+    if (branding.primary_color) {
+      root.style.setProperty('--team-primary', branding.primary_color);
+      const hsl = hexToHsl(branding.primary_color);
+      if (hsl) root.style.setProperty('--primary', hsl);
+    }
+    
+    if (branding.secondary_color) {
+      root.style.setProperty('--team-secondary', branding.secondary_color);
+      const hsl = hexToHsl(branding.secondary_color);
+      if (hsl) root.style.setProperty('--secondary', hsl);
+    }
+    
+    if (branding.accent_color) {
+      root.style.setProperty('--team-accent', branding.accent_color);
+      const hsl = hexToHsl(branding.accent_color);
+      if (hsl) root.style.setProperty('--accent', hsl);
+    }
+
+    // Apply font family
+    if (branding.font_family) {
+      root.style.setProperty('--team-font-family', branding.font_family);
+      document.body.style.fontFamily = branding.font_family + ', sans-serif';
+    }
+  };
+
+  const resetTeamBranding = () => {
+    const root = document.documentElement;
+    root.style.removeProperty('--team-primary');
+    root.style.removeProperty('--team-secondary');
+    root.style.removeProperty('--team-accent');
+    root.style.removeProperty('--team-font-family');
+    root.style.removeProperty('--primary');
+    root.style.removeProperty('--secondary');
+    root.style.removeProperty('--accent');
+    document.body.style.fontFamily = '';
+  };
+
+  // Helper function to convert hex to HSL
+  const hexToHsl = (hex: string): string | null => {
+    try {
+      const r = parseInt(hex.slice(1, 3), 16) / 255;
+      const g = parseInt(hex.slice(3, 5), 16) / 255;
+      const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          case b: h = (r - g) / d + 4; break;
+          default: h = 0;
+        }
+        h /= 6;
+      }
+
+      return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+    } catch {
+      return null;
     }
   };
 
@@ -149,10 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setTeamBranding(null);
           setUserTier(null);
-          // Reset CSS variables to defaults
-          document.documentElement.style.removeProperty('--team-primary');
-          document.documentElement.style.removeProperty('--team-secondary');
-          document.documentElement.style.removeProperty('--team-accent');
+          // Reset branding
+          resetTeamBranding();
         }
         setLoading(false);
       }

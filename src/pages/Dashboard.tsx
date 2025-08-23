@@ -122,7 +122,6 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <DashboardHeader
-        orgData={orgData}
         handleRefresh={handleRefresh}
         handleResetFilters={handleResetFilters}
       />

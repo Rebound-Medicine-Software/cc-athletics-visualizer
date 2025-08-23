@@ -19,7 +19,11 @@ const Setup = () => {
   const [orgData, setOrgData] = useState({
     name: "",
     logo: null as File | null,
-    practitionerCount: ""
+    practitionerCount: "",
+    primaryColor: '#3B82F6',
+    secondaryColor: '#1E40AF',
+    accentColor: '#F59E0B',
+    fontFamily: 'Inter'
   });
   const [practitioners, setPractitioners] = useState([
     { name: "", role: "", qualifications: "", email: "", image: null as File | null }
@@ -139,24 +143,13 @@ const Setup = () => {
       }
 
       let teamId;
-      let logoUrl = null;
 
       // Upload logo if provided
+      let logoUrl = null;
       if (orgData.logo) {
-        const fileExt = orgData.logo.name.split('.').pop();
-        const fileName = `${session.user.id}-logo.${fileExt}`;
-        
-        try {
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('team-assets')
-            .upload(fileName, orgData.logo, { upsert: true });
-          
-          if (!uploadError) {
-            logoUrl = `${supabase.storage.from('team-assets').getPublicUrl(fileName).data.publicUrl}`;
-          }
-        } catch (error) {
-          console.warn('Logo upload failed, continuing without logo:', error);
-        }
+        // For now, convert to base64 for simple storage
+        // In production, you'd want to use proper file storage
+        logoUrl = await fileToBase64(orgData.logo);
       }
 
       // Check if team already exists for this user
@@ -174,6 +167,10 @@ const Setup = () => {
             name: orgData.name,
             location: `${orgData.practitionerCount} practitioners`,
             logo_url: logoUrl,
+            primary_color: orgData.primaryColor,
+            secondary_color: orgData.secondaryColor,
+            accent_color: orgData.accentColor,
+            font_family: orgData.fontFamily,
             practitioner_count: parseInt(orgData.practitionerCount),
           })
           .eq('id', existingTeam.id);
@@ -191,6 +188,10 @@ const Setup = () => {
             location: `${orgData.practitionerCount} practitioners`,
             cc_team_id: 'temp-' + Date.now(), // Temporary ID until CC Athletics sync
             logo_url: logoUrl,
+            primary_color: orgData.primaryColor,
+            secondary_color: orgData.secondaryColor,
+            accent_color: orgData.accentColor,
+            font_family: orgData.fontFamily,
             practitioner_count: parseInt(orgData.practitionerCount),
           })
           .select()
@@ -204,17 +205,21 @@ const Setup = () => {
       const { error: teamUpdateError } = await supabase
         .from('teams')
         .update({
+          name: orgData.name,
           api_key: apiKey,
           practitioner_count: parseInt(orgData.practitionerCount),
+          logo_url: logoUrl,
+          primary_color: orgData.primaryColor,
+          secondary_color: orgData.secondaryColor,
+          accent_color: orgData.accentColor,
+          font_family: orgData.fontFamily,
           setup_data: {
             practitioners: validPractitioners.map(p => ({
               name: p.name,
               role: p.role,
               qualifications: p.qualifications,
               email: p.email
-              // Note: File objects cannot be stored in JSONB, would need file upload handling
-            })),
-            logoUrl: null // Would need file upload to store logo
+            }))
           }
         })
         .eq('id', teamId);
@@ -280,6 +285,15 @@ const Setup = () => {
       console.error('Setup error:', error);
       toast.error("Failed to complete setup. Please try again.");
     }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const generateStrongPassword = () => {
@@ -478,6 +492,66 @@ const Setup = () => {
                     value={orgData.practitionerCount}
                     onChange={(e) => updatePractitionerCount(e.target.value)}
                   />
+                </div>
+
+                {/* Branding Options */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold mb-4">Organization Branding</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label htmlFor="primary-color">Primary Color</Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          id="primary-color"
+                          value={orgData.primaryColor}
+                          onChange={(e) => setOrgData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                          className="w-12 h-10 border rounded cursor-pointer"
+                        />
+                        <Input
+                          value={orgData.primaryColor}
+                          onChange={(e) => setOrgData(prev => ({ ...prev, primaryColor: e.target.value }))}
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="accent-color">Accent Color</Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          id="accent-color"
+                          value={orgData.accentColor}
+                          onChange={(e) => setOrgData(prev => ({ ...prev, accentColor: e.target.value }))}
+                          className="w-12 h-10 border rounded cursor-pointer"
+                        />
+                        <Input
+                          value={orgData.accentColor}
+                          onChange={(e) => setOrgData(prev => ({ ...prev, accentColor: e.target.value }))}
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="font-family">Font Family</Label>
+                    <select 
+                      id="font-family"
+                      value={orgData.fontFamily}
+                      onChange={(e) => setOrgData(prev => ({ ...prev, fontFamily: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+                    >
+                      <option value="Inter">Inter</option>
+                      <option value="Roboto">Roboto</option>
+                      <option value="Open Sans">Open Sans</option>
+                      <option value="Lato">Lato</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Poppins">Poppins</option>
+                    </select>
+                  </div>
                 </div>
               </div>
               

@@ -19,7 +19,8 @@ export const BrandingTab = () => {
     logo_url: teamBranding?.logo_url || '',
     primary_color: teamBranding?.primary_color || '#3B82F6',
     secondary_color: teamBranding?.secondary_color || '#1E40AF',
-    accent_color: teamBranding?.accent_color || '#F59E0B'
+    accent_color: teamBranding?.accent_color || '#F59E0B',
+    font_family: teamBranding?.font_family || 'Inter'
   });
 
   const handleSave = async () => {
@@ -37,16 +38,22 @@ export const BrandingTab = () => {
           logo_url: brandingForm.logo_url,
           primary_color: brandingForm.primary_color,
           secondary_color: brandingForm.secondary_color,
-          accent_color: brandingForm.accent_color
+          accent_color: brandingForm.accent_color,
+          font_family: brandingForm.font_family
         })
         .eq('id', profile.team_id);
 
       if (error) throw error;
 
       // Apply new branding immediately
-      document.documentElement.style.setProperty('--team-primary', brandingForm.primary_color);
-      document.documentElement.style.setProperty('--team-secondary', brandingForm.secondary_color);
-      document.documentElement.style.setProperty('--team-accent', brandingForm.accent_color);
+      const root = document.documentElement;
+      root.style.setProperty('--team-primary', brandingForm.primary_color);
+      root.style.setProperty('--team-secondary', brandingForm.secondary_color);
+      root.style.setProperty('--team-accent', brandingForm.accent_color);
+      if (brandingForm.font_family) {
+        root.style.setProperty('--team-font-family', brandingForm.font_family);
+        document.body.style.fontFamily = brandingForm.font_family + ', sans-serif';
+      }
 
       await refreshProfile();
       toast({ title: 'Success', description: 'Team branding updated successfully' });
@@ -143,23 +150,40 @@ export const BrandingTab = () => {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="accent-color" className="text-xs">Accent</Label>
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="color"
-                      id="accent-color"
-                      value={brandingForm.accent_color}
-                      onChange={(e) => handleColorChange('accent_color', e.target.value)}
-                      className="w-10 h-10 border rounded cursor-pointer"
-                    />
-                    <Input
-                      value={brandingForm.accent_color}
-                      onChange={(e) => handleColorChange('accent_color', e.target.value)}
-                      className="text-xs"
-                    />
-                  </div>
+              <div>
+                <Label htmlFor="accent-color" className="text-xs">Accent</Label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="color"
+                    id="accent-color"
+                    value={brandingForm.accent_color}
+                    onChange={(e) => handleColorChange('accent_color', e.target.value)}
+                    className="w-10 h-10 border rounded cursor-pointer"
+                  />
+                  <Input
+                    value={brandingForm.accent_color}
+                    onChange={(e) => handleColorChange('accent_color', e.target.value)}
+                    className="text-xs"
+                  />
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <Label htmlFor="font-family">Font Family</Label>
+              <select 
+                id="font-family"
+                value={brandingForm.font_family}
+                onChange={(e) => setBrandingForm(prev => ({ ...prev, font_family: e.target.value }))}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1"
+              >
+                <option value="Inter">Inter</option>
+                <option value="Roboto">Roboto</option>
+                <option value="Open Sans">Open Sans</option>
+                <option value="Lato">Lato</option>
+                <option value="Montserrat">Montserrat</option>
+                <option value="Poppins">Poppins</option>
+              </select>
               </div>
             </div>
           </div>

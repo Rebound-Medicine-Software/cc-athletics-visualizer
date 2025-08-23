@@ -35,10 +35,11 @@
 
     --radius: 0.5rem;
 
-    /* Team branding variables */
+    /* Team branding variables - fallback values */
     --team-primary: 214 100% 50%;
     --team-secondary: 210 100% 40%;
     --team-accent: 45 100% 51%;
+    --team-font-family: 'Inter', sans-serif;
 
     /* Status colors */
     --success: 142 76% 36%;
