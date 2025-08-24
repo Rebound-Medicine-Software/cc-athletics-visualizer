@@ -135,11 +135,17 @@ export const StaffCredentialsTab = () => {
             qualifications: editForm.qualifications,
             password: password,
             team_name: teamData?.name || 'Your Team',
-            avatar_url: editForm.avatar_url
+            team_id: currentProfile.team_id
           }
         });
 
-        if (credentialsError) throw credentialsError;
+        if (credentialsError) {
+          console.error('Edge function error:', credentialsError);
+          if (credentialsError.message?.includes('email_exists') || credentialsError.message?.includes('already been registered')) {
+            throw new Error('A user with this email address already exists. Please use a different email.');
+          }
+          throw credentialsError;
+        }
         toast.success("Clinician account created and credentials sent");
       }
 
@@ -147,9 +153,9 @@ export const StaffCredentialsTab = () => {
       setIsAdding(false);
       setEditForm({ email: '', password: '', full_name: '', role_title: '', qualifications: '', avatar_url: '' });
       fetchUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving user:', error);
-      toast.error("Failed to save staff user");
+      toast.error(error.message || "Failed to save staff user");
     }
   };
 
