@@ -247,12 +247,13 @@ export function ReportFiltersContainer({
                 data={getFilteredDataForChart()} 
                 testName={filters.testNames} 
                 metricType={filters.metricTypes} 
+                branding={branding}
               />
             </div>
           </div>
           {/* Video box */}
           <div className="w-full md:w-[420px] shrink-0">
-            <VideoBox testName={filters.testNames} />
+            <VideoBox testName={filters.testNames} branding={branding} />
           </div>
         </div>
         </CardContent>

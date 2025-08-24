@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface VideoBoxProps {
   testName: string;
+  branding?: any;
 }
 
 interface ExerciseVideo {
@@ -14,7 +15,7 @@ interface ExerciseVideo {
   Procedure: string | null;
 }
 
-export const VideoBox = ({ testName }: VideoBoxProps) => {
+export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
   const [videoLink, setVideoLink] = useState<string | null>(null);
   const [purpose, setPurpose] = useState<string | null>(null);
   const [procedure, setProcedure] = useState<string | null>(null);
@@ -86,15 +87,25 @@ export const VideoBox = ({ testName }: VideoBoxProps) => {
 
   // A responsive 16:9 video player, or a placeholder if no video
   return (
-    <div className="w-full max-w-[420px]">
+    <div 
+      className="w-full max-w-[420px]"
+      style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}
+    >
       <div
-        className="bg-white border border-teal-200 rounded-lg shadow p-4 flex flex-col items-center min-h-[370px] max-h-[480px] h-[480px] box-border"
+        className="rounded-lg shadow p-4 flex flex-col items-center min-h-[370px] max-h-[480px] h-[480px] box-border border-2"
         style={{
           // Force the main box to be a fixed height/match chart height: 480px
           overflow: "hidden",
+          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
         }}
       >
-        <div className="text-center mb-3 font-semibold text-teal-700">Instructional Video</div>
+        <div 
+          className="text-center mb-3 font-semibold"
+          style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+        >
+          Instructional Video
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-56 w-full">
             <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></span>

@@ -10,9 +10,10 @@ interface ComparisonChartProps {
   data: TestData[];
   testName?: string;
   metricType?: string;
+  branding?: any;
 }
 
-export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartProps) => {
+export const ComparisonChart = ({ data, testName, metricType, branding }: ComparisonChartProps) => {
   // Group and average data for chart: top 6 per metric value
   const chartData = (() => {
     if (!data || data.length === 0) return [];
@@ -68,12 +69,22 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
   }
 
   return (
-    <Card className="bg-teal-50/80 border-teal-200">
-      <CardHeader>
-        <CardTitle className="text-center text-lg text-gray-800">
-          Comparisons Amongst Peers{metricType ? ` - ${metricType}` : " - Peak Force"}
-        </CardTitle>
-      </CardHeader>
+    <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
+      <Card 
+        className="border-2"
+        style={{
+          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+        }}
+      >
+        <CardHeader>
+          <CardTitle 
+            className="text-center text-lg"
+            style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+          >
+            Comparisons Amongst Peers{metricType ? ` - ${metricType}` : " - Peak Force"}
+          </CardTitle>
+        </CardHeader>
       <CardContent>
         <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
           <ResponsiveContainer width="100%" height="95%">
@@ -136,5 +147,6 @@ export const ComparisonChart = ({ data, testName, metricType }: ComparisonChartP
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };

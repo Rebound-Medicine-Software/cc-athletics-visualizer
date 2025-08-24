@@ -643,8 +643,19 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         {/* Charts Container */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Limb Symmetry Chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">{selectedTestName || 'Test Name'} Limb Symmetry</h3>
+          <div 
+            className="rounded-lg p-6 border-2"
+            style={{
+              backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+              borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+            }}
+          >
+            <h3 
+              className="text-lg font-semibold mb-4 text-center"
+              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            >
+              {selectedTestName || 'Test Name'} Limb Symmetry
+            </h3>
             <div className="h-[200px] w-full">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
@@ -670,8 +681,19 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           </div>
 
           {/* Historical Trend Chart */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Individual Scores</h3>
+          <div 
+            className="rounded-lg p-6 border-2"
+            style={{
+              backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+              borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+            }}
+          >
+            <h3 
+              className="text-lg font-semibold mb-4 text-center"
+              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            >
+              Individual Scores
+            </h3>
             <div className="h-[200px] w-full">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
