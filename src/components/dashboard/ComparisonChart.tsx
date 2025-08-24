@@ -73,7 +73,7 @@ export const ComparisonChart = ({ data, testName, metricType, branding }: Compar
       <Card 
         className="border-2"
         style={{
-          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          backgroundColor: '#ffffff',
           borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
         }}
       >
