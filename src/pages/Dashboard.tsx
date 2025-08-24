@@ -151,6 +151,7 @@ const Dashboard = () => {
               setSelectedTeams={setSelectedTeams} // CHANGED: pass setter
               handleRefresh={handleRefresh}
               orgData={orgData}
+              branding={branding}
               navigationItems={navigationItems}
               activeSection={activeSection}
               resetFiltersKey={resetFiltersKey}

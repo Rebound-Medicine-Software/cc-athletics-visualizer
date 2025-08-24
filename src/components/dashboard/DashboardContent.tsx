@@ -18,6 +18,7 @@ export interface DashboardContentProps {
   setSelectedTeams: (teams: string[]) => void;
   handleRefresh: () => void;
   orgData: any;
+  branding?: any;
   navigationItems: any[];
   activeSection: string;
   resetFiltersKey: number;
@@ -26,7 +27,7 @@ export interface DashboardContentProps {
 export const DashboardContent = ({
   data, isLoading, error, errorMessage, hasNoData,
   selectedTeams, setSelectedTeams, handleRefresh, orgData,
-  navigationItems, activeSection, resetFiltersKey
+  branding, navigationItems, activeSection, resetFiltersKey
 }: DashboardContentProps) => {
   // State for remaining section
   const [selectedTest2, setSelectedTest2] = useState<string>("");
@@ -79,7 +80,12 @@ export const DashboardContent = ({
     : sectionData.filter(d => selectedTeams.includes(d.team_name));
   
   return (
-    <div className="space-y-6 w-full">
+    <div 
+      className="space-y-6 w-full"
+      style={branding ? {
+        fontFamily: branding.font_family || 'Inter, system-ui, sans-serif'
+      } : {}}
+    >
       {/* Performance Highlights */}
       <HighlightsSection
         data={data}
