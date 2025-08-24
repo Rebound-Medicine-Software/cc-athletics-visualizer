@@ -105,6 +105,7 @@ export const DashboardContent = ({
         resetFiltersKey={resetKey2} 
         selectedTeams={selectedTeams}
         buttonText="Pogo & Other Tests"
+        branding={branding}
       />
       
       {/* Individual / Between Limb Comparisons */}
