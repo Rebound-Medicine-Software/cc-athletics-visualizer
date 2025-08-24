@@ -763,7 +763,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                             value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
                             angle: -90,
                             position: 'insideLeft',
-                            style: { textAnchor: 'middle', fontSize: 12, fill: "#374151" },
+                            style: { 
+                              textAnchor: 'middle', 
+                              fontSize: 12, 
+                              fill: branding?.primary_color || "#374151" 
+                            },
                           }}
                         />
                         <Tooltip 
@@ -776,9 +780,14 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                         <Line 
                           type="monotone" 
                           dataKey="value" 
-                          stroke="#7DD3FC" 
+                          stroke={branding?.primary_color || "#7DD3FC"}
                           strokeWidth={3}
-                          dot={{ fill: "#7DD3FC", strokeWidth: 2, r: 5 }}
+                          dot={{ 
+                            fill: branding?.primary_color || "#7DD3FC", 
+                            strokeWidth: 2, 
+                            r: 5,
+                            stroke: branding?.accent_color || "#7DD3FC"
+                          }}
                           name={selectedMetricType || "Metric"}
                         />
                       </LineChart>
