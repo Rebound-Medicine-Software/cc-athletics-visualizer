@@ -456,17 +456,27 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     return (
       <div className="w-full">
         {/* Chart container */}
-        <div className="relative h-16 bg-gray-50 rounded border">
+        <div 
+          className="relative h-16 rounded border-2"
+          style={{
+            backgroundColor: branding?.secondary_color ? `${branding.secondary_color}20` : 'hsl(var(--muted))',
+            borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+          }}
+        >
           {/* Center line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-400 z-10"></div>
-          
-          {/* Left bar (black) */}
           <div 
-            className="absolute top-2 bottom-2 bg-black rounded-l"
+            className="absolute left-1/2 top-0 bottom-0 w-0.5 z-10"
+            style={{ backgroundColor: branding?.primary_color || 'hsl(var(--border))' }}
+          ></div>
+          
+          {/* Left bar */}
+          <div 
+            className="absolute top-2 bottom-2 rounded-l"
             style={{
               right: '50%',
               width: `${data.leftPercentage * scale}%`,
-              marginRight: '1px'
+              marginRight: '1px',
+              backgroundColor: branding?.primary_color || 'hsl(var(--foreground))'
             }}
           >
             {/* Left percentage label */}
@@ -475,17 +485,21 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             </div>
           </div>
           
-          {/* Right bar (light blue) */}
+          {/* Right bar */}
           <div 
-            className="absolute top-2 bottom-2 bg-sky-300 rounded-r"
+            className="absolute top-2 bottom-2 rounded-r"
             style={{
               left: '50%',
               width: `${data.rightPercentage * scale}%`,
-              marginLeft: '1px'
+              marginLeft: '1px',
+              backgroundColor: branding?.accent_color || 'hsl(var(--accent))'
             }}
           >
             {/* Right percentage label */}
-            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-800 text-sm font-medium">
+            <div 
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-medium"
+              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            >
               {data.rightPercentage.toFixed(2)}%
             </div>
           </div>
@@ -494,15 +508,42 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         
         {/* Raw values as attractive scorecards */}
         <div className="mt-6 flex justify-center gap-6">
-          <div className="bg-black rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
+          <div 
+            className="rounded-lg border-2 p-4 min-w-[120px] text-center shadow-sm"
+            style={{
+              backgroundColor: branding?.primary_color || 'hsl(var(--foreground))',
+              borderColor: branding?.primary_color || 'hsl(var(--foreground))'
+            }}
+          >
             <div className="text-sm font-medium text-gray-300 mb-1">Left Limb</div>
             <div className="text-2xl font-bold text-white">{data.leftValue.toFixed(2)}</div>
             <div className="text-xs text-gray-300">{data.leftPercentage.toFixed(1)}%</div>
           </div>
-          <div className="bg-sky-300 rounded-lg border p-4 min-w-[120px] text-center shadow-sm">
-            <div className="text-sm font-medium text-gray-700 mb-1">Right Limb</div>
-            <div className="text-2xl font-bold text-gray-800">{data.rightValue.toFixed(2)}</div>
-            <div className="text-xs text-gray-700">{data.rightPercentage.toFixed(1)}%</div>
+          <div 
+            className="rounded-lg border-2 p-4 min-w-[120px] text-center shadow-sm"
+            style={{
+              backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
+              borderColor: branding?.accent_color || 'hsl(var(--accent))'
+            }}
+          >
+            <div 
+              className="text-sm font-medium mb-1"
+              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            >
+              Right Limb
+            </div>
+            <div 
+              className="text-2xl font-bold"
+              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            >
+              {data.rightValue.toFixed(2)}
+            </div>
+            <div 
+              className="text-xs"
+              style={{ color: branding?.primary_color || 'hsl(var(--muted-foreground))' }}
+            >
+              {data.rightPercentage.toFixed(1)}%
+            </div>
           </div>
         </div>
       </div>
