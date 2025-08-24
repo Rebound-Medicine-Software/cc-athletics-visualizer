@@ -96,7 +96,7 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
         style={{
           // Force the main box to be a fixed height/match chart height: 480px
           overflow: "hidden",
-          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          backgroundColor: '#ffffff',
           borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
         }}
       >
