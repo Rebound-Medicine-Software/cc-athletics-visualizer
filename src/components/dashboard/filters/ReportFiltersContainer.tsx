@@ -93,9 +93,9 @@ export function ReportFiltersContainer({
                 backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
                 borderColor: branding?.accent_color || 'hsl(var(--accent))'
               }}
-              aria-label={buttonText || "Comparisons Amongst Peers"}
+              aria-label="Comparisons Amongst Peers"
             >
-              {buttonText || "Comparisons Amongst Peers"}
+              Comparisons Amongst Peers
             </Button>
           </div>
 
