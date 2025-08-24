@@ -15,6 +15,7 @@ interface HighlightsSectionProps {
   setSelectedTeams: (teams: string[]) => void;
   resetFiltersKey?: number;
   allData: any[];
+  branding?: any;
 }
 
 export const HighlightsSection = ({
@@ -22,7 +23,8 @@ export const HighlightsSection = ({
   selectedTeams,
   setSelectedTeams,
   resetFiltersKey,
-  allData
+  allData,
+  branding
 }: HighlightsSectionProps) => {
   // All Teams
   const allTeams = Array.from(new Set(data.map(d => d.team_name)));
@@ -127,8 +129,14 @@ export const HighlightsSection = ({
     console.log("Second Individual Filters test selected:", testName);
   };
   
-  return <>
-      <Card className="bg-blue-50/80 border-blue-200 mb-6">
+  return <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
+      <Card 
+        className="mb-6 border-2"
+        style={{
+          backgroundColor: branding?.primary_color ? `${branding.primary_color}15` : 'hsl(var(--primary) / 0.08)',
+          borderColor: branding?.primary_color ? `${branding.primary_color}50` : 'hsl(var(--primary) / 0.3)'
+        }}
+      >
         <CardHeader>
           <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -174,11 +182,24 @@ export const HighlightsSection = ({
       </Card>
 
       {/* Second Individual Filters Section */}
-      <Card className="bg-white border-teal-200 mb-6">
+      <Card 
+        className="mb-6 border-2"
+        style={{
+          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+        }}
+      >
         <CardContent className="p-4">
           {/* Header */}
           <div className="flex justify-center mb-4">
-            <Button variant="default" className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center">
+            <Button 
+              variant="default" 
+              className="w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center text-white"
+              style={{
+                backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
+                borderColor: branding?.accent_color || 'hsl(var(--accent))'
+              }}
+            >
               {secondFilters.selectedAthlete && secondFilters.testNames 
                 ? `${secondFilters.selectedAthlete} - ${secondFilters.testNames}` 
                 : "Please Select a 'Test Name' and 'Athlete Name'"}
@@ -264,5 +285,5 @@ export const HighlightsSection = ({
           )}
         </CardContent>
       </Card>
-    </>;
+    </div>;
 };

@@ -93,6 +93,7 @@ export const DashboardContent = ({
         setSelectedTeams={setSelectedTeams}
         resetFiltersKey={resetFiltersKey}
         allData={data}
+        branding={branding}
       />
       
       {/* Pogo & Other Tests */}
