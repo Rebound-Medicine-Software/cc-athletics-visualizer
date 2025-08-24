@@ -141,8 +141,9 @@ export const StaffCredentialsTab = () => {
 
         if (credentialsError) {
           console.error('Edge function error:', credentialsError);
-          if (credentialsError.message?.includes('email_exists') || credentialsError.message?.includes('already been registered')) {
-            throw new Error('A user with this email address already exists. Please use a different email.');
+          // Check if the error response contains the specific error message
+          if (credentialsData?.error) {
+            throw new Error(credentialsData.error);
           }
           throw credentialsError;
         }
