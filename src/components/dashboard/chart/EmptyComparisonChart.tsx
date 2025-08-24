@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const EmptyComparisonChart = () => (
-  <Card className="bg-teal-50/80 border-teal-200 h-[480px] flex flex-col">
+  <Card className="bg-white border-2 h-[480px] flex flex-col" style={{ borderColor: 'hsl(var(--border))' }}>
     <CardHeader className="shrink-0">
       <CardTitle className="text-center text-lg text-gray-800">
         Comparisons Amongst Peers
