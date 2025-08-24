@@ -9,9 +9,10 @@ interface EliteComparisonProps {
   data: TestData[];
   resetFiltersKey?: number;
   selectedTeams?: string[];
+  branding?: any;
 }
 
-export const EliteComparison = ({ data, resetFiltersKey }: EliteComparisonProps) => {
+export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteComparisonProps) => {
   const { data: eliteData, isLoading: eliteDataLoading } = useEliteAthleteData();
   
   const [filters, setFilters] = useState({
@@ -108,18 +109,31 @@ export const EliteComparison = ({ data, resetFiltersKey }: EliteComparisonProps)
   }, [data, filters.athleteName, filters.testName, filters.weight]);
 
   return (
-    <Card className="bg-gray-100 border-gray-300">
-      <CardHeader>
-        <EliteComparisonFilters
-          filters={filters}
-          setFilters={setFilters}
-          eliteFilterOptions={eliteFilterOptions}
-          individualFilterOptions={individualFilterOptions}
-          isEliteDataLoading={eliteDataLoading}
-        />
-        {/* Header in rounded box */}
-        <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm">
-          <CardTitle className="text-center text-lg text-gray-800">
+    <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
+      <Card 
+        className="border-2"
+        style={{
+          backgroundColor: branding?.primary_color ? `${branding.primary_color}08` : 'hsl(var(--muted) / 0.5)',
+          borderColor: branding?.primary_color ? `${branding.primary_color}30` : 'hsl(var(--border))'
+        }}
+      >
+        <CardHeader>
+          <EliteComparisonFilters
+            filters={filters}
+            setFilters={setFilters}
+            eliteFilterOptions={eliteFilterOptions}
+            individualFilterOptions={individualFilterOptions}
+            isEliteDataLoading={eliteDataLoading}
+          />
+          {/* Header in rounded box */}
+          <div 
+            className="rounded-lg border-2 p-4 shadow-sm"
+            style={{
+              backgroundColor: branding?.secondary_color ? `${branding.secondary_color}15` : 'hsl(var(--card))',
+              borderColor: branding?.secondary_color ? `${branding.secondary_color}50` : 'hsl(var(--border))'
+            }}
+          >
+            <CardTitle className="text-center text-lg text-gray-800">
             Comparisons Amongst Elites
           </CardTitle>
         </div>
@@ -131,7 +145,8 @@ export const EliteComparison = ({ data, resetFiltersKey }: EliteComparisonProps)
           metricType={filters.metricType}
           isLoading={eliteDataLoading}
         />
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

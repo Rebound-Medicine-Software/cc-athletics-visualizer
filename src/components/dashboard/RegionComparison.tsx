@@ -12,9 +12,10 @@ interface RegionComparisonProps {
   data: TestData[];
   resetFiltersKey?: number;
   selectedTeams?: string[]; // Not used - Region Comparison operates independently
+  branding?: any;
 }
 
-export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProps) => {
+export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComparisonProps) => {
   const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
   
   const [filters, setFilters] = useState({
@@ -268,20 +269,33 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
   const uniqueTests = individualFilterData.availableTests;
 
   return (
-    <Card className="bg-gray-100 border-gray-300">
-      <CardHeader>
-        <Filters
-          filters={filters}
-          setFilters={setFilters}
-          uniqueAthletes={uniqueAthletes}
-          uniqueTests={uniqueTests}
-          uniqueTeams={uniqueTeams}
-          regionData={dependentRegionData}
-          testData={data} // Pass all data, not filtered by selectedTeams
-        />
-        {/* Header in rounded box */}
-        <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm">
-          <CardTitle className="text-center text-lg text-gray-800">
+    <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
+      <Card 
+        className="border-2"
+        style={{
+          backgroundColor: branding?.primary_color ? `${branding.primary_color}08` : 'hsl(var(--muted) / 0.5)',
+          borderColor: branding?.primary_color ? `${branding.primary_color}30` : 'hsl(var(--border))'
+        }}
+      >
+        <CardHeader>
+          <Filters
+            filters={filters}
+            setFilters={setFilters}
+            uniqueAthletes={uniqueAthletes}
+            uniqueTests={uniqueTests}
+            uniqueTeams={uniqueTeams}
+            regionData={dependentRegionData}
+            testData={data} // Pass all data, not filtered by selectedTeams
+          />
+          {/* Header in rounded box */}
+          <div 
+            className="rounded-lg border-2 p-4 shadow-sm"
+            style={{
+              backgroundColor: branding?.secondary_color ? `${branding.secondary_color}15` : 'hsl(var(--card))',
+              borderColor: branding?.secondary_color ? `${branding.secondary_color}50` : 'hsl(var(--border))'
+            }}
+          >
+            <CardTitle className="text-center text-lg text-gray-800">
             Comparisons Amongst Regions
           </CardTitle>
         </div>
@@ -304,7 +318,8 @@ export const RegionComparison = ({ data, resetFiltersKey }: RegionComparisonProp
           data={mapFilteredData}
           regionData={dependentRegionData}
         />
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

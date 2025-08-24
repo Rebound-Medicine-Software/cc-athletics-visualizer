@@ -112,6 +112,7 @@ export const DashboardContent = ({
         data={data} 
         resetFiltersKey={resetFiltersKey}
         selectedTeams={selectedTeams}
+        branding={branding}
       />
       
       {/* Comparisons Amongst Elites */}
@@ -119,6 +120,7 @@ export const DashboardContent = ({
         data={data} 
         resetFiltersKey={resetFiltersKey}
         selectedTeams={selectedTeams}
+        branding={branding}
       />
       
       {/* RegionComparison operates independently with unfiltered data */}
@@ -126,6 +128,7 @@ export const DashboardContent = ({
         data={data} 
         resetFiltersKey={resetFiltersKey} 
         selectedTeams={selectedTeams}
+        branding={branding}
       />
     </div>
   );

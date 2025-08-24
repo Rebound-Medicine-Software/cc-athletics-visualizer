@@ -12,6 +12,7 @@ interface IndividualComparisonSectionProps {
   data: TestData[];
   resetFiltersKey: number;
   selectedTeams: string[];
+  branding?: any;
 }
 
 // Helper function to get metric units
@@ -71,7 +72,7 @@ interface LimbSymmetryData {
   rightValue: number;
 }
 
-export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTeams }: IndividualComparisonSectionProps) => {
+export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTeams, branding }: IndividualComparisonSectionProps) => {
   // Filter states
   const [selectedTestName, setSelectedTestName] = useState("");
   const [selectedMetricType, setSelectedMetricType] = useState("");
@@ -531,15 +532,26 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   };
 
   return (
-    <Card className="bg-white border-teal-200">
-      <CardContent className="p-4">
-        {/* Header */}
-        <div className="flex justify-center mb-4">
-          <Button 
-            variant="default" 
-            className="bg-teal-600 hover:bg-teal-700 text-white w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default"
-            aria-label="Individual / Between Limb Comparisons"
-          >
+    <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
+      <Card 
+        className="border-2"
+        style={{
+          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+        }}
+      >
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex justify-center mb-4">
+            <Button 
+              variant="default" 
+              className="w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default text-white"
+              style={{
+                backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
+                borderColor: branding?.accent_color || 'hsl(var(--accent))'
+              }}
+              aria-label="Individual / Between Limb Comparisons"
+            >
             Individual / Between Limb Comparisons
           </Button>
         </div>
@@ -725,5 +737,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };
