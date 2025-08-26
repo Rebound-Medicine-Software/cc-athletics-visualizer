@@ -118,26 +118,28 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Use SendPulse template with ID 40973
       const templateEmailPayload = {
-        template: {
-          id: 40973,
-          variables: {
-            name: full_name,
-            email: email,
-            password: password,
-            login_url: `${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth`
-          }
-        },
-        from: {
-          name: "Force Platform Hub",
-          email: "noreply@forceplatformhub.com",
-        },
-        to: [
-          {
-            name: full_name,
-            email: email,
+        email: {
+          template: {
+            id: 40973,
+            variables: {
+              name: full_name,
+              email: email,
+              password: password,
+              login_url: `${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth`
+            }
           },
-        ],
-        subject: `Welcome to ${team_name} - Your Login Details`
+          from: {
+            name: "Force Platform Hub",
+            email: "noreply@forceplatformhub.com",
+          },
+          to: [
+            {
+              name: full_name,
+              email: email,
+            },
+          ],
+          subject: `Welcome to ${team_name} - Your Login Details`
+        }
       };
 
       // Send email via SendPulse template
