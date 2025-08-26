@@ -116,79 +116,38 @@ const handler = async (req: Request): Promise<Response> => {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
 
-      // Prepare email content with your specified format
-      const emailPayload = {
-        email: {
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h1 style="color: #333; margin-bottom: 20px;">You've been invited as a practitioner to ${team_name} Force Platform software hub</h1>
-              
-              <p style="font-size: 16px; line-height: 1.5; color: #555;">
-                Your login details are as follows:
-              </p>
-              
-              <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
-                <p style="margin: 10px 0;"><strong>Password:</strong> ${password}</p>
-              </div>
-              
-              <p style="font-size: 16px; line-height: 1.5; color: #555;">
-                Follow <a href="${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth" style="color: #007bff; text-decoration: none;">this link</a> to be directed to your organisations hub to login and start testing your athletes/patients!
-              </p>
-              
-              <div style="margin-top: 30px; padding: 20px; background-color: #e8f4f8; border-radius: 8px;">
-                <h3 style="color: #333; margin-top: 0;">Getting Started:</h3>
-                <ol style="color: #555; line-height: 1.6;">
-                  <li>Click the login link above</li>
-                  <li>Select "Clinician" from the login options</li>
-                  <li>Enter your email and password</li>
-                  <li>Start managing and testing your athletes/patients</li>
-                </ol>
-              </div>
-              
-              <p style="font-size: 14px; color: #888; margin-top: 30px;">
-                If you have any questions, please contact your organization administrator.
-              </p>
-            </div>
-          `,
-          text: `You've been invited as a practitioner to ${team_name} Force Platform software hub.
-
-Your login details are as follows:
-
-Email: ${email}
-Password: ${password}
-
-Follow this link to be directed to your organisations hub to login and start testing your athletes/patients: ${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth
-
-Getting Started:
-1. Click the login link above
-2. Select "Clinician" from the login options  
-3. Enter your email and password
-4. Start managing and testing your athletes/patients
-
-If you have any questions, please contact your organization administrator.`,
-          subject: `You've been invited as a practitioner to ${team_name} Force Platform software hub`,
-          from: {
-            name: "Force Platform Hub",
-            email: "noreply@forceplatformhub.com",
-          },
-          to: [
-            {
-              name: full_name,
-              email: email,
-            },
-          ],
+      // Use SendPulse template with ID 40973
+      const templateEmailPayload = {
+        template: {
+          id: 40973,
+          variables: {
+            name: full_name,
+            email: email,
+            password: password,
+            login_url: `${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth`
+          }
         },
+        from: {
+          name: "Force Platform Hub",
+          email: "noreply@forceplatformhub.com",
+        },
+        to: [
+          {
+            name: full_name,
+            email: email,
+          },
+        ],
+        subject: `Welcome to ${team_name} - Your Login Details`
       };
 
-      // Send email via SendPulse SMTP
+      // Send email via SendPulse template
       const emailResponse = await fetch("https://api.sendpulse.com/smtp/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(emailPayload),
+        body: JSON.stringify(templateEmailPayload),
       });
 
       if (emailResponse.ok) {
