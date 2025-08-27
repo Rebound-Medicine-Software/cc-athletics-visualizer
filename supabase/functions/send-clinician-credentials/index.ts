@@ -99,6 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
 
 
     // Get SendPulse access token first
+    console.log("Attempting to get SendPulse access token...");
     const tokenResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
       method: "POST",
       headers: {
@@ -115,6 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (tokenResponse.ok) {
       const tokenData = await tokenResponse.json();
       const accessToken = tokenData.access_token;
+      console.log("Successfully obtained SendPulse access token");
 
       // Use SendPulse template with ID 40973
       const templateEmailPayload = {
@@ -142,6 +144,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       };
 
+      console.log("Sending email with payload:", JSON.stringify(templateEmailPayload, null, 2));
+
       // Send email via SendPulse template
       const emailResponse = await fetch("https://api.sendpulse.com/smtp/emails", {
         method: "POST",
@@ -159,17 +163,30 @@ const handler = async (req: Request): Promise<Response> => {
       } else {
         const errorText = await emailResponse.text();
         console.error("Failed to send email:", errorText);
+        console.error("Email response status:", emailResponse.status);
+        return new Response(
+          JSON.stringify({ 
+            error: `Failed to send email: ${errorText}`,
+            emailPayload: templateEmailPayload
+          }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
       }
     } else {
       const errorText = await tokenResponse.text();
       console.error("Failed to get SendPulse token:", errorText);
+      return new Response(
+        JSON.stringify({ error: `Failed to authenticate with SendPulse: ${errorText}` }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Clinician account created and credentials sent",
-        user: userData.user
+        message: emailSent ? "Clinician account created and credentials sent" : "Clinician account created but email failed to send",
+        user: userData.user,
+        emailSent: emailSent
       }),
       {
         status: 200,
