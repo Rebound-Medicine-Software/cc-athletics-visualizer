@@ -127,6 +127,15 @@ export const StaffCredentialsTab = () => {
           .eq('id', currentProfile.team_id)
           .single();
 
+        console.log('Calling send-clinician-credentials with:', {
+          email: editForm.email,
+          full_name: editForm.full_name,
+          role_title: editForm.role_title,
+          qualifications: editForm.qualifications,
+          team_name: teamData?.name || 'Your Team',
+          team_id: currentProfile.team_id
+        });
+
         const { data: credentialsData, error: credentialsError } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
             email: editForm.email,
@@ -139,13 +148,16 @@ export const StaffCredentialsTab = () => {
           }
         });
 
+        console.log('Edge function response:', { credentialsData, credentialsError });
+
         if (credentialsError) {
           console.error('Edge function error:', credentialsError);
-          // Check if the error response contains the specific error message
-          if (credentialsData?.error) {
-            throw new Error(credentialsData.error);
-          }
           throw credentialsError;
+        }
+
+        if (credentialsData?.error) {
+          console.error('Edge function returned error:', credentialsData.error);
+          throw new Error(credentialsData.error);
         }
         toast.success("Clinician account created and credentials sent");
       }
