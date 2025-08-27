@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,85 +99,80 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
 
-    // Get SendPulse access token first
-    console.log("Attempting to get SendPulse access token...");
-    const tokenResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: Deno.env.get("SENDPULSE_API_USER_ID"),
-        client_secret: Deno.env.get("SENDPULSE_API_SECRET"),
-      }),
-    });
-
+    // Initialize Resend
+    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    
+    console.log("Sending email via Resend...");
+    
     let emailSent = false;
-    if (tokenResponse.ok) {
-      const tokenData = await tokenResponse.json();
-      const accessToken = tokenData.access_token;
-      console.log("Successfully obtained SendPulse access token");
-
-      // Use SendPulse template with ID 40973
-      const templateEmailPayload = {
-        email: {
-          template: {
-            id: 40973,
-            variables: {
-              name: full_name,
-              email: email,
-              password: password,
-              login_url: `${req.headers.get('origin') || Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '')}/auth`
-            }
-          },
-          from: {
-            name: "Force Platform Hub",
-            email: "noreply@forceplatformhub.com",
-          },
-          to: [
-            {
-              name: full_name,
-              email: email,
-            },
-          ],
-          subject: `Welcome to ${team_name} - Your Login Details`
-        }
-      };
-
-      console.log("Sending email with payload:", JSON.stringify(templateEmailPayload, null, 2));
-
-      // Send email via SendPulse template
-      const emailResponse = await fetch("https://api.sendpulse.com/smtp/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(templateEmailPayload),
+    try {
+      const loginUrl = `${req.headers.get('origin') || 'https://bvieqoevqkwdkphubabt.supabase.co'}/auth`;
+      
+      const { data: emailResult, error: emailError } = await resend.emails.send({
+        from: "Force Platform Hub <noreply@forceplatformhub.com>",
+        to: [email],
+        subject: `Welcome to ${team_name} - Your Login Details`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
+              Welcome to ${team_name}
+            </h1>
+            
+            <p style="font-size: 16px; color: #555;">
+              Hello ${full_name},
+            </p>
+            
+            <p style="font-size: 16px; color: #555;">
+              Your practitioner account has been created for ${team_name}. Here are your login details:
+            </p>
+            
+            <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 5px 0;"><strong>Password:</strong> ${password}</p>
+              ${role_title ? `<p style="margin: 5px 0;"><strong>Role:</strong> ${role_title}</p>` : ''}
+            </div>
+            
+            <p style="font-size: 16px; color: #555;">
+              <a href="${loginUrl}" 
+                 style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; 
+                        text-decoration: none; border-radius: 5px; margin: 10px 0;">
+                Login to Your Account
+              </a>
+            </p>
+            
+            <p style="font-size: 14px; color: #777; margin-top: 30px;">
+              Please change your password after your first login for security purposes.
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+            
+            <p style="font-size: 12px; color: #999;">
+              If you have any questions, please contact your team administrator.
+            </p>
+          </div>
+        `,
       });
 
-      if (emailResponse.ok) {
-        const emailResult = await emailResponse.json();
-        console.log("Email sent successfully:", emailResult);
-        emailSent = true;
-      } else {
-        const errorText = await emailResponse.text();
-        console.error("Failed to send email:", errorText);
-        console.error("Email response status:", emailResponse.status);
+      if (emailError) {
+        console.error("Resend email error:", emailError);
         return new Response(
           JSON.stringify({ 
-            error: `Failed to send email: ${errorText}`,
-            emailPayload: templateEmailPayload
+            error: `Failed to send email: ${emailError.message}`,
+            details: emailError
           }),
           { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-    } else {
-      const errorText = await tokenResponse.text();
-      console.error("Failed to get SendPulse token:", errorText);
+
+      console.log("Email sent successfully via Resend:", emailResult);
+      emailSent = true;
+      
+    } catch (error: any) {
+      console.error("Error sending email:", error);
       return new Response(
-        JSON.stringify({ error: `Failed to authenticate with SendPulse: ${errorText}` }),
+        JSON.stringify({ 
+          error: `Failed to send email: ${error.message}`,
+        }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
