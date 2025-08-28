@@ -160,7 +160,7 @@ const handler = async (req: Request): Promise<Response> => {
             },
             from: {
               name: "Force Platform Hub",
-              email: "noreply@forceplatformhub.com"
+              email: "reflexsportstherapyy@gmail.com"
             },
             to: [
               {
