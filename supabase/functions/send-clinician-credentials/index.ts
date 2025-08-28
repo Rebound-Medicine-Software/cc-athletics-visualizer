@@ -105,6 +105,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Checking SendPulse credentials...");
     console.log("SendPulse User ID exists:", !!sendpulseUserId);
     console.log("SendPulse Secret exists:", !!sendpulseSecret);
+    console.log("SendPulse User ID length:", sendpulseUserId?.length || 0);
+    console.log("SendPulse Secret length:", sendpulseSecret?.length || 0);
     
     if (!sendpulseUserId || !sendpulseSecret) {
       console.error("SendPulse credentials are not configured");
