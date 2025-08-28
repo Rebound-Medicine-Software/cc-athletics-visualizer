@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
 
-    // Get SendPulse API credentials
+    // Get SendPulse API credentials from environment
     const sendpulseUserId = Deno.env.get("SENDPULSE_API_USER_ID");
     const sendpulseSecret = Deno.env.get("SENDPULSE_API_SECRET");
     
