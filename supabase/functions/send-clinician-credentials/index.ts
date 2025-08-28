@@ -102,8 +102,13 @@ const handler = async (req: Request): Promise<Response> => {
     const sendpulseUserId = Deno.env.get("SENDPULSE_API_USER_ID");
     const sendpulseSecret = Deno.env.get("SENDPULSE_API_SECRET");
     
+    console.log("Checking SendPulse credentials...");
+    console.log("SendPulse User ID exists:", !!sendpulseUserId);
+    console.log("SendPulse Secret exists:", !!sendpulseSecret);
+    
     if (!sendpulseUserId || !sendpulseSecret) {
       console.error("SendPulse credentials are not configured");
+      console.error("Available env vars:", Object.keys(Deno.env.toObject()));
       return new Response(
         JSON.stringify({ error: "Email service not configured" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
