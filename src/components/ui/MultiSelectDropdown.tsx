@@ -91,7 +91,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             <div
               key={opt.value}
               className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-start cursor-pointer",
+                "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-center cursor-pointer text-center",
                 value.includes(opt.value) && "font-semibold"
               )}
               onMouseDown={(e) => {
@@ -106,7 +106,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               )}>
                 {value.includes(opt.value) && <Check className="h-4 w-4" />}
               </span>
-              <span className="truncate">{opt.label}</span>
+              <span className="truncate text-center flex-1">{opt.label}</span>
             </div>
           ))}
         </div>
