@@ -108,9 +108,6 @@ export const DashboardSidebar = ({
               <LogOut className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
               {!isNavigationCollapsed && <span>Sign Out</span>}
             </Button>
-            {!isNavigationCollapsed && (
-              <p className="text-xs text-gray-500 mt-2 text-center">© 2025 {orgData.name}. All rights reserved.</p>
-            )}
           </div>
         </CardContent>
       </Card>
