@@ -70,7 +70,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           setOpen(prev => !prev);
         }}
         className={cn(
-          "flex items-center justify-between w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
+          "flex items-center justify-center w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
           open && "ring-2 ring-ring",
           labelClassName
         )}
@@ -88,12 +88,12 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           dropdownClassName
         )}>
            {options.map(opt => (
-            <div
-              key={opt.value}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded justify-center cursor-pointer text-center",
-                value.includes(opt.value) && "font-semibold"
-              )}
+             <div
+               key={opt.value}
+               className={cn(
+                 "flex items-center justify-center gap-2 px-3 py-2 text-sm text-popover-foreground hover:bg-accent hover:text-accent-foreground rounded cursor-pointer text-center",
+                 value.includes(opt.value) && "font-semibold"
+               )}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -106,7 +106,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
               )}>
                 {value.includes(opt.value) && <Check className="h-4 w-4" />}
               </span>
-              <span className="truncate text-center flex-1">{opt.label}</span>
+              <span className="truncate">{opt.label}</span>
             </div>
           ))}
         </div>
