@@ -38,7 +38,7 @@ export const DashboardHeader = ({
             )}
             <div className="min-w-0">
               <h1 className="text-2xl font-bold truncate text-primary">
-                {teamBranding?.name || profile?.team_id ? 'Organization' : 'Force Plate'} Testing Report
+                Testing Report
               </h1>
               <p className="text-sm truncate text-muted-foreground">
                 Professional athlete performance analysis
