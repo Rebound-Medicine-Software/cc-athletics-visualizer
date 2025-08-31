@@ -40,7 +40,7 @@ export const DashboardSidebar = ({
         ${isNavigationCollapsed ? "w-16" : "w-64"}
         sticky top-8 self-start z-40
       `}>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {/* Sidebar Header */}
         <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
           <CardContent className="p-4">
