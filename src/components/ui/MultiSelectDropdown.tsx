@@ -70,7 +70,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
           setOpen(prev => !prev);
         }}
         className={cn(
-          "flex items-center justify-between w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
+          "flex items-center justify-center w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
           open && "ring-2 ring-ring",
           labelClassName
         )}
