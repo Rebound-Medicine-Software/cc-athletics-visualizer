@@ -131,7 +131,7 @@ export const HighlightsSection = ({
   
   return <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
       <Card 
-        className="mb-6 border-2"
+        className="mb-6 mt-4 border-2"
         style={{
           backgroundColor: branding?.primary_color ? `${branding.primary_color}15` : 'hsl(var(--primary) / 0.08)',
           borderColor: branding?.primary_color ? `${branding.primary_color}50` : 'hsl(var(--primary) / 0.3)'
