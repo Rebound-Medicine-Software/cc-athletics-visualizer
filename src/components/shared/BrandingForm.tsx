@@ -105,6 +105,18 @@ export const BrandingForm: React.FC<BrandingFormProps> = ({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-4">
         <div>
+          <Label htmlFor="organisation-name">Organisation Name</Label>
+          <Input
+            id="organisation-name"
+            type="text"
+            value={brandingForm.name}
+            onChange={(e) => setBrandingForm(prev => ({ ...prev, name: e.target.value }))}
+            placeholder="Enter your organisation name"
+            className="mt-1"
+          />
+        </div>
+
+        <div>
           <Label htmlFor="logo-upload">Organisation Logo</Label>
           <Input
             id="logo-upload"
