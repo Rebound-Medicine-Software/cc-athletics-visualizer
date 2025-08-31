@@ -38,7 +38,7 @@ export const DashboardSidebar = ({
       className={`
         transition-all duration-300
         ${isNavigationCollapsed ? "w-16" : "w-64"}
-        fixed top-1/2 left-4 transform -translate-y-1/2 z-40
+        sticky top-8 self-start z-40 mt-4
       `}>
       <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
         <CardContent className="p-4">
