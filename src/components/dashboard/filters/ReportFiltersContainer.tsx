@@ -117,7 +117,7 @@ export function ReportFiltersContainer({
                 onTestSelect(value);
               }}
             >
-              <SelectTrigger className="bg-white">
+              <SelectTrigger className="bg-white text-center">
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -151,7 +151,7 @@ export function ReportFiltersContainer({
                   }));
                 }}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white text-center">
                   <SelectValue placeholder="Select Sex" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
@@ -215,7 +215,7 @@ export function ReportFiltersContainer({
               }}
               disabled={filters.selectedAthletes.length === 0}
             >
-              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"} text-center`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
