@@ -7,11 +7,15 @@ import { useAuth } from "@/contexts/AuthContext";
 interface DashboardHeaderProps {
   handleRefresh: () => void;
   handleResetFilters: () => void;
+  activeSection: string;
+  navigationItems: Array<{ id: string; label: string; icon: any; description: string }>;
 }
 
 export const DashboardHeader = ({
   handleRefresh,
   handleResetFilters,
+  activeSection,
+  navigationItems,
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { teamBranding, profile } = useAuth();
@@ -38,7 +42,7 @@ export const DashboardHeader = ({
             )}
             <div className="min-w-0">
               <h1 className="text-2xl font-bold truncate text-primary">
-                Testing Report
+                {navigationItems.find(item => item.id === activeSection)?.label || "Dashboard"} Testing Report
               </h1>
               <p className="text-sm truncate text-muted-foreground">
                 Professional athlete performance analysis

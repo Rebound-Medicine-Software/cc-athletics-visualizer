@@ -126,6 +126,8 @@ const Dashboard = () => {
       <DashboardHeader
         handleRefresh={handleRefresh}
         handleResetFilters={handleResetFilters}
+        activeSection={activeSection}
+        navigationItems={navigationItems}
       />
       <div className="w-full max-w-7xl mx-auto">
         <div className="flex gap-6">
