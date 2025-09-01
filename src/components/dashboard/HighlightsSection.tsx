@@ -222,7 +222,7 @@ export const HighlightsSection = ({
                    handleSecondTestSelect(value);
                  }}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white text-center">
                   <SelectValue placeholder="Select Test" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
@@ -241,7 +241,7 @@ export const HighlightsSection = ({
             <div className="flex flex-col">
               <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
               {!secondFilters.testNames ? (
-                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+                <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                   Select Athlete
                 </div>
               ) : (
@@ -254,7 +254,7 @@ export const HighlightsSection = ({
                     }));
                   }}
                 >
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger className="bg-white text-center">
                     <SelectValue placeholder="Select Athlete" />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50">
