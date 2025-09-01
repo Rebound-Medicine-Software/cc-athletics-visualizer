@@ -117,7 +117,7 @@ export function ReportFiltersContainer({
                 onTestSelect(value);
               }}
             >
-              <SelectTrigger className="bg-white">
+              <SelectTrigger className="bg-white text-center">
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -136,7 +136,7 @@ export function ReportFiltersContainer({
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
             {!filters.testNames ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Sex
               </div>
             ) : (
@@ -151,7 +151,7 @@ export function ReportFiltersContainer({
                   }));
                 }}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white text-center">
                   <SelectValue placeholder="Select Sex" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
@@ -175,7 +175,7 @@ export function ReportFiltersContainer({
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
             {!filters.sex ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Athletes
               </div>
             ) : (
@@ -215,7 +215,7 @@ export function ReportFiltersContainer({
               }}
               disabled={filters.selectedAthletes.length === 0}
             >
-              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${filters.selectedAthletes.length === 0 ? "bg-gray-100 opacity-60" : "bg-white"} text-center`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
