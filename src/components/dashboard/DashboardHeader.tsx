@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw } from "lucide-react";
@@ -42,7 +43,7 @@ export const DashboardHeader = ({
             )}
             <div className="min-w-0">
               <h1 className="text-2xl font-bold truncate text-primary">
-                {navigationItems.find(item => item.id === activeSection)?.label || "Dashboard"} Testing Report
+                {teamBranding?.name || "Organization"} Testing Report
               </h1>
               <p className="text-sm truncate text-muted-foreground">
                 Professional athlete performance analysis
