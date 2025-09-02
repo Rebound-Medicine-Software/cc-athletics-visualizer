@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCheck, Edit, Save, X, Search, Upload } from "lucide-react";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -73,6 +73,67 @@ export const AthleteCredentialsTab = () => {
     });
   };
 
+  const generateSafePassword = () => {
+    const adjectives = ["Swift", "Strong", "Bright", "Noble", "Quick", "Bold", "Smart", "Great"];
+    const nouns = ["Tiger", "Eagle", "Lion", "Wolf", "Bear", "Hawk", "Fox", "Shark"];
+    const numbers = Math.floor(Math.random() * 99) + 10;
+    const symbols = ["!", "@", "#", "$", "%"];
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    
+    return `${adjective}${noun}${numbers}${symbol}`;
+  };
+
+  const createAthleteAccount = async (athlete: Athlete, email: string, password: string) => {
+    try {
+      // Get current user's profile to identify the organization
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data: organizationProfile } = await supabase
+        .from('profiles')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!organizationProfile?.team_id) {
+        throw new Error("Organization team not found");
+      }
+
+      // Get team information
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', organizationProfile.team_id)
+        .single();
+
+      // Send account creation request to edge function
+      const { data, error } = await supabase.functions.invoke('send-client-credentials', {
+        body: {
+          email: email,
+          firstName: athlete.name.split(' ')[0] || athlete.name,
+          lastName: athlete.name.split(' ').slice(1).join(' ') || '',
+          password: password,
+          organisationName: team?.name || 'Your Organization',
+          athleteType: 'Athlete'
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error creating athlete account:', error);
+      throw error;
+    }
+  };
+
   const handleSave = async () => {
     if (!editingId) return;
 
@@ -131,6 +192,21 @@ export const AthleteCredentialsTab = () => {
         updateData.email = editForm.email;
       }
 
+      // Handle password and account creation
+      if (editForm.password && editForm.email) {
+        try {
+          await createAthleteAccount(athlete, editForm.email, editForm.password);
+          toast.success(`Account created and credentials sent to ${editForm.email}`);
+        } catch (accountError: any) {
+          console.error('Error creating account:', accountError);
+          toast.error("Failed to create athlete account: " + (accountError.message || "Unknown error"));
+          return;
+        }
+      } else if (editForm.password && !editForm.email) {
+        toast.error("Email is required to create an account");
+        return;
+      }
+
       // Update athlete record if there are changes
       if (Object.keys(updateData).length > 0) {
         const { error: updateError } = await supabase
@@ -147,14 +223,7 @@ export const AthleteCredentialsTab = () => {
         setAthletes(prev => prev.map(a => 
           a.id === editingId ? { ...a, ...updateData } : a
         ));
-      }
-
-      // Note: Password updates would require additional authentication setup
-      if (editForm.password) {
-        toast.info("Password updates require additional authentication setup");
-      }
-      
-      if (Object.keys(updateData).length > 0) {
+        
         toast.success("Athlete information updated successfully");
       }
       
@@ -199,8 +268,8 @@ export const AthleteCredentialsTab = () => {
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 text-sm">
-              <strong>Note:</strong> This section allows editing athlete photos and managing athlete login credentials. 
-              Password management requires additional security measures.
+              <strong>Create Athlete Accounts:</strong> Add email and password to create a client account. 
+              Athletes will receive login credentials via email and can access the patient portal at /auth → Athlete/Patient.
             </p>
           </div>
 
@@ -293,23 +362,37 @@ export const AthleteCredentialsTab = () => {
                   <TableCell>{athlete.height_cm || 'N/A'}</TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
-                      <div className="space-y-2">
-                        <Input
-                          type="password"
-                          placeholder="New password"
-                          value={editForm.password}
-                          onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                          className="text-xs"
-                        />
-                        <div className="flex gap-1">
-                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button onClick={handleCancel} size="sm" variant="outline">
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      </div>
+                       <div className="space-y-2">
+                         <div className="flex gap-1">
+                           <Input
+                             type="password"
+                             placeholder="New password"
+                             value={editForm.password}
+                             onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                             className="text-xs flex-1"
+                           />
+                           <Button 
+                             onClick={() => setEditForm({ ...editForm, password: generateSafePassword() })}
+                             size="sm" 
+                             variant="outline"
+                             className="px-2"
+                             title="Generate safe password"
+                           >
+                             <RefreshCw className="w-3 h-3" />
+                           </Button>
+                         </div>
+                         <div className="flex gap-1">
+                           <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
+                             <Save className="w-3 h-3" />
+                             <span className="ml-1 text-xs">
+                               {editForm.password ? "Create Account" : "Save"}
+                             </span>
+                           </Button>
+                           <Button onClick={handleCancel} size="sm" variant="outline">
+                             <X className="w-3 h-3" />
+                           </Button>
+                         </div>
+                       </div>
                     ) : (
                       <Button 
                         onClick={() => handleEdit(athlete)} 
