@@ -148,13 +148,72 @@ export const AthleteCredentialsTab = () => {
     }
   };
 
-  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && canEditAvatar) {
+    if (file && canEditAvatar && editingId) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const dataUrl = event.target?.result as string;
         setEditForm(prev => ({ ...prev, avatar_url: dataUrl }));
+        
+        // Auto-save the avatar immediately
+        try {
+          const athlete = athletes.find(a => a.id === editingId);
+          if (!athlete) return;
+
+          // Convert data URL to blob
+          const response = await fetch(dataUrl);
+          const blob = await response.blob();
+          
+          // Create a unique filename
+          const fileName = `${athlete.id}-${Date.now()}.jpg`;
+          
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('athlete-avatars')
+            .upload(fileName, blob, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            toast.error("Failed to upload avatar image");
+            return;
+          }
+
+          // Get the public URL
+          const { data: urlData } = supabase.storage
+            .from('athlete-avatars')
+            .getPublicUrl(fileName);
+          
+          const avatarUrl = urlData.publicUrl;
+
+          // Update athlete record with new avatar URL
+          const { error: updateError } = await supabase
+            .from('athletes')
+            .update({ avatar_url: avatarUrl })
+            .eq('id', editingId);
+
+          if (updateError) {
+            console.error('Database update error:', updateError);
+            toast.error("Failed to save avatar");
+            return;
+          }
+
+          // Update local state
+          setAthletes(prev => prev.map(a => 
+            a.id === editingId ? { ...a, avatar_url: avatarUrl } : a
+          ));
+
+          // Update form state with the permanent URL
+          setEditForm(prev => ({ ...prev, avatar_url: avatarUrl }));
+
+          toast.success("Avatar uploaded and saved successfully");
+        } catch (uploadError) {
+          console.error('Failed to upload avatar:', uploadError);
+          toast.error("Failed to upload avatar image");
+        }
       };
       reader.readAsDataURL(file);
     }
