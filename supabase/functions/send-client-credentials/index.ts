@@ -21,10 +21,15 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('Function started, parsing request body...');
+    
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
 
     const { 
       email, 
@@ -33,22 +38,25 @@ const handler = async (req: Request): Promise<Response> => {
       password, 
       organisationName,
       athleteType 
-    }: ClientCredentials = await req.json();
+    }: ClientCredentials = requestBody;
 
     console.log(`Creating client account for: ${email}`);
 
     // Check if user already exists
+    console.log('Checking for existing users...');
     const { data: existingUsers, error: checkError } = await supabase.auth.admin.listUsers();
     
     if (checkError) {
       console.error("Error checking existing users:", checkError);
       return new Response(
-        JSON.stringify({ error: "Failed to check existing users" }),
+        JSON.stringify({ error: "Failed to check existing users: " + checkError.message }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
+    console.log('Found existing users:', existingUsers.users.length);
     const existingUser = existingUsers.users.find(user => user.email === email);
+    console.log('Existing user found:', !!existingUser);
     
     if (existingUser) {
       console.log(`User already exists with email: ${email}`);
@@ -62,13 +70,14 @@ const handler = async (req: Request): Promise<Response> => {
       if (updateError) {
         console.error("Error updating user password:", updateError);
         return new Response(
-          JSON.stringify({ error: "Failed to update user password" }),
+          JSON.stringify({ error: "Failed to update user password: " + updateError.message }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
 
       console.log(`Password updated for existing user: ${email}`);
     } else {
+      console.log('Creating new user account...');
       // Create the user account
       const { data: userData, error: userError } = await supabase.auth.admin.createUser({
         email,
@@ -85,13 +94,16 @@ const handler = async (req: Request): Promise<Response> => {
       if (userError) {
         console.error("Error creating user:", userError);
         return new Response(
-          JSON.stringify({ error: userError.message }),
+          JSON.stringify({ error: "Failed to create user: " + userError.message }),
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
+
+      console.log('New user created successfully');
     }
 
     // Update profile relationship for existing or new user
+    console.log('Updating profile relationships...');
     const authHeader = req.headers.get('authorization');
     if (authHeader) {
       const token = authHeader.replace('Bearer ', '');
@@ -166,6 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     };
 
+    console.log('Sending email...');
     // Send email via SendPulse
     const sendPulseResponse = await fetch('https://api.sendpulse.com/addressbooks/1/emails', {
       method: 'POST',
@@ -177,10 +190,14 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (!sendPulseResponse.ok) {
-      console.error('SendPulse API error:', await sendPulseResponse.text());
+      const errorText = await sendPulseResponse.text();
+      console.error('SendPulse API error:', errorText);
       // Don't fail the entire request if email fails
+    } else {
+      console.log('Email sent successfully');
     }
 
+    console.log('Function completed successfully');
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -194,9 +211,10 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("Error in send-client-credentials function:", error);
+    console.error("Unexpected error in send-client-credentials function:", error);
+    console.error("Error stack:", error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "Unexpected error: " + error.message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders }

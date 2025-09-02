@@ -123,7 +123,10 @@ export const AthleteCredentialsTab = () => {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
+        console.error('Edge function error details:', error);
         throw error;
       }
 
