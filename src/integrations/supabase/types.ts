@@ -17,6 +17,7 @@ export type Database = {
       athletes: {
         Row: {
           age: number | null
+          avatar_url: string | null
           cc_athlete_id: string
           cc_team_id: string | null
           created_at: string | null
@@ -30,6 +31,7 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          avatar_url?: string | null
           cc_athlete_id: string
           cc_team_id?: string | null
           created_at?: string | null
@@ -43,6 +45,7 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          avatar_url?: string | null
           cc_athlete_id?: string
           cc_team_id?: string | null
           created_at?: string | null

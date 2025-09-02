@@ -19,6 +19,7 @@ interface Athlete {
   gender?: string;
   weight_kg?: number;
   height_cm?: number;
+  avatar_url?: string;
   created_at: string;
 }
 
@@ -73,9 +74,71 @@ export const AthleteCredentialsTab = () => {
     if (!editingId) return;
 
     try {
-      // In a real implementation, this would update athlete credentials
-      // For now, we'll show a placeholder message
-      toast.info("Athlete credential updates require additional authentication setup");
+      const athlete = athletes.find(a => a.id === editingId);
+      if (!athlete) return;
+
+      let avatarUrl = editForm.avatar_url;
+
+      // If there's a new avatar file (data URL), upload it to storage
+      if (editForm.avatar_url && editForm.avatar_url.startsWith('data:') && canEditAvatar) {
+        try {
+          // Convert data URL to blob
+          const response = await fetch(editForm.avatar_url);
+          const blob = await response.blob();
+          
+          // Create a unique filename
+          const fileName = `${athlete.id}-${Date.now()}.jpg`;
+          
+          // Upload to Supabase storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('athlete-avatars')
+            .upload(fileName, blob, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw uploadError;
+          }
+
+          // Get the public URL
+          const { data: urlData } = supabase.storage
+            .from('athlete-avatars')
+            .getPublicUrl(fileName);
+          
+          avatarUrl = urlData.publicUrl;
+        } catch (uploadError) {
+          console.error('Failed to upload avatar:', uploadError);
+          toast.error("Failed to upload avatar image");
+          return;
+        }
+      }
+
+      // Update athlete record with new avatar URL
+      if (avatarUrl && avatarUrl !== athlete.avatar_url) {
+        const { error: updateError } = await supabase
+          .from('athletes')
+          .update({ avatar_url: avatarUrl })
+          .eq('id', editingId);
+
+        if (updateError) {
+          console.error('Database update error:', updateError);
+          throw updateError;
+        }
+
+        // Update local state
+        setAthletes(prev => prev.map(a => 
+          a.id === editingId ? { ...a, avatar_url: avatarUrl } : a
+        ));
+      }
+
+      // Note: Password updates would require additional authentication setup
+      if (editForm.password) {
+        toast.info("Password updates require additional authentication setup");
+      } else {
+        toast.success("Athlete avatar updated successfully");
+      }
       
       setEditingId(null);
       setEditForm({ avatar_url: '', password: '' });
@@ -183,6 +246,7 @@ export const AthleteCredentialsTab = () => {
                       </div>
                     ) : (
                       <Avatar>
+                        <AvatarImage src={athlete.avatar_url} />
                         <AvatarFallback>
                           {athlete.name.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
