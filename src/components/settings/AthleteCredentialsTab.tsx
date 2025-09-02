@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCheck, Edit, Save, X, Search } from "lucide-react";
+import { UserCheck, Edit, Save, X, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Athlete {
   id: string;
@@ -22,6 +23,7 @@ interface Athlete {
 }
 
 export const AthleteCredentialsTab = () => {
+  const { profile } = useAuth();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +32,8 @@ export const AthleteCredentialsTab = () => {
     avatar_url: '',
     password: ''
   });
+  
+  const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
   useEffect(() => {
     fetchAthletes();
@@ -78,6 +82,18 @@ export const AthleteCredentialsTab = () => {
     } catch (error) {
       console.error('Error updating athlete:', error);
       toast.error("Failed to update athlete credentials");
+    }
+  };
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && canEditAvatar) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setEditForm(prev => ({ ...prev, avatar_url: dataUrl }));
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -142,12 +158,28 @@ export const AthleteCredentialsTab = () => {
                             {athlete.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <Input
-                          placeholder="Avatar URL"
-                          value={editForm.avatar_url}
-                          onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
-                          className="text-xs"
-                        />
+                        {canEditAvatar ? (
+                          <div className="relative">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleAvatarFileChange}
+                              className="hidden"
+                              id={`avatar-upload-${athlete.id}`}
+                            />
+                            <Label 
+                              htmlFor={`avatar-upload-${athlete.id}`}
+                              className="flex items-center justify-center gap-1 px-2 py-1 text-xs cursor-pointer bg-gray-100 hover:bg-gray-200 border rounded-md transition-colors"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload
+                            </Label>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 text-center">
+                            Permission required
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <Avatar>
