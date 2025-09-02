@@ -357,7 +357,7 @@ export const Filters = ({
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
             {!athleteEnabled ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Athletes
               </div>
             ) : (
@@ -413,7 +413,7 @@ export const Filters = ({
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Region</label>
             {!regionEnabled ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Regions
               </div>
             ) : (
@@ -432,7 +432,7 @@ export const Filters = ({
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Address</label>
             {!addressEnabled ? (
-              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center">
+              <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Addresses
               </div>
             ) : (
