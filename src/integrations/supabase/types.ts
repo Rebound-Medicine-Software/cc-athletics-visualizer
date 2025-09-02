@@ -21,6 +21,7 @@ export type Database = {
           cc_athlete_id: string
           cc_team_id: string | null
           created_at: string | null
+          email: string | null
           gender: string | null
           height_cm: number | null
           id: string
@@ -35,6 +36,7 @@ export type Database = {
           cc_athlete_id: string
           cc_team_id?: string | null
           created_at?: string | null
+          email?: string | null
           gender?: string | null
           height_cm?: number | null
           id?: string
@@ -49,6 +51,7 @@ export type Database = {
           cc_athlete_id?: string
           cc_team_id?: string | null
           created_at?: string | null
+          email?: string | null
           gender?: string | null
           height_cm?: number | null
           id?: string

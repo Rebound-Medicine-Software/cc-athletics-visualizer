@@ -20,6 +20,7 @@ interface Athlete {
   weight_kg?: number;
   height_cm?: number;
   avatar_url?: string;
+  email?: string;
   created_at: string;
 }
 
@@ -31,7 +32,8 @@ export const AthleteCredentialsTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     avatar_url: '',
-    password: ''
+    password: '',
+    email: ''
   });
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
@@ -66,7 +68,8 @@ export const AthleteCredentialsTab = () => {
     setEditingId(athlete.id);
     setEditForm({
       avatar_url: '',
-      password: ''
+      password: '',
+      email: athlete.email || ''
     });
   };
 
@@ -115,11 +118,24 @@ export const AthleteCredentialsTab = () => {
         }
       }
 
-      // Update athlete record with new avatar URL
+      // Prepare update object
+      const updateData: any = {};
+      
+      // Add avatar URL if changed
       if (avatarUrl && avatarUrl !== athlete.avatar_url) {
+        updateData.avatar_url = avatarUrl;
+      }
+      
+      // Add email if changed
+      if (editForm.email !== athlete.email) {
+        updateData.email = editForm.email;
+      }
+
+      // Update athlete record if there are changes
+      if (Object.keys(updateData).length > 0) {
         const { error: updateError } = await supabase
           .from('athletes')
-          .update({ avatar_url: avatarUrl })
+          .update(updateData)
           .eq('id', editingId);
 
         if (updateError) {
@@ -129,19 +145,21 @@ export const AthleteCredentialsTab = () => {
 
         // Update local state
         setAthletes(prev => prev.map(a => 
-          a.id === editingId ? { ...a, avatar_url: avatarUrl } : a
+          a.id === editingId ? { ...a, ...updateData } : a
         ));
       }
 
       // Note: Password updates would require additional authentication setup
       if (editForm.password) {
         toast.info("Password updates require additional authentication setup");
-      } else {
-        toast.success("Athlete avatar updated successfully");
+      }
+      
+      if (Object.keys(updateData).length > 0) {
+        toast.success("Athlete information updated successfully");
       }
       
       setEditingId(null);
-      setEditForm({ avatar_url: '', password: '' });
+      setEditForm({ avatar_url: '', password: '', email: '' });
     } catch (error) {
       console.error('Error updating athlete:', error);
       toast.error("Failed to update athlete credentials");
@@ -162,7 +180,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ avatar_url: '', password: '' });
+    setEditForm({ avatar_url: '', password: '', email: '' });
   };
 
   if (loading) {
@@ -202,6 +220,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Athlete ID</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Weight (kg)</TableHead>
@@ -255,6 +274,19 @@ export const AthleteCredentialsTab = () => {
                   </TableCell>
                   <TableCell className="font-medium">{athlete.name}</TableCell>
                   <TableCell>{athlete.cc_athlete_id}</TableCell>
+                  <TableCell>
+                    {editingId === athlete.id ? (
+                      <Input
+                        type="email"
+                        placeholder="Email address"
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        className="text-xs"
+                      />
+                    ) : (
+                      athlete.email || 'N/A'
+                    )}
+                  </TableCell>
                   <TableCell>{athlete.age || 'N/A'}</TableCell>
                   <TableCell>{athlete.gender || 'N/A'}</TableCell>
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
