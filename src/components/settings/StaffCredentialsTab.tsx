@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Edit, Save, X, Plus, Trash2 } from "lucide-react";
+import { Users, Edit, Save, X, Plus, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface StaffUser {
   id: string;
@@ -23,6 +24,7 @@ interface StaffUser {
 }
 
 export const StaffCredentialsTab = () => {
+  const { profile } = useAuth();
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -35,6 +37,8 @@ export const StaffCredentialsTab = () => {
     qualifications: '',
     avatar_url: ''
   });
+  
+  const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
   useEffect(() => {
     fetchUsers();
@@ -96,6 +100,18 @@ export const StaffCredentialsTab = () => {
     });
   };
 
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && canEditAvatar) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setEditForm(prev => ({ ...prev, avatar_url: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     if (!editForm.email.trim()) {
       toast.error("Email is required");
@@ -105,9 +121,76 @@ export const StaffCredentialsTab = () => {
     try {
       if (editingId) {
         // Update existing user
-        toast.info("User update functionality requires admin implementation");
+        const user = users.find(u => u.id === editingId);
+        if (!user) return;
+
+        let avatarUrl = editForm.avatar_url;
+
+        // If there's a new avatar file (data URL), upload it to storage
+        if (editForm.avatar_url && editForm.avatar_url.startsWith('data:') && canEditAvatar) {
+          try {
+            // Convert data URL to blob
+            const response = await fetch(editForm.avatar_url);
+            const blob = await response.blob();
+            
+            // Create a unique filename
+            const fileName = `${user.id}-${Date.now()}.jpg`;
+            
+            // Upload to Supabase storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('staff-avatars')
+              .upload(fileName, blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (uploadError) {
+              console.error('Upload error:', uploadError);
+              throw uploadError;
+            }
+
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('staff-avatars')
+              .getPublicUrl(fileName);
+            
+            avatarUrl = urlData.publicUrl;
+          } catch (uploadError) {
+            console.error('Failed to upload avatar:', uploadError);
+            toast.error("Failed to upload avatar image");
+            return;
+          }
+        }
+
+        // Update staff member record with new avatar URL and other details
+        const updateData: any = {
+          full_name: editForm.full_name,
+          role_title: editForm.role_title,
+          qualifications: editForm.qualifications
+        };
+
+        if (avatarUrl && avatarUrl !== user.avatar_url) {
+          updateData.avatar_url = avatarUrl;
+        }
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', editingId);
+
+        if (updateError) {
+          console.error('Database update error:', updateError);
+          throw updateError;
+        }
+
+        // Update local state
+        setUsers(prev => prev.map(u => 
+          u.id === editingId ? { ...u, ...updateData } : u
+        ));
+
+        toast.success("Staff member updated successfully");
       } else {
-        // Create new user via edge function
+        // Create new user via edge function - existing logic remains the same
         const password = generateStrongPassword();
         
         const { data: { session } } = await supabase.auth.getSession();
@@ -127,15 +210,6 @@ export const StaffCredentialsTab = () => {
           .eq('id', currentProfile.team_id)
           .single();
 
-        console.log('Calling send-clinician-credentials with:', {
-          email: editForm.email,
-          full_name: editForm.full_name,
-          role_title: editForm.role_title,
-          qualifications: editForm.qualifications,
-          team_name: teamData?.name || 'Your Team',
-          team_id: currentProfile.team_id
-        });
-
         const { data: credentialsData, error: credentialsError } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
             email: editForm.email,
@@ -147,8 +221,6 @@ export const StaffCredentialsTab = () => {
             team_id: currentProfile.team_id
           }
         });
-
-        console.log('Edge function response:', { credentialsData, credentialsError });
 
         if (credentialsError) {
           console.error('Edge function error:', credentialsError);
@@ -276,13 +348,37 @@ export const StaffCredentialsTab = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="add-avatar">Avatar URL</Label>
-                  <Input
-                    id="add-avatar"
-                    value={editForm.avatar_url}
-                    onChange={(e) => setEditForm({ ...editForm, avatar_url: e.target.value })}
-                    placeholder="Enter avatar image URL"
-                  />
+                  <Label htmlFor="add-avatar">Avatar</Label>
+                  {canEditAvatar ? (
+                    <div className="space-y-2">
+                      {editForm.avatar_url && (
+                        <Avatar>
+                          <AvatarImage src={editForm.avatar_url} />
+                          <AvatarFallback>Preview</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className="relative">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarFileChange}
+                          className="hidden"
+                          id="add-avatar-upload"
+                        />
+                        <Label 
+                          htmlFor="add-avatar-upload"
+                          className="flex items-center justify-center gap-2 px-3 py-2 text-sm cursor-pointer bg-gray-100 hover:bg-gray-200 border rounded-md transition-colors"
+                        >
+                          <Upload className="w-4 h-4" />
+                          Upload Avatar
+                        </Label>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 border rounded-md p-3 bg-gray-50">
+                      Permission required to upload avatars
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
@@ -320,38 +416,126 @@ export const StaffCredentialsTab = () => {
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <Avatar>
-                        <AvatarImage src={user.avatar_url} />
-                        <AvatarFallback>
-                          {user.full_name?.substring(0, 2)?.toUpperCase() || 
-                           user.email.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      {editingId === user.id ? (
+                        <div className="space-y-2">
+                          <Avatar>
+                            <AvatarImage src={editForm.avatar_url} />
+                            <AvatarFallback>
+                              {user.full_name?.substring(0, 2)?.toUpperCase() || 
+                               user.email.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          {canEditAvatar ? (
+                            <div className="relative">
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleAvatarFileChange}
+                                className="hidden"
+                                id={`avatar-upload-${user.id}`}
+                              />
+                              <Label 
+                                htmlFor={`avatar-upload-${user.id}`}
+                                className="flex items-center justify-center gap-1 px-2 py-1 text-xs cursor-pointer bg-gray-100 hover:bg-gray-200 border rounded-md transition-colors"
+                              >
+                                <Upload className="w-3 h-3" />
+                                Upload
+                              </Label>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500 text-center">
+                              Permission required
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <Avatar>
+                          <AvatarImage src={user.avatar_url} />
+                          <AvatarFallback>
+                            {user.full_name?.substring(0, 2)?.toUpperCase() || 
+                             user.email.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.full_name || 'Not set'}</TableCell>
-                    <TableCell>{user.role_title || 'Not set'}</TableCell>
-                    <TableCell>{user.qualifications || 'Not set'}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          onClick={() => handleEdit(user)} 
-                          size="sm" 
-                          variant="outline"
-                          disabled={isAdding || editingId !== null}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button 
-                          onClick={() => handleDelete(user.id)} 
-                          size="sm" 
-                          variant="outline"
-                          className="text-red-600 hover:bg-red-50"
-                          disabled={isAdding || editingId !== null}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      {editingId === user.id ? (
+                        <Input
+                          value={editForm.email}
+                          onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                          className="text-sm"
+                        />
+                      ) : (
+                        user.email
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === user.id ? (
+                        <Input
+                          value={editForm.full_name}
+                          onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                          placeholder="Full name"
+                          className="text-sm"
+                        />
+                      ) : (
+                        user.full_name || 'Not set'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === user.id ? (
+                        <Input
+                          value={editForm.role_title}
+                          onChange={(e) => setEditForm({ ...editForm, role_title: e.target.value })}
+                          placeholder="Role title"
+                          className="text-sm"
+                        />
+                      ) : (
+                        user.role_title || 'Not set'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === user.id ? (
+                        <Input
+                          value={editForm.qualifications}
+                          onChange={(e) => setEditForm({ ...editForm, qualifications: e.target.value })}
+                          placeholder="Qualifications"
+                          className="text-sm"
+                        />
+                      ) : (
+                        user.qualifications || 'Not set'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {editingId === user.id ? (
+                        <div className="flex gap-1">
+                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
+                            <Save className="w-3 h-3" />
+                          </Button>
+                          <Button onClick={handleCancel} size="sm" variant="outline">
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => handleEdit(user)} 
+                            size="sm" 
+                            variant="outline"
+                            disabled={isAdding || editingId !== null}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            onClick={() => handleDelete(user.id)} 
+                            size="sm" 
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50"
+                            disabled={isAdding || editingId !== null}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
