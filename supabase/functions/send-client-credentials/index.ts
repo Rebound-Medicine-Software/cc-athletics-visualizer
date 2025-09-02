@@ -37,49 +37,90 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Creating client account for: ${email}`);
 
-    // Create the user account
-    const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-        role: 'client',
-        athlete_type: athleteType
-      }
-    });
-
-    if (userError) {
-      console.error("Error creating user:", userError);
+    // Check if user already exists
+    const { data: existingUsers, error: checkError } = await supabase.auth.admin.listUsers();
+    
+    if (checkError) {
+      console.error("Error checking existing users:", checkError);
       return new Response(
-        JSON.stringify({ error: userError.message }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: "Failed to check existing users" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // After user is created, update the profile with organization relationship
-    if (userData.user) {
-      // Get the organization profile that's creating this client
-      const authHeader = req.headers.get('authorization');
-      if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
-        
-        if (requestingUser) {
-          const { data: orgProfile } = await supabase
+    const existingUser = existingUsers.users.find(user => user.email === email);
+    
+    if (existingUser) {
+      console.log(`User already exists with email: ${email}`);
+      
+      // Update password for existing user
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUser.id,
+        { password }
+      );
+
+      if (updateError) {
+        console.error("Error updating user password:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to update user password" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      console.log(`Password updated for existing user: ${email}`);
+    } else {
+      // Create the user account
+      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+          role: 'client',
+          athlete_type: athleteType
+        }
+      });
+
+      if (userError) {
+        console.error("Error creating user:", userError);
+        return new Response(
+          JSON.stringify({ error: userError.message }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // Update profile relationship for existing or new user
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
+      
+      if (requestingUser) {
+        const { data: orgProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', requestingUser.id)
+          .eq('role', 'organisation')
+          .single();
+          
+        if (orgProfile && existingUser) {
+          // Update the existing profile with the organization relationship
+          await supabase
             .from('profiles')
-            .select('id')
-            .eq('user_id', requestingUser.id)
-            .eq('role', 'organisation')
-            .single();
-            
-          if (orgProfile) {
-            // Update the newly created profile with the organization relationship
+            .update({ created_by: orgProfile.id })
+            .eq('user_id', existingUser.id);
+        } else if (orgProfile && !existingUser) {
+          // For new users, the profile is created by the trigger
+          // We need to get the new user and update their profile
+          const { data: newUsers } = await supabase.auth.admin.listUsers();
+          const newUser = newUsers.users.find(user => user.email === email);
+          if (newUser) {
             await supabase
               .from('profiles')
               .update({ created_by: orgProfile.id })
-              .eq('user_id', userData.user.id);
+              .eq('user_id', newUser.id);
           }
         }
       }
@@ -103,7 +144,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Hello ${firstName},</p>
             
-            <p>Your athlete/patient account has been created. Here are your login credentials:</p>
+            <p>Your athlete/patient account has been ${existingUser ? 'updated' : 'created'}. Here are your login credentials:</p>
             
             <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Email:</strong> ${email}</p>
@@ -113,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Please log in at: <a href="${req.headers.get('origin')}/auth">Access Athlete/Patient Portal</a></p>
             
-            <p><strong>Important:</strong> Please change your password after your first login for security.</p>
+            <p><strong>Important:</strong> ${existingUser ? 'Your password has been updated.' : 'Please change your password after your first login for security.'}</p>
             
             <p>You can now access your performance data, book appointments, and track your progress.</p>
             
@@ -143,8 +184,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Client account created and credentials sent",
-        user: userData.user
+        message: existingUser ? "Client account updated and credentials sent" : "Client account created and credentials sent",
+        user: existingUser || userData?.user
       }),
       {
         status: 200,
