@@ -155,6 +155,17 @@ const handler = async (req: Request): Promise<Response> => {
       );
 
       console.log('Sending email via NotificationAPI...');
+      console.log('Email parameters:', {
+        type: 'sign_up_email_sent_to_client',
+        to: { id: email, email: email },
+        parameters: {
+          "Athlete": `${firstName} ${lastName}`,
+          "Organisation": organisationName,
+          "Email": email,
+          "Password": password
+        }
+      });
+
       const notificationResponse = await notificationapi.send({
         type: 'sign_up_email_sent_to_client',
         to: {
@@ -164,18 +175,24 @@ const handler = async (req: Request): Promise<Response> => {
         parameters: {
           "Athlete": `${firstName} ${lastName}`,
           "Organisation": organisationName,
-          "Client": `${firstName} ${lastName}`,
           "Email": email,
-          "Address": req.headers.get('origin') || "",
           "Password": password
         }
       });
 
-      console.log('NotificationAPI response:', notificationResponse.data);
-      console.log('Email sent successfully via NotificationAPI');
+      console.log('NotificationAPI response:', JSON.stringify(notificationResponse, null, 2));
+      
+      if (notificationResponse && notificationResponse.data) {
+        console.log('Email sent successfully via NotificationAPI');
+      } else {
+        console.warn('NotificationAPI response was empty or undefined');
+      }
     } catch (emailError: any) {
       console.error('NotificationAPI error:', emailError);
-      console.error('NotificationAPI error details:', emailError.message, emailError.stack);
+      console.error('NotificationAPI error details:', emailError.message);
+      if (emailError.stack) {
+        console.error('NotificationAPI error stack:', emailError.stack);
+      }
       // Don't fail the entire request if email fails - just log and continue
     }
 
