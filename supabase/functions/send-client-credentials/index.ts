@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
-import notificationapi from "npm:notificationapi-node-server-sdk@latest";
+import notificationapi from "https://esm.sh/notificationapi-node-server-sdk@latest";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -139,18 +139,18 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Initialize NotificationAPI
-    notificationapi.init(
-      'n3g0q177rbzrr6riq8re90n1yc',
-      'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
-      {
-        baseURL: 'https://api.eu.notificationapi.com'
-      }
-    );
-
-    console.log('Sending email via NotificationAPI...');
-    // Send email via NotificationAPI
+    // Initialize and send email via NotificationAPI
+    console.log('Initializing NotificationAPI...');
     try {
+      notificationapi.init(
+        'n3g0q177rbzrr6riq8re90n1yc',
+        'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
+        {
+          baseURL: 'https://api.eu.notificationapi.com'
+        }
+      );
+
+      console.log('Sending email via NotificationAPI...');
       const notificationResponse = await notificationapi.send({
         type: 'sign_up_email_sent_to_client',
         to: {
@@ -169,9 +169,10 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('NotificationAPI response:', notificationResponse.data);
       console.log('Email sent successfully via NotificationAPI');
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('NotificationAPI error:', emailError);
-      // Don't fail the entire request if email fails
+      console.error('NotificationAPI error details:', emailError.message, emailError.stack);
+      // Don't fail the entire request if email fails - just log and continue
     }
 
     console.log('Function completed successfully');
