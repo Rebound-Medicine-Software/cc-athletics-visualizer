@@ -26,6 +26,7 @@ export type Database = {
           height_cm: number | null
           id: string
           name: string
+          password_hash: string | null
           team_id: string | null
           updated_at: string | null
           weight_kg: number | null
@@ -41,6 +42,7 @@ export type Database = {
           height_cm?: number | null
           id?: string
           name: string
+          password_hash?: string | null
           team_id?: string | null
           updated_at?: string | null
           weight_kg?: number | null
@@ -56,6 +58,7 @@ export type Database = {
           height_cm?: number | null
           id?: string
           name?: string
+          password_hash?: string | null
           team_id?: string | null
           updated_at?: string | null
           weight_kg?: number | null

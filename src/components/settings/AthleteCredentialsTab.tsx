@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,7 @@ interface Athlete {
   height_cm?: number;
   avatar_url?: string;
   email?: string;
+  password_hash?: string;
   created_at: string;
 }
 
@@ -35,6 +37,10 @@ export const AthleteCredentialsTab = () => {
     password: '',
     email: ''
   });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationPassword, setVerificationPassword] = useState("");
+  const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -199,6 +205,8 @@ export const AthleteCredentialsTab = () => {
       if (editForm.password && editForm.email) {
         try {
           await createAthleteAccount(athlete, editForm.email, editForm.password);
+          // Store password for future reference
+          updateData.password_hash = editForm.password;
           toast.success(`Account created and credentials sent to ${editForm.email}`);
         } catch (accountError: any) {
           console.error('Error creating account:', accountError);
@@ -206,8 +214,8 @@ export const AthleteCredentialsTab = () => {
           return;
         }
       } else if (editForm.password && !editForm.email) {
-        toast.error("Email is required to create an account");
-        return;
+        // Just store password without creating account
+        updateData.password_hash = editForm.password;
       }
 
       // Update athlete record if there are changes
@@ -247,6 +255,53 @@ export const AthleteCredentialsTab = () => {
         setEditForm(prev => ({ ...prev, avatar_url: dataUrl }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const verifyPassword = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error("User not authenticated");
+        return false;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: verificationPassword
+      });
+
+      if (error) {
+        toast.error("Invalid password");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password verification error:', error);
+      toast.error("Password verification failed");
+      return false;
+    }
+  };
+
+  const handleViewPassword = async (athleteId: string) => {
+    setViewingPasswordId(athleteId);
+    setShowVerificationModal(true);
+  };
+
+  const handleVerificationSubmit = async () => {
+    const isValid = await verifyPassword();
+    if (isValid && viewingPasswordId) {
+      const athlete = athletes.find(a => a.id === viewingPasswordId);
+      if (athlete?.password_hash) {
+        setRevealedPasswords(prev => ({
+          ...prev,
+          [viewingPasswordId]: athlete.password_hash || ''
+        }));
+      }
+      setShowVerificationModal(false);
+      setVerificationPassword("");
+      setViewingPasswordId(null);
     }
   };
 
@@ -293,6 +348,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Athlete ID</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Password</TableHead>
                 <TableHead>Age</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Weight (kg)</TableHead>
@@ -359,6 +415,27 @@ export const AthleteCredentialsTab = () => {
                       athlete.email || 'N/A'
                     )}
                   </TableCell>
+                  <TableCell>
+                    {athlete.password_hash ? (
+                      <div className="flex items-center gap-2">
+                        {revealedPasswords[athlete.id] ? (
+                          <span className="text-xs font-mono">{revealedPasswords[athlete.id]}</span>
+                        ) : (
+                          <span className="text-xs">••••••••</span>
+                        )}
+                        <Button
+                          onClick={() => handleViewPassword(athlete.id)}
+                          size="sm"
+                          variant="ghost"
+                          className="p-1 h-6 w-6"
+                        >
+                          {revealedPasswords[athlete.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-500">No password</span>
+                    )}
+                  </TableCell>
                   <TableCell>{athlete.age || 'N/A'}</TableCell>
                   <TableCell>{athlete.gender || 'N/A'}</TableCell>
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
@@ -419,6 +496,41 @@ export const AthleteCredentialsTab = () => {
           )}
         </div>
       </CardContent>
+
+      <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Verify Organization Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Enter your organization password to view/change athlete passwords.
+            </p>
+            <Input
+              type="password"
+              placeholder="Your organization password"
+              value={verificationPassword}
+              onChange={(e) => setVerificationPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleVerificationSubmit()}
+            />
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowVerificationModal(false);
+                  setVerificationPassword("");
+                  setViewingPasswordId(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleVerificationSubmit}>
+                Verify
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
