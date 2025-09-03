@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import notificationapi from "npm:notificationapi-node-server-sdk@latest";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,63 +139,39 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Send credentials email using SendPulse API
-    const emailData = {
-      email: {
-        from: {
-          name: "Rebound Medicine & Performance",
-          email: "noreply@reboundmedicine.com"
-        },
-        to: [{
-          name: `${firstName} ${lastName}`,
-          email: email
-        }],
-        subject: `Welcome to ${organisationName} - Your Athlete/Patient Account`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #F59E0B;">Welcome to ${organisationName}!</h2>
-            
-            <p>Hello ${firstName},</p>
-            
-            <p>Your athlete/patient account has been ${existingUser ? 'updated' : 'created'}. Here are your login credentials:</p>
-            
-            <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Password:</strong> ${password}</p>
-              ${athleteType ? `<p><strong>Type:</strong> ${athleteType}</p>` : ''}
-            </div>
-            
-            <p>Please log in at: <a href="${req.headers.get('origin')}/auth">Access Athlete/Patient Portal</a></p>
-            
-            <p><strong>Important:</strong> ${existingUser ? 'Your password has been updated.' : 'Please change your password after your first login for security.'}</p>
-            
-            <p>You can now access your performance data, book appointments, and track your progress.</p>
-            
-            <p>If you have any questions, please contact your healthcare provider.</p>
-            
-            <p>Best regards,<br>Rebound Medicine & Performance Team</p>
-          </div>
-        `
+    // Initialize NotificationAPI
+    notificationapi.init(
+      'n3g0q177rbzrr6riq8re90n1yc',
+      'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
+      {
+        baseURL: 'https://api.eu.notificationapi.com'
       }
-    };
+    );
 
-    console.log('Sending email...');
-    // Send email via SendPulse
-    const sendPulseResponse = await fetch('https://api.sendpulse.com/addressbooks/1/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get("SENDPULSE_API_SECRET")}`
-      },
-      body: JSON.stringify(emailData)
-    });
+    console.log('Sending email via NotificationAPI...');
+    // Send email via NotificationAPI
+    try {
+      const notificationResponse = await notificationapi.send({
+        type: 'sign_up_email_sent_to_client',
+        to: {
+          id: email,
+          email: email
+        },
+        parameters: {
+          "Athlete": `${firstName} ${lastName}`,
+          "Organisation": organisationName,
+          "Client": `${firstName} ${lastName}`,
+          "Email": email,
+          "Address": req.headers.get('origin') || "",
+          "Password": password
+        }
+      });
 
-    if (!sendPulseResponse.ok) {
-      const errorText = await sendPulseResponse.text();
-      console.error('SendPulse API error:', errorText);
+      console.log('NotificationAPI response:', notificationResponse.data);
+      console.log('Email sent successfully via NotificationAPI');
+    } catch (emailError) {
+      console.error('NotificationAPI error:', emailError);
       // Don't fail the entire request if email fails
-    } else {
-      console.log('Email sent successfully');
     }
 
     console.log('Function completed successfully');
