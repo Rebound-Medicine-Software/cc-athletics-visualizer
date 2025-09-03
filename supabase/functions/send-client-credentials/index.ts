@@ -59,6 +59,8 @@ const handler = async (req: Request): Promise<Response> => {
     const existingUser = existingUsers.users.find(user => user.email === email);
     console.log('Existing user found:', !!existingUser);
     
+    let userResult = null;
+    
     if (existingUser) {
       console.log(`User already exists with email: ${email}`);
       
@@ -77,6 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       console.log(`Password updated for existing user: ${email}`);
+      userResult = existingUser;
     } else {
       console.log('Creating new user account...');
       // Create the user account
@@ -101,6 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       console.log('New user created successfully');
+      userResult = userData?.user;
     }
 
     // Update profile relationship for existing or new user
@@ -180,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: true, 
         message: existingUser ? "Client account updated and credentials sent" : "Client account created and credentials sent",
-        user: existingUser || userData?.user
+        user: userResult
       }),
       {
         status: 200,
