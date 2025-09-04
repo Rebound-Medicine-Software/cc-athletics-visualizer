@@ -38,8 +38,18 @@ const Dashboard = () => {
     // Check authentication using Supabase auth instead of localStorage
     if (!loading && !user) {
       navigate("/auth");
+      return;
     }
-  }, [user, loading, navigate]);
+
+    // Role-based access control: clients should not access this clinician dashboard
+    if (!loading && user && profile) {
+      if (profile.role === 'client') {
+        toast.error("Access denied. This area is for clinicians only.");
+        navigate("/auth");
+        return;
+      }
+    }
+  }, [user, loading, navigate, profile]);
 
   const handleLogout = async () => {
     try {
