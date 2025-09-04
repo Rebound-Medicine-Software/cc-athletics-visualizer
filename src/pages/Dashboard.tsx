@@ -21,6 +21,7 @@ import {
   Menu,
   X,
   RotateCw,
+  Shield,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -70,6 +71,8 @@ const Dashboard = () => {
   const handleNavigation = (section: string) => {
     if (section === "settings") {
       navigate("/settings(Consumer1)");
+    } else if (section === "admin") {
+      navigate("/admin");
     } else {
       setActiveSection(section);
     }
@@ -115,6 +118,8 @@ const Dashboard = () => {
     { id: "programming", label: "Programming", icon: Dumbbell, description: "Exercise programs & templates" },
     { id: "settings", label: "Settings", icon: Settings, description: "Account & preferences" },
     { id: "payment", label: "Payment Packages", icon: CreditCard, description: "Billing & subscriptions" },
+    // Add Super Admin link for super_admin users
+    ...(profile?.role === 'super_admin' ? [{ id: "admin", label: "Super Admin", icon: Shield, description: "Platform administration" }] : []),
   ];
 
   const errorMessage = error?.message || "";

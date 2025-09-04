@@ -242,7 +242,7 @@ const Auth = () => {
           return;
         }
         
-        if (isPatientPortal && profile.role !== 'client') {
+        if (isPatientPortal && !['client', 'super_admin'].includes(profile.role)) {
           await supabase.auth.signOut();
           setError("Access denied. Your account role does not have access to the Athlete/Patient Portal.");
           return;
@@ -254,8 +254,14 @@ const Auth = () => {
         
         // Handle redirects based on user role and setup status
         if (profile.role === 'super_admin') {
-          console.log('Super admin, redirecting to admin');
-          navigate('/admin');
+          // Super admin can access both portals
+          if (isClinicianPortal) {
+            console.log('Super admin accessing Clinician Portal, redirecting to dashboard');
+            navigate('/dashboard');
+          } else {
+            console.log('Super admin accessing Patient Portal, redirecting to dashboard');
+            navigate('/dashboard');
+          }
         } else if (profile.role === 'organisation') {
           // Organization role can access Clinician Portal
           // Check if organization has completed setup
