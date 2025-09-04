@@ -237,20 +237,29 @@ const Auth = () => {
         console.log('Redirecting based on role:', profile.role, 'setup_completed:', profile.setup_completed);
         
         // Handle redirects based on user role and setup status
-        if (profile.role === 'organisation') {
-          // Check if organization has completed setup
-          if (profile.setup_completed) {
-            console.log('Setup completed, redirecting to dashboard');
-            navigate('/dashboard');
-          } else {
-            console.log('Setup not completed, redirecting to setup');
-            navigate('/setup');
-          }
-        } else if (profile.role === 'super_admin') {
+        if (profile.role === 'super_admin') {
           console.log('Super admin, redirecting to admin');
           navigate('/admin');
+        } else if (profile.role === 'organisation') {
+          // Organization role can access Clinician Portal
+          // Check if organization has completed setup
+          if (profile.setup_completed) {
+            console.log('Organization setup completed, redirecting to dashboard');
+            navigate('/dashboard');
+          } else {
+            console.log('Organization setup not completed, redirecting to setup');
+            navigate('/setup');
+          }
+        } else if (profile.role === 'practitioner') {
+          // Practitioner role can access Clinician Portal
+          console.log('Practitioner, redirecting to dashboard');
+          navigate('/dashboard');
+        } else if (profile.role === 'client') {
+          // Client role can access Athlete/Patient Portal
+          console.log('Client, redirecting to dashboard');
+          navigate('/dashboard');
         } else {
-          // Clinician, Client, and other roles go to dashboard
+          // Other roles default to dashboard
           console.log('Other role, redirecting to dashboard');
           navigate('/dashboard');
         }
