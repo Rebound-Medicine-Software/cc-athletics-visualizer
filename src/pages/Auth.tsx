@@ -232,6 +232,22 @@ const Auth = () => {
           }
         }
 
+        // Validate that user's role matches selected portal
+        const isClinicianPortal = userRole === 'clinician';
+        const isPatientPortal = userRole === 'client';
+        
+        if (isClinicianPortal && !['organisation', 'practitioner', 'super_admin'].includes(profile.role)) {
+          await supabase.auth.signOut();
+          setError("Access denied. Your account role does not have access to the Clinician Portal.");
+          return;
+        }
+        
+        if (isPatientPortal && profile.role !== 'client') {
+          await supabase.auth.signOut();
+          setError("Access denied. Your account role does not have access to the Athlete/Patient Portal.");
+          return;
+        }
+
         toast.success("Login successful!");
         
         console.log('Redirecting based on role:', profile.role, 'setup_completed:', profile.setup_completed);
