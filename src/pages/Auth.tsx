@@ -631,8 +631,11 @@ const Auth = () => {
                       onChange={(e) => setSignupData(prev => ({ ...prev, firstName: e.target.value }))}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="last-name">Last Name</Label>
+                  <div className="space-y-2 flex flex-col items-center">
+                    <Label htmlFor="last-name" className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Last Name
+                    </Label>
                     <Input
                       id="last-name"
                       placeholder="Last name"
