@@ -32,7 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/client-dashboard" element={<ClientDashboard />} />
+            <Route path="/Dashboard(Client)" element={<ClientDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin(Dashboard)" element={<SuperAdminDashboard />} />
             <Route path="/settings" element={<Settings />} />
