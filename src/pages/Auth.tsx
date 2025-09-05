@@ -278,8 +278,8 @@ const Auth = () => {
           navigate('/dashboard');
         } else if (profile.role === 'client') {
           // Client role can access Athlete/Patient Portal
-          console.log('Client, redirecting to dashboard');
-          navigate('/dashboard');
+          console.log('Client, redirecting to client dashboard');
+          navigate('/client-dashboard');
         } else {
           // Other roles default to dashboard
           console.log('Other role, redirecting to dashboard');

@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import ClientDashboard from "./pages/ClientDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SuperAdminDashboard } from "./components/admin/SuperAdminDashboard";
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/setup" element={<Setup />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/client-dashboard" element={<ClientDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin(Dashboard)" element={<SuperAdminDashboard />} />
             <Route path="/settings" element={<Settings />} />
