@@ -174,7 +174,7 @@ export function ReportFiltersContainer({
           {/* Athlete Name(s) - Multi-Select */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
-            {!filters.sex ? (
+            {!filters.testNames ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Athletes
               </div>

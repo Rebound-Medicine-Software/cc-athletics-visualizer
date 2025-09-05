@@ -62,9 +62,9 @@ export const EliteComparisonFilters = ({
   
   // Individual filter dependencies
   const athleteEnabled = true; // Always enabled
-  const weightEnabled = filters.athleteName.length > 0;
-  const testNameEnabled = filters.weight !== "all";
-  const metricTypeEnabled = filters.testName !== "all";
+  const weightEnabled = filters.athleteName.length > 0 || filters.sex === "";
+  const testNameEnabled = filters.weight !== "all" || filters.sex === "";
+  const metricTypeEnabled = filters.testName !== "all" || filters.sex === "";
 
   // Handle cascading filter changes for Individual Filters
   const handleAthleteNameChange = (value: string[]) => {
