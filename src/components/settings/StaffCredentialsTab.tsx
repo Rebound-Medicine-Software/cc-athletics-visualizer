@@ -194,7 +194,27 @@ export const StaffCredentialsTab = () => {
           u.id === editingId ? { ...u, ...updateData } : u
         ));
 
-        toast.success("Staff member updated successfully");
+        // If password was updated, send practitioner invite
+        if (editForm.password) {
+          const { error: inviteError } = await supabase.functions.invoke('send-practitioner-invite', {
+            body: {
+              email: editForm.email,
+              full_name: editForm.full_name,
+              password: editForm.password,
+              role_title: editForm.role_title,
+              team_name: 'Your Team', // You might want to fetch this from team data
+              login_url: `${window.location.origin}/auth`
+            }
+          });
+
+          if (inviteError) {
+            console.warn('Failed to send practitioner invite:', inviteError);
+          } else {
+            toast.success("Staff member updated and invite sent");
+          }
+        } else {
+          toast.success("Staff member updated successfully");
+        }
       } else {
         // Create new user via edge function - existing logic remains the same
         const password = editForm.password || generateSafePassword();
@@ -237,7 +257,25 @@ export const StaffCredentialsTab = () => {
           console.error('Edge function returned error:', credentialsData.error);
           throw new Error(credentialsData.error);
         }
-        toast.success("Clinician account created and credentials sent");
+
+        // Also send practitioner invite
+        const { error: inviteError } = await supabase.functions.invoke('send-practitioner-invite', {
+          body: {
+            email: editForm.email,
+            full_name: editForm.full_name,
+            password: password,
+            role_title: editForm.role_title,
+            team_name: teamData?.name || 'Your Team',
+            login_url: `${window.location.origin}/auth`
+          }
+        });
+
+        if (inviteError) {
+          console.warn('Failed to send practitioner invite:', inviteError);
+          // Don't throw here, as the account was created successfully
+        }
+
+        toast.success("Clinician account created and invite sent");
       }
 
       setEditingId(null);
