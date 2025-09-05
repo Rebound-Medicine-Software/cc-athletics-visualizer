@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import notificationapi from "https://esm.sh/notificationapi-node-server-sdk@latest";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,6 +22,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('Practitioner invite function started...');
+    
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -37,86 +40,68 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending practitioner invite to: ${email}`);
 
-    // Get SendPulse credentials
-    const sendPulseUserId = Deno.env.get("SENDPULSE_API_USER_ID");
-    const sendPulseSecret = Deno.env.get("SENDPULSE_API_SECRET");
+    // Initialize and send email via NotificationAPI
+    console.log('Initializing NotificationAPI...');
+    try {
+      notificationapi.init(
+        'n3g0q177rbzrr6riq8re90n1yc',
+        'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
+        {
+          baseURL: 'https://api.eu.notificationapi.com'
+        }
+      );
 
-    if (!sendPulseUserId || !sendPulseSecret) {
-      throw new Error("SendPulse API credentials not configured");
-    }
+      console.log('Sending email via NotificationAPI...');
+      console.log('Email parameters:', {
+        type: 'send_email_to_practitioners',
+        to: { id: email, email: email },
+        parameters: {
+          "Practitioner": full_name,
+          "Team": team_name,
+          "Email": email,
+          "Password": password,
+          "Role": role_title || "Practitioner",
+          "LoginURL": login_url
+        }
+      });
 
-    // Get SendPulse access token
-    const tokenResponse = await fetch("https://api.sendpulse.com/oauth/access_token", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        grant_type: "client_credentials",
-        client_id: sendPulseUserId,
-        client_secret: sendPulseSecret,
-      }),
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error("SendPulse token error:", errorText);
-      throw new Error(`Failed to get SendPulse token: ${errorText}`);
-    }
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    // Send email using SendPulse template
-    const emailResponse = await fetch("https://api.sendpulse.com/smtp/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: {
-          from: {
-            name: team_name || "Your Organization",
-            email: "noreply@yourdomain.com", // Replace with your verified sending domain
-          },
-          to: [
-            {
-              name: full_name,
-              email: email,
-            },
-          ],
-          subject: `Welcome to ${team_name} - Your Account is Ready`,
-          template: {
-            id: "send_email_to_practitioners", // Your specified template ID
-            variables: {
-              practitioner_name: full_name,
-              practitioner_email: email,
-              practitioner_password: password,
-              role_title: role_title || "Practitioner",
-              team_name: team_name,
-              login_url: login_url,
-              portal_instructions: "Please log in using the credentials below and change your password on first login.",
-            },
-          },
+      const notificationResponse = await notificationapi.send({
+        type: 'send_email_to_practitioners',
+        to: {
+          id: email,
+          email: email
         },
-      }),
-    });
+        parameters: {
+          "Practitioner": full_name,
+          "Team": team_name,
+          "Email": email,
+          "Password": password,
+          "Role": role_title || "Practitioner",
+          "LoginURL": login_url
+        }
+      });
 
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error("SendPulse email error:", errorText);
-      throw new Error(`Failed to send email: ${errorText}`);
+      console.log('NotificationAPI response:', JSON.stringify(notificationResponse, null, 2));
+      
+      if (notificationResponse && notificationResponse.data) {
+        console.log('Practitioner invite sent successfully via NotificationAPI');
+      } else {
+        console.warn('NotificationAPI response was empty or undefined');
+      }
+    } catch (emailError: any) {
+      console.error('NotificationAPI error:', emailError);
+      console.error('NotificationAPI error details:', emailError.message);
+      if (emailError.stack) {
+        console.error('NotificationAPI error stack:', emailError.stack);
+      }
+      // Don't fail the entire request if email fails - just log and continue
     }
 
-    const emailResult = await emailResponse.json();
-    console.log("Email sent successfully:", emailResult);
-
+    console.log('Practitioner invite function completed successfully');
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Practitioner invite sent successfully",
-        email_id: emailResult.id 
+        message: "Practitioner invite sent successfully"
       }),
       {
         status: 200,
@@ -126,10 +111,10 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("Error in send-practitioner-invite function:", error);
+    console.error("Error stack:", error.stack);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: "Failed to send practitioner invite email" 
+        error: "Unexpected error: " + error.message
       }),
       {
         status: 500,
