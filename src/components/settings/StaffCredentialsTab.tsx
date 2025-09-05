@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, Edit, Save, X, Plus, Trash2, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Users, Edit, Save, X, Plus, Trash2, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,6 +20,7 @@ interface StaffUser {
   role: string;
   role_title?: string;
   qualifications?: string;
+  password_hash?: string;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +39,10 @@ export const StaffCredentialsTab = () => {
     qualifications: '',
     avatar_url: ''
   });
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationPassword, setVerificationPassword] = useState("");
+  const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
+  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -191,7 +197,7 @@ export const StaffCredentialsTab = () => {
         toast.success("Staff member updated successfully");
       } else {
         // Create new user via edge function - existing logic remains the same
-        const password = generateStrongPassword();
+        const password = editForm.password || generateSafePassword();
         
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('No active session');
@@ -261,13 +267,64 @@ export const StaffCredentialsTab = () => {
     setEditForm({ email: '', password: '', full_name: '', role_title: '', qualifications: '', avatar_url: '' });
   };
 
-  const generateStrongPassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+  const generateSafePassword = () => {
+    const adjectives = ["Swift", "Strong", "Bright", "Noble", "Quick", "Bold", "Smart", "Great"];
+    const nouns = ["Tiger", "Eagle", "Lion", "Wolf", "Bear", "Hawk", "Fox", "Shark"];
+    const numbers = Math.floor(Math.random() * 99) + 10;
+    const symbols = ["!", "@", "#", "$", "%"];
+    
+    const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const noun = nouns[Math.floor(Math.random() * nouns.length)];
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    
+    return `${adjective}${noun}${numbers}${symbol}`;
+  };
+
+  const verifyPassword = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error("User not authenticated");
+        return false;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: verificationPassword
+      });
+
+      if (error) {
+        toast.error("Invalid password");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Password verification error:', error);
+      toast.error("Password verification failed");
+      return false;
     }
-    return password;
+  };
+
+  const handleViewPassword = async (userId: string) => {
+    setViewingPasswordId(userId);
+    setShowVerificationModal(true);
+  };
+
+  const handleVerificationSubmit = async () => {
+    const isValid = await verifyPassword();
+    if (isValid && viewingPasswordId) {
+      const user = users.find(u => u.id === viewingPasswordId);
+      if (user?.password_hash) {
+        setRevealedPasswords(prev => ({
+          ...prev,
+          [viewingPasswordId]: user.password_hash || ''
+        }));
+      }
+      setShowVerificationModal(false);
+      setVerificationPassword("");
+      setViewingPasswordId(null);
+    }
   };
 
   if (loading) {
@@ -312,13 +369,25 @@ export const StaffCredentialsTab = () => {
                 </div>
                 <div>
                   <Label htmlFor="add-password">Password *</Label>
-                  <Input
-                    id="add-password"
-                    type="password"
-                    value={editForm.password}
-                    onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
-                    placeholder="Enter password"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="add-password"
+                      type="password"
+                      value={editForm.password}
+                      onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                      placeholder="Enter password"
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={() => setEditForm({ ...editForm, password: generateSafePassword() })}
+                      size="sm" 
+                      variant="outline"
+                      type="button"
+                      title="Generate safe password"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="add-name">Full Name</Label>
@@ -402,16 +471,17 @@ export const StaffCredentialsTab = () => {
                 <TableHead>Full Name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Qualifications</TableHead>
+                <TableHead>Password</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                    No staff users found. Add practitioners from the setup process or create them here.
-                  </TableCell>
-                </TableRow>
+                 <TableRow>
+                   <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                     No staff users found. Add practitioners from the setup process or create them here.
+                   </TableCell>
+                 </TableRow>
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
@@ -504,39 +574,81 @@ export const StaffCredentialsTab = () => {
                       ) : (
                         user.qualifications || 'Not set'
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {editingId === user.id ? (
-                        <div className="flex gap-1">
-                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
-                            <Save className="w-3 h-3" />
-                          </Button>
-                          <Button onClick={handleCancel} size="sm" variant="outline">
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={() => handleEdit(user)} 
-                            size="sm" 
-                            variant="outline"
-                            disabled={isAdding || editingId !== null}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            onClick={() => handleDelete(user.id)} 
-                            size="sm" 
-                            variant="outline"
-                            className="text-red-600 hover:bg-red-50"
-                            disabled={isAdding || editingId !== null}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
+                     </TableCell>
+                     <TableCell>
+                       {editingId === user.id ? (
+                         <div className="flex gap-1">
+                           <Input
+                             type="password"
+                             placeholder="New password"
+                             value={editForm.password}
+                             onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                             className="text-xs flex-1"
+                           />
+                           <Button 
+                             onClick={() => setEditForm({ ...editForm, password: generateSafePassword() })}
+                             size="sm" 
+                             variant="outline"
+                             className="px-2"
+                             title="Generate safe password"
+                           >
+                             <RefreshCw className="w-3 h-3" />
+                           </Button>
+                         </div>
+                       ) : (
+                         user.password_hash ? (
+                           <div className="flex items-center gap-2">
+                             {revealedPasswords[user.id] ? (
+                               <span className="text-xs font-mono">{revealedPasswords[user.id]}</span>
+                             ) : (
+                               <span className="text-xs">••••••••</span>
+                             )}
+                             <Button
+                               onClick={() => handleViewPassword(user.id)}
+                               size="sm"
+                               variant="ghost"
+                               className="p-1 h-6 w-6"
+                             >
+                               {revealedPasswords[user.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                             </Button>
+                           </div>
+                         ) : (
+                           <span className="text-xs text-gray-500">No password</span>
+                         )
+                       )}
+                     </TableCell>
+                     <TableCell>
+                       {editingId === user.id ? (
+                         <div className="flex gap-1">
+                           <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
+                             <Save className="w-3 h-3" />
+                           </Button>
+                           <Button onClick={handleCancel} size="sm" variant="outline">
+                             <X className="w-3 h-3" />
+                           </Button>
+                         </div>
+                       ) : (
+                         <div className="flex gap-2">
+                           <Button 
+                             onClick={() => handleEdit(user)} 
+                             size="sm" 
+                             variant="outline"
+                             disabled={isAdding || editingId !== null}
+                           >
+                             <Edit className="w-4 h-4" />
+                           </Button>
+                           <Button 
+                             onClick={() => handleDelete(user.id)} 
+                             size="sm" 
+                             variant="outline"
+                             className="text-red-600 hover:bg-red-50"
+                             disabled={isAdding || editingId !== null}
+                           >
+                             <Trash2 className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       )}
+                     </TableCell>
                   </TableRow>
                 ))
               )}
@@ -544,6 +656,39 @@ export const StaffCredentialsTab = () => {
           </Table>
         </div>
       </CardContent>
+
+      {/* Password Verification Modal */}
+      <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Verify Your Password</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="text-sm text-gray-600">
+              Please enter your current password to view staff passwords.
+            </div>
+            <div>
+              <Label htmlFor="verification-password">Current Password</Label>
+              <Input
+                id="verification-password"
+                type="password"
+                value={verificationPassword}
+                onChange={(e) => setVerificationPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleVerificationSubmit()}
+                placeholder="Enter your password"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowVerificationModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleVerificationSubmit}>
+                Verify
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
