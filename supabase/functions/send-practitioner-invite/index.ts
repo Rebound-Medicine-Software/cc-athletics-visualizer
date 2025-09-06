@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
         to: { id: email, email: email },
         parameters: {
           "Practitioner": full_name,
-          "Team": team_name,
+          "Organisation": team_name,
           "Email": email,
           "Password": password,
           "Role": role_title || "Practitioner",
@@ -73,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
         },
         parameters: {
           "Practitioner": full_name,
-          "Team": team_name,
+          "Organisation": team_name,
           "Email": email,
           "Password": password,
           "Role": role_title || "Practitioner",
