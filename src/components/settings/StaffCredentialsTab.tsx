@@ -10,6 +10,7 @@ import { Users, Edit, Save, X, Plus, Trash2, Upload, RefreshCw, Eye, EyeOff } fr
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBranding } from "@/hooks/useBranding";
 
 interface StaffUser {
   id: string;
@@ -27,6 +28,7 @@ interface StaffUser {
 
 export const StaffCredentialsTab = () => {
   const { profile } = useAuth();
+  const { branding } = useBranding(profile?.team_id, profile?.role);
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -202,7 +204,7 @@ export const StaffCredentialsTab = () => {
               full_name: editForm.full_name,
               password: editForm.password,
               role_title: editForm.role_title,
-              team_name: 'Your Team', // You might want to fetch this from team data
+              team_name: branding?.name || 'Your Organization', // Use branding name
               login_url: `${window.location.origin}/auth`
             }
           });
@@ -243,7 +245,7 @@ export const StaffCredentialsTab = () => {
             role_title: editForm.role_title,
             qualifications: editForm.qualifications,
             password: password,
-            team_name: teamData?.name || 'Your Team',
+            team_name: branding?.name || teamData?.name || 'Your Organization',
             team_id: currentProfile.team_id
           }
         });
