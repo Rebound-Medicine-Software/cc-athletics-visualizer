@@ -424,7 +424,19 @@ export const AthleteCredentialsTab = () => {
                           <span className="text-xs">••••••••</span>
                         )}
                         <Button
-                          onClick={() => handleViewPassword(athlete.id)}
+                          onClick={() => {
+                            if (revealedPasswords[athlete.id]) {
+                              // Hide password if already revealed
+                              setRevealedPasswords(prev => {
+                                const updated = { ...prev };
+                                delete updated[athlete.id];
+                                return updated;
+                              });
+                            } else {
+                              // Show verification modal to reveal password
+                              handleViewPassword(athlete.id);
+                            }
+                          }}
                           size="sm"
                           variant="ghost"
                           className="p-1 h-6 w-6"
