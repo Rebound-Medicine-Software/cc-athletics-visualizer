@@ -40,6 +40,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending practitioner invite to: ${email}`);
 
+    // Create Supabase Auth user account
+    console.log('Creating Supabase Auth user...');
+    const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+      email: email,
+      password: password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: full_name,
+        role: 'practitioner',
+        role_title: role_title
+      }
+    });
+
+    if (userError) {
+      console.error('Error creating user:', userError);
+      throw new Error(`Failed to create user account: ${userError.message}`);
+    }
+
+    console.log('User created successfully:', userData.user?.id);
+
     // Initialize and send email via NotificationAPI
     console.log('Initializing NotificationAPI...');
     try {

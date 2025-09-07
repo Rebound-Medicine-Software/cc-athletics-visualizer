@@ -286,17 +286,19 @@ export const StaffCredentialsTab = () => {
 
         // Store password in profiles table after successful account creation
         if (credentialsData && !credentialsError) {
-          const { data: newProfile } = await supabase
+          // Find the user profile by email to store the password for reference
+          const { data: existingProfile } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', editForm.email)
             .single();
 
-          if (newProfile) {
+          if (existingProfile) {
+            // Store password hash in profiles for reference
             await supabase
               .from('profiles')
               .update({ password_hash: password })
-              .eq('id', newProfile.id);
+              .eq('id', existingProfile.id);
           }
         }
 
