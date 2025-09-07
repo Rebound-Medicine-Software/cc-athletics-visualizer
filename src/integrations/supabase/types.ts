@@ -434,6 +434,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          password_hash: string | null
           qualifications: string | null
           role: string | null
           role_title: string | null
@@ -454,6 +455,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          password_hash?: string | null
           qualifications?: string | null
           role?: string | null
           role_title?: string | null
@@ -474,6 +476,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          password_hash?: string | null
           qualifications?: string | null
           role?: string | null
           role_title?: string | null

@@ -284,6 +284,22 @@ export const StaffCredentialsTab = () => {
           // Don't throw here, as the account was created successfully
         }
 
+        // Store password in profiles table after successful account creation
+        if (credentialsData && !credentialsError) {
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', editForm.email)
+            .single();
+
+          if (newProfile) {
+            await supabase
+              .from('profiles')
+              .update({ password_hash: password })
+              .eq('id', newProfile.id);
+          }
+        }
+
         toast.success("Clinician account created and invite sent");
       }
 
@@ -367,6 +383,9 @@ export const StaffCredentialsTab = () => {
           ...prev,
           [viewingPasswordId]: user.password_hash || ''
         }));
+        toast.success("Password revealed");
+      } else {
+        toast.error("No password found for this user");
       }
       setShowVerificationModal(false);
       setVerificationPassword("");
