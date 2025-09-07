@@ -45,6 +45,7 @@ export const StaffCredentialsTab = () => {
   const [verificationPassword, setVerificationPassword] = useState("");
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
+  const [showVerificationPassword, setShowVerificationPassword] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -643,14 +644,26 @@ export const StaffCredentialsTab = () => {
                              ) : (
                                <span className="text-xs">••••••••</span>
                              )}
-                             <Button
-                               onClick={() => handleViewPassword(user.id)}
-                               size="sm"
-                               variant="ghost"
-                               className="p-1 h-6 w-6"
-                             >
-                               {revealedPasswords[user.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                             </Button>
+                              <Button
+                                onClick={() => {
+                                  if (revealedPasswords[user.id]) {
+                                    // Hide password if already revealed
+                                    setRevealedPasswords(prev => {
+                                      const updated = { ...prev };
+                                      delete updated[user.id];
+                                      return updated;
+                                    });
+                                  } else {
+                                    // Show verification modal to reveal password
+                                    handleViewPassword(user.id);
+                                  }
+                                }}
+                                size="sm"
+                                variant="ghost"
+                                className="p-1 h-6 w-6"
+                              >
+                                {revealedPasswords[user.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </Button>
                            </div>
                          ) : (
                            <span className="text-xs text-gray-500">No password</span>
@@ -709,14 +722,30 @@ export const StaffCredentialsTab = () => {
             </div>
             <div>
               <Label htmlFor="verification-password">Current Password</Label>
-              <Input
-                id="verification-password"
-                type="password"
-                value={verificationPassword}
-                onChange={(e) => setVerificationPassword(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleVerificationSubmit()}
-                placeholder="Enter your password"
-              />
+              <div className="relative">
+                <Input
+                  id="verification-password"
+                  type={showVerificationPassword ? "text" : "password"}
+                  value={verificationPassword}
+                  onChange={(e) => setVerificationPassword(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleVerificationSubmit()}
+                  placeholder="Enter your password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowVerificationPassword(!showVerificationPassword)}
+                >
+                  {showVerificationPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowVerificationModal(false)}>
