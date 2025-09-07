@@ -182,6 +182,11 @@ export const StaffCredentialsTab = () => {
           updateData.avatar_url = avatarUrl;
         }
 
+        // Add password if provided
+        if (editForm.password) {
+          updateData.password_hash = editForm.password;
+        }
+
         const { error: updateError } = await supabase
           .from('profiles')
           .update(updateData)
@@ -247,7 +252,8 @@ export const StaffCredentialsTab = () => {
             qualifications: editForm.qualifications,
             password: password,
             team_name: branding?.name || teamData?.name || 'Your Organization',
-            team_id: currentProfile.team_id
+            team_id: currentProfile.team_id,
+            password_hash: password  // Store password for future reference
           }
         });
 
