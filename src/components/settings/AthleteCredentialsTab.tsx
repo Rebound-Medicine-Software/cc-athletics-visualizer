@@ -41,6 +41,7 @@ export const AthleteCredentialsTab = () => {
   const [verificationPassword, setVerificationPassword] = useState("");
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
+  const [showVerificationPassword, setShowVerificationPassword] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -518,13 +519,29 @@ export const AthleteCredentialsTab = () => {
             <p className="text-sm text-gray-600">
               Enter your organization password to view/change athlete passwords.
             </p>
-            <Input
-              type="password"
-              placeholder="Your organization password"
-              value={verificationPassword}
-              onChange={(e) => setVerificationPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleVerificationSubmit()}
-            />
+            <div className="relative">
+              <Input
+                type={showVerificationPassword ? "text" : "password"}
+                placeholder="Your organization password"
+                value={verificationPassword}
+                onChange={(e) => setVerificationPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleVerificationSubmit()}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                onClick={() => setShowVerificationPassword(!showVerificationPassword)}
+              >
+                {showVerificationPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <div className="flex gap-2 justify-end">
               <Button 
                 variant="outline" 
