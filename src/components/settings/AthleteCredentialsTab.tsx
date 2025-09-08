@@ -24,6 +24,7 @@ interface Athlete {
   email?: string;
   password_hash?: string;
   created_at: string;
+  team_name?: string;
 }
 
 export const AthleteCredentialsTab = () => {
@@ -57,7 +58,27 @@ export const AthleteCredentialsTab = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAthletes(data || []);
+      
+      // Fetch teams data separately to get team names
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('cc_team_id, name');
+      
+      if (teamsError) throw teamsError;
+      
+      // Create a map of cc_team_id to team name
+      const teamNameMap = teamsData?.reduce((acc, team) => {
+        acc[team.cc_team_id] = team.name;
+        return acc;
+      }, {} as Record<string, string>) || {};
+      
+      // Map the athletes data to include team_name
+      const athletesWithTeamNames = data?.map(athlete => ({
+        ...athlete,
+        team_name: teamNameMap[athlete.cc_team_id] || 'No Team'
+      })) || [];
+      
+      setAthletes(athletesWithTeamNames);
     } catch (error) {
       console.error('Error fetching athletes:', error);
       toast.error("Failed to load athletes");
@@ -402,7 +423,7 @@ export const AthleteCredentialsTab = () => {
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{athlete.name}</TableCell>
-                  <TableCell>Team Name</TableCell>
+                  <TableCell>{athlete.team_name || 'No Team'}</TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                       <Input
