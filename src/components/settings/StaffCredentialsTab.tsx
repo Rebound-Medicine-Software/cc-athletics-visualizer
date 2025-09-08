@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users, Edit, Save, X, Plus, Trash2, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { Users, Edit, Save, X, Plus, Trash2, Upload, RefreshCw, Eye, EyeOff, Mail, MailX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +46,7 @@ export const StaffCredentialsTab = () => {
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   const [showVerificationPassword, setShowVerificationPassword] = useState(false);
+  const [sendPractitionerEmails, setSendPractitionerEmails] = useState(true);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -202,8 +203,8 @@ export const StaffCredentialsTab = () => {
           u.id === editingId ? { ...u, ...updateData } : u
         ));
 
-        // If password was updated, send practitioner invite
-        if (editForm.password) {
+        // If password was updated and emails are enabled, send practitioner invite
+        if (editForm.password && sendPractitionerEmails) {
           const { error: inviteError } = await supabase.functions.invoke('send-practitioner-invite', {
             body: {
               email: editForm.email,
@@ -220,6 +221,8 @@ export const StaffCredentialsTab = () => {
           } else {
             toast.success("Staff member updated and invite sent");
           }
+        } else if (editForm.password && !sendPractitionerEmails) {
+          toast.success("Staff member updated (no email sent)");
         } else {
           toast.success("Staff member updated successfully");
         }
@@ -267,21 +270,23 @@ export const StaffCredentialsTab = () => {
           throw new Error(credentialsData.error);
         }
 
-        // Also send practitioner invite
-        const { error: inviteError } = await supabase.functions.invoke('send-practitioner-invite', {
-          body: {
-            email: editForm.email,
-            full_name: editForm.full_name,
-            password: password,
-            role_title: editForm.role_title,
-            team_name: teamData?.name || 'Your Team',
-            login_url: `${window.location.origin}/auth`
-          }
-        });
+        // Send practitioner invite only if emails are enabled
+        if (sendPractitionerEmails) {
+          const { error: inviteError } = await supabase.functions.invoke('send-practitioner-invite', {
+            body: {
+              email: editForm.email,
+              full_name: editForm.full_name,
+              password: password,
+              role_title: editForm.role_title,
+              team_name: teamData?.name || 'Your Team',
+              login_url: `${window.location.origin}/auth`
+            }
+          });
 
-        if (inviteError) {
-          console.warn('Failed to send practitioner invite:', inviteError);
-          // Don't throw here, as the account was created successfully
+          if (inviteError) {
+            console.warn('Failed to send practitioner invite:', inviteError);
+            // Don't throw here, as the account was created successfully
+          }
         }
 
         // Store password in profiles table after successful account creation
@@ -302,7 +307,7 @@ export const StaffCredentialsTab = () => {
           }
         }
 
-        toast.success("Clinician account created and invite sent");
+        toast.success(sendPractitionerEmails ? "Clinician account created and invite sent" : "Clinician account created (no email sent)");
       }
 
       setEditingId(null);
@@ -407,10 +412,30 @@ export const StaffCredentialsTab = () => {
             <Users className="w-6 h-6" />
             Staff Credentials Management
           </CardTitle>
-          <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Staff User
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Staff User
+            </Button>
+            <Button
+              variant={sendPractitionerEmails ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSendPractitionerEmails(!sendPractitionerEmails)}
+              className="flex items-center gap-2"
+            >
+              {sendPractitionerEmails ? (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Email On
+                </>
+              ) : (
+                <>
+                  <MailX className="w-4 h-4" />
+                  Email Off
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
