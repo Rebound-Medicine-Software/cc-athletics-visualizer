@@ -52,6 +52,36 @@ export const AthleteCredentialsTab = () => {
 
   const fetchAthletes = async () => {
     try {
+      // Fetch from CC Athletics API via Supabase Edge Function to get team_name
+      const { data: ccData, error: ccError } = await supabase.functions.invoke('fetch-cc-data', {
+        method: 'GET',
+      });
+
+      if (ccError) throw ccError;
+
+      if (!ccData.success) {
+        throw new Error(ccData.error);
+      }
+
+      // Get unique athletes from CC Athletics data with their team names
+      const athletesMap = new Map();
+      ccData.data?.forEach((record: any) => {
+        if (!athletesMap.has(record.cc_athlete_id)) {
+          athletesMap.set(record.cc_athlete_id, {
+            cc_athlete_id: record.cc_athlete_id,
+            name: record.athlete_name,
+            team_name: record.team_name,
+            gender: record.gender,
+            age: record.age,
+            weight_kg: record.weight_kg,
+            height_cm: record.height_cm
+          });
+        }
+      });
+
+      const ccAthletes = Array.from(athletesMap.values());
+
+      // Now fetch athletes from our database
       const { data, error } = await supabase
         .from('athletes')
         .select('*')
@@ -59,24 +89,14 @@ export const AthleteCredentialsTab = () => {
 
       if (error) throw error;
       
-      // Fetch teams data separately to get team names
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('cc_team_id, name');
-      
-      if (teamsError) throw teamsError;
-      
-      // Create a map of cc_team_id to team name
-      const teamNameMap = teamsData?.reduce((acc, team) => {
-        acc[team.cc_team_id] = team.name;
-        return acc;
-      }, {} as Record<string, string>) || {};
-      
-      // Map the athletes data to include team_name
-      const athletesWithTeamNames = data?.map(athlete => ({
-        ...athlete,
-        team_name: teamNameMap[athlete.cc_team_id] || 'No Team'
-      })) || [];
+      // Map the athletes data to include team_name from CC Athletics
+      const athletesWithTeamNames = data?.map(athlete => {
+        const ccAthlete = ccAthletes.find(cc => cc.cc_athlete_id === athlete.cc_athlete_id);
+        return {
+          ...athlete,
+          team_name: ccAthlete?.team_name || 'No Team'
+        };
+      }) || [];
       
       setAthletes(athletesWithTeamNames);
     } catch (error) {
@@ -368,7 +388,7 @@ export const AthleteCredentialsTab = () => {
               <TableRow>
                 <TableHead>Avatar</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Athlete ID</TableHead>
+                <TableHead>Team Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Password</TableHead>
                 <TableHead>Age</TableHead>
