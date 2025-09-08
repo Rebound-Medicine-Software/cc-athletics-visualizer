@@ -29,6 +29,9 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
+
     const { 
       email, 
       full_name, 
@@ -36,29 +39,108 @@ const handler = async (req: Request): Promise<Response> => {
       role_title, 
       team_name,
       login_url = "https://your-app.com/auth"
-    }: PractitionerInviteRequest = await req.json();
+    }: PractitionerInviteRequest = requestBody;
 
-    console.log(`Sending practitioner invite to: ${email}`);
+    console.log(`Creating practitioner account for: ${email}`);
 
-    // Create Supabase Auth user account
-    console.log('Creating Supabase Auth user...');
-    const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-      email: email,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: full_name,
-        role: 'practitioner',
-        role_title: role_title
-      }
-    });
-
-    if (userError) {
-      console.error('Error creating user:', userError);
-      throw new Error(`Failed to create user account: ${userError.message}`);
+    // Check if user already exists
+    console.log('Checking for existing users...');
+    const { data: existingUsers, error: checkError } = await supabase.auth.admin.listUsers();
+    
+    if (checkError) {
+      console.error("Error checking existing users:", checkError);
+      return new Response(
+        JSON.stringify({ error: "Failed to check existing users: " + checkError.message }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    console.log('User created successfully:', userData.user?.id);
+    console.log('Found existing users:', existingUsers.users.length);
+    const existingUser = existingUsers.users.find(user => user.email === email);
+    console.log('Existing user found:', !!existingUser);
+    
+    let userResult = null;
+    
+    if (existingUser) {
+      console.log(`User already exists with email: ${email}`);
+      
+      // Update password for existing user
+      const { data: updateData, error: updateError } = await supabase.auth.admin.updateUserById(
+        existingUser.id,
+        { password }
+      );
+
+      if (updateError) {
+        console.error("Error updating user password:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to update user password: " + updateError.message }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      console.log(`Password updated for existing user: ${email}`);
+      userResult = existingUser;
+    } else {
+      console.log('Creating new user account...');
+      // Create the user account
+      const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: full_name,
+          role: 'practitioner',
+          role_title: role_title
+        }
+      });
+
+      if (userError) {
+        console.error("Error creating user:", userError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create user: " + userError.message }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      console.log('New user created successfully');
+      userResult = userData?.user;
+    }
+
+    // Update profile relationship for existing or new user
+    console.log('Updating profile relationships...');
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: requestingUser } } = await supabase.auth.getUser(token);
+      
+      if (requestingUser) {
+        const { data: orgProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', requestingUser.id)
+          .eq('role', 'organisation')
+          .single();
+          
+        if (orgProfile && existingUser) {
+          // Update the existing profile with the organization relationship
+          await supabase
+            .from('profiles')
+            .update({ created_by: orgProfile.id })
+            .eq('user_id', existingUser.id);
+        } else if (orgProfile && !existingUser) {
+          // For new users, the profile is created by the trigger
+          // We need to get the new user and update their profile
+          const { data: newUsers } = await supabase.auth.admin.listUsers();
+          const newUser = newUsers.users.find(user => user.email === email);
+          if (newUser) {
+            await supabase
+              .from('profiles')
+              .update({ created_by: orgProfile.id })
+              .eq('user_id', newUser.id);
+          }
+        }
+      }
+    }
 
     // Initialize and send email via NotificationAPI
     console.log('Initializing NotificationAPI...');
@@ -121,7 +203,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Practitioner invite sent successfully"
+        message: existingUser ? "Practitioner account updated and credentials sent" : "Practitioner account created and credentials sent",
+        user: userResult
       }),
       {
         status: 200,
@@ -130,12 +213,10 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
-    console.error("Error in send-practitioner-invite function:", error);
+    console.error("Unexpected error in send-practitioner-invite function:", error);
     console.error("Error stack:", error.stack);
     return new Response(
-      JSON.stringify({ 
-        error: "Unexpected error: " + error.message
-      }),
+      JSON.stringify({ error: "Unexpected error: " + error.message }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders }
