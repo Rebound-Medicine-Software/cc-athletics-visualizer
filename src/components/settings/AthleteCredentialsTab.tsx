@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +43,7 @@ export const AthleteCredentialsTab = () => {
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   const [showVerificationPassword, setShowVerificationPassword] = useState(false);
+  const [sendSignupEmails, setSendSignupEmails] = useState(true);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -243,7 +244,7 @@ export const AthleteCredentialsTab = () => {
       }
 
       // Handle password and account creation
-      if (editForm.password && editForm.email) {
+      if (editForm.password && editForm.email && sendSignupEmails) {
         try {
           await createAthleteAccount(athlete, editForm.email, editForm.password);
           // Store password for future reference
@@ -254,6 +255,11 @@ export const AthleteCredentialsTab = () => {
           toast.error("Failed to create athlete account: " + (accountError.message || "Unknown error"));
           return;
         }
+      } else if (editForm.password && editForm.email && !sendSignupEmails) {
+        // Store password and email without sending signup email
+        updateData.password_hash = editForm.password;
+        updateData.email = editForm.email;
+        toast.success("Athlete credentials saved (no email sent)");
       } else if (editForm.password && !editForm.email) {
         // Just store password without creating account
         updateData.password_hash = editForm.password;
@@ -380,6 +386,24 @@ export const AthleteCredentialsTab = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+            <Button
+              variant={sendSignupEmails ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSendSignupEmails(!sendSignupEmails)}
+              className="ml-auto flex items-center gap-2"
+            >
+              {sendSignupEmails ? (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Email On
+                </>
+              ) : (
+                <>
+                  <MailX className="w-4 h-4" />
+                  Email Off
+                </>
+              )}
+            </Button>
           </div>
 
           <Table>
