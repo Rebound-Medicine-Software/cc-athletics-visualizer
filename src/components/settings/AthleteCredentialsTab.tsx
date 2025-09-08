@@ -52,6 +52,8 @@ export const AthleteCredentialsTab = () => {
 
   const fetchAthletes = async () => {
     try {
+      setLoading(true);
+      
       // Fetch from CC Athletics API via Supabase Edge Function to get team_name
       const { data: ccData, error: ccError } = await supabase.functions.invoke('fetch-cc-data', {
         method: 'GET',
@@ -66,15 +68,12 @@ export const AthleteCredentialsTab = () => {
       // Get unique athletes from CC Athletics data with their team names
       const athletesMap = new Map();
       ccData.data?.forEach((record: any) => {
-        if (!athletesMap.has(record.cc_athlete_id)) {
-          athletesMap.set(record.cc_athlete_id, {
-            cc_athlete_id: record.cc_athlete_id,
+        if (!athletesMap.has(record.athlete_id)) {
+          athletesMap.set(record.athlete_id, {
+            athlete_id: record.athlete_id,
             name: record.athlete_name,
             team_name: record.team_name,
             gender: record.gender,
-            age: record.age,
-            weight_kg: record.weight_kg,
-            height_cm: record.height_cm
           });
         }
       });
@@ -91,7 +90,7 @@ export const AthleteCredentialsTab = () => {
       
       // Map the athletes data to include team_name from CC Athletics
       const athletesWithTeamNames = data?.map(athlete => {
-        const ccAthlete = ccAthletes.find(cc => cc.cc_athlete_id === athlete.cc_athlete_id);
+        const ccAthlete = ccAthletes.find(cc => cc.athlete_id === athlete.cc_athlete_id);
         return {
           ...athlete,
           team_name: ccAthlete?.team_name || 'No Team'
@@ -500,41 +499,40 @@ export const AthleteCredentialsTab = () => {
                          <div className="flex gap-1">
                            <Input
                              type="password"
-                             placeholder="New password"
+                             placeholder="Password"
                              value={editForm.password}
                              onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
                              className="text-xs flex-1"
                            />
-                           <Button 
+                           <Button
                              onClick={() => setEditForm({ ...editForm, password: generateSafePassword() })}
-                             size="sm" 
+                             size="sm"
                              variant="outline"
                              className="px-2"
-                             title="Generate safe password"
                            >
                              <RefreshCw className="w-3 h-3" />
                            </Button>
                          </div>
                          <div className="flex gap-1">
-                           <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
-                             <Save className="w-3 h-3" />
-                             <span className="ml-1 text-xs">
-                               {editForm.password ? "Create Account" : "Save"}
-                             </span>
+                           <Button onClick={handleSave} size="sm" className="flex-1">
+                             <Save className="w-3 h-3 mr-1" />
+                             Save
                            </Button>
-                           <Button onClick={handleCancel} size="sm" variant="outline">
-                             <X className="w-3 h-3" />
+                           <Button onClick={handleCancel} size="sm" variant="outline" className="flex-1">
+                             <X className="w-3 h-3 mr-1" />
+                             Cancel
                            </Button>
                          </div>
                        </div>
                     ) : (
-                      <Button 
-                        onClick={() => handleEdit(athlete)} 
-                        size="sm" 
+                      <Button
+                        onClick={() => handleEdit(athlete)}
+                        size="sm"
                         variant="outline"
-                        disabled={editingId !== null}
+                        className="w-full"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3 h-3 mr-1" />
+                        Edit
                       </Button>
                     )}
                   </TableCell>
@@ -545,29 +543,32 @@ export const AthleteCredentialsTab = () => {
 
           {filteredAthletes.length === 0 && (
             <div className="text-center py-8 text-gray-500">
-              {searchTerm ? 'No athletes found matching your search.' : 'No athletes found.'}
+              No athletes found. Try adjusting your search.
             </div>
           )}
         </div>
       </CardContent>
 
       <Dialog open={showVerificationModal} onOpenChange={setShowVerificationModal}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Verify Organization Password</DialogTitle>
+            <DialogTitle>Verify Your Password</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              Enter your organization password to view/change athlete passwords.
+              Please enter your password to view the athlete's password.
             </p>
             <div className="relative">
               <Input
                 type={showVerificationPassword ? "text" : "password"}
-                placeholder="Your organization password"
+                placeholder="Enter your password"
                 value={verificationPassword}
                 onChange={(e) => setVerificationPassword(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleVerificationSubmit()}
-                className="pr-10"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleVerificationSubmit();
+                  }
+                }}
               />
               <Button
                 type="button"
