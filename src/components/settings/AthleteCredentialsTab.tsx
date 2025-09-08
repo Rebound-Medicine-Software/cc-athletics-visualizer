@@ -402,7 +402,7 @@ export const AthleteCredentialsTab = () => {
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{athlete.name}</TableCell>
-                  <TableCell>{athlete.cc_athlete_id}</TableCell>
+                  <TableCell>Team Name</TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                       <Input
