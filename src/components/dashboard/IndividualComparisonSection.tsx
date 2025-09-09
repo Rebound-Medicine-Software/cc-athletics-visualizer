@@ -666,7 +666,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               onValueChange={handleMetricTypeChange}
               disabled={!selectedTestDate}
             >
-              <SelectTrigger className={`${!selectedTestDate ? "bg-gray-100 opacity-60" : "bg-white"} h-auto min-h-[2.5rem] [&>span]:line-clamp-none [&>span]:whitespace-normal`}>
+              <SelectTrigger className={`${!selectedTestDate ? "bg-gray-100 opacity-60" : "bg-white"} h-auto min-h-[2.5rem] [&>span]:!block [&>span]:!whitespace-normal [&>span]:!overflow-visible [&>span]:!text-ellipsis-none`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
