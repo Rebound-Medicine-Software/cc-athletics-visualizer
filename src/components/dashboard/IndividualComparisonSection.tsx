@@ -765,7 +765,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                             position: 'insideLeft',
                             style: { 
                               textAnchor: 'middle', 
-                              fontSize: 10, 
+                              fontSize: 8, 
                               fill: branding?.primary_color || "#374151" 
                             },
                           }}
