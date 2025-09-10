@@ -46,7 +46,10 @@ export const StaffCredentialsTab = () => {
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   const [showVerificationPassword, setShowVerificationPassword] = useState(false);
-  const [sendPractitionerEmails, setSendPractitionerEmails] = useState(true);
+  const [sendPractitionerEmails, setSendPractitionerEmails] = useState(() => {
+    const saved = localStorage.getItem('sendPractitionerEmails');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -420,7 +423,11 @@ export const StaffCredentialsTab = () => {
             <Button
               variant={sendPractitionerEmails ? "default" : "outline"}
               size="sm"
-              onClick={() => setSendPractitionerEmails(!sendPractitionerEmails)}
+              onClick={() => {
+                const newValue = !sendPractitionerEmails;
+                setSendPractitionerEmails(newValue);
+                localStorage.setItem('sendPractitionerEmails', JSON.stringify(newValue));
+              }}
               className="flex items-center gap-2"
             >
               {sendPractitionerEmails ? (
