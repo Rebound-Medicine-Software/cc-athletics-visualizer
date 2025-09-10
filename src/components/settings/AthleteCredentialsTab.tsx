@@ -43,7 +43,10 @@ export const AthleteCredentialsTab = () => {
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, string>>({});
   const [showVerificationPassword, setShowVerificationPassword] = useState(false);
-  const [sendSignupEmails, setSendSignupEmails] = useState(true);
+  const [sendSignupEmails, setSendSignupEmails] = useState(() => {
+    const saved = localStorage.getItem('sendSignupEmails');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -389,7 +392,11 @@ export const AthleteCredentialsTab = () => {
             <Button
               variant={sendSignupEmails ? "default" : "outline"}
               size="sm"
-              onClick={() => setSendSignupEmails(!sendSignupEmails)}
+              onClick={() => {
+                const newValue = !sendSignupEmails;
+                setSendSignupEmails(newValue);
+                localStorage.setItem('sendSignupEmails', JSON.stringify(newValue));
+              }}
               className="ml-auto flex items-center gap-2"
             >
               {sendSignupEmails ? (
