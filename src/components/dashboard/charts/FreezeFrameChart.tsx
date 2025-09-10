@@ -31,8 +31,12 @@ export const FreezeFrameChart = ({
     <div className="relative h-[200px] w-full">
       {/* Fixed Y-axis container */}
       <div 
-        className="absolute left-0 top-0 z-10 bg-white border-r border-gray-200"
-        style={{ width: `${yAxisWidth}px`, height: '100%' }}
+        className="absolute left-0 z-10 bg-white border-r border-gray-200"
+        style={{ 
+          width: `${yAxisWidth}px`, 
+          height: 'calc(100% - 60px)',
+          top: '20px'
+        }}
       >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart 
