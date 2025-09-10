@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
-import { FreezeFrameChart } from "./charts/FreezeFrameChart";
 import { TestData } from "@/types/forcePlateTypes";
 import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates } from "./filters/filterUtils";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
@@ -742,12 +741,59 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="text-gray-500">Loading...</div>
                 </div>
               ) : historicalData.length > 0 ? (
-                <FreezeFrameChart 
-                  data={historicalData}
-                  selectedMetricType={selectedMetricType}
-                  branding={branding}
-                  getMetricUnit={getMetricUnit}
-                />
+                <div className="w-full overflow-x-auto">
+                  <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart 
+                        data={historicalData} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      >
+                        <XAxis 
+                          dataKey="date" 
+                          fontSize={11}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          interval={0}
+                        />
+                        <YAxis 
+                          fontSize={11}
+                          tickFormatter={(value) => `${value.toFixed(1)}`}
+                          label={{
+                            value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
+                            angle: -90,
+                            position: 'insideLeft',
+                            style: { 
+                              textAnchor: 'middle', 
+                              fontSize: 8, 
+                              fill: branding?.primary_color || "#374151" 
+                            },
+                          }}
+                        />
+                        <Tooltip 
+                          formatter={(value: number, name: string) => {
+                            const unit = getMetricUnit(selectedMetricType);
+                            return [`${value.toFixed(1)}${unit}`, name];
+                          }}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke={branding?.primary_color || "#7DD3FC"}
+                          strokeWidth={3}
+                          dot={{ 
+                            fill: branding?.primary_color || "#7DD3FC", 
+                            strokeWidth: 2, 
+                            r: 5,
+                            stroke: branding?.accent_color || "#7DD3FC"
+                          }}
+                          name={selectedMetricType || "Metric"}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               ) : (
                 <div className="h-full flex items-center justify-center">
                   <div className="text-center text-gray-500 text-sm">
