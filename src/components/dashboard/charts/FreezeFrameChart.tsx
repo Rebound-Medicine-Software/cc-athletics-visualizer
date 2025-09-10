@@ -14,11 +14,11 @@ interface FreezeFrameChartProps {
 export const FreezeFrameChart = ({ data, selectedMetricType, branding, getMetricUnit }: FreezeFrameChartProps) => {
   if (!data.length) return null;
 
-  // Calculate Y-axis domain
+  // Calculate Y-axis domain from actual data
   const values = data.map(d => d.value);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const padding = (maxValue - minValue) * 0.1;
+  const padding = (maxValue - minValue) * 0.1 || 1; // Ensure some padding even for single values
   const yDomain = [Math.max(0, minValue - padding), maxValue + padding];
 
   return (
@@ -27,12 +27,13 @@ export const FreezeFrameChart = ({ data, selectedMetricType, branding, getMetric
       <div className="absolute left-0 top-0 bottom-0 w-16 bg-white z-10 border-r border-gray-200">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={[{ value: yDomain[0] }, { value: yDomain[1] }]}
+            data={data} // Use actual data for proper scaling
             margin={{ top: 20, right: 0, left: 0, bottom: 60 }}
           >
             <YAxis 
               fontSize={11}
               domain={yDomain}
+              type="number"
               tickFormatter={(value) => `${value.toFixed(1)}`}
               label={{
                 value: data[0]?.yAxisLabel || selectedMetricType || "Metric",
@@ -44,6 +45,13 @@ export const FreezeFrameChart = ({ data, selectedMetricType, branding, getMetric
                   fill: branding?.primary_color || "#374151" 
                 },
               }}
+            />
+            {/* Invisible line to maintain proper scaling */}
+            <Line 
+              dataKey="value" 
+              stroke="transparent"
+              dot={false}
+              strokeWidth={0}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -68,6 +76,7 @@ export const FreezeFrameChart = ({ data, selectedMetricType, branding, getMetric
               <YAxis 
                 hide
                 domain={yDomain}
+                type="number"
               />
               <Tooltip 
                 formatter={(value: number, name: string) => {
