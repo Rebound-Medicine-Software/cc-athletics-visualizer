@@ -741,14 +741,21 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="text-gray-500">Loading...</div>
                 </div>
               ) : historicalData.length > 0 ? (
-                <div className="flex w-full">
-                  {/* Sticky Y-axis area */}
-                  <div className="flex-shrink-0 w-16 h-[200px] relative">
-                    <ResponsiveContainer width="100%" height="100%">
+                <div className="w-full overflow-x-auto relative">
+                  <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
+                    <ResponsiveContainer width="100%" height={200}>
                       <LineChart 
-                        data={historicalData}
-                        margin={{ top: 20, right: 0, left: 20, bottom: 60 }}
+                        data={historicalData} 
+                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                       >
+                        <XAxis 
+                          dataKey="date" 
+                          fontSize={11}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          interval={0}
+                        />
                         <YAxis 
                           fontSize={11}
                           tickFormatter={(value) => `${value.toFixed(1)}`}
@@ -762,69 +769,40 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                               fill: branding?.primary_color || "#374151" 
                             },
                           }}
-                          domain={['dataMin - 1', 'dataMax + 1']}
                           axisLine={{ stroke: branding?.primary_color || "#374151", strokeWidth: 2 }}
                           tick={{ 
                             fontSize: 11,
                             fill: branding?.primary_color || "#374151"
                           }}
+                          style={{
+                            position: 'sticky',
+                            left: 0,
+                            zIndex: 10,
+                            backgroundColor: '#ffffff'
+                          }}
                         />
-                        {/* Invisible line to maintain scale */}
+                        <Tooltip 
+                          formatter={(value: number, name: string) => {
+                            const unit = getMetricUnit(selectedMetricType);
+                            return [`${value.toFixed(1)}${unit}`, name];
+                          }}
+                          labelFormatter={(label) => `Date: ${label}`}
+                        />
                         <Line 
                           type="monotone" 
                           dataKey="value" 
-                          stroke="transparent"
-                          strokeWidth={0}
-                          dot={false}
+                          stroke={branding?.primary_color || "#7DD3FC"}
+                          strokeWidth={3}
+                          dot={{ 
+                            fill: branding?.primary_color || "#7DD3FC", 
+                            strokeWidth: 2, 
+                            r: 5,
+                            stroke: branding?.accent_color || "#7DD3FC"
+                          }}
+                          name={selectedMetricType || "Metric"}
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-                  
-                  {/* Scrollable chart area */}
-                  <div className="flex-1 overflow-x-auto">
-                    <div style={{ width: Math.max(400, historicalData.length * 80), minWidth: '100%' }}>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <LineChart 
-                          data={historicalData} 
-                          margin={{ top: 20, right: 30, left: 0, bottom: 60 }}
-                        >
-                          <XAxis 
-                            dataKey="date" 
-                            fontSize={11}
-                            angle={-45}
-                            textAnchor="end"
-                            height={60}
-                            interval={0}
-                            axisLine={{ stroke: branding?.primary_color || "#374151", strokeWidth: 1 }}
-                          />
-                          <YAxis 
-                            hide={true}
-                            domain={['dataMin - 1', 'dataMax + 1']}
-                          />
-                          <Tooltip 
-                            formatter={(value: number, name: string) => {
-                              const unit = getMetricUnit(selectedMetricType);
-                              return [`${value.toFixed(1)}${unit}`, name];
-                            }}
-                            labelFormatter={(label) => `Date: ${label}`}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="value" 
-                            stroke={branding?.primary_color || "#7DD3FC"}
-                            strokeWidth={3}
-                            dot={{ 
-                              fill: branding?.primary_color || "#7DD3FC", 
-                              strokeWidth: 2, 
-                              r: 5,
-                              stroke: branding?.accent_color || "#7DD3FC"
-                            }}
-                            name={selectedMetricType || "Metric"}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
                   </div>
                 </div>
               ) : (
