@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { Users, Edit, Save, X, Plus, Trash2, Upload, RefreshCw, Eye, EyeOff, Mail, MailX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -619,13 +620,31 @@ export const StaffCredentialsTab = () => {
                           )}
                         </div>
                       ) : (
-                        <Avatar>
-                          <AvatarImage src={user.avatar_url} />
-                          <AvatarFallback>
-                            {user.full_name?.substring(0, 2)?.toUpperCase() || 
-                             user.email.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <Avatar className="cursor-pointer">
+                              <AvatarImage src={user.avatar_url} />
+                              <AvatarFallback>
+                                {user.full_name?.substring(0, 2)?.toUpperCase() || 
+                                 user.email.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </HoverCardTrigger>
+                          <HoverCardContent className="w-auto p-2">
+                            {user.avatar_url ? (
+                              <img 
+                                src={user.avatar_url} 
+                                alt={user.full_name || user.email}
+                                className="w-32 h-32 object-cover rounded-lg"
+                              />
+                            ) : (
+                              <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center text-2xl font-semibold">
+                                {user.full_name?.substring(0, 2)?.toUpperCase() || 
+                                 user.email.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                          </HoverCardContent>
+                        </HoverCard>
                       )}
                     </TableCell>
                     <TableCell>
