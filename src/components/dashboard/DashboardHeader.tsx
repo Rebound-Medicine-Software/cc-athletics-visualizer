@@ -70,10 +70,13 @@ export const DashboardHeader = ({
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate("/")}
-              className="text-gray-600"
+              onClick={() => {
+                // TODO: Implement report sending functionality
+                console.log("Send Report(s) clicked");
+              }}
+              className="text-primary border-primary hover:bg-primary/10"
             >
-              ← Home
+              Send Report(s)
             </Button>
           </div>
         </div>
