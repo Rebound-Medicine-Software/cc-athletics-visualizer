@@ -762,6 +762,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                               fill: branding?.primary_color || "#374151" 
                             },
                           }}
+                          domain={['dataMin - 1', 'dataMax + 1']}
                           axisLine={{ stroke: branding?.primary_color || "#374151", strokeWidth: 2 }}
                           tick={{ 
                             fontSize: 11,
@@ -795,6 +796,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                             textAnchor="end"
                             height={60}
                             interval={0}
+                            axisLine={{ stroke: branding?.primary_color || "#374151", strokeWidth: 1 }}
+                          />
+                          <YAxis 
+                            hide={true}
+                            domain={['dataMin - 1', 'dataMax + 1']}
                           />
                           <Tooltip 
                             formatter={(value: number, name: string) => {
