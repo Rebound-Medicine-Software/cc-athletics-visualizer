@@ -16,6 +16,7 @@ interface Athlete {
   id: string;
   name: string;
   cc_athlete_id: string;
+  cc_team_id?: string;
   team_id?: string;
   age?: number;
   gender?: string;
@@ -26,6 +27,7 @@ interface Athlete {
   password_hash?: string;
   created_at: string;
   team_name?: string;
+  team_logo_url?: string;
 }
 
 export const AthleteCredentialsTab = () => {
@@ -37,7 +39,8 @@ export const AthleteCredentialsTab = () => {
   const [editForm, setEditForm] = useState({
     avatar_url: '',
     password: '',
-    email: ''
+    email: '',
+    team_logo_url: ''
   });
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationPassword, setVerificationPassword] = useState("");
@@ -92,13 +95,22 @@ export const AthleteCredentialsTab = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+
+      // Fetch teams data to get logos
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('cc_team_id, logo_url');
+
+      if (teamsError) throw teamsError;
       
-      // Map the athletes data to include team_name from CC Athletics
+      // Map the athletes data to include team_name and team_logo_url
       const athletesWithTeamNames = data?.map(athlete => {
         const ccAthlete = ccAthletes.find(cc => cc.athlete_id === athlete.cc_athlete_id);
+        const team = teamsData?.find(t => t.cc_team_id === athlete.cc_team_id);
         return {
           ...athlete,
-          team_name: ccAthlete?.team_name || 'No Team'
+          team_name: ccAthlete?.team_name || 'No Team',
+          team_logo_url: team?.logo_url || null
         };
       }) || [];
       
@@ -121,7 +133,8 @@ export const AthleteCredentialsTab = () => {
     setEditForm({
       avatar_url: '',
       password: '',
-      email: athlete.email || ''
+      email: athlete.email || '',
+      team_logo_url: ''
     });
   };
 
@@ -234,6 +247,58 @@ export const AthleteCredentialsTab = () => {
         }
       }
 
+      // Handle team logo upload
+      let teamLogoUrl = editForm.team_logo_url;
+      if (editForm.team_logo_url && editForm.team_logo_url.startsWith('data:') && canEditAvatar) {
+        try {
+          // Find the team for this athlete
+          const team = await supabase
+            .from('teams')
+            .select('id')
+            .eq('cc_team_id', athlete.cc_team_id)
+            .single();
+
+          if (team.data) {
+            // Convert data URL to blob
+            const response = await fetch(editForm.team_logo_url);
+            const blob = await response.blob();
+            
+            // Create a unique filename
+            const fileName = `team-${team.data.id}-${Date.now()}.jpg`;
+            
+            // Upload to Supabase storage (we'll use the same bucket for now)
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('athlete-avatars')
+              .upload(fileName, blob, {
+                contentType: 'image/jpeg',
+                upsert: true
+              });
+
+            if (uploadError) {
+              console.error('Team logo upload error:', uploadError);
+              throw uploadError;
+            }
+
+            // Get the public URL
+            const { data: urlData } = supabase.storage
+              .from('athlete-avatars')
+              .getPublicUrl(fileName);
+            
+            teamLogoUrl = urlData.publicUrl;
+
+            // Update the team's logo in the teams table
+            await supabase
+              .from('teams')
+              .update({ logo_url: teamLogoUrl })
+              .eq('id', team.data.id);
+          }
+        } catch (uploadError) {
+          console.error('Failed to upload team logo:', uploadError);
+          toast.error("Failed to upload team logo");
+          return;
+        }
+      }
+
       // Prepare update object
       const updateData: any = {};
       
@@ -290,7 +355,7 @@ export const AthleteCredentialsTab = () => {
       }
       
       setEditingId(null);
-      setEditForm({ avatar_url: '', password: '', email: '' });
+      setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
     } catch (error) {
       console.error('Error updating athlete:', error);
       toast.error("Failed to update athlete credentials");
@@ -304,6 +369,18 @@ export const AthleteCredentialsTab = () => {
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
         setEditForm(prev => ({ ...prev, avatar_url: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleTeamLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && canEditAvatar) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setEditForm(prev => ({ ...prev, team_logo_url: dataUrl }));
       };
       reader.readAsDataURL(file);
     }
@@ -358,7 +435,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ avatar_url: '', password: '', email: '' });
+    setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
   };
 
   if (loading) {
@@ -420,6 +497,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Team Name</TableHead>
+                <TableHead>Team Logo</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Password</TableHead>
                 <TableHead>Age</TableHead>
@@ -492,6 +570,64 @@ export const AthleteCredentialsTab = () => {
                   </TableCell>
                   <TableCell className="font-medium">{athlete.name}</TableCell>
                   <TableCell>{athlete.team_name || 'No Team'}</TableCell>
+                  <TableCell>
+                    {editingId === athlete.id ? (
+                      <div className="space-y-2">
+                        <Avatar>
+                          <AvatarImage src={editForm.team_logo_url} />
+                          <AvatarFallback>
+                            {athlete.team_name?.substring(0, 2)?.toUpperCase() || 'TM'}
+                          </AvatarFallback>
+                        </Avatar>
+                        {canEditAvatar ? (
+                          <div className="relative">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleTeamLogoFileChange}
+                              className="hidden"
+                              id={`team-logo-upload-${athlete.id}`}
+                            />
+                            <Label 
+                              htmlFor={`team-logo-upload-${athlete.id}`}
+                              className="flex items-center justify-center gap-1 px-2 py-1 text-xs cursor-pointer bg-gray-100 hover:bg-gray-200 border rounded-md transition-colors"
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload
+                            </Label>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 text-center">
+                            Permission required
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Avatar className="cursor-pointer">
+                            <AvatarImage src={athlete.team_logo_url} />
+                            <AvatarFallback>
+                              {athlete.team_name?.substring(0, 2)?.toUpperCase() || 'TM'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-auto p-2">
+                          {athlete.team_logo_url ? (
+                            <img 
+                              src={athlete.team_logo_url} 
+                              alt={athlete.team_name || 'Team Logo'}
+                              className="w-32 h-32 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center text-2xl font-semibold">
+                              {athlete.team_name?.substring(0, 2)?.toUpperCase() || 'TM'}
+                            </div>
+                          )}
+                        </HoverCardContent>
+                      </HoverCard>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                       <Input
