@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -464,12 +465,29 @@ export const AthleteCredentialsTab = () => {
                         )}
                       </div>
                     ) : (
-                      <Avatar>
-                        <AvatarImage src={athlete.avatar_url} />
-                        <AvatarFallback>
-                          {athlete.name.substring(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <HoverCard>
+                        <HoverCardTrigger asChild>
+                          <Avatar className="cursor-pointer">
+                            <AvatarImage src={athlete.avatar_url} />
+                            <AvatarFallback>
+                              {athlete.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-auto p-2">
+                          {athlete.avatar_url ? (
+                            <img 
+                              src={athlete.avatar_url} 
+                              alt={athlete.name}
+                              className="w-32 h-32 object-cover rounded-lg"
+                            />
+                          ) : (
+                            <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center text-2xl font-semibold">
+                              {athlete.name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </HoverCardContent>
+                      </HoverCard>
                     )}
                   </TableCell>
                   <TableCell className="font-medium">{athlete.name}</TableCell>
