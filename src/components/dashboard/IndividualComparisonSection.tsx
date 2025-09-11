@@ -741,7 +741,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                   <div className="text-gray-500">Loading...</div>
                 </div>
               ) : historicalData.length > 0 ? (
-                <div className="w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto relative">
                   <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
                     <ResponsiveContainer width="100%" height={200}>
                       <LineChart 
@@ -768,6 +768,17 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
                               fontSize: 8, 
                               fill: branding?.primary_color || "#374151" 
                             },
+                          }}
+                          axisLine={{ stroke: branding?.primary_color || "#374151", strokeWidth: 2 }}
+                          tick={{ 
+                            fontSize: 11,
+                            fill: branding?.primary_color || "#374151"
+                          }}
+                          style={{
+                            position: 'sticky',
+                            left: 0,
+                            zIndex: 10,
+                            backgroundColor: '#ffffff'
                           }}
                         />
                         <Tooltip 
