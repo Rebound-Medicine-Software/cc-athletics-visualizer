@@ -271,12 +271,21 @@ export const AthleteCredentialsTab = () => {
           // If no team found, try to create one using the athlete's team info
           if (!teamIdToUpdate && athlete.cc_team_id && athlete.team_name) {
             console.log('Debug - Creating new team for athlete');
+
+            const { data: authData, error: authErr } = await supabase.auth.getUser();
+            if (authErr || !authData.user) {
+              console.error('Auth error while creating team:', authErr);
+              toast.error('You must be signed in to create a team.');
+              return;
+            }
+
             const { data: newTeam, error: createError } = await supabase
               .from('teams')
               .insert({
                 cc_team_id: athlete.cc_team_id,
                 name: athlete.team_name,
-                country: 'UK' // default value
+                country: 'UK', // default value
+                admin_id: authData.user.id
               })
               .select('id')
               .single();
@@ -289,6 +298,19 @@ export const AthleteCredentialsTab = () => {
 
             teamIdToUpdate = newTeam?.id;
             console.log('Debug - Created new team with ID:', teamIdToUpdate);
+
+            // Link this athlete to the newly created team for future operations
+            if (teamIdToUpdate) {
+              const { error: athleteUpdateErr } = await supabase
+                .from('athletes')
+                .update({ team_id: teamIdToUpdate })
+                .eq('id', athlete.id);
+              if (athleteUpdateErr) {
+                console.warn('Warning: failed to link athlete to new team:', athleteUpdateErr);
+              } else {
+                setAthletes(prev => prev.map(a => a.id === athlete.id ? { ...a, team_id: teamIdToUpdate } : a));
+              }
+            }
           }
 
           if (!teamIdToUpdate) {
