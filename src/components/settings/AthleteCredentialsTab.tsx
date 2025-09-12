@@ -251,52 +251,68 @@ export const AthleteCredentialsTab = () => {
       let teamLogoUrl = editForm.team_logo_url;
       if (editForm.team_logo_url && editForm.team_logo_url.startsWith('data:') && canEditAvatar) {
         try {
-          // Find the team for this athlete
-          const team = await supabase
-            .from('teams')
-            .select('id')
-            .eq('cc_team_id', athlete.cc_team_id)
-            .single();
-
-          if (team.data) {
-            // Convert data URL to blob
-            const response = await fetch(editForm.team_logo_url);
-            const blob = await response.blob();
-            
-            // Create a unique filename
-            const fileName = `team-${team.data.id}-${Date.now()}.jpg`;
-            
-            // Upload to Supabase storage (we'll use the same bucket for now)
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('athlete-avatars')
-              .upload(fileName, blob, {
-                contentType: 'image/jpeg',
-                upsert: true
-              });
-
-            if (uploadError) {
-              console.error('Team logo upload error:', uploadError);
-              throw uploadError;
-            }
-
-            // Get the public URL
-            const { data: urlData } = supabase.storage
-              .from('athlete-avatars')
-              .getPublicUrl(fileName);
-            
-            teamLogoUrl = urlData.publicUrl;
-
-            // Update the team's logo in the teams table
-            await supabase
+          // Determine the team to update: prefer direct team_id, fallback to cc_team_id lookup
+          let teamIdToUpdate = athlete.team_id || null;
+          if (!teamIdToUpdate && athlete.cc_team_id) {
+            const { data: teamByCc } = await supabase
               .from('teams')
-              .update({ logo_url: teamLogoUrl })
-              .eq('id', team.data.id);
-
-            // Update local athlete state with new team logo
-            setAthletes(prev => prev.map(a => 
-              a.cc_team_id === athlete.cc_team_id ? { ...a, team_logo_url: teamLogoUrl } : a
-            ));
+              .select('id')
+              .eq('cc_team_id', athlete.cc_team_id)
+              .maybeSingle();
+            teamIdToUpdate = teamByCc?.id || null;
           }
+
+          if (!teamIdToUpdate) {
+            toast.error("No team found for this athlete. Please ensure the athlete is linked to a team.");
+            return;
+          }
+
+          // Convert data URL to blob
+          const response = await fetch(editForm.team_logo_url);
+          const blob = await response.blob();
+          
+          // Create a unique filename
+          const fileName = `team-${teamIdToUpdate}-${Date.now()}.jpg`;
+          
+          // Upload to Supabase storage (reuse the avatars bucket for simplicity)
+          const { error: uploadError } = await supabase.storage
+            .from('athlete-avatars')
+            .upload(fileName, blob, {
+              contentType: 'image/jpeg',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error('Team logo upload error:', uploadError);
+            throw uploadError;
+          }
+
+          // Get the public URL
+          const { data: urlData } = supabase.storage
+            .from('athlete-avatars')
+            .getPublicUrl(fileName);
+          
+          teamLogoUrl = urlData.publicUrl;
+
+          // Update the team's logo in the teams table
+          const { error: teamUpdateError } = await supabase
+            .from('teams')
+            .update({ logo_url: teamLogoUrl })
+            .eq('id', teamIdToUpdate);
+
+          if (teamUpdateError) {
+            console.error('Team update error:', teamUpdateError);
+            throw teamUpdateError;
+          }
+
+          // Update local athlete state with new team logo (by team_id or cc_team_id)
+          setAthletes(prev => prev.map(a => {
+            const sameTeam = (athlete.team_id && a.team_id === athlete.team_id) ||
+                             (athlete.cc_team_id && a.cc_team_id === athlete.cc_team_id);
+            return sameTeam ? { ...a, team_logo_url: teamLogoUrl } : a;
+          }));
+
+          toast.success("Team logo updated");
         } catch (uploadError) {
           console.error('Failed to upload team logo:', uploadError);
           toast.error("Failed to upload team logo");
