@@ -253,17 +253,47 @@ export const AthleteCredentialsTab = () => {
         try {
           // Determine the team to update: prefer direct team_id, fallback to cc_team_id lookup
           let teamIdToUpdate = athlete.team_id || null;
+          
+          console.log('Debug - athlete.team_id:', athlete.team_id);
+          console.log('Debug - athlete.cc_team_id:', athlete.cc_team_id);
+          
           if (!teamIdToUpdate && athlete.cc_team_id) {
-            const { data: teamByCc } = await supabase
+            const { data: teamByCc, error: teamError } = await supabase
               .from('teams')
-              .select('id')
+              .select('id, name')
               .eq('cc_team_id', athlete.cc_team_id)
               .maybeSingle();
+            
+            console.log('Debug - team lookup result:', { teamByCc, teamError });
             teamIdToUpdate = teamByCc?.id || null;
           }
 
+          // If no team found, try to create one using the athlete's team info
+          if (!teamIdToUpdate && athlete.cc_team_id && athlete.team_name) {
+            console.log('Debug - Creating new team for athlete');
+            const { data: newTeam, error: createError } = await supabase
+              .from('teams')
+              .insert({
+                cc_team_id: athlete.cc_team_id,
+                name: athlete.team_name,
+                country: 'UK' // default value
+              })
+              .select('id')
+              .single();
+
+            if (createError) {
+              console.error('Error creating team:', createError);
+              toast.error("Failed to create team for athlete: " + createError.message);
+              return;
+            }
+
+            teamIdToUpdate = newTeam?.id;
+            console.log('Debug - Created new team with ID:', teamIdToUpdate);
+          }
+
           if (!teamIdToUpdate) {
-            toast.error("No team found for this athlete. Please ensure the athlete is linked to a team.");
+            console.error('Debug - No team ID found for athlete:', athlete);
+            toast.error("Could not find or create team for this athlete. Athlete info: " + athlete.name + " (CC Team ID: " + athlete.cc_team_id + ")");
             return;
           }
 
@@ -312,10 +342,10 @@ export const AthleteCredentialsTab = () => {
             return sameTeam ? { ...a, team_logo_url: teamLogoUrl } : a;
           }));
 
-          toast.success("Team logo updated");
+          toast.success("Team logo updated successfully");
         } catch (uploadError) {
           console.error('Failed to upload team logo:', uploadError);
-          toast.error("Failed to upload team logo");
+          toast.error("Failed to upload team logo: " + uploadError.message);
           return;
         }
       }
