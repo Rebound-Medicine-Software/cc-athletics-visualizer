@@ -291,6 +291,11 @@ export const AthleteCredentialsTab = () => {
               .from('teams')
               .update({ logo_url: teamLogoUrl })
               .eq('id', team.data.id);
+
+            // Update local athlete state with new team logo
+            setAthletes(prev => prev.map(a => 
+              a.cc_team_id === athlete.cc_team_id ? { ...a, team_logo_url: teamLogoUrl } : a
+            ));
           }
         } catch (uploadError) {
           console.error('Failed to upload team logo:', uploadError);
