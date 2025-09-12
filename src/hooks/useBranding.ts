@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TeamBranding } from '@/contexts/AuthContext';
+import ColorThief from 'colorthief';
 
 export const useBranding = (teamId: string | null | undefined, userRole?: string) => {
   const [branding, setBranding] = useState<TeamBranding | null>(null);
@@ -9,7 +10,7 @@ export const useBranding = (teamId: string | null | undefined, userRole?: string
   const fetchBranding = async () => {
     if (!teamId) return;
     
-    // Only apply branding for organization and practitioner roles
+    // Skip branding for super_admin only
     if (userRole === 'super_admin') {
       resetBranding();
       return;
@@ -25,12 +26,75 @@ export const useBranding = (teamId: string | null | undefined, userRole?: string
 
       if (!error && data) {
         setBranding(data);
-        applyBrandingToDOM(data);
+        
+        // For client/athlete role, extract colors from team logo if available
+        if (userRole === 'client' && data.logo_url) {
+          await extractColorsFromLogo(data);
+        } else {
+          // For other roles, use existing team colors
+          applyBrandingToDOM(data);
+        }
       }
     } catch (error) {
       console.error('Error fetching branding:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const extractColorsFromLogo = async (teamData: TeamBranding & { font_family?: string }) => {
+    try {
+      const colorThief = new ColorThief();
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      return new Promise<void>((resolve) => {
+        img.onload = () => {
+          try {
+            // Get dominant color
+            const dominantColor = colorThief.getColor(img);
+            // Get color palette for variety
+            const palette = colorThief.getPalette(img, 3);
+            
+            // Convert RGB arrays to hex
+            const rgbToHex = (r: number, g: number, b: number) => 
+              "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            
+            const primaryHex = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2]);
+            const secondaryHex = palette[1] ? rgbToHex(palette[1][0], palette[1][1], palette[1][2]) : primaryHex;
+            const accentHex = palette[2] ? rgbToHex(palette[2][0], palette[2][1], palette[2][2]) : primaryHex;
+            
+            // Create enhanced branding object with extracted colors
+            const enhancedBranding = {
+              ...teamData,
+              primary_color: primaryHex,
+              secondary_color: secondaryHex,
+              accent_color: accentHex
+            };
+            
+            applyBrandingToDOM(enhancedBranding);
+            setBranding(enhancedBranding);
+          } catch (colorError) {
+            console.error('Error extracting colors:', colorError);
+            // Fallback to team colors if extraction fails
+            applyBrandingToDOM(teamData);
+          }
+          resolve();
+        };
+        
+        img.onerror = () => {
+          console.error('Error loading team logo for color extraction');
+          // Fallback to team colors if image fails to load
+          applyBrandingToDOM(teamData);
+          resolve();
+        };
+        
+        img.src = teamData.logo_url!;
+      });
+    } catch (error) {
+      console.error('Error in extractColorsFromLogo:', error);
+      // Fallback to team colors
+      applyBrandingToDOM(teamData);
     }
   };
 
