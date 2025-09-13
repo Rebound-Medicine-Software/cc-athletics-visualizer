@@ -362,7 +362,14 @@ const Auth = () => {
       await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
       if (role === 'organisation') {
-        toast.success("Organisation account created! You can now invite Clinicians and Clients via Settings.");
+        toast.success("Organisation account created! Please check your email for verification. You can now login to invite Clinicians and Clients.");
+        // Reset to login tab for clinician portal
+        setTimeout(() => {
+          const loginTab = document.querySelector('[value="login"]') as HTMLElement;
+          if (loginTab) {
+            loginTab.click();
+          }
+        }, 2000);
       } else if (role === 'super_admin') {
         toast.success("Super Admin account created! Full platform access granted.");
       } else {
