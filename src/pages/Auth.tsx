@@ -325,58 +325,28 @@ const Auth = () => {
         role = 'super_admin';
       }
 
-      // For organization accounts, check if they previously existed
       if (role === 'organisation') {
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', signupData.email)
-          .eq('role', 'organisation')
-          .maybeSingle();
+        // Use custom edge function for organisation signup (bypasses Supabase email)
+        const { data, error } = await supabase.functions.invoke('signup-organisation', {
+          body: {
+            email: signupData.email,
+            password: signupData.password,
+            firstName: signupData.firstName,
+            lastName: signupData.lastName
+          }
+        });
 
-        if (existingProfile) {
-          setError("An organization account with this email already exists. Please contact support if you need to recover access.");
+        if (error) {
+          setError(error.message || 'Failed to create organization account');
           return;
         }
-      }
 
-      const { error } = await supabase.auth.signUp({
-        email: signupData.email,
-        password: signupData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/setup`,
-          data: {
-            first_name: signupData.firstName,
-            last_name: signupData.lastName,
-            role: role
-          }
+        if (data?.error) {
+          setError(data.error);
+          return;
         }
-      });
 
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      // Send welcome email
-      await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
-
-      if (role === 'organisation') {
-        // Send NotificationAPI email for organisation accounts
-        try {
-          await supabase.functions.invoke('notificationapi-create-organisation-account-email', {
-            body: {
-              organisation: `${signupData.firstName} ${signupData.lastName}`,
-              email: signupData.email,
-              password: signupData.password,
-              redirectTo: `${window.location.origin}/auth?confirmed=1`
-            }
-          });
-          toast.success("Organisation account created! Please check your email for account verification instructions.");
-        } catch (error) {
-          console.error('Error sending organisation email:', error);
-          toast.success("Organisation account created! Please check your email for verification.");
-        }
+        toast.success("Organisation account created! Please check your email for account verification instructions.");
         
         // Reset to login tab for clinician portal
         setTimeout(() => {
@@ -385,10 +355,34 @@ const Auth = () => {
             loginTab.click();
           }
         }, 2000);
-      } else if (role === 'super_admin') {
-        toast.success("Super Admin account created! Full platform access granted.");
       } else {
-        toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
+        // For other roles, use standard Supabase signup
+        const { error } = await supabase.auth.signUp({
+          email: signupData.email,
+          password: signupData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/setup`,
+            data: {
+              first_name: signupData.firstName,
+              last_name: signupData.lastName,
+              role: role
+            }
+          }
+        });
+
+        if (error) {
+          setError(error.message);
+          return;
+        }
+
+        // Send welcome email
+        await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
+
+        if (role === 'super_admin') {
+          toast.success("Super Admin account created! Full platform access granted.");
+        } else {
+          toast.success("Account created! Please check your email for verification from reflexsportstherapyy@gmail.com");
+        }
       }
     } catch (error) {
       setError("An unexpected error occurred");
