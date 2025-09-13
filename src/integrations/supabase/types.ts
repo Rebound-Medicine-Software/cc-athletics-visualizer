@@ -73,6 +73,36 @@ export type Database = {
           },
         ]
       }
+      athletes_new: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          team: string
+          testing_dates: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          team: string
+          testing_dates: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          team?: string
+          testing_dates?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           appointment_date: string
@@ -684,6 +714,41 @@ export type Database = {
           },
         ]
       }
+      test_results: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          id: string
+          metrics: Json
+          test_name: Database["public"]["Enums"]["test_name_enum"]
+          updated_at: string
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          id?: string
+          metrics: Json
+          test_name: Database["public"]["Enums"]["test_name_enum"]
+          updated_at?: string
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          id?: string
+          metrics?: Json
+          test_name?: Database["public"]["Enums"]["test_name_enum"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_results_athlete_id_fkey"
+            columns: ["athlete_id"]
+            isOneToOne: false
+            referencedRelation: "athletes_new"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_videos: {
         Row: {
           created_at: string | null
@@ -842,6 +907,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      test_name_enum: "cmj" | "squat_jump" | "drop_jump" | "pogo_jump"
       user_role: "super_admin" | "practitioner" | "client" | "organisation"
     }
     CompositeTypes: {
@@ -970,6 +1036,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      test_name_enum: ["cmj", "squat_jump", "drop_jump", "pogo_jump"],
       user_role: ["super_admin", "practitioner", "client", "organisation"],
     },
   },
