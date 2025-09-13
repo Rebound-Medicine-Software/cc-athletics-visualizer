@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.signup-organisation]
 verify_jwt = false
+
+[functions.generate-athlete-report]
+verify_jwt = false
