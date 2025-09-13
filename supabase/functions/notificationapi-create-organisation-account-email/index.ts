@@ -26,27 +26,12 @@ serve(async (req) => {
   }
 
   try {
-    const { organisation, email, password, redirectTo } = await req.json();
+    const { organisation, email, password } = await req.json();
 
-    console.log('Generating confirmation link for organisation signup:', email);
+    console.log('Sending organisation signup email to:', email);
 
-    // Generate an official Supabase email confirmation link for this user
-    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'email_confirmation',
-      email,
-      options: {
-        // Use provided redirect target (e.g., your app's /auth?confirmed=1)
-        redirectTo: redirectTo || undefined,
-      }
-    });
-
-    if (linkError) {
-      console.error('Error generating confirmation link:', linkError);
-      throw linkError;
-    }
-
-    // Supabase returns the action link under properties.action_link
-    const confirmUrl = (linkData as any)?.properties?.action_link || (linkData as any)?.action_link;
+    // Create confirmation URL that points to our custom edge function
+    const confirmUrl = `${SUPABASE_URL}/functions/v1/confirm-organisation-account?email=${encodeURIComponent(email)}`;
 
     console.log('Sending organisation signup email to:', email, 'with confirmUrl:', confirmUrl);
 
