@@ -368,7 +368,8 @@ const Auth = () => {
             body: {
               organisation: `${signupData.firstName} ${signupData.lastName}`,
               email: signupData.email,
-              password: signupData.password
+              password: signupData.password,
+              redirectTo: `${window.location.origin}/auth?confirmed=1`
             }
           });
           toast.success("Organisation account created! Please check your email for account verification instructions.");
