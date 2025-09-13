@@ -362,7 +362,21 @@ const Auth = () => {
       await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
 
       if (role === 'organisation') {
-        toast.success("Organisation account created! Please check your email for verification. You can now login to invite Clinicians and Clients.");
+        // Send NotificationAPI email for organisation accounts
+        try {
+          await supabase.functions.invoke('notificationapi-create-organisation-account-email', {
+            body: {
+              organisation: `${signupData.firstName} ${signupData.lastName}`,
+              email: signupData.email,
+              password: signupData.password
+            }
+          });
+          toast.success("Organisation account created! Please check your email for account verification instructions.");
+        } catch (error) {
+          console.error('Error sending organisation email:', error);
+          toast.success("Organisation account created! Please check your email for verification.");
+        }
+        
         // Reset to login tab for clinician portal
         setTimeout(() => {
           const loginTab = document.querySelector('[value="login"]') as HTMLElement;
