@@ -20,19 +20,40 @@ interface TestResult {
   metrics: any;
 }
 
-async function generateRecommendation(testName: string, metrics: any): Promise<string> {
-  // Simple recommendation logic based on test type and metrics
-  switch (testName) {
+function generate_recommendation(test_name: string, metrics: any): string {
+  switch (test_name) {
     case 'cmj':
-      return `Based on CMJ results, focus on explosive power development. Current jump height suggests ${metrics.jump_height ? 'good' : 'needs improvement'} vertical power output.`;
+      if (metrics.jump_height_cm < 30) {
+        return "Focus on concentric strength training to increase CMJ height.";
+      }
+      if (metrics.left_limb < metrics.right_limb * 0.9) {
+        return "Improve left limb symmetry with unilateral strength work.";
+      }
+      if (metrics.right_limb < metrics.left_limb * 0.9) {
+        return "Improve right limb symmetry with unilateral strength work.";
+      }
+      return "Maintain current plyometric and strength balance.";
+    
     case 'squat_jump':
-      return `Squat jump analysis indicates ${metrics.peak_force ? 'adequate' : 'limited'} concentric strength. Consider plyometric training.`;
+      if (metrics.jump_height_cm < 25) {
+        return "Develop concentric power with heavy squat and trap bar jump training.";
+      }
+      return "Good SJ performance, progress with velocity-based training.";
+    
     case 'drop_jump':
-      return `Drop jump performance shows ${metrics.reactive_strength_index ? 'good' : 'poor'} reactive strength. Work on stretch-shortening cycle efficiency.`;
+      if (metrics.contact_time_ms > 300) {
+        return "Reduce contact time with reactive plyometrics (ankle hops, hurdle hops).";
+      }
+      return "Excellent reactivity, maintain stretch-shortening cycle work.";
+    
     case 'pogo_jump':
-      return `Pogo jump results suggest ${metrics.contact_time ? 'efficient' : 'inefficient'} ground contact mechanics. Focus on stiffness training.`;
+      if (metrics.jump_height_cm < 15) {
+        return "Increase tendon stiffness with pogo and ankle rebound drills.";
+      }
+      return "Good plyometric efficiency, keep progressing intensity.";
+    
     default:
-      return 'General recommendation: Continue current training protocol and reassess in 4-6 weeks.';
+      return "No recommendation available.";
   }
 }
 
@@ -100,7 +121,7 @@ Test ${index + 1} Metrics: ${JSON.stringify(test.metrics, null, 2)}`;
       
       // Generate recommendation for the latest test
       const latestTest = testData[testData.length - 1];
-      const recommendation = await generateRecommendation(testType, latestTest.metrics);
+      const recommendation = generate_recommendation(testType, latestTest.metrics);
       pdfContent += `
 
 Recommendation: ${recommendation}`;
