@@ -171,9 +171,12 @@ Deno.serve(async (req) => {
       if (lastDash > 0) {
         const name = raw.slice(0, lastDash).trim();
         const team = raw.slice(lastDash + 1).trim();
+        const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+        const nName = norm(name);
+        const nTeam = norm(team);
         console.log(`Parsed name='${name}', team='${team}' from identifier`);
 
-        // Exact match first
+        // 1) Exact match (case-sensitive)
         const { data: exact, error: exactErr } = await supabaseClient
           .from('athletes_new')
           .select('id,name,team')
@@ -184,24 +187,53 @@ Deno.serve(async (req) => {
         if (exact?.id) {
           athleteIdToUse = exact.id as string;
         } else {
-          // Case-insensitive match
-          const { data: candidates, error: ilikeErr } = await supabaseClient
+          // 2) Case-insensitive exact (no wildcards)
+          const { data: ciExact, error: ciErr } = await supabaseClient
             .from('athletes_new')
             .select('id,name,team')
             .ilike('name', name)
             .ilike('team', team);
-          if (ilikeErr) console.error('iLike lookup error:', ilikeErr);
-          if (candidates && candidates.length > 0) {
-            athleteIdToUse = candidates[0].id as string;
+          if (ciErr) console.error('CI exact lookup error:', ciErr);
+          if (ciExact && ciExact.length > 0) {
+            // Choose best normalized match
+            const best = ciExact.find(a => norm(a.name) === nName && norm(a.team) === nTeam) || ciExact[0];
+            athleteIdToUse = best.id as string;
           } else {
-            // Name-only fallback
-            const { data: byName, error: nameErr } = await supabaseClient
+            // 3) Broad wildcard match
+            const { data: broad, error: broadErr } = await supabaseClient
               .from('athletes_new')
               .select('id,name,team')
-              .ilike('name', name);
-            if (nameErr) console.error('Name-only lookup error:', nameErr);
-            if (byName && byName.length > 0) {
-              athleteIdToUse = byName[0].id as string;
+              .ilike('name', `%${name}%`)
+              .ilike('team', `%${team}%`);
+            if (broadErr) console.error('Broad wildcard lookup error:', broadErr);
+            if (broad && broad.length > 0) {
+              const best = broad.find(a => norm(a.name) === nName && norm(a.team) === nTeam) || broad[0];
+              athleteIdToUse = best.id as string;
+            } else {
+              // 4) Name-only fallbacks
+              const { data: nameOnly, error: nameErr } = await supabaseClient
+                .from('athletes_new')
+                .select('id,name,team')
+                .ilike('name', `%${name}%`);
+              if (nameErr) console.error('Name-only lookup error:', nameErr);
+              if (nameOnly && nameOnly.length > 0) {
+                // Try to choose by normalized team match if any
+                const best = nameOnly.find(a => norm(a.team) === nTeam) || nameOnly[0];
+                athleteIdToUse = best.id as string;
+              } else {
+                // 5) Fallback via test_data if it has athlete_id populated
+                const { data: td, error: tdErr } = await supabaseClient
+                  .from('test_data')
+                  .select('athlete_id, athlete_name, team_name')
+                  .eq('athlete_name', name)
+                  .eq('team_name', team)
+                  .limit(1)
+                  .maybeSingle();
+                if (tdErr) console.error('test_data lookup error:', tdErr);
+                if (td?.athlete_id && isValidUUID(td.athlete_id as unknown as string)) {
+                  athleteIdToUse = td.athlete_id as unknown as string;
+                }
+              }
             }
           }
         }
