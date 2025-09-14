@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,7 +21,39 @@ export const SendReportsModal = () => {
   
   const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
 
-  // Extract unique athletes from test data
+  // Map composite key "name-team" to UUID from athletes_new
+  const [athleteIdByKey, setAthleteIdByKey] = useState<Record<string, string>>({});
+  const [mappingLoading, setMappingLoading] = useState(false);
+
+  // Fetch athletes_new to build mapping
+  useEffect(() => {
+    const fetchAthleteIds = async () => {
+      try {
+        setMappingLoading(true);
+        const { data, error } = await supabase
+          .from('athletes_new')
+          .select('id,name,team');
+        if (error) {
+          console.error('Error fetching athletes_new:', error);
+          return;
+        }
+        const map: Record<string, string> = {};
+        (data || []).forEach((a: any) => {
+          if (a?.name && a?.team && a?.id) {
+            map[`${a.name}-${a.team}`] = a.id;
+          }
+        });
+        setAthleteIdByKey(map);
+      } catch (err) {
+        console.error('Unexpected error fetching athletes_new:', err);
+      } finally {
+        setMappingLoading(false);
+      }
+    };
+    fetchAthleteIds();
+  }, []);
+
+  // Extract unique athletes from test data (for dropdowns)
   const athletes = Array.from(
     new Map(
       testData.map(record => [
@@ -64,9 +96,15 @@ export const SendReportsModal = () => {
     let errorCount = 0;
 
     try {
-      for (const athleteId of selectedAthletes) {
+      for (const athleteKey of selectedAthletes) {
         try {
-          console.log(`Generating report for athlete: ${athleteId}`);
+          const athleteId = athleteIdByKey[athleteKey];
+          if (!athleteId) {
+            console.warn(`No UUID found for selected athlete key: ${athleteKey}`);
+            errorCount++;
+            continue;
+          }
+          console.log(`Generating report for athlete (UUID): ${athleteId}`);
           
           // Call generateAthleteReport
           const reportResponse = await supabase.functions.invoke('generate-athlete-report', {
@@ -99,7 +137,7 @@ export const SendReportsModal = () => {
           console.log(`Report sent successfully for athlete: ${athleteId}`);
           successCount++;
         } catch (error) {
-          console.error(`Error processing athlete ${athleteId}:`, error);
+          console.error(`Error processing athlete key ${athleteKey}:`, error);
           errorCount++;
         }
       }
@@ -165,8 +203,8 @@ export const SendReportsModal = () => {
               value={selectedAthletes}
               onChange={setSelectedAthletes}
               placeholder={
-                dataLoading 
-                  ? "Loading athletes..." 
+                dataLoading || mappingLoading
+                  ? "Loading athletes..."
                   : filteredAthletes.length === 0 
                     ? "No athletes available" 
                     : "Select athletes..."
@@ -184,7 +222,7 @@ export const SendReportsModal = () => {
             </Button>
             <Button 
               onClick={handleSendReports}
-              disabled={isLoading || selectedAthletes.length === 0}
+              disabled={isLoading || mappingLoading || selectedAthletes.length === 0}
             >
               {isLoading ? "Sending..." : "Send Reports"}
             </Button>
