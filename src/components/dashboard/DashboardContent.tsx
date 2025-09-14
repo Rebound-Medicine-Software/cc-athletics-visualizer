@@ -6,6 +6,7 @@ import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
 import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
+import { SendReportsModal } from "./SendReportsModal";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -86,6 +87,10 @@ export const DashboardContent = ({
         fontFamily: branding.font_family || 'Inter, system-ui, sans-serif'
       } : {}}
     >
+      {/* Send Reports Button */}
+      <div className="flex justify-end">
+        <SendReportsModal />
+      </div>
       {/* Performance Highlights */}
       <HighlightsSection
         data={data}
