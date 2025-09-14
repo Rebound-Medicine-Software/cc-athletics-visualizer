@@ -21,8 +21,12 @@ export const SendReportsModal = () => {
   
   const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
 
+  // Normalization helper
+  const normalize = (s: string) => (s || '').toString().trim().toLowerCase().replace(/\s+/g, ' ');
+
   // Map composite key "name-team" to UUID from athletes_new
   const [athleteIdByKey, setAthleteIdByKey] = useState<Record<string, string>>({});
+  const [athletesByName, setAthletesByName] = useState<Record<string, { id: string; name: string; team: string }[]>>({});
   const [mappingLoading, setMappingLoading] = useState(false);
 
   // Fetch athletes_new to build mapping
@@ -37,13 +41,21 @@ export const SendReportsModal = () => {
           console.error('Error fetching athletes_new:', error);
           return;
         }
-        const map: Record<string, string> = {};
+        const byKey: Record<string, string> = {};
+        const byName: Record<string, { id: string; name: string; team: string }[]> = {};
         (data || []).forEach((a: any) => {
           if (a?.name && a?.team && a?.id) {
-            map[`${a.name}-${a.team}`] = a.id;
+            const rawKey = `${a.name}-${a.team}`;
+            const normKey = `${normalize(a.name)}-${normalize(a.team)}`;
+            byKey[rawKey] = a.id;
+            byKey[normKey] = a.id;
+            const nameKey = normalize(a.name);
+            if (!byName[nameKey]) byName[nameKey] = [];
+            byName[nameKey].push({ id: a.id, name: a.name, team: a.team });
           }
         });
-        setAthleteIdByKey(map);
+        setAthleteIdByKey(byKey);
+        setAthletesByName(byName);
       } catch (err) {
         console.error('Unexpected error fetching athletes_new:', err);
       } finally {
@@ -98,7 +110,18 @@ export const SendReportsModal = () => {
     try {
       for (const athleteKey of selectedAthletes) {
         try {
-          const athleteId = athleteIdByKey[athleteKey];
+          let athleteId = athleteIdByKey[athleteKey];
+          if (!athleteId) {
+            const selected = athletes.find(a => a.id === athleteKey);
+            const normKey = selected ? `${normalize(selected.name)}-${normalize(selected.team)}` : undefined;
+            if (normKey && athleteIdByKey[normKey]) {
+              athleteId = athleteIdByKey[normKey];
+            } else if (selected) {
+              const candidates = athletesByName[normalize(selected.name)] || [];
+              const match = candidates.find(c => normalize(c.team) === normalize(selected.team)) || candidates[0];
+              if (match) athleteId = match.id;
+            }
+          }
           if (!athleteId) {
             console.warn(`No UUID found for selected athlete key: ${athleteKey}`);
             errorCount++;
