@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
-import { useAthletes } from "@/hooks/useAthletes";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Mail } from "lucide-react";
@@ -19,7 +19,21 @@ export const SendReportsModal = () => {
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { data: athletes = [], isLoading: athletesLoading } = useAthletes();
+  const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
+
+  // Extract unique athletes from test data
+  const athletes = Array.from(
+    new Map(
+      testData.map(record => [
+        `${record.athlete_name}-${record.team_name}`,
+        {
+          id: `${record.athlete_name}-${record.team_name}`,
+          name: record.athlete_name,
+          team: record.team_name
+        }
+      ])
+    ).values()
+  );
 
   // Get unique team names
   const teamOptions = Array.from(new Set(athletes.map(a => a.team)))
@@ -140,7 +154,7 @@ export const SendReportsModal = () => {
               options={teamOptions}
               value={selectedTeams}
               onChange={setSelectedTeams}
-              placeholder={athletesLoading ? "Loading teams..." : "Select teams..."}
+              placeholder={dataLoading ? "Loading teams..." : "Select teams..."}
             />
           </div>
           
@@ -151,7 +165,7 @@ export const SendReportsModal = () => {
               value={selectedAthletes}
               onChange={setSelectedAthletes}
               placeholder={
-                athletesLoading 
+                dataLoading 
                   ? "Loading athletes..." 
                   : filteredAthletes.length === 0 
                     ? "No athletes available" 
