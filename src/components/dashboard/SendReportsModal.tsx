@@ -122,17 +122,19 @@ export const SendReportsModal = () => {
               if (match) athleteId = match.id;
             }
           }
+          let reportResponse;
           if (!athleteId) {
-            console.warn(`No UUID found for selected athlete key: ${athleteKey}`);
-            errorCount++;
-            continue;
+            console.warn(`No UUID found for selected athlete key: ${athleteKey} - trying server-side resolution`);
+            reportResponse = await supabase.functions.invoke('generate-athlete-report', {
+              body: { athlete_key: athleteKey }
+            });
+          } else {
+            console.log(`Generating report for athlete (UUID): ${athleteId}`);
+            // Call generateAthleteReport
+            reportResponse = await supabase.functions.invoke('generate-athlete-report', {
+              body: { athlete_id: athleteId }
+            });
           }
-          console.log(`Generating report for athlete (UUID): ${athleteId}`);
-          
-          // Call generateAthleteReport
-          const reportResponse = await supabase.functions.invoke('generate-athlete-report', {
-            body: { athlete_id: athleteId }
-          });
 
           if (reportResponse.error) {
             console.error('Error generating report:', reportResponse.error);
@@ -140,13 +142,20 @@ export const SendReportsModal = () => {
             continue;
           }
 
-          const { filePath } = reportResponse.data;
+          const { filePath, athlete_id: resolvedFromServer } = reportResponse.data;
           console.log(`Report generated: ${filePath}`);
+
+          const resolvedId = resolvedFromServer || athleteId;
+          if (!resolvedId) {
+            console.error('Could not resolve athlete UUID after report generation.');
+            errorCount++;
+            continue;
+          }
 
           // Call sendReportViaNotificationsAPI
           const emailResponse = await supabase.functions.invoke('send-report-via-notifications-api', {
             body: { 
-              athlete_id: athleteId, 
+              athlete_id: resolvedId, 
               pdf_path: filePath 
             }
           });

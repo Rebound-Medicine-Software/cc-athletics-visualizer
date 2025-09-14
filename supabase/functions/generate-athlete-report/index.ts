@@ -148,23 +148,82 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { athlete_id } = await req.json();
+    const { athlete_id, athlete_key } = await req.json();
     
-    if (!athlete_id) {
+    if (!athlete_id && !athlete_key) {
       return new Response(
-        JSON.stringify({ error: 'athlete_id is required' }),
+        JSON.stringify({ error: 'athlete_id or athlete_key is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Generating report for athlete_id: ${athlete_id}`);
+    const inputIdOrKey = (athlete_id || athlete_key) as string;
+
+    const isValidUUID = (s: string) =>
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+
+    let athleteIdToUse = inputIdOrKey;
+
+    if (!isValidUUID(athleteIdToUse)) {
+      console.log(`Attempting to resolve UUID from identifier: ${inputIdOrKey}`);
+      const raw = String(inputIdOrKey);
+      const lastDash = raw.lastIndexOf('-');
+      if (lastDash > 0) {
+        const name = raw.slice(0, lastDash).trim();
+        const team = raw.slice(lastDash + 1).trim();
+        console.log(`Parsed name='${name}', team='${team}' from identifier`);
+
+        // Exact match first
+        const { data: exact, error: exactErr } = await supabaseClient
+          .from('athletes_new')
+          .select('id,name,team')
+          .eq('name', name)
+          .eq('team', team)
+          .maybeSingle();
+        if (exactErr) console.error('Exact lookup error:', exactErr);
+        if (exact?.id) {
+          athleteIdToUse = exact.id as string;
+        } else {
+          // Case-insensitive match
+          const { data: candidates, error: ilikeErr } = await supabaseClient
+            .from('athletes_new')
+            .select('id,name,team')
+            .ilike('name', name)
+            .ilike('team', team);
+          if (ilikeErr) console.error('iLike lookup error:', ilikeErr);
+          if (candidates && candidates.length > 0) {
+            athleteIdToUse = candidates[0].id as string;
+          } else {
+            // Name-only fallback
+            const { data: byName, error: nameErr } = await supabaseClient
+              .from('athletes_new')
+              .select('id,name,team')
+              .ilike('name', name);
+            if (nameErr) console.error('Name-only lookup error:', nameErr);
+            if (byName && byName.length > 0) {
+              athleteIdToUse = byName[0].id as string;
+            }
+          }
+        }
+      }
+    }
+
+    if (!isValidUUID(athleteIdToUse)) {
+      console.error('Unable to resolve valid UUID for athlete');
+      return new Response(
+        JSON.stringify({ error: 'Unable to resolve athlete UUID from provided identifier' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Generating report for athlete_id: ${athleteIdToUse}`);
 
     // Fetch athlete data
     const { data: athlete, error: athleteError } = await supabaseClient
       .from('athletes_new')
       .select('*')
-      .eq('id', athlete_id)
-      .single();
+      .eq('id', athleteIdToUse)
+      .maybeSingle();
 
     if (athleteError || !athlete) {
       console.error('Error fetching athlete:', athleteError);
@@ -178,7 +237,7 @@ Deno.serve(async (req) => {
     const { data: testResults, error: testError } = await supabaseClient
       .from('test_results')
       .select('*')
-      .eq('athlete_id', athlete_id);
+      .eq('athlete_id', athleteIdToUse);
 
     if (testError) {
       console.error('Error fetching test results:', testError);
@@ -203,6 +262,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         filePath,
         content: pdfContent,
+        athlete_id: athleteIdToUse,
         success: true 
       }),
       { 
