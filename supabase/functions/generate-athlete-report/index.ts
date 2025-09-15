@@ -165,99 +165,139 @@ Deno.serve(async (req) => {
     let athleteIdToUse = inputIdOrKey;
 
     if (!isValidUUID(athleteIdToUse)) {
-      console.log(`Attempting to resolve UUID from identifier: ${inputIdOrKey}`);
-      const raw = String(inputIdOrKey);
-      const lastDash = raw.lastIndexOf('-');
-      if (lastDash > 0) {
-        const name = raw.slice(0, lastDash).trim();
-        const team = raw.slice(lastDash + 1).trim();
-        const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-        const nName = norm(name);
-        const nTeam = norm(team);
-        console.log(`Parsed name='${name}', team='${team}' from identifier`);
+      console.log(`Attempting to resolve UUID from identifier: ${inputIdOrKey}`)
+      const raw = String(inputIdOrKey).trim()
+      const lastDash = raw.lastIndexOf('-')
 
-        // 1) Check if athlete exists in athletes_new
-        let { data: existingAthlete } = await supabaseClient
+      // Support identifiers with or without a trailing team part
+      const name = (lastDash > 0 ? raw.slice(0, lastDash) : raw).trim()
+      const team = (lastDash > 0 ? raw.slice(lastDash + 1) : '').trim()
+
+      const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+      const nName = norm(name)
+      const nTeam = norm(team)
+      console.log(`Parsed name='${name}', team='${team || '(none)'}' from identifier`)
+
+      // 1) Try to find an existing athlete in athletes_new using wildcard matches
+      let existingAthlete: { id?: string; name?: string; team?: string; email?: string } | null = null
+      if (team) {
+        const { data } = await supabaseClient
           .from('athletes_new')
           .select('id,name,team,email')
-          .ilike('name', name)
-          .ilike('team', team)
-          .maybeSingle();
+          .ilike('name', `%${name}%`)
+          .ilike('team', `%${team}%`)
+          .limit(1)
+          .maybeSingle()
+        existingAthlete = data ?? null
+      } else {
+        const { data } = await supabaseClient
+          .from('athletes_new')
+          .select('id,name,team,email')
+          .ilike('name', `%${name}%`)
+          .limit(1)
+          .maybeSingle()
+        existingAthlete = data ?? null
+      }
 
-        if (existingAthlete?.id) {
-          athleteIdToUse = existingAthlete.id as string;
-          console.log(`Found existing athlete: ${athleteIdToUse}`);
-        } else {
-          // 2) Look for athlete in test_data and create if found
-          console.log('Athlete not found in athletes_new, checking test_data...');
-          const { data: testDataAthlete } = await supabaseClient
+      if (existingAthlete?.id) {
+        athleteIdToUse = existingAthlete.id as string
+        console.log(`Found existing athlete in athletes_new: ${athleteIdToUse}`)
+      } else {
+        // 2) Look for athlete in test_data and create if found
+        console.log('Athlete not found in athletes_new, checking test_data...')
+
+        let testDataAthlete: { athlete_name: string; team_name?: string } | null = null
+        if (team) {
+          const { data } = await supabaseClient
             .from('test_data')
             .select('athlete_name, team_name')
-            .ilike('athlete_name', name)
-            .ilike('team_name', team)
+            .ilike('athlete_name', `%${name}%`)
+            .ilike('team_name', `%${team}%`)
             .limit(1)
-            .maybeSingle();
+            .maybeSingle()
+          testDataAthlete = data ?? null
+        } else {
+          const { data } = await supabaseClient
+            .from('test_data')
+            .select('athlete_name, team_name')
+            .ilike('athlete_name', `%${name}%`)
+            .limit(1)
+            .maybeSingle()
+          testDataAthlete = data ?? null
+        }
 
-          if (testDataAthlete) {
-            console.log(`Creating new athlete record for: ${testDataAthlete.athlete_name} - ${testDataAthlete.team_name}`);
-            
-            // Generate a placeholder email
-            const emailName = testDataAthlete.athlete_name.toLowerCase().replace(/\s+/g, '.');
-            const teamName = testDataAthlete.team_name.toLowerCase().replace(/\s+/g, '');
-            const email = `${emailName}@${teamName}.com`;
-            
+        if (testDataAthlete) {
+          console.log(
+            `Creating new athlete record for: ${testDataAthlete.athlete_name} - ${testDataAthlete.team_name || '(team unknown)'}`
+          )
+
+          // Generate a placeholder email
+          const emailName = testDataAthlete.athlete_name.toLowerCase().replace(/\s+/g, '.')
+          const teamNamePart = (testDataAthlete.team_name || 'team').toLowerCase().replace(/\s+/g, '')
+          const email = `${emailName}@${teamNamePart}.com`
+
+          const { data: newAthlete, error: createError } = await supabaseClient
+            .from('athletes_new')
+            .insert({
+              name: testDataAthlete.athlete_name,
+              team: testDataAthlete.team_name || team || 'Unknown',
+              email: email,
+              testing_dates: new Date().toISOString().split('T')[0],
+            })
+            .select('id')
+            .single()
+
+          if (createError) {
+            console.error('Error creating athlete:', createError)
+          } else if (newAthlete?.id) {
+            athleteIdToUse = newAthlete.id as string
+            console.log(`Created new athlete with ID: ${athleteIdToUse}`)
+          }
+        } else {
+          // 3) Try broader search in test_data (looser match, prefer team if provided)
+          console.log('Searching for similar athletes in test_data...')
+          const { data: similarAthletes } = await supabaseClient
+            .from('test_data')
+            .select('athlete_name, team_name')
+            .ilike('athlete_name', `%${name}%`)
+            .ilike('team_name', team ? `%${team}%` : '%')
+            .limit(5)
+
+          if (similarAthletes && similarAthletes.length > 0) {
+            console.log(
+              `Found ${similarAthletes.length} similar athletes:`,
+              similarAthletes.map((a) => `${a.athlete_name} - ${a.team_name}`)
+            )
+
+            // Prefer a match whose team includes the provided team (when available)
+            let match = similarAthletes[0]
+            if (team) {
+              const teamMatched = similarAthletes.find(
+                (a) => a.team_name && a.team_name.toLowerCase().includes(nTeam)
+              )
+              match = teamMatched ?? match
+            }
+
+            const emailName = match.athlete_name.toLowerCase().replace(/\s+/g, '.')
+            const teamName = (match.team_name || team || 'team').toLowerCase().replace(/\s+/g, '')
+            const email = `${emailName}@${teamName}.com`
+
             const { data: newAthlete, error: createError } = await supabaseClient
               .from('athletes_new')
               .insert({
-                name: testDataAthlete.athlete_name,
-                team: testDataAthlete.team_name,
+                name: match.athlete_name,
+                team: match.team_name || team || 'Unknown',
                 email: email,
-                testing_dates: new Date().toISOString().split('T')[0]
+                testing_dates: new Date().toISOString().split('T')[0],
               })
               .select('id')
-              .single();
+              .single()
 
             if (createError) {
-              console.error('Error creating athlete:', createError);
-            } else {
-              athleteIdToUse = newAthlete.id as string;
-              console.log(`Created new athlete with ID: ${athleteIdToUse}`);
-            }
-          } else {
-            // 3) Try broader search in test_data
-            console.log('Searching for similar athletes in test_data...');
-            const { data: similarAthletes } = await supabaseClient
-              .from('test_data')
-              .select('athlete_name, team_name')
-              .ilike('athlete_name', `%${name}%`)
-              .limit(5);
-
-            if (similarAthletes && similarAthletes.length > 0) {
-              console.log(`Found ${similarAthletes.length} similar athletes:`, similarAthletes.map(a => `${a.athlete_name} - ${a.team_name}`));
-              
-              // Use the first match and create the athlete
-              const match = similarAthletes[0];
-              const emailName = match.athlete_name.toLowerCase().replace(/\s+/g, '.');
-              const teamName = match.team_name.toLowerCase().replace(/\s+/g, '');
-              const email = `${emailName}@${teamName}.com`;
-              
-              const { data: newAthlete, error: createError } = await supabaseClient
-                .from('athletes_new')
-                .insert({
-                  name: match.athlete_name,
-                  team: match.team_name,
-                  email: email,
-                  testing_dates: new Date().toISOString().split('T')[0]
-                })
-                .select('id')
-                .single();
-
-              if (createError) {
-                console.error('Error creating similar athlete:', createError);
-              } else {
-                athleteIdToUse = newAthlete.id as string;
-                console.log(`Created new athlete from similar match with ID: ${athleteIdToUse}`);
-              }
+              console.error('Error creating similar athlete:', createError)
+            } else if (newAthlete?.id) {
+              athleteIdToUse = newAthlete.id as string
+              console.log(`Created new athlete from similar match with ID: ${athleteIdToUse}`)
             }
           }
         }
