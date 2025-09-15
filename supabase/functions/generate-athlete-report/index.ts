@@ -305,11 +305,43 @@ Deno.serve(async (req) => {
     }
 
     if (!isValidUUID(athleteIdToUse)) {
-      console.error('Unable to resolve valid UUID for athlete');
-      return new Response(
-        JSON.stringify({ error: 'Unable to resolve athlete UUID from provided identifier' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.warn('Final fallback: creating placeholder athlete from identifier')
+      const raw = String(inputIdOrKey).trim()
+      const lastDash = raw.lastIndexOf('-')
+      const name = (lastDash > 0 ? raw.slice(0, lastDash) : raw).trim()
+      const team = (lastDash > 0 ? raw.slice(lastDash + 1) : 'Unknown').trim() || 'Unknown'
+
+      if (name) {
+        const emailName = name.toLowerCase().replace(/\s+/g, '.')
+        const teamName = team.toLowerCase().replace(/\s+/g, '') || 'team'
+        const email = `${emailName}@${teamName}.com`
+
+        const { data: newAthlete, error: createError } = await supabaseClient
+          .from('athletes_new')
+          .insert({
+            name,
+            team,
+            email,
+            testing_dates: new Date().toISOString().split('T')[0],
+          })
+          .select('id')
+          .single()
+
+        if (!createError && newAthlete?.id) {
+          athleteIdToUse = newAthlete.id as string
+          console.log(`Created placeholder athlete with ID: ${athleteIdToUse}`)
+        } else {
+          console.error('Placeholder athlete creation failed:', createError)
+        }
+      }
+
+      if (!isValidUUID(athleteIdToUse)) {
+        console.error('Unable to resolve valid UUID for athlete after fallback')
+        return new Response(
+          JSON.stringify({ error: 'Unable to resolve athlete UUID from provided identifier' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     console.log(`Generating report for athlete_id: ${athleteIdToUse}`);
