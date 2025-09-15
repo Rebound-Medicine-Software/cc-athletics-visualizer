@@ -176,63 +176,87 @@ Deno.serve(async (req) => {
         const nTeam = norm(team);
         console.log(`Parsed name='${name}', team='${team}' from identifier`);
 
-        // 1) Exact match (case-sensitive)
-        const { data: exact, error: exactErr } = await supabaseClient
+        // 1) Check if athlete exists in athletes_new
+        let { data: existingAthlete } = await supabaseClient
           .from('athletes_new')
-          .select('id,name,team')
-          .eq('name', name)
-          .eq('team', team)
+          .select('id,name,team,email')
+          .ilike('name', name)
+          .ilike('team', team)
           .maybeSingle();
-        if (exactErr) console.error('Exact lookup error:', exactErr);
-        if (exact?.id) {
-          athleteIdToUse = exact.id as string;
+
+        if (existingAthlete?.id) {
+          athleteIdToUse = existingAthlete.id as string;
+          console.log(`Found existing athlete: ${athleteIdToUse}`);
         } else {
-          // 2) Case-insensitive exact (no wildcards)
-          const { data: ciExact, error: ciErr } = await supabaseClient
-            .from('athletes_new')
-            .select('id,name,team')
-            .ilike('name', name)
-            .ilike('team', team);
-          if (ciErr) console.error('CI exact lookup error:', ciErr);
-          if (ciExact && ciExact.length > 0) {
-            // Choose best normalized match
-            const best = ciExact.find(a => norm(a.name) === nName && norm(a.team) === nTeam) || ciExact[0];
-            athleteIdToUse = best.id as string;
-          } else {
-            // 3) Broad wildcard match
-            const { data: broad, error: broadErr } = await supabaseClient
+          // 2) Look for athlete in test_data and create if found
+          console.log('Athlete not found in athletes_new, checking test_data...');
+          const { data: testDataAthlete } = await supabaseClient
+            .from('test_data')
+            .select('athlete_name, team_name')
+            .ilike('athlete_name', name)
+            .ilike('team_name', team)
+            .limit(1)
+            .maybeSingle();
+
+          if (testDataAthlete) {
+            console.log(`Creating new athlete record for: ${testDataAthlete.athlete_name} - ${testDataAthlete.team_name}`);
+            
+            // Generate a placeholder email
+            const emailName = testDataAthlete.athlete_name.toLowerCase().replace(/\s+/g, '.');
+            const teamName = testDataAthlete.team_name.toLowerCase().replace(/\s+/g, '');
+            const email = `${emailName}@${teamName}.com`;
+            
+            const { data: newAthlete, error: createError } = await supabaseClient
               .from('athletes_new')
-              .select('id,name,team')
-              .ilike('name', `%${name}%`)
-              .ilike('team', `%${team}%`);
-            if (broadErr) console.error('Broad wildcard lookup error:', broadErr);
-            if (broad && broad.length > 0) {
-              const best = broad.find(a => norm(a.name) === nName && norm(a.team) === nTeam) || broad[0];
-              athleteIdToUse = best.id as string;
+              .insert({
+                name: testDataAthlete.athlete_name,
+                team: testDataAthlete.team_name,
+                email: email,
+                testing_dates: new Date().toISOString().split('T')[0]
+              })
+              .select('id')
+              .single();
+
+            if (createError) {
+              console.error('Error creating athlete:', createError);
             } else {
-              // 4) Name-only fallbacks
-              const { data: nameOnly, error: nameErr } = await supabaseClient
+              athleteIdToUse = newAthlete.id as string;
+              console.log(`Created new athlete with ID: ${athleteIdToUse}`);
+            }
+          } else {
+            // 3) Try broader search in test_data
+            console.log('Searching for similar athletes in test_data...');
+            const { data: similarAthletes } = await supabaseClient
+              .from('test_data')
+              .select('athlete_name, team_name')
+              .ilike('athlete_name', `%${name}%`)
+              .limit(5);
+
+            if (similarAthletes && similarAthletes.length > 0) {
+              console.log(`Found ${similarAthletes.length} similar athletes:`, similarAthletes.map(a => `${a.athlete_name} - ${a.team_name}`));
+              
+              // Use the first match and create the athlete
+              const match = similarAthletes[0];
+              const emailName = match.athlete_name.toLowerCase().replace(/\s+/g, '.');
+              const teamName = match.team_name.toLowerCase().replace(/\s+/g, '');
+              const email = `${emailName}@${teamName}.com`;
+              
+              const { data: newAthlete, error: createError } = await supabaseClient
                 .from('athletes_new')
-                .select('id,name,team')
-                .ilike('name', `%${name}%`);
-              if (nameErr) console.error('Name-only lookup error:', nameErr);
-              if (nameOnly && nameOnly.length > 0) {
-                // Try to choose by normalized team match if any
-                const best = nameOnly.find(a => norm(a.team) === nTeam) || nameOnly[0];
-                athleteIdToUse = best.id as string;
+                .insert({
+                  name: match.athlete_name,
+                  team: match.team_name,
+                  email: email,
+                  testing_dates: new Date().toISOString().split('T')[0]
+                })
+                .select('id')
+                .single();
+
+              if (createError) {
+                console.error('Error creating similar athlete:', createError);
               } else {
-                // 5) Fallback via test_data if it has athlete_id populated
-                const { data: td, error: tdErr } = await supabaseClient
-                  .from('test_data')
-                  .select('athlete_id, athlete_name, team_name')
-                  .eq('athlete_name', name)
-                  .eq('team_name', team)
-                  .limit(1)
-                  .maybeSingle();
-                if (tdErr) console.error('test_data lookup error:', tdErr);
-                if (td?.athlete_id && isValidUUID(td.athlete_id as unknown as string)) {
-                  athleteIdToUse = td.athlete_id as unknown as string;
-                }
+                athleteIdToUse = newAthlete.id as string;
+                console.log(`Created new athlete from similar match with ID: ${athleteIdToUse}`);
               }
             }
           }
