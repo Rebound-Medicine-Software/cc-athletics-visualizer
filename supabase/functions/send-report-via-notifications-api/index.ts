@@ -71,26 +71,94 @@ Deno.serve(async (req) => {
 
     console.log('Sending request to NotificationsAPI with payload:', JSON.stringify(payload, null, 2));
 
-    // Make POST request to NotificationsAPI
-    const notificationsResponse = await fetch('https://api.notificationsapi.com/messages/email', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('NOTIFICATIONS_API_KEY')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const responseData = await notificationsResponse.json();
-    
-    console.log('NotificationsAPI response status:', notificationsResponse.status);
-    console.log('NotificationsAPI response:', responseData);
-
-    if (!notificationsResponse.ok) {
-      console.error('NotificationsAPI error:', responseData);
+    // Check if API key exists
+    const apiKey = Deno.env.get('NOTIFICATIONS_API_KEY');
+    if (!apiKey) {
+      console.error('NOTIFICATIONS_API_KEY environment variable not set');
       return new Response(
-        JSON.stringify({ error: 'Failed to send email via NotificationsAPI', details: responseData }),
-        { status: notificationsResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Email service not configured - missing API key' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Making request to NotificationsAPI...');
+    
+    try {
+      // Make POST request to NotificationsAPI with timeout and retry logic
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      const notificationsResponse = await fetch('https://api.notificationsapi.com/messages/email', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Supabase-Edge-Function/1.0'
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('NotificationsAPI response status:', notificationsResponse.status);
+      console.log('NotificationsAPI response headers:', Object.fromEntries(notificationsResponse.headers.entries()));
+
+      let responseData;
+      const contentType = notificationsResponse.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await notificationsResponse.json();
+      } else {
+        const textData = await notificationsResponse.text();
+        console.log('Non-JSON response:', textData);
+        responseData = { message: textData };
+      }
+      
+      console.log('NotificationsAPI response data:', responseData);
+
+      if (!notificationsResponse.ok) {
+        console.error('NotificationsAPI error:', responseData);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Failed to send email via NotificationsAPI', 
+            details: responseData,
+            status: notificationsResponse.status 
+          }),
+          { status: notificationsResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Email sent successfully',
+          details: responseData 
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+
+    } catch (error) {
+      console.error('Network error when calling NotificationsAPI:', error);
+      
+      if (error.name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ error: 'Request timeout - email service took too long to respond' }),
+          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // DNS or network connectivity issues
+      return new Response(
+        JSON.stringify({ 
+          error: 'Network connectivity issue when sending email', 
+          details: error.message,
+          suggestion: 'Please check if the email service is accessible or try again later'
+        }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
