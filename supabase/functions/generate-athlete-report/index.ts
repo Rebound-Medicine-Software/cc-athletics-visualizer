@@ -178,26 +178,24 @@ Deno.serve(async (req) => {
       const nTeam = norm(team)
       console.log(`Parsed name='${name}', team='${team || '(none)'}' from identifier`)
 
-      // 1) Try to find an existing athlete in athletes_new using wildcard matches
+      // 1) Try to find an existing athlete in athletes_new using tokenized AND matching
       let existingAthlete: { id?: string; name?: string; team?: string; email?: string } | null = null
-      if (team) {
-        const { data } = await supabaseClient
+      const nameTokens = name.split(/[^a-zA-Z0-9]+/).filter(Boolean)
+      const teamTokens = team ? team.split(/[^a-zA-Z0-9]+/).filter(Boolean) : []
+      if (nameTokens.length) {
+        let q = supabaseClient
           .from('athletes_new')
           .select('id,name,team,email')
-          .ilike('name', `%${name}%`)
-          .ilike('team', `%${team}%`)
-          .limit(1)
-          .maybeSingle()
-        existingAthlete = data ?? null
-      } else {
-        const { data } = await supabaseClient
-          .from('athletes_new')
-          .select('id,name,team,email')
-          .ilike('name', `%${name}%`)
-          .limit(1)
-          .maybeSingle()
+        nameTokens.forEach((t) => {
+          q = q.ilike('name', `%${t}%`)
+        })
+        teamTokens.forEach((t) => {
+          q = q.ilike('team', `%${t}%`)
+        })
+        const { data } = await q.limit(1).maybeSingle()
         existingAthlete = data ?? null
       }
+
 
       if (existingAthlete?.id) {
         athleteIdToUse = existingAthlete.id as string
@@ -207,24 +205,20 @@ Deno.serve(async (req) => {
         console.log('Athlete not found in athletes_new, checking test_data...')
 
         let testDataAthlete: { athlete_name: string; team_name?: string } | null = null
-        if (team) {
-          const { data } = await supabaseClient
+        if (nameTokens.length) {
+          let q2 = supabaseClient
             .from('test_data')
             .select('athlete_name, team_name')
-            .ilike('athlete_name', `%${name}%`)
-            .ilike('team_name', `%${team}%`)
-            .limit(1)
-            .maybeSingle()
-          testDataAthlete = data ?? null
-        } else {
-          const { data } = await supabaseClient
-            .from('test_data')
-            .select('athlete_name, team_name')
-            .ilike('athlete_name', `%${name}%`)
-            .limit(1)
-            .maybeSingle()
+          nameTokens.forEach((t) => {
+            q2 = q2.ilike('athlete_name', `%${t}%`)
+          })
+          teamTokens.forEach((t) => {
+            q2 = q2.ilike('team_name', `%${t}%`)
+          })
+          const { data } = await q2.limit(1).maybeSingle()
           testDataAthlete = data ?? null
         }
+
 
         if (testDataAthlete) {
           console.log(
@@ -256,12 +250,18 @@ Deno.serve(async (req) => {
         } else {
           // 3) Try broader search in test_data (looser match, prefer team if provided)
           console.log('Searching for similar athletes in test_data...')
-          const { data: similarAthletes } = await supabaseClient
+          let q3 = supabaseClient
             .from('test_data')
             .select('athlete_name, team_name')
-            .ilike('athlete_name', `%${name}%`)
-            .ilike('team_name', team ? `%${team}%` : '%')
-            .limit(5)
+          nameTokens.forEach((t) => {
+            q3 = q3.ilike('athlete_name', `%${t}%`)
+          })
+          if (teamTokens.length) {
+            teamTokens.forEach((t) => {
+              q3 = q3.ilike('team_name', `%${t}%`)
+            })
+          }
+          const { data: similarAthletes } = await q3.limit(5)
 
           if (similarAthletes && similarAthletes.length > 0) {
             console.log(
@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
     // In a real implementation, this would generate an actual PDF file
     // For now, we'll return the content and simulate the file path
     const currentDate = new Date().toISOString().split('T')[0];
-    const filePath = `/mnt/data/reports/${athlete_id}_${currentDate}.pdf`;
+    const filePath = `/mnt/data/reports/${athleteIdToUse}_${currentDate}.pdf`;
     
     console.log(`Generated report content for athlete ${athlete.name}`);
     console.log(`Simulated file path: ${filePath}`);
