@@ -17,7 +17,7 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -27,12 +27,61 @@ serve(async (req) => {
 
     console.log('Generating interactive PDF report...')
 
-    // Step 1 - Data Models (Athlete and TestResults)
-    const athleteData = {
+    // Parse request body for athlete parameters
+    let athleteId: string | null = null;
+    let athleteKey: string | null = null;
+    
+    try {
+      const body = await req.json();
+      athleteId = body.athlete_id || null;
+      athleteKey = body.athlete_key || null;
+    } catch {
+      // If no body or invalid JSON, generate sample report
+    }
+
+    // Resolve athlete if parameters provided
+    let athleteData: any = {
       name: "Joshua Richards-Fisher",
-      team: "Llanelli Town Academy AFC",
+      team: "Llanelli Town Academy AFC", 
       email: "joshua.richards@example.com",
       testingDates: "01/01/2025 - 01/09/2025"
+    };
+    
+    if (athleteId || athleteKey) {
+      if (athleteId) {
+        const { data } = await supabaseClient
+          .from('athletes_new')
+          .select('*')
+          .eq('id', athleteId)
+          .single();
+        if (data) {
+          athleteData = {
+            name: data.name,
+            team: data.team,
+            email: data.email,
+            testingDates: data.testing_dates || "01/01/2025 - 01/09/2025"
+          };
+        }
+      } else if (athleteKey) {
+        // Try to resolve from athlete_key format "name-team"
+        const [name, team] = athleteKey.split('-');
+        const { data } = await supabaseClient
+          .from('athletes_new')
+          .select('*')
+          .ilike('name', name)
+          .ilike('team', team)
+          .limit(1)
+          .single();
+        if (data) {
+          athleteData = {
+            name: data.name,
+            team: data.team,
+            email: data.email,
+            testingDates: data.testing_dates || "01/01/2025 - 01/09/2025"
+          };
+          athleteId = data.id;
+        }
+      }
     }
 
     const testResults = [
@@ -483,7 +532,7 @@ serve(async (req) => {
     console.log('Interactive PDF generated, uploading to storage...')
 
     // Upload to Supabase Storage
-    const fileName = `interactive-report-${Date.now()}.pdf`
+    const fileName = `interactive-report-${athleteData.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.pdf`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('athlete-reports')
       .upload(fileName, pdfBuffer, {
@@ -509,6 +558,7 @@ serve(async (req) => {
         report_url: urlData.publicUrl,
         filename: fileName,
         athlete_name: athleteData.name,
+        athlete_id: athleteId,
         test_count: testResults.length,
         type: 'pdf',
         interactive_fields: [
