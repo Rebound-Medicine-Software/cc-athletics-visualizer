@@ -93,6 +93,44 @@ export const SendReportsModal = () => {
     label: athlete.name
   }));
 
+  const handleTestInteractiveReport = async () => {
+    setIsLoading(true);
+    try {
+      console.log('Generating sample interactive report...');
+      const response = await supabase.functions.invoke('generate-sample-interactive-report');
+      
+      if (response.error) {
+        console.error('Error generating interactive report:', response.error);
+        toast({
+          title: "Error",
+          description: "Failed to generate interactive report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { report_url } = response.data;
+      console.log('Interactive report generated:', report_url);
+      
+      // Open the interactive report in a new tab
+      window.open(report_url, '_blank');
+      
+      toast({
+        title: "Success",
+        description: "Interactive report generated! Opening in new tab.",
+      });
+    } catch (error) {
+      console.error('Error generating interactive report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate interactive report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSendReports = async () => {
     if (selectedAthletes.length === 0) {
       toast({
@@ -244,20 +282,31 @@ export const SendReportsModal = () => {
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex flex-col gap-2 pt-4">
             <Button 
-              variant="outline" 
-              onClick={() => setIsOpen(false)}
+              variant="secondary"
+              onClick={handleTestInteractiveReport}
               disabled={isLoading}
+              className="w-full"
             >
-              Cancel
+              {isLoading ? "Generating..." : "🔍 Test Interactive Report (Sample Data)"}
             </Button>
-            <Button 
-              onClick={handleSendReports}
-              disabled={isLoading || mappingLoading || selectedAthletes.length === 0}
-            >
-              {isLoading ? "Sending..." : "Send Reports"}
-            </Button>
+            
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsOpen(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSendReports}
+                disabled={isLoading || mappingLoading || selectedAthletes.length === 0}
+              >
+                {isLoading ? "Sending..." : "Send Reports"}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
