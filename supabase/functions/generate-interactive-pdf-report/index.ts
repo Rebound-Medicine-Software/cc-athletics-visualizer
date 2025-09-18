@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,7 +25,7 @@ serve(async (req) => {
       }
     )
 
-    console.log('Generating printable PDF report...')
+    console.log('Generating interactive PDF report...')
 
     // Sample athlete data
     const athleteData = {
@@ -60,528 +61,276 @@ serve(async (req) => {
       }
     ]
 
-    // Generate HTML content optimized for PDF printing
-    const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Performance Report - ${athleteData.name}</title>
-    <style>
-        @media print {
-            body { margin: 0; padding: 20px; }
-            .no-print { display: none !important; }
-            .page-break { page-break-before: always; }
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: white;
-            padding: 20px;
-            line-height: 1.4;
-            color: #333;
-        }
-        
-        .report-container {
-            max-width: 210mm;
-            margin: 0 auto;
-            background: white;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            font-weight: normal;
-        }
-        
-        .athlete-info {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .athlete-info h2 {
-            color: #2d3748;
-            margin-bottom: 15px;
-            font-size: 20px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .info-label {
-            font-weight: 600;
-            color: #4a5568;
-        }
-        
-        .info-value {
-            color: #2d3748;
-        }
-        
-        .interactive-section {
-            background: #edf2f7;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #cbd5e0;
-        }
-        
-        .filter-group {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        
-        .filter-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        
-        .filter-label {
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 12px;
-        }
-        
-        .filter-dropdown {
-            padding: 8px 12px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            background: white;
-            min-width: 150px;
-            font-size: 14px;
-        }
-        
-        .test-section {
-            margin-bottom: 40px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        
-        .test-header {
-            background: #4a5568;
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .test-title {
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .test-dropdown {
-            padding: 6px 10px;
-            border: none;
-            border-radius: 4px;
-            background: white;
-            color: #2d3748;
-            font-size: 12px;
-        }
-        
-        .test-content {
-            padding: 25px;
-        }
-        
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-        
-        .metric-card {
-            background: #f7fafc;
-            border-radius: 8px;
-            padding: 20px;
-            border-left: 4px solid #48bb78;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .metric-name {
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        
-        .metric-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: #48bb78;
-            margin-bottom: 5px;
-        }
-        
-        .metric-percentile {
-            font-size: 12px;
-            color: #718096;
-        }
-        
-        .percentile-bar {
-            width: 100%;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 3px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        
-        .percentile-fill {
-            height: 100%;
-            background: #48bb78;
-            border-radius: 3px;
-        }
-        
-        .chart-placeholder {
-            background: #f7fafc;
-            border: 2px dashed #cbd5e0;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            color: #718096;
-            margin: 20px 0;
-        }
-        
-        .recommendations {
-            background: #fff5f5;
-            border: 1px solid #fed7d7;
-            border-radius: 8px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-        
-        .recommendations h3 {
-            color: #c53030;
-            margin-bottom: 15px;
-            font-size: 18px;
-        }
-        
-        .recommendation-item {
-            margin-bottom: 12px;
-            padding-left: 20px;
-            position: relative;
-            font-size: 14px;
-        }
-        
-        .recommendation-item:before {
-            content: "→";
-            position: absolute;
-            left: 0;
-            color: #c53030;
-            font-weight: bold;
-        }
-        
-        .form-section {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: #2d3748;
-            margin-bottom: 8px;
-        }
-        
-        .form-input, .form-textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #cbd5e0;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
-        }
-        
-        .form-textarea {
-            height: 80px;
-            resize: vertical;
-        }
-        
-        .checkbox-group {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .checkbox-item input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-        }
-        
-        .print-button {
-            background: #4299e1;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin: 20px 0;
-        }
-        
-        .print-button:hover {
-            background: #3182ce;
-        }
-        
-        @media (max-width: 768px) {
-            .info-grid { grid-template-columns: 1fr; }
-            .metrics-grid { grid-template-columns: 1fr; }
-            .filter-group { flex-direction: column; align-items: flex-start; }
-            .test-header { flex-direction: column; gap: 10px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="report-container">
-        <header class="header">
-            <h1>Interactive Performance Report</h1>
-            <p>Generated on ${athleteData.testDate}</p>
-        </header>
-        
-        <div class="athlete-info">
-            <h2>Athlete Profile</h2>
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">Name:</span>
-                    <span class="info-value">${athleteData.name}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Team:</span>
-                    <span class="info-value">${athleteData.team}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Sport:</span>
-                    <span class="info-value">${athleteData.sport}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Position:</span>
-                    <span class="info-value">${athleteData.position}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Age:</span>
-                    <span class="info-value">${athleteData.age} years</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Weight:</span>
-                    <span class="info-value">${athleteData.weight} kg</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="interactive-section">
-            <h3>Interactive Filters</h3>
-            <div class="filter-group">
-                <div class="filter-item">
-                    <label class="filter-label">Compare with:</label>
-                    <select class="filter-dropdown" onchange="updateComparison(this.value)">
-                        <option value="elite">Elite Athletes</option>
-                        <option value="sport">Sport Specific</option>
-                        <option value="position">Position Specific</option>
-                        <option value="age">Age Group</option>
-                        <option value="team">Team Average</option>
-                    </select>
-                </div>
-                
-                <div class="filter-item">
-                    <label class="filter-label">Time Period:</label>
-                    <select class="filter-dropdown" onchange="updateTimePeriod(this.value)">
-                        <option value="latest">Latest Test</option>
-                        <option value="3months">Last 3 Months</option>
-                        <option value="6months">Last 6 Months</option>
-                        <option value="1year">Last Year</option>
-                        <option value="all">All Time</option>
-                    </select>
-                </div>
-                
-                <div class="filter-item">
-                    <label class="filter-label">View Type:</label>
-                    <select class="filter-dropdown" onchange="updateView(this.value)">
-                        <option value="detailed">Detailed Metrics</option>
-                        <option value="summary">Summary Only</option>
-                        <option value="trends">Trend Analysis</option>
-                        <option value="comparison">Side by Side</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        
-        ${testResults.map((test, testIndex) => `
-        <div class="test-section">
-            <div class="test-header">
-                <h3 class="test-title">${test.testName}</h3>
-                <select class="test-dropdown" onchange="updateTestView(${testIndex}, this.value)">
-                    <option value="percentile">Percentile View</option>
-                    <option value="raw">Raw Values</option>
-                    <option value="normalized">Normalized</option>
-                    <option value="progression">Progression</option>
-                </select>
-            </div>
-            
-            <div class="test-content">
-                <div class="metrics-grid">
-                    ${test.metrics.map(metric => `
-                    <div class="metric-card">
-                        <div class="metric-name">${metric.name}</div>
-                        <div class="metric-value">${metric.value}</div>
-                        <div class="metric-percentile">${metric.percentile}th percentile</div>
-                        <div class="percentile-bar">
-                            <div class="percentile-fill" style="width: ${metric.percentile}%"></div>
-                        </div>
-                    </div>
-                    `).join('')}
-                </div>
-                
-                <div class="chart-placeholder">
-                    <p>📊 Interactive Chart Area</p>
-                    <p>Force-Time curve with zoom and filter capabilities</p>
-                </div>
-            </div>
-        </div>
-        `).join('')}
-        
-        <div class="form-section">
-            <h3>Assessment Notes</h3>
-            
-            <div class="form-group">
-                <label class="form-label">Coach/Practitioner Name:</label>
-                <input type="text" class="form-input" placeholder="Enter your name" />
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Additional Comments:</label>
-                <textarea class="form-textarea" placeholder="Enter your observations and recommendations..."></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Overall Performance Rating:</label>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="radio" name="rating" value="poor" id="poor">
-                        <label for="poor">Poor</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="rating" value="fair" id="fair">
-                        <label for="fair">Fair</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="rating" value="good" id="good" checked>
-                        <label for="good">Good</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="rating" value="very-good" id="very-good">
-                        <label for="very-good">Very Good</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="rating" value="excellent" id="excellent">
-                        <label for="excellent">Excellent</label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="recommendations">
-            <h3>Training Recommendations</h3>
-            <div class="recommendation-item">Focus on explosive power development through plyometric exercises</div>
-            <div class="recommendation-item">Improve rate of force development with rapid isometric contractions</div>
-            <div class="recommendation-item">Consider bilateral symmetry training for left-right balance</div>
-            <div class="recommendation-item">Monitor fatigue levels during high-intensity sessions</div>
-        </div>
-        
-        <button class="print-button no-print" onclick="window.print()">Print/Save as PDF</button>
-    </div>
-    
-    <script>
-        function updateComparison(value) {
-            console.log('Updating comparison to:', value);
-            // Update percentile values based on comparison type
-            document.querySelectorAll('.metric-percentile').forEach(element => {
-                const currentPercentile = parseInt(element.textContent);
-                const variation = Math.floor(Math.random() * 20) - 10;
-                const newPercentile = Math.max(10, Math.min(95, currentPercentile + variation));
-                element.textContent = newPercentile + 'th percentile vs ' + value;
-                element.parentElement.querySelector('.percentile-fill').style.width = newPercentile + '%';
-            });
-        }
-        
-        function updateTimePeriod(value) {
-            console.log('Updating time period to:', value);
-            // Simulate data update based on time period
-        }
-        
-        function updateView(value) {
-            console.log('Updating view to:', value);
-            const detailElements = document.querySelectorAll('.metrics-grid');
-            if (value === 'summary') {
-                detailElements.forEach(el => el.style.display = 'none');
-            } else {
-                detailElements.forEach(el => el.style.display = 'grid');
-            }
-        }
-        
-        function updateTestView(testIndex, value) {
-            console.log('Updating test', testIndex, 'view to:', value);
-            // Update specific test view
-        }
-    </script>
-</body>
-</html>
-    `
+    // Create a new PDF document with interactive form fields
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
 
-    console.log('HTML report generated, uploading to storage...')
+    // Set up colors and fonts
+    const primaryColor = [102, 126, 234] // #667eea
+    const secondaryColor = [118, 75, 162] // #764ba2
+    const textColor = [45, 55, 72] // #2d3748
+    const accentColor = [72, 187, 120] // #48bb78
+
+    // Helper function to draw rounded rectangle
+    const drawRoundedRect = (x: number, y: number, width: number, height: number, radius: number) => {
+      doc.roundedRect(x, y, width, height, radius, radius)
+    }
+
+    // Header with gradient effect
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+    doc.rect(0, 0, 210, 40, 'F')
+    
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Interactive Performance Report', 105, 20, { align: 'center' })
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Generated on ${athleteData.testDate}`, 105, 30, { align: 'center' })
+
+    // Reset text color
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+
+    let yPosition = 50
+
+    // Athlete Information Section
+    doc.setFillColor(248, 250, 252) // #f8fafc
+    drawRoundedRect(15, yPosition, 180, 40, 3)
+    doc.rect(15, yPosition, 180, 40, 'F')
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Athlete Profile', 20, yPosition + 10)
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    
+    // Athlete info grid
+    const infoData = [
+      ['Name:', athleteData.name],
+      ['Team:', athleteData.team],
+      ['Sport:', athleteData.sport],
+      ['Position:', athleteData.position],
+      ['Age:', `${athleteData.age} years`],
+      ['Weight:', `${athleteData.weight} kg`]
+    ]
+
+    let infoY = yPosition + 18
+    infoData.forEach(([label, value], index) => {
+      const x = index % 2 === 0 ? 20 : 110
+      if (index % 2 === 0 && index > 0) infoY += 6
+      
+      doc.setFont('helvetica', 'bold')
+      doc.text(label, x, infoY)
+      doc.setFont('helvetica', 'normal')
+      doc.text(value, x + 25, infoY)
+    })
+
+    yPosition += 50
+
+    // Interactive form fields section
+    doc.setFillColor(237, 242, 247) // #edf2f7
+    drawRoundedRect(15, yPosition, 180, 25, 3)
+    doc.rect(15, yPosition, 180, 25, 'F')
+
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Interactive Comparison Filters', 20, yPosition + 8)
+
+    // Add form fields for comparison filters
+    const textField1 = new doc.AcroFormTextField()
+    textField1.fieldName = 'comparison_type'
+    textField1.Rect = [20, yPosition + 12, 50, 8]
+    textField1.value = 'Elite Athletes'
+    textField1.maxLength = 50
+    doc.addField(textField1)
+
+    const textField2 = new doc.AcroFormTextField()
+    textField2.fieldName = 'time_period'
+    textField2.Rect = [80, yPosition + 12, 50, 8]
+    textField2.value = 'Latest Test'
+    textField2.maxLength = 50
+    doc.addField(textField2)
+
+    const textField3 = new doc.AcroFormTextField()
+    textField3.fieldName = 'view_type'
+    textField3.Rect = [140, yPosition + 12, 50, 8]
+    textField3.value = 'Detailed Metrics'
+    textField3.maxLength = 50
+    doc.addField(textField3)
+
+    yPosition += 35
+
+    // Test Results Sections
+    testResults.forEach((test, testIndex) => {
+      // Test header
+      doc.setFillColor(74, 85, 104) // #4a5568
+      doc.rect(15, yPosition, 180, 12, 'F')
+      
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(14)
+      doc.setFont('helvetica', 'bold')
+      doc.text(test.testName, 20, yPosition + 8)
+
+      // Add interactive dropdown for test view
+      const dropdown = new doc.AcroFormComboBox()
+      dropdown.fieldName = `test_view_${testIndex}`
+      dropdown.Rect = [150, yPosition + 2, 40, 8]
+      dropdown.edit = false
+      dropdown.setOptions([
+        ['percentile', 'Percentile View'],
+        ['raw', 'Raw Values'],
+        ['normalized', 'Normalized'],
+        ['progression', 'Progression']
+      ])
+      dropdown.value = 'percentile'
+      doc.addField(dropdown)
+
+      yPosition += 15
+
+      // Reset text color
+      doc.setTextColor(textColor[0], textColor[1], textColor[2])
+
+      // Metrics grid
+      test.metrics.forEach((metric, metricIndex) => {
+        const x = metricIndex % 2 === 0 ? 20 : 110
+        if (metricIndex % 2 === 0 && metricIndex > 0) yPosition += 25
+
+        // Metric card background
+        doc.setFillColor(247, 250, 252) // #f7fafc
+        drawRoundedRect(x, yPosition, 85, 22, 2)
+        doc.rect(x, yPosition, 85, 22, 'F')
+
+        // Accent border
+        doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2])
+        doc.setLineWidth(1)
+        doc.line(x, yPosition, x, yPosition + 22)
+
+        // Metric content
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.text(metric.name, x + 5, yPosition + 6)
+
+        doc.setFontSize(16)
+        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2])
+        doc.text(metric.value, x + 5, yPosition + 13)
+
+        doc.setFontSize(8)
+        doc.setTextColor(113, 128, 150) // #718096
+        doc.text(`${metric.percentile}th percentile`, x + 5, yPosition + 18)
+
+        // Percentile bar
+        const barWidth = 70
+        const fillWidth = (barWidth * metric.percentile) / 100
+        
+        doc.setFillColor(226, 232, 240) // #e2e8f0
+        doc.rect(x + 5, yPosition + 19, barWidth, 2, 'F')
+        
+        doc.setFillColor(accentColor[0], accentColor[1], accentColor[2])
+        doc.rect(x + 5, yPosition + 19, fillWidth, 2, 'F')
+
+        // Reset colors
+        doc.setTextColor(textColor[0], textColor[1], textColor[2])
+        doc.setDrawColor(0, 0, 0)
+      })
+
+      yPosition += 30
+    })
+
+    // Assessment Notes Form Section
+    doc.setFillColor(248, 250, 252) // #f8fafc
+    drawRoundedRect(15, yPosition, 180, 60, 3)
+    doc.rect(15, yPosition, 180, 60, 'F')
+
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Assessment Notes', 20, yPosition + 10)
+
+    // Coach/Practitioner Name Field
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Coach/Practitioner Name:', 20, yPosition + 20)
+
+    const nameField = new doc.AcroFormTextField()
+    nameField.fieldName = 'practitioner_name'
+    nameField.Rect = [20, yPosition + 22, 80, 8]
+    nameField.multiline = false
+    nameField.maxLength = 100
+    doc.addField(nameField)
+
+    // Additional Comments Field
+    doc.text('Additional Comments:', 20, yPosition + 35)
+
+    const commentsField = new doc.AcroFormTextField()
+    commentsField.fieldName = 'additional_comments'
+    commentsField.Rect = [20, yPosition + 37, 170, 15]
+    commentsField.multiline = true
+    commentsField.maxLength = 500
+    doc.addField(commentsField)
+
+    yPosition += 70
+
+    // Performance Rating Radio Buttons
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Overall Performance Rating:', 20, yPosition)
+
+    const ratings = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent']
+    ratings.forEach((rating, index) => {
+      const radioButton = new doc.AcroFormRadioButton()
+      radioButton.fieldName = 'performance_rating'
+      radioButton.Rect = [20 + (index * 30), yPosition + 5, 5, 5]
+      radioButton.value = rating.toLowerCase().replace(' ', '_')
+      if (rating === 'Good') radioButton.isChecked = true
+      doc.addField(radioButton)
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(rating, 27 + (index * 30), yPosition + 9)
+    })
+
+    yPosition += 20
+
+    // Training Recommendations
+    doc.setFillColor(255, 245, 245) // #fff5f5
+    drawRoundedRect(15, yPosition, 180, 30, 3)
+    doc.rect(15, yPosition, 180, 30, 'F')
+
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(197, 48, 48) // #c53030
+    doc.text('Training Recommendations', 20, yPosition + 8)
+
+    const recommendations = [
+      'Focus on explosive power development through plyometric exercises',
+      'Improve rate of force development with rapid isometric contractions',
+      'Consider bilateral symmetry training for left-right balance',
+      'Monitor fatigue levels during high-intensity sessions'
+    ]
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+
+    recommendations.forEach((recommendation, index) => {
+      doc.text(`→ ${recommendation}`, 20, yPosition + 15 + (index * 4))
+    })
+
+    // Convert PDF to buffer
+    const pdfBuffer = doc.output('arraybuffer')
+
+    console.log('Interactive PDF generated, uploading to storage...')
 
     // Upload to Supabase Storage
-    const fileName = `interactive-report-${Date.now()}.html`
+    const fileName = `interactive-report-${Date.now()}.pdf`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('athlete-reports')
-      .upload(fileName, htmlContent, {
-        contentType: 'text/html',
+      .upload(fileName, pdfBuffer, {
+        contentType: 'application/pdf',
         upsert: false
       })
 
@@ -595,7 +344,7 @@ serve(async (req) => {
       .from('athlete-reports')
       .getPublicUrl(fileName)
 
-    console.log('Interactive HTML report uploaded successfully:', urlData.publicUrl)
+    console.log('Interactive PDF report uploaded successfully:', urlData.publicUrl)
 
     return new Response(
       JSON.stringify({
@@ -604,7 +353,17 @@ serve(async (req) => {
         filename: fileName,
         athlete_name: athleteData.name,
         test_count: testResults.length,
-        type: 'html'
+        type: 'pdf',
+        interactive_fields: [
+          'comparison_type',
+          'time_period', 
+          'view_type',
+          'test_view_0',
+          'test_view_1',
+          'practitioner_name',
+          'additional_comments',
+          'performance_rating'
+        ]
       }),
       {
         headers: {
