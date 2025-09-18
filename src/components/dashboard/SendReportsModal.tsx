@@ -168,63 +168,31 @@ export const SendReportsModal = () => {
     try {
       for (const athleteKey of selectedAthletes) {
         try {
-          let athleteId = athleteIdByKey[athleteKey];
-          if (!athleteId) {
-            const selected = athletes.find(a => a.id === athleteKey);
-            const normKey = selected ? `${normalize(selected.name)}-${normalize(selected.team)}` : undefined;
-            if (normKey && athleteIdByKey[normKey]) {
-              athleteId = athleteIdByKey[normKey];
-            } else if (selected) {
-              const candidates = athletesByName[normalize(selected.name)] || [];
-              const match = candidates.find(c => normalize(c.team) === normalize(selected.team)) || candidates[0];
-              if (match) athleteId = match.id;
-            }
-          }
-          let reportResponse;
-          if (!athleteId) {
-            console.warn(`No UUID found for selected athlete key: ${athleteKey} - trying server-side resolution`);
-            reportResponse = await supabase.functions.invoke('generate-athlete-report', {
-              body: { athlete_key: athleteKey }
-            });
-          } else {
-            console.log(`Generating report for athlete (UUID): ${athleteId}`);
-            // Call generateAthleteReport
-            reportResponse = await supabase.functions.invoke('generate-athlete-report', {
-              body: { athlete_id: athleteId }
-            });
-          }
-
+          console.log(`Generating interactive PDF for athlete: ${athleteKey}`);
+          
+          // Generate interactive PDF for each selected athlete
+          const reportResponse = await supabase.functions.invoke('generate-interactive-pdf-report');
+          
           if (reportResponse.error) {
-            console.error('Error generating report:', reportResponse.error);
+            console.error('Error generating interactive PDF:', reportResponse.error);
             errorCount++;
             continue;
           }
 
-          const { filePath, athlete_id: resolvedFromServer } = reportResponse.data;
-          console.log(`Report generated: ${filePath}`);
-
-          const resolvedId = resolvedFromServer || athleteId;
-          if (!resolvedId) {
-            console.error('Could not resolve athlete UUID after report generation.');
-            errorCount++;
-            continue;
-          }
-
-          // Call sendReportViaNotificationsAPI
-          const emailResponse = await supabase.functions.invoke('send-report-via-notifications-api', {
-            body: { 
-              athlete_id: resolvedId, 
-              pdf_path: filePath 
-            }
-          });
-
-          if (emailResponse.error) {
-            console.error('Error sending email:', emailResponse.error);
-            errorCount++;
-            continue;
-          }
-
-          console.log(`Report sent successfully for athlete: ${athleteId}`);
+          const { report_url, filename } = reportResponse.data;
+          console.log(`Interactive PDF generated: ${report_url}`);
+          
+          // Create download link for each athlete's PDF
+          const link = document.createElement('a');
+          link.href = report_url;
+          link.download = filename || `interactive-report-${athleteKey}.pdf`;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log(`Interactive PDF sent successfully for athlete: ${athleteKey}`);
           successCount++;
         } catch (error) {
           console.error(`Error processing athlete key ${athleteKey}:`, error);
@@ -235,14 +203,14 @@ export const SendReportsModal = () => {
       if (successCount > 0) {
         toast({
           title: "Success",
-          description: "Reports sent successfully!",
+          description: `${successCount} interactive PDFs generated successfully!`,
         });
       }
 
       if (errorCount > 0) {
         toast({
           title: "Warning",
-          description: `${errorCount} reports failed to send. Check console for details.`,
+          description: `${errorCount} reports failed to generate. Check console for details.`,
           variant: "destructive",
         });
       }
@@ -255,7 +223,7 @@ export const SendReportsModal = () => {
       console.error('Error in send reports process:', error);
       toast({
         title: "Error",
-        description: "Failed to send reports. Please try again.",
+        description: "Failed to generate reports. Please try again.",
         variant: "destructive",
       });
     } finally {
