@@ -109,15 +109,21 @@ export const SendReportsModal = () => {
         return;
       }
 
-      const { report_url } = response.data;
+      const { report_url, filename } = response.data;
       console.log('Interactive PDF generated:', report_url);
       
-      // Open the interactive PDF in a new tab
-      window.open(report_url, '_blank');
+      // Create a download link to avoid popup blocking
+      const link = document.createElement('a');
+      link.href = report_url;
+      link.download = filename || 'interactive-report.pdf';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
         title: "Success",
-        description: "Interactive PDF generated! Opening in new tab.",
+        description: "Interactive PDF downloaded successfully!",
       });
     } catch (error) {
       console.error('Error generating interactive PDF:', error);
