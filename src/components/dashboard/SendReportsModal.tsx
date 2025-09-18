@@ -96,34 +96,34 @@ export const SendReportsModal = () => {
   const handleTestInteractiveReport = async () => {
     setIsLoading(true);
     try {
-      console.log('Generating sample interactive report...');
-      const response = await supabase.functions.invoke('generate-sample-interactive-report');
+      console.log('Generating interactive PDF report...');
+      const response = await supabase.functions.invoke('generate-interactive-pdf-report');
       
       if (response.error) {
-        console.error('Error generating interactive report:', response.error);
+        console.error('Error generating interactive PDF:', response.error);
         toast({
           title: "Error",
-          description: "Failed to generate interactive report.",
+          description: "Failed to generate interactive PDF.",
           variant: "destructive",
         });
         return;
       }
 
       const { report_url } = response.data;
-      console.log('Interactive report generated:', report_url);
+      console.log('Interactive PDF generated:', report_url);
       
-      // Open the interactive report in a new tab
+      // Open the interactive PDF in a new tab
       window.open(report_url, '_blank');
       
       toast({
         title: "Success",
-        description: "Interactive report generated! Opening in new tab.",
+        description: "Interactive PDF generated! Opening in new tab.",
       });
     } catch (error) {
-      console.error('Error generating interactive report:', error);
+      console.error('Error generating interactive PDF:', error);
       toast({
         title: "Error",
-        description: "Failed to generate interactive report.",
+        description: "Failed to generate interactive PDF.",
         variant: "destructive",
       });
     } finally {
@@ -289,7 +289,7 @@ export const SendReportsModal = () => {
               disabled={isLoading}
               className="w-full"
             >
-              {isLoading ? "Generating..." : "🔍 Test Interactive Report (Sample Data)"}
+              {isLoading ? "Generating..." : "📄 Test Interactive PDF (Sample Data)"}
             </Button>
             
             <div className="flex justify-end gap-2">
