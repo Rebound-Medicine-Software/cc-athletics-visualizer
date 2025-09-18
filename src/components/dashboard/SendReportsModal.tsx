@@ -112,18 +112,32 @@ export const SendReportsModal = () => {
       const { report_url, filename } = response.data;
       console.log('Interactive PDF generated:', report_url);
       
-      // Create a download link to avoid popup blocking
-      const link = document.createElement('a');
-      link.href = report_url;
-      link.download = filename || 'interactive-report.pdf';
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Try both approaches - download and opening in new tab
+      try {
+        // Create a download link
+        const link = document.createElement('a');
+        link.href = report_url;
+        link.download = filename || 'interactive-report.pdf';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Also try opening in new tab as fallback
+        setTimeout(() => {
+          window.open(report_url, '_blank', 'noopener,noreferrer');
+        }, 500);
+        
+      } catch (downloadError) {
+        console.error('Download failed, opening in new tab:', downloadError);
+        window.open(report_url, '_blank', 'noopener,noreferrer');
+      }
       
       toast({
         title: "Success",
-        description: "Interactive PDF downloaded successfully!",
+        description: `Interactive PDF generated! Direct link: ${report_url}`,
+        duration: 10000,
       });
     } catch (error) {
       console.error('Error generating interactive PDF:', error);
