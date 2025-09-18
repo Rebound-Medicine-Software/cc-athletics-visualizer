@@ -27,148 +27,386 @@ serve(async (req) => {
 
     console.log('Generating interactive PDF report...')
 
-    // Sample athlete data
+    // Step 1 - Data Models (Athlete and TestResults)
     const athleteData = {
       name: "Joshua Richards-Fisher",
-      team: "Evolve Physiotherapy",
-      sport: "Football",
-      position: "Midfielder",
-      age: 24,
-      weight: 75,
-      height: 180,
-      testDate: "2025-09-18"
+      team: "Llanelli Town Academy AFC",
+      email: "joshua.richards@example.com",
+      testingDates: "01/01/2025 - 01/09/2025"
     }
 
     const testResults = [
       {
         testName: "Countermovement Jump",
-        metrics: [
-          { name: "Jump Height", value: "42.5 cm", percentile: 85 },
-          { name: "Peak Power", value: "3200 W", percentile: 78 },
-          { name: "Relative Peak Power", value: "42.7 W/kg", percentile: 82 },
-          { name: "Force at Zero Velocity", value: "1850 N", percentile: 87 },
-          { name: "Rate of Force Development", value: "8500 N/s", percentile: 91 }
-        ]
+        athlete_id: "sample-athlete-id",
+        test_name: "cmj",
+        metrics: {
+          jumpHeight: 45.2,
+          peakPower: 3200,
+          relativePeakPower: 42.7,
+          contactTime: 0.65,
+          leftLimbForce: 2236.81,
+          rightLimbForce: 1674.56,
+          asymmetryIndex: 57.9,
+          reactiveStrengthIndex: 0.69
+        }
       },
       {
-        testName: "IMTP (Isometric Mid-Thigh Pull)",
-        metrics: [
-          { name: "Peak Force", value: "2800 N", percentile: 72 },
-          { name: "Relative Peak Force", value: "37.3 N/kg", percentile: 74 },
-          { name: "Time to Peak Force", value: "285 ms", percentile: 65 },
-          { name: "Impulse 200ms", value: "420 N·s", percentile: 97 }
-        ]
+        testName: "Squat Jump",
+        athlete_id: "sample-athlete-id", 
+        test_name: "squat_jump",
+        metrics: {
+          jumpHeight: 42.8,
+          peakPower: 3050,
+          relativePeakPower: 40.3,
+          contactTime: 0.58
+        }
+      },
+      {
+        testName: "Drop Jump",
+        athlete_id: "sample-athlete-id",
+        test_name: "drop_jump", 
+        metrics: {
+          jumpHeight: 38.5,
+          peakPower: 2890,
+          relativePeakPower: 38.1,
+          contactTime: 0.72,
+          reactiveStrengthIndex: 0.53
+        }
+      },
+      {
+        testName: "Pogo Jump",
+        athlete_id: "sample-athlete-id",
+        test_name: "pogo_jump",
+        metrics: {
+          jumpHeight: 25.3,
+          peakPower: 2650,
+          relativePeakPower: 34.9,
+          contactTime: 0.35,
+          frequency: 2.85
+        }
       }
     ]
 
-    // Create a new PDF document with interactive form fields
+    // Sample peer comparison data
+    const peerData = [
+      { name: "Athlete A", value: 0.82 },
+      { name: "Athlete B", value: 0.79 },
+      { name: "Athlete C", value: 0.75 },
+      { name: "Athlete D", value: 0.73 },
+      { name: "Current", value: 0.69 }
+    ]
+
+    // Individual scores timeline data
+    const timelineData = [
+      { date: "Dec 2024", score: 42.1 },
+      { date: "Jan 2025", score: 44.3 },
+      { date: "Feb 2025", score: 45.2 },
+      { date: "Mar 2025", score: 45.8 },
+      { date: "Apr 2025", score: 45.2 }
+    ]
+
+    // Step 3 - Recommendation Engine
+    const generateRecommendation = (test_name: string, metrics: any): string => {
+      switch(test_name) {
+        case 'cmj':
+          if (metrics.jumpHeight < 30) return "Focus on concentric strength training with squats and deadlifts to improve jump height"
+          if (metrics.contactTime > 0.3) return "Reduce contact time with reactive plyometrics and bounce drills"
+          if (metrics.asymmetryIndex > 15) return "Address limb asymmetry with unilateral strength and stability exercises"
+          return "Maintain current training protocol - performance within optimal ranges"
+        
+        case 'drop_jump':
+          if (metrics.contactTime > 0.3) return "Reduce contact time with reactive plyometrics and fast SSC exercises"
+          if (metrics.reactiveStrengthIndex < 0.5) return "Improve reactive strength with depth jumps and drop jumps"
+          return "Continue reactive training with varied jump protocols"
+        
+        case 'squat_jump':
+          if (metrics.jumpHeight < 35) return "Focus on maximal strength development in squats and Olympic lifts"
+          if (metrics.peakPower < 2500) return "Incorporate explosive power training with jump squats and plyometrics"
+          return "Maintain strength levels with consistent resistance training"
+        
+        case 'pogo_jump':
+          if (metrics.frequency < 2.5) return "Improve stretch-shortening cycle with high-frequency bouncing exercises"
+          if (metrics.contactTime > 0.25) return "Minimize ground contact time with stiffness drills and ankle stability work"
+          return "Continue spring-mass model training for reactive strength"
+        
+        default:
+          return "No recommendation available for this test type"
+      }
+    }
+
+    // Step 2 - PDF Generator (Backend function generateAthleteReport)
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     })
 
-    // Set up colors and fonts
-    const primaryColor = [102, 126, 234] // #667eea
-    const secondaryColor = [118, 75, 162] // #764ba2
-    const textColor = [45, 55, 72] // #2d3748
-    const accentColor = [72, 187, 120] // #48bb78
+    // Set up colors matching the reference design
+    const primaryColor = [59, 130, 246] // Blue from reference
+    const darkColor = [30, 41, 59] // Dark blue-gray
+    const textColor = [71, 85, 105] // Slate gray
+    const accentColor = [34, 197, 94] // Green accent
+    const lightGray = [248, 250, 252] // Background
 
-    // Helper function to draw rounded rectangle
-    const drawRoundedRect = (x: number, y: number, width: number, height: number, radius: number) => {
-      doc.roundedRect(x, y, width, height, radius, radius)
-    }
+    // Page 1 - Cover Page (blank as specified)
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+    doc.rect(0, 0, 210, 297, 'F')
+    
+    doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
+    doc.setFontSize(28)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Rebound Medicine and Performance Testing Report', 105, 150, { align: 'center' })
+    
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Professional athlete performance analysis', 105, 165, { align: 'center' })
 
-    // Header with gradient effect
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
-    doc.rect(0, 0, 210, 40, 'F')
+    // Add new page for actual content
+    doc.addPage()
+
+    let yPosition = 20
+
+    // Page 2 - Athlete Header Section
+    doc.setFillColor(255, 255, 255)
+    doc.rect(0, 0, 210, 297, 'F')
+
+    // Header section with athlete info
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+    doc.text(`Name: ${athleteData.name}`, 20, yPosition)
+    
+    yPosition += 15
+    doc.text(`Team: ${athleteData.team}`, 20, yPosition)
+    
+    yPosition += 15  
+    doc.text(`Testing Dates: ${athleteData.testingDates}`, 20, yPosition)
+
+    yPosition += 30
+
+    // Comparisons Amongst Peers Section
+    doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
+    doc.rect(15, yPosition, 180, 12, 'F')
     
     doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Interactive Performance Report', 105, 20, { align: 'center' })
-    
     doc.setFontSize(12)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`Generated on ${athleteData.testDate}`, 105, 30, { align: 'center' })
-
-    // Reset text color
-    doc.setTextColor(textColor[0], textColor[1], textColor[2])
-
-    let yPosition = 50
-
-    // Athlete Information Section
-    doc.setFillColor(248, 250, 252) // #f8fafc
-    drawRoundedRect(15, yPosition, 180, 40, 3)
-    doc.rect(15, yPosition, 180, 40, 'F')
-
-    doc.setFontSize(16)
     doc.setFont('helvetica', 'bold')
-    doc.text('Athlete Profile', 20, yPosition + 10)
+    doc.text('Comparisons Amongst Peers', 20, yPosition + 8)
 
-    doc.setFontSize(10)
+    yPosition += 20
+
+    // Interactive filter dropdowns
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     
-    // Athlete info grid
-    const infoData = [
-      ['Name:', athleteData.name],
-      ['Team:', athleteData.team],
-      ['Sport:', athleteData.sport],
-      ['Position:', athleteData.position],
-      ['Age:', `${athleteData.age} years`],
-      ['Weight:', `${athleteData.weight} kg`]
-    ]
-
-    let infoY = yPosition + 18
-    infoData.forEach(([label, value], index) => {
-      const x = index % 2 === 0 ? 20 : 110
-      if (index % 2 === 0 && index > 0) infoY += 6
+    // Filter headers
+    const filterHeaders = ['Test Name', 'Sex', 'Athlete Name(s)', 'Metric Type']
+    filterHeaders.forEach((header, index) => {
+      doc.text(header, 20 + (index * 45), yPosition)
       
-      doc.setFont('helvetica', 'bold')
-      doc.text(label, x, infoY)
-      doc.setFont('helvetica', 'normal')
-      doc.text(value, x + 25, infoY)
+      // Add interactive dropdown
+      const dropdown = new doc.AcroFormComboBox()
+      dropdown.fieldName = `filter_${header.toLowerCase().replace(/[^a-z]/g, '_')}`
+      dropdown.Rect = [20 + (index * 45), yPosition + 2, 40, 8]
+      dropdown.edit = false
+      dropdown.setOptions([
+        ['select', `Select ${header}`],
+        ['all', 'All'],
+        ['specific', 'Specific']
+      ])
+      dropdown.value = 'select'
+      doc.addField(dropdown)
     })
 
-    yPosition += 50
+    yPosition += 25
 
-    // Interactive form fields section
-    doc.setFillColor(237, 242, 247) // #edf2f7
-    drawRoundedRect(15, yPosition, 180, 25, 3)
-    doc.rect(15, yPosition, 180, 25, 'F')
-
+    // Peer comparison chart placeholder
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+    doc.rect(15, yPosition, 85, 60, 'F')
+    
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
     doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
-    doc.text('Interactive Comparison Filters', 20, yPosition + 8)
+    doc.text('Comparisons Amongst Peers - Jump Height (cm)', 20, yPosition + 8)
 
-    // Add form fields for comparison filters
-    const textField1 = new doc.AcroFormTextField()
-    textField1.fieldName = 'comparison_type'
-    textField1.Rect = [20, yPosition + 12, 50, 8]
-    textField1.value = 'Elite Athletes'
-    textField1.maxLength = 50
-    doc.addField(textField1)
+    // Draw sample peer comparison bars
+    const barHeight = 35
+    const barY = yPosition + 15
+    peerData.forEach((peer, index) => {
+      const barX = 25 + (index * 12)
+      const height = peer.value * barHeight
+      
+      if (peer.name === 'Current') {
+        doc.setFillColor(255, 165, 0) // Orange for current athlete
+      } else {
+        doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
+      }
+      doc.rect(barX, barY + barHeight - height, 8, height, 'F')
+      
+      // Labels
+      doc.setFontSize(6)
+      doc.text(peer.name, barX, barY + barHeight + 8, { angle: 45 })
+    })
 
-    const textField2 = new doc.AcroFormTextField()
-    textField2.fieldName = 'time_period'
-    textField2.Rect = [80, yPosition + 12, 50, 8]
-    textField2.value = 'Latest Test'
-    textField2.maxLength = 50
-    doc.addField(textField2)
+    // Performance indicators
+    yPosition += 75
+    const indicators = [
+      { label: '1st Best (5%)', color: [34, 197, 94], pct: '100%' },
+      { label: 'Good (75%)', color: [59, 130, 246], pct: '90%' },
+      { label: 'Modest (50%)', color: [245, 158, 11], pct: '75%' }
+    ]
+    
+    indicators.forEach((indicator, index) => {
+      const x = 20 + (index * 55)
+      doc.setFillColor(indicator.color[0], indicator.color[1], indicator.color[2])
+      doc.rect(x, yPosition, 8, 5, 'F')
+      
+      doc.setFontSize(8)
+      doc.setTextColor(textColor[0], textColor[1], textColor[2])
+      doc.text(indicator.label, x + 12, yPosition + 4)
+    })
 
-    const textField3 = new doc.AcroFormTextField()
-    textField3.fieldName = 'view_type'
-    textField3.Rect = [140, yPosition + 12, 50, 8]
-    textField3.value = 'Detailed Metrics'
-    textField3.maxLength = 50
-    doc.addField(textField3)
+    yPosition += 20
 
-    yPosition += 35
+    // Instructional Video Section
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+    doc.rect(110, yPosition - 95, 85, 60, 'F')
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Instructional Video', 115, yPosition - 87)
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Select a test to see a video', 115, yPosition - 75)
 
-    // Test Results Sections
+    // Individual / Between Limb Comparisons Section  
+    doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
+    doc.rect(15, yPosition, 180, 12, 'F')
+    
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Individual / Between Limb Comparisons', 20, yPosition + 8)
+
+    yPosition += 20
+
+    // Individual filter dropdowns
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    
+    const individualFilters = ['Test Name', 'Athlete Name', 'Test Date', 'Metric Type']
+    individualFilters.forEach((header, index) => {
+      doc.text(header, 20 + (index * 45), yPosition)
+      
+      const dropdown = new doc.AcroFormComboBox()
+      dropdown.fieldName = `individual_${header.toLowerCase().replace(/[^a-z]/g, '_')}`
+      dropdown.Rect = [20 + (index * 45), yPosition + 2, 40, 8]
+      dropdown.edit = false
+      dropdown.setOptions([
+        ['cmj', 'Countermovement Jump'],
+        ['squat', 'Squat Jump'],
+        ['drop', 'Drop Jump'],
+        ['pogo', 'Pogo Jump']
+      ])
+      dropdown.value = 'cmj'
+      doc.addField(dropdown)
+    })
+
+    yPosition += 25
+
+    // CMJ Limb Symmetry Section
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+    doc.rect(15, yPosition, 85, 60, 'F')
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Countermovement Jump Limb Symmetry', 20, yPosition + 8)
+
+    // Symmetry bar chart
+    const asymmetryIndex = testResults[0].metrics.asymmetryIndex
+    const leftForce = testResults[0].metrics.leftLimbForce
+    const rightForce = testResults[0].metrics.rightLimbForce
+
+    // Progress bar showing asymmetry
+    const progressY = yPosition + 20
+    doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
+    doc.rect(20, progressY, 60 * (asymmetryIndex / 100), 8, 'F')
+    doc.setFillColor(200, 200, 200)
+    doc.rect(20 + 60 * (asymmetryIndex / 100), progressY, 60 * ((100 - asymmetryIndex) / 100), 8, 'F')
+
+    doc.setFontSize(14)
+    doc.setTextColor(255, 255, 255)
+    doc.text(`${asymmetryIndex}%`, 35, progressY + 6)
+    
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+    doc.text(`${(100 - asymmetryIndex).toFixed(1)}%`, 60, progressY + 6)
+
+    // Left and Right limb force values
+    yPosition += 40
+    doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
+    doc.rect(20, yPosition, 30, 15, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Left Limb', 25, yPosition + 5)
+    doc.setFontSize(12)
+    doc.text(`${leftForce}`, 25, yPosition + 10)
+    doc.setFontSize(8)
+    doc.text('N/kg', 25, yPosition + 14)
+
+    doc.setFillColor(150, 150, 150)
+    doc.rect(55, yPosition, 30, 15, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Right Limb', 60, yPosition + 5)
+    doc.setFontSize(12)
+    doc.text(`${rightForce}`, 60, yPosition + 10)
+    doc.setFontSize(8)
+    doc.text('N/kg', 60, yPosition + 14)
+
+    // Individual Scores Timeline
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+    doc.rect(110, yPosition - 60, 85, 60, 'F')
+    
+    doc.setTextColor(textColor[0], textColor[1], textColor[2])
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Individual Scores', 115, yPosition - 52)
+
+    // Simple timeline chart
+    const chartY = yPosition - 40
+    timelineData.forEach((point, index) => {
+      const x = 115 + (index * 15)
+      const height = (point.score / 50) * 25
+      
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+      doc.circle(x, chartY - height, 2, 'F')
+      
+      if (index > 0) {
+        const prevX = 115 + ((index - 1) * 15)
+        const prevHeight = (timelineData[index - 1].score / 50) * 25
+        doc.line(prevX, chartY - prevHeight, x, chartY - height)
+      }
+      
+      doc.setFontSize(6)
+      doc.text(point.date, x - 5, chartY + 8, { angle: 45 })
+    })
+
+    yPosition += 30
+
+    // Add new page for test results
+    doc.addPage()
+    yPosition = 20
+
+    // Test Results Sections with Recommendations
     testResults.forEach((test, testIndex) => {
       // Test header
-      doc.setFillColor(74, 85, 104) // #4a5568
+      doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
       doc.rect(15, yPosition, 180, 12, 'F')
       
       doc.setTextColor(255, 255, 255)
@@ -176,148 +414,67 @@ serve(async (req) => {
       doc.setFont('helvetica', 'bold')
       doc.text(test.testName, 20, yPosition + 8)
 
-      // Add interactive dropdown for test view
-      const dropdown = new doc.AcroFormComboBox()
-      dropdown.fieldName = `test_view_${testIndex}`
-      dropdown.Rect = [150, yPosition + 2, 40, 8]
-      dropdown.edit = false
-      dropdown.setOptions([
-        ['percentile', 'Percentile View'],
-        ['raw', 'Raw Values'],
-        ['normalized', 'Normalized'],
-        ['progression', 'Progression']
-      ])
-      dropdown.value = 'percentile'
-      doc.addField(dropdown)
-
-      yPosition += 15
+      yPosition += 20
 
       // Reset text color
       doc.setTextColor(textColor[0], textColor[1], textColor[2])
 
-      // Metrics grid
-      test.metrics.forEach((metric, metricIndex) => {
-        const x = metricIndex % 2 === 0 ? 20 : 110
-        if (metricIndex % 2 === 0 && metricIndex > 0) yPosition += 25
-
-        // Metric card background
-        doc.setFillColor(247, 250, 252) // #f7fafc
-        drawRoundedRect(x, yPosition, 85, 22, 2)
-        doc.rect(x, yPosition, 85, 22, 'F')
-
-        // Accent border
-        doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2])
-        doc.setLineWidth(1)
-        doc.line(x, yPosition, x, yPosition + 22)
-
-        // Metric content
+      // Metrics table
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Metrics', 20, yPosition)
+      
+      yPosition += 10
+      
+      Object.entries(test.metrics).forEach(([key, value], index) => {
         doc.setFontSize(10)
-        doc.setFont('helvetica', 'bold')
-        doc.text(metric.name, x + 5, yPosition + 6)
-
-        doc.setFontSize(16)
-        doc.setTextColor(accentColor[0], accentColor[1], accentColor[2])
-        doc.text(metric.value, x + 5, yPosition + 13)
-
-        doc.setFontSize(8)
-        doc.setTextColor(113, 128, 150) // #718096
-        doc.text(`${metric.percentile}th percentile`, x + 5, yPosition + 18)
-
-        // Percentile bar
-        const barWidth = 70
-        const fillWidth = (barWidth * metric.percentile) / 100
-        
-        doc.setFillColor(226, 232, 240) // #e2e8f0
-        doc.rect(x + 5, yPosition + 19, barWidth, 2, 'F')
-        
-        doc.setFillColor(accentColor[0], accentColor[1], accentColor[2])
-        doc.rect(x + 5, yPosition + 19, fillWidth, 2, 'F')
-
-        // Reset colors
-        doc.setTextColor(textColor[0], textColor[1], textColor[2])
-        doc.setDrawColor(0, 0, 0)
+        doc.setFont('helvetica', 'normal')
+        const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+        doc.text(`${displayKey}: ${value}`, 20, yPosition + (index * 5))
       })
 
-      yPosition += 30
-    })
+      yPosition += Object.keys(test.metrics).length * 5 + 10
 
-    // Assessment Notes Form Section
-    doc.setFillColor(248, 250, 252) // #f8fafc
-    drawRoundedRect(15, yPosition, 180, 60, 3)
-    doc.rect(15, yPosition, 180, 60, 'F')
+      // Recommendation section
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
+      doc.rect(15, yPosition, 180, 25, 'F')
+      
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
+      doc.text('Training Recommendation', 20, yPosition + 8)
 
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Assessment Notes', 20, yPosition + 10)
-
-    // Coach/Practitioner Name Field
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Coach/Practitioner Name:', 20, yPosition + 20)
-
-    const nameField = new doc.AcroFormTextField()
-    nameField.fieldName = 'practitioner_name'
-    nameField.Rect = [20, yPosition + 22, 80, 8]
-    nameField.multiline = false
-    nameField.maxLength = 100
-    doc.addField(nameField)
-
-    // Additional Comments Field
-    doc.text('Additional Comments:', 20, yPosition + 35)
-
-    const commentsField = new doc.AcroFormTextField()
-    commentsField.fieldName = 'additional_comments'
-    commentsField.Rect = [20, yPosition + 37, 170, 15]
-    commentsField.multiline = true
-    commentsField.maxLength = 500
-    doc.addField(commentsField)
-
-    yPosition += 70
-
-    // Performance Rating Radio Buttons
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Overall Performance Rating:', 20, yPosition)
-
-    const ratings = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent']
-    ratings.forEach((rating, index) => {
-      const radioButton = new doc.AcroFormRadioButton()
-      radioButton.fieldName = 'performance_rating'
-      radioButton.Rect = [20 + (index * 30), yPosition + 5, 5, 5]
-      radioButton.value = rating.toLowerCase().replace(' ', '_')
-      if (rating === 'Good') radioButton.isChecked = true
-      doc.addField(radioButton)
-
-      doc.setFontSize(8)
+      const recommendation = generateRecommendation(test.test_name, test.metrics)
+      doc.setFontSize(10)
       doc.setFont('helvetica', 'normal')
-      doc.text(rating, 27 + (index * 30), yPosition + 9)
-    })
+      doc.setTextColor(textColor[0], textColor[1], textColor[2])
+      
+      // Split long recommendations into multiple lines
+      const words = recommendation.split(' ')
+      let line = ''
+      let lineY = yPosition + 15
+      
+      words.forEach(word => {
+        const testLine = line + word + ' '
+        if (doc.getTextWidth(testLine) > 170) {
+          doc.text(line, 20, lineY)
+          line = word + ' '
+          lineY += 5
+        } else {
+          line = testLine
+        }
+      })
+      if (line.trim()) {
+        doc.text(line, 20, lineY)
+      }
 
-    yPosition += 20
+      yPosition += 35
 
-    // Training Recommendations
-    doc.setFillColor(255, 245, 245) // #fff5f5
-    drawRoundedRect(15, yPosition, 180, 30, 3)
-    doc.rect(15, yPosition, 180, 30, 'F')
-
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(197, 48, 48) // #c53030
-    doc.text('Training Recommendations', 20, yPosition + 8)
-
-    const recommendations = [
-      'Focus on explosive power development through plyometric exercises',
-      'Improve rate of force development with rapid isometric contractions',
-      'Consider bilateral symmetry training for left-right balance',
-      'Monitor fatigue levels during high-intensity sessions'
-    ]
-
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(textColor[0], textColor[1], textColor[2])
-
-    recommendations.forEach((recommendation, index) => {
-      doc.text(`→ ${recommendation}`, 20, yPosition + 15 + (index * 4))
+      // Add page break if needed
+      if (yPosition > 250 && testIndex < testResults.length - 1) {
+        doc.addPage()
+        yPosition = 20
+      }
     })
 
     // Convert PDF to buffer
@@ -355,15 +512,16 @@ serve(async (req) => {
         test_count: testResults.length,
         type: 'pdf',
         interactive_fields: [
-          'comparison_type',
-          'time_period', 
-          'view_type',
-          'test_view_0',
-          'test_view_1',
-          'practitioner_name',
-          'additional_comments',
-          'performance_rating'
-        ]
+          'filter_test_name',
+          'filter_sex',
+          'filter_athlete_names',
+          'filter_metric_type',
+          'individual_test_name',
+          'individual_athlete_name', 
+          'individual_test_date',
+          'individual_metric_type'
+        ],
+        recommendations_included: true
       }),
       {
         headers: {
@@ -373,7 +531,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Error generating interactive HTML report:', error)
+    console.error('Error generating interactive PDF report:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
