@@ -41,6 +41,21 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Get available metrics for current test
   const availableMetrics = getMetricTypesForTest(currentTestName);
 
+  // Mapping for display names
+  const getMetricDisplayName = (metricValue: string): string => {
+    const displayMap: Record<string, string> = {
+      "jump_height_ft": "Jump Height",
+      "peak_power": "Peak Power",
+      "contact_time": "Contact Time",
+      "rsi": "Reactive Strength Index",
+      "flight_time": "Flight Time",
+      "peak_velocity": "Take-off Velocity",
+      "avg_rfd": "Average Rate of Force Development",
+      "avg_propulsive_power": "Average Propulsive Power"
+    };
+    return displayMap[metricValue] || metricValue.replace('_', ' ');
+  };
+
   // Auto-update metric type when test changes
   useEffect(() => {
     if (availableMetrics.length > 0) {
@@ -302,7 +317,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                 />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Avg {selectedMetricType.replace('_', ' ')}</p>
+                <p className="text-sm text-muted-foreground">Avg {getMetricDisplayName(selectedMetricType)}</p>
                 <p className="text-2xl font-bold">{avgMetricValue.toFixed(1)}</p>
               </div>
             </div>
@@ -343,7 +358,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             className="text-center text-xl"
             style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
           >
-            Best Performers - {currentTestName} - {selectedMetricType.replace('_', ' ').toUpperCase()}
+            Best Performers - {currentTestName} - {getMetricDisplayName(selectedMetricType).toUpperCase()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -397,7 +412,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   }}
                   formatter={(value: any) => [
                     `${value.toFixed(2)}`,
-                    `${selectedMetricType.replace('_', ' ')}`
+                    `${getMetricDisplayName(selectedMetricType)}`
                   ]}
                   labelFormatter={(label: any, payload: any) => {
                     if (payload && payload.length > 0) {
