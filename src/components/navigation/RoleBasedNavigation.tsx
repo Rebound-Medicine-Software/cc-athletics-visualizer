@@ -97,6 +97,13 @@ export const getNavigationItems = (): NavigationItem[] => [
     roles: ['super_admin', 'organisation', 'clinician', 'client']
   },
   {
+    id: 'live-data',
+    label: 'Live Data',
+    icon: Activity,
+    description: 'Real-time force plate data and measurements',
+    roles: ['organisation', 'clinician', 'client']
+  },
+  {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
