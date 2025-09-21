@@ -7,6 +7,7 @@ import { RegionComparison } from "./RegionComparison";
 import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
 import { SendReportsModal } from "./SendReportsModal";
+import { LiveDataSection } from "./LiveDataSection";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -80,6 +81,74 @@ export const DashboardContent = ({
     ? sectionData
     : sectionData.filter(d => selectedTeams.includes(d.team_name));
   
+  // Render different sections based on activeSection
+  const renderContent = () => {
+    switch (activeSection) {
+      case "live-data":
+        return (
+          <LiveDataSection
+            data={data}
+            selectedTeams={selectedTeams}
+            branding={branding}
+          />
+        );
+      default:
+        return (
+          <>
+            {/* Send Reports Button */}
+            <div className="flex justify-end">
+              <SendReportsModal />
+            </div>
+            {/* Performance Highlights */}
+            <HighlightsSection
+              data={data}
+              selectedTeams={selectedTeams}
+              setSelectedTeams={setSelectedTeams}
+              resetFiltersKey={resetFiltersKey}
+              allData={data}
+              branding={branding}
+            />
+            
+            {/* Pogo & Other Tests */}
+            <ReportFilters 
+              key="pogo-section"
+              data={filteredData} 
+              onTestSelect={setSelectedTest2}
+              allData={sectionData}
+              resetFiltersKey={resetKey2} 
+              selectedTeams={selectedTeams}
+              buttonText="Pogo & Other Tests"
+              branding={branding}
+            />
+            
+            {/* Individual / Between Limb Comparisons */}
+            <IndividualComparisonSection 
+              data={data} 
+              resetFiltersKey={resetFiltersKey}
+              selectedTeams={selectedTeams}
+              branding={branding}
+            />
+            
+            {/* Comparisons Amongst Elites */}
+            <EliteComparison 
+              data={data} 
+              resetFiltersKey={resetFiltersKey}
+              selectedTeams={selectedTeams}
+              branding={branding}
+            />
+            
+            {/* RegionComparison operates independently with unfiltered data */}
+            <RegionComparison 
+              data={data} 
+              resetFiltersKey={resetFiltersKey} 
+              selectedTeams={selectedTeams}
+              branding={branding}
+            />
+          </>
+        );
+    }
+  };
+
   return (
     <div 
       className="space-y-6 w-full"
@@ -87,55 +156,7 @@ export const DashboardContent = ({
         fontFamily: branding.font_family || 'Inter, system-ui, sans-serif'
       } : {}}
     >
-      {/* Send Reports Button */}
-      <div className="flex justify-end">
-        <SendReportsModal />
-      </div>
-      {/* Performance Highlights */}
-      <HighlightsSection
-        data={data}
-        selectedTeams={selectedTeams}
-        setSelectedTeams={setSelectedTeams}
-        resetFiltersKey={resetFiltersKey}
-        allData={data}
-        branding={branding}
-      />
-      
-      {/* Pogo & Other Tests */}
-      <ReportFilters 
-        key="pogo-section"
-        data={filteredData} 
-        onTestSelect={setSelectedTest2}
-        allData={sectionData}
-        resetFiltersKey={resetKey2} 
-        selectedTeams={selectedTeams}
-        buttonText="Pogo & Other Tests"
-        branding={branding}
-      />
-      
-      {/* Individual / Between Limb Comparisons */}
-      <IndividualComparisonSection 
-        data={data} 
-        resetFiltersKey={resetFiltersKey}
-        selectedTeams={selectedTeams}
-        branding={branding}
-      />
-      
-      {/* Comparisons Amongst Elites */}
-      <EliteComparison 
-        data={data} 
-        resetFiltersKey={resetFiltersKey}
-        selectedTeams={selectedTeams}
-        branding={branding}
-      />
-      
-      {/* RegionComparison operates independently with unfiltered data */}
-      <RegionComparison 
-        data={data} 
-        resetFiltersKey={resetFiltersKey} 
-        selectedTeams={selectedTeams}
-        branding={branding}
-      />
+      {renderContent()}
     </div>
   );
 };
