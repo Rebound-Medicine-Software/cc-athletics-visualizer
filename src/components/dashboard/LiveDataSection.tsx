@@ -4,8 +4,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { Activity, Users, Target, TrendingUp } from "lucide-react";
+import { Activity, Users, Target, TrendingUp, Clock } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
+import { getMetricTypesForTest } from "./filters/filterUtils";
 
 interface LiveDataSectionProps {
   data: TestData[];
@@ -15,7 +16,7 @@ interface LiveDataSectionProps {
 
 export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSectionProps) => {
   const [selectedSex, setSelectedSex] = useState<string>("all");
-  const [selectedMetricType, setSelectedMetricType] = useState<string>("peak_force");
+  const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Auto-refresh every 30 seconds
@@ -26,6 +27,41 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return () => clearInterval(interval);
   }, []);
 
+  // Get the most recent test being conducted
+  const getMostRecentTest = () => {
+    if (!data || data.length === 0) return null;
+    return data.reduce((latest, current) => 
+      new Date(current.test_date) > new Date(latest.test_date) ? current : latest
+    );
+  };
+
+  const mostRecentTest = getMostRecentTest();
+  const currentTestName = mostRecentTest?.test_name || "Countermovement Jump";
+
+  // Get available metrics for current test
+  const availableMetrics = getMetricTypesForTest(currentTestName);
+
+  // Auto-update metric type when test changes
+  useEffect(() => {
+    if (availableMetrics.length > 0) {
+      const metricMap: Record<string, string> = {
+        "Jump Height (cm)": "jump_height_ft",
+        "Peak Power": "peak_power", 
+        "Relative Peak Power": "peak_power",
+        "Contact Time": "contact_time",
+        "Reactive Strength Index": "rsi",
+        "Flight Time": "flight_time",
+        "Power": "peak_power",
+        "Take-off Velocity": "peak_velocity",
+        "Average Rate of Force Development": "avg_rfd",
+        "Average Propulsive Power": "avg_propulsive_power"
+      };
+      
+      const firstAvailableMetric = metricMap[availableMetrics[0]] || "jump_height_ft";
+      setSelectedMetricType(firstAvailableMetric);
+    }
+  }, [currentTestName]);
+
   // Filter data based on selected teams and sex
   const filteredData = data.filter(d => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(d.team_name);
@@ -33,24 +69,28 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return teamMatch && sexMatch;
   });
 
-  // Get latest athlete tested per team
-  const getLatestAthletePerTeam = () => {
-    const teamMap: Record<string, TestData> = {};
+  // Get best performance per athlete per test type
+  const getBestPerformancePerAthlete = () => {
+    const athleteMap: Record<string, TestData> = {};
     
     filteredData.forEach(test => {
-      const existing = teamMap[test.team_name];
-      if (!existing || new Date(test.test_date) > new Date(existing.test_date)) {
-        teamMap[test.team_name] = test;
+      if (test.test_name === currentTestName) {
+        const key = `${test.athlete_name}_${test.test_name}`;
+        const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
+        
+        if (!athleteMap[key] || value > metricCaseLogic(athleteMap[key], athleteMap[key].test_name, selectedMetricType).value) {
+          athleteMap[key] = test;
+        }
       }
     });
 
-    return Object.values(teamMap);
+    return Object.values(athleteMap);
   };
 
-  const latestAthletes = getLatestAthletePerTeam();
+  const bestPerformances = getBestPerformancePerAthlete();
 
-  // Generate chart data for latest athletes
-  const chartData = latestAthletes.map(test => {
+  // Generate chart data for best performances
+  const chartData = bestPerformances.map(test => {
     const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
     return {
       name: test.athlete_name.length > 12 ? test.athlete_name.substring(0, 12) + '...' : test.athlete_name,
@@ -103,7 +143,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       className="space-y-6"
       style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}
     >
-      {/* Header with Live indicator */}
+      {/* Header with Live indicator and Current Test */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Activity 
@@ -127,35 +167,75 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             LIVE
           </Badge>
         </div>
+
+        {/* Current Test Window */}
+        <Card 
+          className="border-2 bg-gradient-to-r from-background to-muted/20"
+          style={{ borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))' }}
+        >
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <Clock 
+                className="h-4 w-4"
+                style={{ color: branding?.secondary_color || 'hsl(var(--secondary-foreground))' }}
+              />
+              <div>
+                <p className="text-xs text-muted-foreground">Current Test</p>
+                <p 
+                  className="text-sm font-semibold"
+                  style={{ color: branding?.secondary_color || 'hsl(var(--foreground))' }}
+                >
+                  {currentTestName}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-4 justify-end">
+        <Select value={selectedSex} onValueChange={setSelectedSex}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Sex" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {availableSex.map(sex => (
+              <SelectItem key={sex} value={sex}>{sex}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         
-        {/* Filters */}
-        <div className="flex gap-4">
-          <Select value={selectedSex} onValueChange={setSelectedSex}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Sex" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {availableSex.map(sex => (
-                <SelectItem key={sex} value={sex}>{sex}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Metric Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="peak_force">Peak Force</SelectItem>
-              <SelectItem value="peak_power">Peak Power</SelectItem>
-              <SelectItem value="jump_height_ft">Jump Height</SelectItem>
-              <SelectItem value="rsi">RSI</SelectItem>
-              <SelectItem value="contact_time">Contact Time</SelectItem>
-              <SelectItem value="flight_time">Flight Time</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="Metric Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableMetrics.map(metric => {
+              const metricValue = (() => {
+                switch(metric) {
+                  case "Jump Height (cm)": return "jump_height_ft";
+                  case "Peak Power": return "peak_power";
+                  case "Relative Peak Power": return "peak_power";
+                  case "Contact Time": return "contact_time";
+                  case "Reactive Strength Index": return "rsi";
+                  case "Flight Time": return "flight_time";
+                  case "Power": return "peak_power";
+                  case "Take-off Velocity": return "peak_velocity";
+                  case "Average Rate of Force Development": return "avg_rfd";
+                  case "Average Propulsive Power": return "avg_propulsive_power";
+                  default: return "jump_height_ft";
+                }
+              })();
+              return (
+                <SelectItem key={metricValue} value={metricValue}>
+                  {metric}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* KPI Cards */}
@@ -263,7 +343,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             className="text-center text-xl"
             style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
           >
-            Latest Athletes by Team - {selectedMetricType.replace('_', ' ').toUpperCase()}
+            Best Performers - {currentTestName} - {selectedMetricType.replace('_', ' ').toUpperCase()}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -315,7 +395,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     backgroundColor: "#fff",
                     border: `2px solid ${branding?.primary_color || 'hsl(var(--border))'}`
                   }}
-                  formatter={(value: any, name: any, props: any) => [
+                  formatter={(value: any) => [
                     `${value.toFixed(2)}`,
                     `${selectedMetricType.replace('_', ' ')}`
                   ]}
