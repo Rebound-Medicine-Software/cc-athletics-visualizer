@@ -217,7 +217,9 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
           <SelectContent>
             <SelectItem value="all">All</SelectItem>
             {availableSex.map(sex => (
-              <SelectItem key={sex} value={sex}>{sex}</SelectItem>
+              <SelectItem key={sex} value={sex}>
+                {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
