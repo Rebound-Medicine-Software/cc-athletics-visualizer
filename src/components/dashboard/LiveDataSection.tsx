@@ -399,7 +399,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                 <YAxis
                   tick={{ fontSize: 13 }}
                   label={{
-                    value: yAxisLabel || getMetricDisplayName(selectedMetricType),
+                    value: getMetricDisplayName(selectedMetricType),
                     angle: -90,
                     position: 'insideLeft',
                     style: { textAnchor: 'middle', fontSize: 14 },
