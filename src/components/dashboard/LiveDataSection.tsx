@@ -46,6 +46,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     const displayMap: Record<string, string> = {
       "jump_height_ft": "Jump Height",
       "peak_power": "Peak Power",
+      "relative_peak_power": "Relative Peak Power",
       "contact_time": "Contact Time",
       "rsi": "Reactive Strength Index",
       "flight_time": "Flight Time",
@@ -62,7 +63,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       const metricMap: Record<string, string> = {
         "Jump Height (cm)": "jump_height_ft",
         "Peak Power": "peak_power", 
-        "Relative Peak Power": "peak_power",
+        "Relative Peak Power": "relative_peak_power",
         "Contact Time": "contact_time",
         "Reactive Strength Index": "rsi",
         "Flight Time": "flight_time",
@@ -234,7 +235,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                 switch(metric) {
                   case "Jump Height (cm)": return "jump_height_ft";
                   case "Peak Power": return "peak_power";
-                  case "Relative Peak Power": return "peak_power";
+                  case "Relative Peak Power": return "relative_peak_power";
                   case "Contact Time": return "contact_time";
                   case "Reactive Strength Index": return "rsi";
                   case "Flight Time": return "flight_time";
