@@ -7,8 +7,6 @@ import { TestData } from "@/types/forcePlateTypes";
 import { Activity, Users, Target, TrendingUp, Clock } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { getMetricTypesForTest } from "./filters/filterUtils";
-import { toZonedTime, fromZonedTime } from "date-fns-tz";
-import { subHours, isAfter } from "date-fns";
 
 interface LiveDataSectionProps {
   data: TestData[];
@@ -80,34 +78,23 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     }
   }, [currentTestName]);
 
-  // Filter data based on selected teams, sex, and 24-hour window in UK timezone
+  // Filter data based on selected teams and sex
   const filteredData = data.filter(d => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(d.team_name);
     const sexMatch = selectedSex === "all" || d.gender === selectedSex;
-    
-    // Check if test is within last 24 hours in UK timezone
-    const ukTimeZone = 'Europe/London';
-    const now = new Date();
-    const ukNow = toZonedTime(now, ukTimeZone);
-    const twentyFourHoursAgo = subHours(ukNow, 24);
-    
-    const testDate = new Date(d.test_date);
-    const ukTestDate = toZonedTime(testDate, ukTimeZone);
-    const dateMatch = isAfter(ukTestDate, twentyFourHoursAgo);
-    
-    return teamMatch && sexMatch && dateMatch;
+    return teamMatch && sexMatch;
   });
 
-  // Get most recent test per athlete (within 24 hours) for leaderboard
+  // Get best performance per athlete per test type
   const getBestPerformancePerAthlete = () => {
     const athleteMap: Record<string, TestData> = {};
     
     filteredData.forEach(test => {
       if (test.test_name === currentTestName) {
         const key = `${test.athlete_name}_${test.test_name}`;
+        const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
         
-        // If no entry for this athlete or this test is more recent, update
-        if (!athleteMap[key] || new Date(test.test_date) > new Date(athleteMap[key].test_date)) {
+        if (!athleteMap[key] || value > metricCaseLogic(athleteMap[key], athleteMap[key].test_name, selectedMetricType).value) {
           athleteMap[key] = test;
         }
       }
