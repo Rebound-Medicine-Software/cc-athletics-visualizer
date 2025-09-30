@@ -66,7 +66,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Mapping for display names
   const getMetricDisplayName = (metricValue: string): string => {
     const displayMap: Record<string, string> = {
-      "jump_height_ft": "Jump Height",
+      "jump_height_ft": "Jump Height (cm)",
       "peak_power": "Peak Power",
       "relative_peak_power": "Relative Peak Power",
       "contact_time": "Contact Time",
@@ -77,6 +77,11 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       "avg_propulsive_power": "Average Propulsive Power"
     };
     return displayMap[metricValue] || metricValue.replace('_', ' ');
+  };
+
+  // Convert internal metric key to display name for metricCaseLogic
+  const getMetricDisplayNameForLogic = (metricKey: string): string => {
+    return getMetricDisplayName(metricKey);
   };
 
   // Auto-update metric type when test changes
@@ -158,12 +163,17 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
 
   // Generate chart data for best performances
   const chartData = bestPerformances.map(test => {
-    const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
+    // Convert internal metric key to display name for metricCaseLogic
+    const metricDisplayName = getMetricDisplayNameForLogic(selectedMetricType);
+    const { value } = metricCaseLogic(test, test.test_name, metricDisplayName);
+    
     console.log('Chart data for athlete:', {
       athlete: test.athlete_name,
       test_name: test.test_name,
       selectedMetricType,
-      value
+      metricDisplayName,
+      value,
+      metrics: test.metrics
     });
     return {
       name: test.athlete_name.length > 12 ? test.athlete_name.substring(0, 12) + '...' : test.athlete_name,
@@ -209,7 +219,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     : 0;
   const topPerformer = chartData.length > 0 ? chartData[0] : null;
 
-  const { yAxisLabel } = metricCaseLogic(data[0], data[0]?.test_name, selectedMetricType);
+  const metricDisplayName = getMetricDisplayNameForLogic(selectedMetricType);
+  const { yAxisLabel } = metricCaseLogic(data[0], data[0]?.test_name, metricDisplayName);
 
   return (
     <div 
