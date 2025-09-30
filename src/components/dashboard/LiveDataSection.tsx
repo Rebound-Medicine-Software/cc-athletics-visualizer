@@ -36,13 +36,29 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Get the most recent test being conducted
   const getMostRecentTest = () => {
     if (!data || data.length === 0) return null;
-    return data.reduce((latest, current) => 
+    
+    // Filter for recent data (within 7 days) and find the most recent
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const recentData = data.filter(d => new Date(d.test_date) >= sevenDaysAgo);
+    
+    if (recentData.length === 0) return data[0]; // Fallback to any data
+    
+    return recentData.reduce((latest, current) => 
       new Date(current.test_date) > new Date(latest.test_date) ? current : latest
     );
   };
 
   const mostRecentTest = getMostRecentTest();
   const currentTestName = mostRecentTest?.test_name || "Countermovement Jump";
+
+  // Auto-set sex based on most recent test athlete
+  useEffect(() => {
+    if (mostRecentTest?.gender && mostRecentTest.gender !== selectedSex) {
+      console.log('Auto-setting sex to:', mostRecentTest.gender);
+      setSelectedSex(mostRecentTest.gender);
+    }
+  }, [mostRecentTest?.gender]);
 
   // Get available metrics for current test
   const availableMetrics = getMetricTypesForTest(currentTestName);
@@ -89,35 +105,37 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(d.team_name);
     const sexMatch = selectedSex === "all" || d.gender === selectedSex;
     
-    // Filter for data within the last 24 hours
+    // Filter for data within the last 7 days (more lenient than 24 hours for testing)
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const testDate = new Date(d.test_date);
-    const dateMatch = testDate >= twentyFourHoursAgo;
+    const dateMatch = testDate >= sevenDaysAgo;
     
     console.log('Filtering test:', {
       athlete: d.athlete_name,
+      team: d.team_name,
       test_date: d.test_date,
       testDate: testDate.toISOString(),
-      twentyFourHoursAgo: twentyFourHoursAgo.toISOString(),
+      sevenDaysAgo: sevenDaysAgo.toISOString(),
       dateMatch,
       teamMatch,
-      sexMatch
+      sexMatch,
+      gender: d.gender
     });
     
     return teamMatch && sexMatch && dateMatch;
   });
 
-  // Get best performance per athlete per test type
+  // Get best performance per athlete per test type (or most recent)
   const getBestPerformancePerAthlete = () => {
     const athleteMap: Record<string, TestData> = {};
     
     filteredData.forEach(test => {
       if (test.test_name === currentTestName) {
         const key = `${test.athlete_name}_${test.test_name}`;
-        const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
         
-        if (!athleteMap[key] || value > metricCaseLogic(athleteMap[key], athleteMap[key].test_name, selectedMetricType).value) {
+        // Get most recent test for each athlete (instead of best performance)
+        if (!athleteMap[key] || new Date(test.test_date) > new Date(athleteMap[key].test_date)) {
           athleteMap[key] = test;
         }
       }
