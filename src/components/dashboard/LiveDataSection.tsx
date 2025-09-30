@@ -18,6 +18,21 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [selectedSex, setSelectedSex] = useState<string>("all");
   const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
 
+  // Debug data
+  useEffect(() => {
+    console.log('LiveDataSection - Data received:', {
+      dataLength: data?.length || 0,
+      selectedTeamsLength: selectedTeams?.length || 0,
+      sampleData: data?.[0] ? {
+        athlete_name: data[0].athlete_name,
+        test_name: data[0].test_name,
+        test_date: data[0].test_date,
+        team_name: data[0].team_name,
+        gender: data[0].gender
+      } : null
+    });
+  }, [data, selectedTeams]);
+
   // Get the most recent test being conducted
   const getMostRecentTest = () => {
     if (!data || data.length === 0) return null;
@@ -73,7 +88,24 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const filteredData = data.filter(d => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(d.team_name);
     const sexMatch = selectedSex === "all" || d.gender === selectedSex;
-    return teamMatch && sexMatch;
+    
+    // Filter for data within the last 24 hours
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const testDate = new Date(d.test_date);
+    const dateMatch = testDate >= twentyFourHoursAgo;
+    
+    console.log('Filtering test:', {
+      athlete: d.athlete_name,
+      test_date: d.test_date,
+      testDate: testDate.toISOString(),
+      twentyFourHoursAgo: twentyFourHoursAgo.toISOString(),
+      dateMatch,
+      teamMatch,
+      sexMatch
+    });
+    
+    return teamMatch && sexMatch && dateMatch;
   });
 
   // Get best performance per athlete per test type
@@ -94,11 +126,27 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return Object.values(athleteMap);
   };
 
+  // Debug filtered data
+  useEffect(() => {
+    console.log('LiveDataSection - Filtered data:', {
+      filteredLength: filteredData.length,
+      currentTestName,
+      availableMetrics,
+      selectedMetricType
+    });
+  }, [filteredData, currentTestName, selectedMetricType]);
+
   const bestPerformances = getBestPerformancePerAthlete();
 
   // Generate chart data for best performances
   const chartData = bestPerformances.map(test => {
     const { value } = metricCaseLogic(test, test.test_name, selectedMetricType);
+    console.log('Chart data for athlete:', {
+      athlete: test.athlete_name,
+      test_name: test.test_name,
+      selectedMetricType,
+      value
+    });
     return {
       name: test.athlete_name.length > 12 ? test.athlete_name.substring(0, 12) + '...' : test.athlete_name,
       fullName: test.athlete_name,
