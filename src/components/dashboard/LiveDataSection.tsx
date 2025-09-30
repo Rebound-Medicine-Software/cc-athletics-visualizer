@@ -17,11 +17,16 @@ interface LiveDataSectionProps {
 export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSectionProps) => {
   const [selectedSex, setSelectedSex] = useState<string>("all");
   const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
+  const [lastDataLength, setLastDataLength] = useState(0);
 
-  // Debug data
+  // Debug data and detect new uploads
   useEffect(() => {
-    console.log('LiveDataSection - Data received:', {
+    const hasNewData = data?.length > lastDataLength;
+    
+    console.log('LiveDataSection - Data update:', {
       dataLength: data?.length || 0,
+      lastDataLength,
+      hasNewData,
       selectedTeamsLength: selectedTeams?.length || 0,
       sampleData: data?.[0] ? {
         athlete_name: data[0].athlete_name,
@@ -31,7 +36,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         gender: data[0].gender
       } : null
     });
-  }, [data, selectedTeams]);
+
+    if (hasNewData && data) {
+      console.log('🆕 NEW DATA DETECTED! Latest test:', data[data.length - 1]);
+      setLastDataLength(data.length);
+    }
+  }, [data, selectedTeams, lastDataLength]);
 
   // Get the most recent test being conducted
   const getMostRecentTest = () => {
