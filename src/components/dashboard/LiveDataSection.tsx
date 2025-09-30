@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 import { Activity, Users, Target, TrendingUp, Clock } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
@@ -194,6 +194,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       testName: test.test_name
     };
   }).sort((a, b) => b.value - a.value);
+
+  // Only show top 5 performers, mark others as blurred
+  const chartDataWithBlur = chartData.map((item, index) => ({
+    ...item,
+    isBlurred: index >= 5
+  }));
 
   const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
   
@@ -446,7 +452,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
           <div className="h-[500px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={chartData}
+                data={chartDataWithBlur}
                 margin={{
                   top: 28,
                   right: 30,
@@ -470,9 +476,27 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                 }
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12 }}
-                  angle={-45}
-                  textAnchor="end"
+                  tick={(props) => {
+                    const { x, y, payload } = props;
+                    const dataPoint = chartDataWithBlur.find(d => d.name === payload.value);
+                    const isBlurred = dataPoint?.isBlurred;
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text
+                          x={0}
+                          y={0}
+                          dy={16}
+                          textAnchor="end"
+                          fill={isBlurred ? "#ccc" : "#666"}
+                          fontSize={12}
+                          transform="rotate(-45)"
+                          style={{ filter: isBlurred ? 'blur(2px)' : 'none' }}
+                        >
+                          {payload.value}
+                        </text>
+                      </g>
+                    );
+                  }}
                   height={65}
                 />
                 <YAxis
@@ -505,10 +529,18 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                 />
                 <Bar
                   dataKey="value"
-                  fill={branding?.primary_color || "#374151"}
                   radius={[6, 6, 0, 0]}
                   name={selectedMetricType}
-                />
+                >
+                  {chartDataWithBlur.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={branding?.primary_color || "#374151"}
+                      opacity={entry.isBlurred ? 0.2 : 1}
+                      style={{ filter: entry.isBlurred ? 'blur(3px)' : 'none' }}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
