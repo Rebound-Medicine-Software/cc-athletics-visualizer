@@ -42,7 +42,7 @@ export const useSupabaseData = () => {
         throw error;
       }
     },
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes for live updates
+    refetchInterval: 30 * 1000, // Refetch every 30 seconds for live data updates
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

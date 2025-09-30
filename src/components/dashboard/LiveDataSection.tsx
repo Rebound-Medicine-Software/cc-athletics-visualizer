@@ -17,15 +17,6 @@ interface LiveDataSectionProps {
 export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSectionProps) => {
   const [selectedSex, setSelectedSex] = useState<string>("all");
   const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRefreshKey(prev => prev + 1);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Get the most recent test being conducted
   const getMostRecentTest = () => {
