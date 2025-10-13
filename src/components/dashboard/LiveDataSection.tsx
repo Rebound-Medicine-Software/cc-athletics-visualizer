@@ -43,24 +43,35 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     }
   }, [data, selectedTeams, lastDataLength]);
 
+  // Map abbreviated test names to full display names
+  const getFullTestName = (testName: string): string => {
+    const testNameMap: Record<string, string> = {
+      "SJ": "Squat Jump",
+      "DJ": "Drop Jump",
+      "CMJ": "Countermovement Jump",
+      "Pogo Jump": "Pogo Jump",
+      "Squat Jump": "Squat Jump",
+      "Drop Jump": "Drop Jump",
+      "Countermovement Jump": "Countermovement Jump"
+    };
+    return testNameMap[testName] || testName;
+  };
+
   // Get the most recent test being conducted
   const getMostRecentTest = () => {
     if (!data || data.length === 0) return null;
     
-    // Filter for recent data (within 7 days) and find the most recent
-    const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const recentData = data.filter(d => new Date(d.test_date) >= sevenDaysAgo);
-    
-    if (recentData.length === 0) return data[0]; // Fallback to any data
-    
-    return recentData.reduce((latest, current) => 
-      new Date(current.test_date) > new Date(latest.test_date) ? current : latest
-    );
+    // Find the absolute most recent test by date and time
+    return data.reduce((latest, current) => {
+      if (!latest) return current;
+      return new Date(current.test_date) > new Date(latest.test_date) ? current : latest;
+    }, data[0]);
   };
 
   const mostRecentTest = getMostRecentTest();
-  const currentTestName = mostRecentTest?.test_name || "Countermovement Jump";
+  const currentTestName = mostRecentTest?.test_name 
+    ? getFullTestName(mostRecentTest.test_name) 
+    : "Countermovement Jump";
 
   // Auto-set sex based on most recent test athlete
   useEffect(() => {
