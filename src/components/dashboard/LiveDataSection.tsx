@@ -245,9 +245,10 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Get unique sex values from data
   const availableSex = [...new Set(data.map(d => d.gender).filter(Boolean))];
 
-  // Calculate KPIs
-  const totalTests = filteredData.length;
-  const uniqueAthletes = new Set(filteredData.map(d => d.athlete_name)).size;
+  // Calculate KPIs based on current test and metric (same as chart)
+  const currentTestData = filteredData.filter(d => getFullTestName(d.test_name) === currentTestName);
+  const totalTests = currentTestData.length;
+  const uniqueAthletes = new Set(currentTestData.map(d => d.athlete_name)).size;
   const avgMetricValue = chartData.length > 0 
     ? chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length 
     : 0;
