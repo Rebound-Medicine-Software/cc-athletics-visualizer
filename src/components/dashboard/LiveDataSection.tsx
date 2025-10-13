@@ -247,7 +247,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
 
   // Calculate KPIs based on current test and metric (same as chart)
   const currentTestData = filteredData.filter(d => getFullTestName(d.test_name) === currentTestName);
-  const totalTests = currentTestData.length;
+  
+  // Total tests in last 24 hours only
+  const now = new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const totalTests = currentTestData.filter(d => new Date(d.test_date) >= twentyFourHoursAgo).length;
+  
   const uniqueAthletes = new Set(currentTestData.map(d => d.athlete_name)).size;
   const avgMetricValue = chartData.length > 0 
     ? chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length 
