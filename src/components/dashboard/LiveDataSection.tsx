@@ -18,6 +18,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [selectedSex, setSelectedSex] = useState<string>("all");
   const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
   const [lastDataLength, setLastDataLength] = useState(0);
+  const [currentTestName, setCurrentTestName] = useState<string>("Countermovement Jump");
 
   // Debug data and detect new uploads
   useEffect(() => {
@@ -37,11 +38,20 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       } : null
     });
 
-    if (hasNewData && data) {
-      console.log('🆕 NEW DATA DETECTED! Latest test:', data[data.length - 1]);
+    const latest = data?.length ? data[data.length - 1] : undefined;
+    if (latest) {
+      const latestName = getFullTestName(latest.test_name);
+      if (latestName !== currentTestName) {
+        console.log('🔄 Updating current test to:', latestName);
+        setCurrentTestName(latestName);
+      }
+    }
+
+    if (hasNewData && data?.length) {
+      console.log('🆕 NEW DATA DETECTED! Latest test:', latest);
       setLastDataLength(data.length);
     }
-  }, [data, selectedTeams, lastDataLength]);
+  }, [data, selectedTeams, lastDataLength, currentTestName]);
 
   // Map abbreviated test names to full display names
   const getFullTestName = (testName: string): string => {
@@ -69,9 +79,6 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   };
 
   const mostRecentTest = getMostRecentTest();
-  const currentTestName = mostRecentTest?.test_name 
-    ? getFullTestName(mostRecentTest.test_name) 
-    : "Countermovement Jump";
 
   // Auto-set sex based on most recent test athlete
   useEffect(() => {
@@ -157,7 +164,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     const athleteMap: Record<string, TestData> = {};
     
     filteredData.forEach(test => {
-      if (test.test_name === currentTestName) {
+      if (getFullTestName(test.test_name) === currentTestName) {
         const key = `${test.athlete_name}_${test.test_name}`;
         
         // Get most recent test for each athlete (instead of best performance)
@@ -186,7 +193,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const chartData = bestPerformances.map(test => {
     // Convert internal metric key to display name for metricCaseLogic
     const metricDisplayName = getMetricDisplayNameForLogic(selectedMetricType);
-    const { value } = metricCaseLogic(test, test.test_name, metricDisplayName);
+    const { value } = metricCaseLogic(test, getFullTestName(test.test_name), metricDisplayName);
     
     console.log('Chart data for athlete:', {
       athlete: test.athlete_name,
@@ -247,7 +254,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const topPerformer = chartData.length > 0 ? chartData[0] : null;
 
   const metricDisplayName = getMetricDisplayNameForLogic(selectedMetricType);
-  const { yAxisLabel } = metricCaseLogic(data[0], data[0]?.test_name, metricDisplayName);
+  const { yAxisLabel } = metricCaseLogic(data[0], getFullTestName(data[0]?.test_name || ""), metricDisplayName);
 
   return (
     <div 
