@@ -95,38 +95,16 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const getMetricDisplayName = (metricValue: string): string => {
     const displayMap: Record<string, string> = {
       "jump_height_ft": "Jump Height (cm)",
-      "peak_power": "Peak Power (W)",
-      "relative_peak_power": "Relative Peak Power (W/kg)",
-      "contact_time": "Contact Time (ms)",
-      "rsi": "Reactive Strength Index (A/U)",
-      "flight_time": "Flight Time (ms)",
-      "peak_velocity": "Take-off Velocity (m/s)",
-      "avg_rfd": "Average Rate of Force Development (W)",
-      "avg_propulsive_power": "Average Propulsive Power (W)"
+      "peak_power": "Peak Power",
+      "relative_peak_power": "Relative Peak Power",
+      "contact_time": "Contact Time",
+      "rsi": "Reactive Strength Index",
+      "flight_time": "Flight Time",
+      "peak_velocity": "Take-off Velocity",
+      "avg_rfd": "Average Rate of Force Development",
+      "avg_propulsive_power": "Average Propulsive Power"
     };
     return displayMap[metricValue] || metricValue.replace('_', ' ');
-  };
-
-  // Get unit for a metric
-  const getMetricUnit = (metricValue: string): string => {
-    const unitMap: Record<string, string> = {
-      "jump_height_ft": "cm",
-      "peak_power": "W",
-      "relative_peak_power": "W/kg",
-      "contact_time": "ms",
-      "rsi": "A/U",
-      "flight_time": "ms",
-      "peak_velocity": "m/s",
-      "avg_rfd": "W",
-      "avg_propulsive_power": "W"
-    };
-    return unitMap[metricValue] || "";
-  };
-
-  // Format value with unit
-  const formatValueWithUnit = (value: number, metricValue: string): string => {
-    const unit = getMetricUnit(metricValue);
-    return unit ? `${value.toFixed(1)} ${unit}` : value.toFixed(1);
   };
 
   // Convert internal metric key to display name for metricCaseLogic
@@ -364,20 +342,20 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               const metricValue = (() => {
                 switch(metric) {
                   case "Jump Height (cm)": return "jump_height_ft";
-                  case "Peak Power (W)": return "peak_power";
-                  case "Relative Peak Power (W/kg)": return "relative_peak_power";
-                  case "Contact Time (ms)": return "contact_time";
-                  case "Reactive Strength Index (A/U)": return "rsi";
-                  case "Flight Time (ms)": return "flight_time";
-                  case "Power (W)": return "peak_power";
-                  case "Take-off Velocity (m/s)": return "peak_velocity";
-                  case "Average Rate of Force Development (W)": return "avg_rfd";
-                  case "Average Propulsive Power (W)": return "avg_propulsive_power";
+                  case "Peak Power": return "peak_power";
+                  case "Relative Peak Power": return "relative_peak_power";
+                  case "Contact Time": return "contact_time";
+                  case "Reactive Strength Index": return "rsi";
+                  case "Flight Time": return "flight_time";
+                  case "Power": return "peak_power";
+                  case "Take-off Velocity": return "peak_velocity";
+                  case "Average Rate of Force Development": return "avg_rfd";
+                  case "Average Propulsive Power": return "avg_propulsive_power";
                   default: return "jump_height_ft";
                 }
               })();
               return (
-                <SelectItem key={metric} value={metricValue}>
+                <SelectItem key={metricValue} value={metricValue}>
                   {metric}
                 </SelectItem>
               );
@@ -451,7 +429,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg {getMetricDisplayName(selectedMetricType)}</p>
-                <p className="text-2xl font-bold">{formatValueWithUnit(avgMetricValue, selectedMetricType)}</p>
+                <p className="text-2xl font-bold">{avgMetricValue.toFixed(1)}</p>
               </div>
             </div>
           </CardContent>
@@ -562,8 +540,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     border: `2px solid ${branding?.primary_color || 'hsl(var(--border))'}`
                   }}
                   formatter={(value: any) => [
-                    formatValueWithUnit(value, selectedMetricType),
-                    getMetricDisplayName(selectedMetricType)
+                    `${value.toFixed(2)}`,
+                    `${getMetricDisplayName(selectedMetricType)}`
                   ]}
                   labelFormatter={(label: any, payload: any) => {
                     if (payload && payload.length > 0) {

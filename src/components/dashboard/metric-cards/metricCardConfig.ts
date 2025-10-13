@@ -17,26 +17,26 @@ export const getCardConfigs = (testName?: string) => {
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Power", metricKey: "peak_power", unit: "W" },
         { icon: "⚡", title: "Peak Power / Body Mass", metricKey: "relative_peak_power", unit: "W/kg" },
-      { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "A/U" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
     case "Squat Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Take-off Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
-        { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "W" },
+        { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "N/s" },
         { icon: "⚡", title: "Avg Propulsive Power", metricKey: "avg_propulsive_power", unit: "W" },
       ];
     case "Drop Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "A/U" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
         { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
       ];
     case "Pogo Jump":
       return [
-        { icon: "📏", title: "Jump Height (Pogo)", metricKey: "avg_jump_height", unit: "cm" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "A/U" },
+        { icon: "📏", title: "Jump Height (Pogo)", metricKey: "avg_jump_height", unit: "m" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "" },
         { icon: "⚡", title: "Power", metricKey: "avg_power", unit: "W" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", unit: "ms" },
       ];
