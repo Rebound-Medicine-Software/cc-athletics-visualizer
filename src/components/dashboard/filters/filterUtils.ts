@@ -5,13 +5,13 @@ import { TestData } from "@/types/forcePlateTypes";
 export function getMetricTypesForTest(testName: string): string[] {
   switch (testName) {
     case "Drop Jump":
-      return ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"];
+      return ["Jump Height (cm)", "Flight Time (ms)", "Reactive Strength Index (RSI)", "Contact Time (ms)"];
     case "Countermovement Jump":
-      return ["Jump Height (cm)", "Peak Power", "Relative Peak Power", "Reactive Strength Index"];
+      return ["Jump Height (cm)", "Peak Power (W)", "Relative Peak Power (W/kg)", "Reactive Strength Index (RSI)"];
     case "Squat Jump":
-      return ["Jump Height (cm)", "Take-off Velocity", "Average Rate of Force Development", "Average Propulsive Power"];
+      return ["Jump Height (cm)", "Take-off Velocity (m/s)", "Average Rate of Force Development (W)", "Average Propulsive Power (W)"];
     case "Pogo Jump":
-      return ["Jump Height (cm)", "Power", "Flight Time", "Reactive Strength Index"];
+      return ["Jump Height (cm)", "Power (W)", "Flight Time (ms)", "Reactive Strength Index (RSI)"];
     default:
       return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"];
   }
