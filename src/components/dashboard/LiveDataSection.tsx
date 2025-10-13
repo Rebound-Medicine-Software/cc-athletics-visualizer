@@ -141,18 +141,35 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return teamMatch && sexMatch && dateMatch;
   });
 
-  // Get best performance per athlete per test type (or most recent)
+  // Get the most recent test session and return only those tests
   const getBestPerformancePerAthlete = () => {
+    // Find the most recent test date across all filtered data
+    if (filteredData.length === 0) return [];
+    
+    const mostRecentDate = filteredData.reduce((latest, test) => {
+      const testDate = new Date(test.test_date);
+      return testDate > latest ? testDate : latest;
+    }, new Date(0));
+
+    console.log('Most recent test date:', mostRecentDate);
+
+    // Filter to only include tests from the most recent session (same date)
+    const recentTests = filteredData.filter(test => {
+      const testDate = new Date(test.test_date);
+      return testDate.toDateString() === mostRecentDate.toDateString();
+    });
+
+    console.log('Tests from most recent session:', recentTests.length);
+
+    // Get one entry per athlete for the most recent test
     const athleteMap: Record<string, TestData> = {};
     
-    filteredData.forEach(test => {
-      if (test.test_name === currentTestName) {
-        const key = `${test.athlete_name}_${test.test_name}`;
-        
-        // Get most recent test for each athlete (instead of best performance)
-        if (!athleteMap[key] || new Date(test.test_date) > new Date(athleteMap[key].test_date)) {
-          athleteMap[key] = test;
-        }
+    recentTests.forEach(test => {
+      const key = `${test.athlete_name}_${test.test_name}`;
+      
+      // For tests on the same date, keep the most recent one
+      if (!athleteMap[key] || new Date(test.test_date) > new Date(athleteMap[key].test_date)) {
+        athleteMap[key] = test;
       }
     });
 
