@@ -38,17 +38,17 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       } : null
     });
 
-    const latest = data?.length ? data[data.length - 1] : undefined;
-    if (latest) {
-      const latestName = getFullTestName(latest.test_name);
+    const latestByDate = getMostRecentTest();
+    if (latestByDate) {
+      const latestName = getFullTestName(latestByDate.test_name);
       if (latestName !== currentTestName) {
-        console.log('🔄 Updating current test to:', latestName);
+        console.log('🔄 Updating current test to (by date):', latestName);
         setCurrentTestName(latestName);
       }
     }
 
     if (hasNewData && data?.length) {
-      console.log('🆕 NEW DATA DETECTED! Latest test:', latest);
+      console.log('🆕 NEW DATA DETECTED! Latest record by date:', latestByDate);
       setLastDataLength(data.length);
     }
   }, [data, selectedTeams, lastDataLength, currentTestName]);
