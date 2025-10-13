@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell, LabelList } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 import { Activity, Users, Target, TrendingUp, Clock } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { getMetricTypesForTest } from "./filters/filterUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface LiveDataSectionProps {
   data: TestData[];
@@ -19,6 +21,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [selectedMetricType, setSelectedMetricType] = useState<string>("jump_height_ft");
   const [lastDataLength, setLastDataLength] = useState(0);
   const [currentTestName, setCurrentTestName] = useState<string>("Countermovement Jump");
+  const [athleteAvatars, setAthleteAvatars] = useState<Record<string, string>>({});
 
   // Debug data and detect new uploads
   useEffect(() => {
@@ -177,6 +180,31 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return Object.values(athleteMap);
   };
 
+  // Fetch athlete avatars
+  useEffect(() => {
+    const fetchAvatars = async () => {
+      const athleteNames = [...new Set(data.map(d => d.athlete_name))];
+      const { data: athletes, error } = await supabase
+        .from('athletes')
+        .select('name, avatar_url')
+        .in('name', athleteNames);
+      
+      if (!error && athletes) {
+        const avatarMap: Record<string, string> = {};
+        athletes.forEach(athlete => {
+          if (athlete.avatar_url) {
+            avatarMap[athlete.name] = athlete.avatar_url;
+          }
+        });
+        setAthleteAvatars(avatarMap);
+      }
+    };
+
+    if (data.length > 0) {
+      fetchAvatars();
+    }
+  }, [data]);
+
   // Debug filtered data
   useEffect(() => {
     console.log('LiveDataSection - Filtered data:', {
@@ -209,7 +237,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       value: value || 0,
       team: test.team_name,
       testDate: test.test_date,
-      testName: test.test_name
+      testName: test.test_name,
+      avatarUrl: athleteAvatars[test.athlete_name] || null
     };
   }).sort((a, b) => b.value - a.value);
 
@@ -564,6 +593,38 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                       style={{ filter: entry.isBlurred ? 'blur(3px)' : 'none' }}
                     />
                   ))}
+                  <LabelList
+                    dataKey="value"
+                    position="top"
+                    content={(props: any) => {
+                      const { x, y, width, value, index } = props;
+                      const entry = chartDataWithBlur[index];
+                      if (!entry?.avatarUrl || entry.isBlurred) return null;
+                      
+                      const centerX = x + width / 2;
+                      const avatarSize = 40;
+                      
+                      return (
+                        <g>
+                          <foreignObject
+                            x={centerX - avatarSize / 2}
+                            y={y - avatarSize - 8}
+                            width={avatarSize}
+                            height={avatarSize}
+                          >
+                            <div className="flex items-center justify-center">
+                              <img
+                                src={entry.avatarUrl}
+                                alt={entry.fullName}
+                                className="w-10 h-10 rounded-full border-2 object-cover"
+                                style={{ borderColor: branding?.primary_color || '#374151' }}
+                              />
+                            </div>
+                          </foreignObject>
+                        </g>
+                      );
+                    }}
+                  />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
