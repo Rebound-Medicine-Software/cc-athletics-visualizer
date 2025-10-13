@@ -342,20 +342,20 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               const metricValue = (() => {
                 switch(metric) {
                   case "Jump Height (cm)": return "jump_height_ft";
-                  case "Peak Power": return "peak_power";
-                  case "Relative Peak Power": return "relative_peak_power";
-                  case "Contact Time": return "contact_time";
-                  case "Reactive Strength Index": return "rsi";
-                  case "Flight Time": return "flight_time";
-                  case "Power": return "peak_power";
-                  case "Take-off Velocity": return "peak_velocity";
-                  case "Average Rate of Force Development": return "avg_rfd";
-                  case "Average Propulsive Power": return "avg_propulsive_power";
+                  case "Peak Power (W)": return "peak_power";
+                  case "Relative Peak Power (W/kg)": return "relative_peak_power";
+                  case "Contact Time (ms)": return "contact_time";
+                  case "Reactive Strength Index (A/U)": return "rsi";
+                  case "Flight Time (ms)": return "flight_time";
+                  case "Power (W)": return "peak_power";
+                  case "Take-off Velocity (m/s)": return "peak_velocity";
+                  case "Average Rate of Force Development (W)": return "avg_rfd";
+                  case "Average Propulsive Power (W)": return "avg_propulsive_power";
                   default: return "jump_height_ft";
                 }
               })();
               return (
-                <SelectItem key={metricValue} value={metricValue}>
+                <SelectItem key={metric} value={metricValue}>
                   {metric}
                 </SelectItem>
               );
