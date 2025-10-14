@@ -619,28 +619,45 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     content={(props: any) => {
                       const { x, y, width, value, index } = props;
                       const entry = chartDataWithBlur[index];
-                      if (!entry?.avatarUrl || entry.isBlurred) return null;
+                      if (entry.isBlurred) return null;
                       
                       const centerX = x + width / 2;
                       const avatarSize = 40;
+                      const hasAvatar = entry?.avatarUrl;
+                      const textY = hasAvatar ? y - avatarSize - 20 : y - 8;
                       
                       return (
                         <g>
-                          <foreignObject
-                            x={centerX - avatarSize / 2}
-                            y={y - avatarSize - 8}
-                            width={avatarSize}
-                            height={avatarSize}
+                          {/* Value label with unit */}
+                          <text
+                            x={centerX}
+                            y={textY}
+                            fill={branding?.primary_color || '#374151'}
+                            textAnchor="middle"
+                            fontSize={12}
+                            fontWeight="bold"
                           >
-                            <div className="flex items-center justify-center">
-                              <img
-                                src={entry.avatarUrl}
-                                alt={entry.fullName}
-                                className="w-10 h-10 rounded-full border-2 object-cover"
-                                style={{ borderColor: branding?.primary_color || '#374151' }}
-                              />
-                            </div>
-                          </foreignObject>
+                            {formatValueWithUnit(value, selectedMetricType)}
+                          </text>
+                          
+                          {/* Avatar if available */}
+                          {hasAvatar && (
+                            <foreignObject
+                              x={centerX - avatarSize / 2}
+                              y={y - avatarSize - 8}
+                              width={avatarSize}
+                              height={avatarSize}
+                            >
+                              <div className="flex items-center justify-center">
+                                <img
+                                  src={entry.avatarUrl}
+                                  alt={entry.fullName}
+                                  className="w-10 h-10 rounded-full border-2 object-cover"
+                                  style={{ borderColor: branding?.primary_color || '#374151' }}
+                                />
+                              </div>
+                            </foreignObject>
+                          )}
                         </g>
                       );
                     }}
