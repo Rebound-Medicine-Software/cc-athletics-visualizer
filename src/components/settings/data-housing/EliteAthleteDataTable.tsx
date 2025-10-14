@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,11 +170,18 @@ export const EliteAthleteDataTable = () => {
               value={editForm["Athlete Name"] || ''}
               onChange={(e) => setEditForm({ ...editForm, "Athlete Name": e.target.value })}
             />
-            <Input
-              placeholder="Sex"
+            <Select
               value={editForm["Sex"] || ''}
-              onChange={(e) => setEditForm({ ...editForm, "Sex": e.target.value })}
-            />
+              onValueChange={(value) => setEditForm({ ...editForm, "Sex": value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sex" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               placeholder="Sport"
               value={editForm["Sport"] || ''}
@@ -237,10 +245,18 @@ export const EliteAthleteDataTable = () => {
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
+                      <Select
                         value={editForm["Sex"] || ''}
-                        onChange={(e) => setEditForm({ ...editForm, "Sex": e.target.value })}
-                      />
+                        onValueChange={(value) => setEditForm({ ...editForm, "Sex": value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sex" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Male">Male</SelectItem>
+                          <SelectItem value="Female">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <Input
