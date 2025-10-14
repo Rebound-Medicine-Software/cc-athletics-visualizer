@@ -98,36 +98,16 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const getMetricDisplayName = (metricValue: string): string => {
     const displayMap: Record<string, string> = {
       "jump_height_ft": "Jump Height (cm)",
-      "peak_power": "Peak Power (W)",
-      "relative_peak_power": "Relative Peak Power (W/kg)",
-      "contact_time": "Contact Time (ms)",
-      "rsi": "Reactive Strength Index (RSI)",
-      "flight_time": "Flight Time (ms)",
-      "peak_velocity": "Take-off Velocity (m/s)",
-      "avg_rfd": "Average Rate of Force Development (W)",
-      "avg_propulsive_power": "Average Propulsive Power (W)"
+      "peak_power": "Peak Power",
+      "relative_peak_power": "Relative Peak Power",
+      "contact_time": "Contact Time",
+      "rsi": "Reactive Strength Index",
+      "flight_time": "Flight Time",
+      "peak_velocity": "Take-off Velocity",
+      "avg_rfd": "Average Rate of Force Development",
+      "avg_propulsive_power": "Average Propulsive Power"
     };
     return displayMap[metricValue] || metricValue.replace('_', ' ');
-  };
-
-  const getMetricUnit = (metricValue: string): string => {
-    const unitMap: Record<string, string> = {
-      "jump_height_ft": "cm",
-      "peak_power": "W",
-      "relative_peak_power": "W/kg",
-      "contact_time": "ms",
-      "rsi": "A/U",
-      "flight_time": "ms",
-      "peak_velocity": "m/s",
-      "avg_rfd": "W",
-      "avg_propulsive_power": "W"
-    };
-    return unitMap[metricValue] || "";
-  };
-
-  const formatValueWithUnit = (value: number, metricValue: string): string => {
-    const unit = getMetricUnit(metricValue);
-    return unit ? `${value.toFixed(1)} ${unit}` : value.toFixed(1);
   };
 
   // Convert internal metric key to display name for metricCaseLogic
@@ -478,7 +458,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg {getMetricDisplayName(selectedMetricType)}</p>
-                <p className="text-2xl font-bold">{formatValueWithUnit(avgMetricValue, selectedMetricType)}</p>
+                <p className="text-2xl font-bold">{avgMetricValue.toFixed(1)}</p>
               </div>
             </div>
           </CardContent>
@@ -589,8 +569,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     border: `2px solid ${branding?.primary_color || 'hsl(var(--border))'}`
                   }}
                   formatter={(value: any) => [
-                    formatValueWithUnit(value, selectedMetricType),
-                    getMetricDisplayName(selectedMetricType)
+                    `${value.toFixed(2)}`,
+                    `${getMetricDisplayName(selectedMetricType)}`
                   ]}
                   labelFormatter={(label: any, payload: any) => {
                     if (payload && payload.length > 0) {
@@ -619,45 +599,28 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     content={(props: any) => {
                       const { x, y, width, value, index } = props;
                       const entry = chartDataWithBlur[index];
-                      if (entry.isBlurred) return null;
+                      if (!entry?.avatarUrl || entry.isBlurred) return null;
                       
                       const centerX = x + width / 2;
                       const avatarSize = 40;
-                      const hasAvatar = entry?.avatarUrl;
-                      const textY = hasAvatar ? y - avatarSize - 20 : y - 8;
                       
                       return (
                         <g>
-                          {/* Value label with unit */}
-                          <text
-                            x={centerX}
-                            y={textY}
-                            fill={branding?.primary_color || '#374151'}
-                            textAnchor="middle"
-                            fontSize={12}
-                            fontWeight="bold"
+                          <foreignObject
+                            x={centerX - avatarSize / 2}
+                            y={y - avatarSize - 8}
+                            width={avatarSize}
+                            height={avatarSize}
                           >
-                            {formatValueWithUnit(value, selectedMetricType)}
-                          </text>
-                          
-                          {/* Avatar if available */}
-                          {hasAvatar && (
-                            <foreignObject
-                              x={centerX - avatarSize / 2}
-                              y={y - avatarSize - 8}
-                              width={avatarSize}
-                              height={avatarSize}
-                            >
-                              <div className="flex items-center justify-center">
-                                <img
-                                  src={entry.avatarUrl}
-                                  alt={entry.fullName}
-                                  className="w-10 h-10 rounded-full border-2 object-cover"
-                                  style={{ borderColor: branding?.primary_color || '#374151' }}
-                                />
-                              </div>
-                            </foreignObject>
-                          )}
+                            <div className="flex items-center justify-center">
+                              <img
+                                src={entry.avatarUrl}
+                                alt={entry.fullName}
+                                className="w-10 h-10 rounded-full border-2 object-cover"
+                                style={{ borderColor: branding?.primary_color || '#374151' }}
+                              />
+                            </div>
+                          </foreignObject>
                         </g>
                       );
                     }}
