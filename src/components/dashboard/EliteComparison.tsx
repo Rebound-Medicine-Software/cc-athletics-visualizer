@@ -56,15 +56,32 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
 
   // Process CC Athletics data for filter options
   const individualFilterOptions = useMemo(() => {
+    // Get unique athletes first
+    const uniqueAthletes = [...new Set(data.map(item => item.athlete_name).filter(Boolean))];
+    
+    // Filter data to selected athletes if any are selected
+    const filteredData = filters.athleteName.length > 0 
+      ? data.filter(item => filters.athleteName.includes(item.athlete_name))
+      : data;
+    
+    // Get one body_mass per athlete (use the most recent test)
+    const athleteWeights = new Map<string, number>();
+    filteredData.forEach(item => {
+      const metrics = item.metrics as any;
+      if (metrics?.body_mass && item.athlete_name) {
+        // Only set if not already set (assumes data is ordered by date, most recent first)
+        if (!athleteWeights.has(item.athlete_name)) {
+          athleteWeights.set(item.athlete_name, metrics.body_mass);
+        }
+      }
+    });
+    
     return {
-      athletes: [...new Set(data.map(item => item.athlete_name).filter(Boolean))],
-      testNames: [...new Set(data.map(item => item.test_name).filter(Boolean))],
-      weights: [...new Set(data.map(item => {
-        const metrics = item.metrics as any;
-        return metrics?.body_mass;
-      }).filter(Boolean))].sort((a, b) => a - b)
+      athletes: uniqueAthletes,
+      testNames: [...new Set(filteredData.map(item => item.test_name).filter(Boolean))],
+      weights: [...athleteWeights.values()].sort((a, b) => a - b)
     };
-  }, [data]);
+  }, [data, filters.athleteName]);
 
   // Filter elite data based on comparator filters
   const filteredEliteData = useMemo(() => {
