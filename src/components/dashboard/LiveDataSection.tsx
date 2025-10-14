@@ -544,8 +544,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="h-[500px] w-full">
+        <CardContent className={isFullscreen ? "h-[calc(100vh-120px)]" : ""}>
+          <div className={isFullscreen ? "h-full w-full" : "h-[500px] w-full"}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartDataWithBlur}
