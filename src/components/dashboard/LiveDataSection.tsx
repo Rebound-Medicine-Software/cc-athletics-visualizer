@@ -628,14 +628,25 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   radius={[6, 6, 0, 0]}
                   name={selectedMetricType}
                 >
-                  {chartDataWithBlur.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={branding?.primary_color || "#374151"}
-                      opacity={entry.isBlurred ? 0.2 : 1}
-                      style={{ filter: entry.isBlurred ? 'blur(3px)' : 'none' }}
-                    />
-                  ))}
+                  {chartDataWithBlur.map((entry, index) => {
+                    let fillColor = branding?.primary_color || "#374151";
+                    
+                    // Top 3 get medal colors
+                    if (!entry.isBlurred) {
+                      if (index === 0) fillColor = "#FFD700"; // Gold
+                      else if (index === 1) fillColor = "#C0C0C0"; // Silver
+                      else if (index === 2) fillColor = "#CD7F32"; // Bronze
+                    }
+                    
+                    return (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={fillColor}
+                        opacity={entry.isBlurred ? 0.2 : 1}
+                        style={{ filter: entry.isBlurred ? 'blur(3px)' : 'none' }}
+                      />
+                    );
+                  })}
                   <LabelList
                     dataKey="value"
                     position="top"
