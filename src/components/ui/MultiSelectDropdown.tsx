@@ -13,6 +13,7 @@ interface MultiSelectDropdownProps {
   className?: string;
   labelClassName?: string;
   dropdownClassName?: string;
+  disabled?: boolean;
 }
 
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
@@ -22,7 +23,8 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   placeholder = "Select...",
   className = "",
   labelClassName = "",
-  dropdownClassName = ""
+  dropdownClassName = "",
+  disabled = false
 }) => {
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -64,14 +66,16 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     <div className={cn("relative w-full", className)} ref={containerRef}>
       <button
         type="button"
+        disabled={disabled}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen(prev => !prev);
+          if (!disabled) setOpen(prev => !prev);
         }}
         className={cn(
           "flex items-center justify-center w-full border border-border rounded-md bg-background py-2 px-3 text-sm text-foreground text-center",
           open && "ring-2 ring-ring",
+          disabled && "bg-gray-100 opacity-60 cursor-not-allowed",
           labelClassName
         )}
       >
@@ -82,7 +86,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         </span>
         <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
       </button>
-      {open && (
+      {open && !disabled && (
         <div className={cn(
           "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName

@@ -23,7 +23,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     ageGroup: "all",
     // Individual Filters (CC Athletics Data)
     athleteName: [] as string[],
-    weight: "all",
+    weight: [] as string[],
     testName: "all",
     metricType: "all"
   });
@@ -36,7 +36,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
       weightCategory: "all", 
       ageGroup: "all",
       athleteName: [],
-      weight: "all",
+      weight: [],
       testName: "all",
       metricType: "all"
     });
@@ -115,10 +115,10 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     if (filters.testName !== "all") {
       filtered = filtered.filter(item => item.test_name === filters.testName);
     }
-    if (filters.weight !== "all") {
+    if (filters.weight.length > 0) {
       filtered = filtered.filter(item => {
         const metrics = item.metrics as any;
-        return metrics?.body_mass === parseFloat(filters.weight);
+        return filters.weight.includes(metrics?.body_mass?.toString() || "");
       });
     }
     

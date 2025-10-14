@@ -15,7 +15,7 @@ interface EliteComparisonFiltersProps {
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
-    weight: string;
+    weight: string[];
     testName: string;
     metricType: string;
   };
@@ -25,7 +25,7 @@ interface EliteComparisonFiltersProps {
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
-    weight: string;
+    weight: string[];
     testName: string;
     metricType: string;
   }>>;
@@ -63,7 +63,7 @@ export const EliteComparisonFilters = ({
   // Individual filter dependencies
   const athleteEnabled = true; // Always enabled
   const weightEnabled = filters.athleteName.length > 0;
-  const testNameEnabled = filters.weight !== "all";
+  const testNameEnabled = filters.weight.length > 0;
   const metricTypeEnabled = filters.testName !== "all";
 
   // Handle cascading filter changes for Individual Filters
@@ -71,18 +71,18 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: value,
-      weight: value.length === 0 ? "all" : prev.weight,
+      weight: value.length === 0 ? [] : prev.weight,
       testName: value.length === 0 ? "all" : prev.testName,
       metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
-  const handleWeightChange = (value: string) => {
+  const handleWeightChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       weight: value,
-      testName: value === "all" ? "all" : prev.testName,
-      metricType: value === "all" ? "all" : prev.metricType
+      testName: value.length === 0 ? "all" : prev.testName,
+      metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
@@ -97,6 +97,11 @@ export const EliteComparisonFilters = ({
   const athleteOptions = individualFilterOptions.athletes.map(athlete => ({ 
     value: athlete, 
     label: athlete 
+  }));
+
+  const weightOptions = individualFilterOptions.weights.map(weight => ({
+    value: weight.toString(),
+    label: `${weight} kg`
   }));
 
   return (
@@ -215,19 +220,15 @@ export const EliteComparisonFilters = ({
           {/* Weight */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Weight (kg)</label>
-            <Select value={filters.weight} onValueChange={handleWeightChange} disabled={!weightEnabled}>
-              <SelectTrigger className={`${!weightEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Weight" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Weights</SelectItem>
-                {individualFilterOptions.weights.map(weight => (
-                  <SelectItem key={weight} value={weight.toString()}>
-                    {weight} kg
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={weightOptions}
+              value={filters.weight}
+              onChange={handleWeightChange}
+              placeholder="Select Weights"
+              className="bg-white"
+              labelClassName="bg-white"
+              disabled={!weightEnabled}
+            />
           </div>
 
           {/* Test Name */}
