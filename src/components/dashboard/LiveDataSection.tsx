@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell, LabelList } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { Activity, Users, Target, TrendingUp, Clock } from "lucide-react";
+import { Activity, Users, Target, TrendingUp, Clock, Maximize2, Minimize2 } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { getMetricTypesForTest } from "./filters/filterUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,31 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [lastDataLength, setLastDataLength] = useState(0);
   const [currentTestName, setCurrentTestName] = useState<string>("Countermovement Jump");
   const [athleteAvatars, setAthleteAvatars] = useState<Record<string, string>>({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const chartCardRef = useRef<HTMLDivElement>(null);
+
+  const toggleFullscreen = () => {
+    if (!chartCardRef.current) return;
+    
+    if (!isFullscreen) {
+      if (chartCardRef.current.requestFullscreen) {
+        chartCardRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   // Debug data and detect new uploads
   useEffect(() => {
@@ -490,16 +516,33 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
 
       {/* Live Chart */}
       <Card 
-        className="border-2"
+        ref={chartCardRef}
+        className="border-2 relative"
         style={{ borderColor: branding?.primary_color ? `${branding.primary_color}40` : 'hsl(var(--border))' }}
       >
         <CardHeader>
-          <CardTitle 
-            className="text-center text-xl"
-            style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
-          >
-            Best Performers - {currentTestName} - {getMetricDisplayName(selectedMetricType).toUpperCase()}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex-1 text-center">
+              <CardTitle 
+                className="text-xl"
+                style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+              >
+                Best Performers - {currentTestName} - {getMetricDisplayName(selectedMetricType).toUpperCase()}
+              </CardTitle>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFullscreen}
+              className="absolute right-4 top-4"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-5 w-5" />
+              ) : (
+                <Maximize2 className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="h-[500px] w-full">
