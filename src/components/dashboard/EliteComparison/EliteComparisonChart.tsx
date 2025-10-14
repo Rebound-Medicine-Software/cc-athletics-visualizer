@@ -53,8 +53,8 @@ export const EliteComparisonChart = ({
       eliteBenchmark = eliteBenchmark / eliteCount;
     }
 
-    // Extract individual athlete values
-    const individualValues: { name: string; value: number; type: string }[] = [];
+    // Extract individual athlete values - best result per athlete
+    const athleteBestValues = new Map<string, number>();
     
     individualData.forEach(test => {
       const metrics = test.metrics as any;
@@ -83,13 +83,19 @@ export const EliteComparisonChart = ({
       }
       
       if (value > 0) {
-        individualValues.push({
-          name: test.athlete_name,
-          value: value,
-          type: "individual"
-        });
+        const currentBest = athleteBestValues.get(test.athlete_name) || 0;
+        if (value > currentBest) {
+          athleteBestValues.set(test.athlete_name, value);
+        }
       }
     });
+
+    // Convert map to array
+    const individualValues = Array.from(athleteBestValues.entries()).map(([name, value]) => ({
+      name,
+      value,
+      type: "individual"
+    }));
 
     // Combine data for chart
     const chartData = [
