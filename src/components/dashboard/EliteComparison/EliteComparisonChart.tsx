@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
 
 interface EliteComparisonChartProps {
   eliteData: any[];
@@ -135,46 +135,85 @@ export const EliteComparisonChart = ({
   }
 
   const maxValue = Math.max(...chartData.map(d => d.value));
-  const yAxisMax = maxValue * 1.1;
+  
+  // Define colored achievement bands like in ComparisonChart
+  const bandAreas = [
+    {
+      name: "The Best",
+      color: "#bbf7d0", // tailwind green-200
+      from: maxValue * 0.9,
+      to: maxValue,
+    },
+    {
+      name: "Good",
+      color: "#fde68a", // tailwind yellow-200
+      from: maxValue * 0.75,
+      to: maxValue * 0.9,
+    },
+    {
+      name: "Modest",
+      color: "#fed7aa", // tailwind orange-200
+      from: maxValue * 0.5,
+      to: maxValue * 0.75,
+    },
+  ];
 
   return (
-    <div className="h-96 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
+      <ResponsiveContainer width="100%" height="95%">
         <BarChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-          barCategoryGap="10%"
+          margin={{
+            top: 28,
+            right: 30,
+            left: 20,
+            bottom: 70,
+          }}
+          barCategoryGap="25%"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          {/* Colored achievement bands */}
+          {maxValue > 0 &&
+            bandAreas.map(band => (
+              <ReferenceArea
+                key={band.name}
+                y1={band.from}
+                y2={band.to}
+                label={null}
+                fill={band.color}
+                fillOpacity={0.55}
+                stroke="none"
+                ifOverflow="extendDomain"
+              />
+            ))
+          }
           <XAxis 
             dataKey="name" 
+            tick={{ fontSize: 12 }}
+            className="text-gray-600"
             angle={-45}
             textAnchor="end"
-            height={80}
-            interval={0}
-            tick={{ fontSize: 12, fill: '#374151' }}
+            height={65}
           />
           <YAxis 
-            tick={{ fontSize: 12, fill: '#374151' }}
-            domain={[0, yAxisMax]}
+            tick={{ fontSize: 13 }}
+            label={{
+              value: metricType,
+              angle: -90,
+              position: 'insideLeft',
+              style: { textAnchor: 'middle', fontSize: 14, fill: "#374151" },
+            }}
           />
           <Tooltip 
-            contentStyle={{
-              backgroundColor: '#fff',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}
-            formatter={(value: number) => [value.toFixed(2), metricType]}
+            cursor={{ fill: '#e0e7ef44' }}
+            contentStyle={{ borderRadius: 8, backgroundColor: "#fff" }}
+            formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
           />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-            {chartData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.type === "elite" ? "#ef4444" : "#3b82f6"} 
-              />
-            ))}
-          </Bar>
+          <Bar
+            dataKey="value"
+            fill="#374151"
+            name={metricType}
+            radius={[4, 4, 0, 0]}
+          />
         </BarChart>
       </ResponsiveContainer>
     </div>
