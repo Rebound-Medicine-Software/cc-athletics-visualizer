@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea, Cell } from "recharts";
 
 interface EliteComparisonChartProps {
   eliteData: any[];
@@ -210,10 +210,16 @@ export const EliteComparisonChart = ({
           />
           <Bar
             dataKey="value"
-            fill="#374151"
             name={metricType}
             radius={[4, 4, 0, 0]}
-          />
+          >
+            {chartData.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.type === "elite" ? "hsl(45, 93%, 47%)" : "#374151"} 
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
