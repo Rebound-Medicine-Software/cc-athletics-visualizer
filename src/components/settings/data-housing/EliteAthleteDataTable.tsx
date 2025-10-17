@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 
 interface EliteAthleteData {
   id: string;
@@ -24,12 +25,43 @@ interface EliteAthleteData {
   created_at: string;
 }
 
+// Metric mapping for each test type
+const testMetricsMap: Record<string, string[]> = {
+  "Countermovement Jump": [
+    "Jump Height (cm)",
+    "Power/Peak Power (W)",
+    "Relative Peak Power (W/kg)",
+    "Reactive Strength Index (RSI)"
+  ],
+  "Squat Jump": [
+    "Jump Height (cm)",
+    "Average Propulsive Power (W)",
+    "Average Rate of Force Development (W)",
+    "Take-off Velocity (m/s)"
+  ],
+  "Drop Jump": [
+    "Jump Height (cm)",
+    "Reactive Strength Index (RSI)",
+    "Flight Time (ms)",
+    "Contact Time (ms)"
+  ],
+  "Pogo Jump": [
+    "Jump Height (cm)",
+    "Power (W)",
+    "Reactive Strength Index (RSI)",
+    "Flight Time (ms)"
+  ]
+};
+
 export const EliteAthleteDataTable = () => {
   const [eliteData, setEliteData] = useState<EliteAthleteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editForm, setEditForm] = useState<Partial<EliteAthleteData>>({});
+  const [isAddingExercise, setIsAddingExercise] = useState(false);
+  const [selectedTestName, setSelectedTestName] = useState<string>("");
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
 
   useEffect(() => {
     fetchEliteData();
@@ -143,6 +175,27 @@ export const EliteAthleteDataTable = () => {
     setEditForm({});
   };
 
+  const handleExerciseCancel = () => {
+    setIsAddingExercise(false);
+    setSelectedTestName("");
+    setSelectedMetrics([]);
+  };
+
+  const handleExerciseSave = () => {
+    if (!selectedTestName) {
+      toast.error("Please select a test name");
+      return;
+    }
+    if (selectedMetrics.length === 0) {
+      toast.error("Please select at least one metric");
+      return;
+    }
+    
+    toast.success(`Exercise configuration saved: ${selectedTestName} with ${selectedMetrics.length} metrics`);
+    // Here you would implement the logic to save the exercise configuration
+    handleExerciseCancel();
+  };
+
   if (loading) {
     return <div className="p-4">Loading elite athlete data...</div>;
   }
@@ -151,11 +204,78 @@ export const EliteAthleteDataTable = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Elite Athlete Data</h3>
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Elite Athlete
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsAddingExercise(true)} disabled={isAddingExercise || isAdding || !!editingId} variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Exercise
+          </Button>
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId || isAddingExercise}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Elite Athlete
+          </Button>
+        </div>
       </div>
+
+      {isAddingExercise && (
+        <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+          <h4 className="text-md font-semibold mb-4">Configure New Exercise</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Test Name</label>
+              <Select
+                value={selectedTestName}
+                onValueChange={(value) => {
+                  setSelectedTestName(value);
+                  setSelectedMetrics([]); // Reset metrics when test changes
+                }}
+              >
+                <SelectTrigger className="bg-white">
+                  <SelectValue placeholder="Choose test type..." />
+                </SelectTrigger>
+                <SelectContent className="bg-white z-50">
+                  {Object.keys(testMetricsMap).map((testName) => (
+                    <SelectItem key={testName} value={testName}>
+                      {testName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Select Metrics</label>
+              <MultiSelectDropdown
+                options={selectedTestName ? testMetricsMap[selectedTestName].map(m => ({ value: m, label: m })) : []}
+                value={selectedMetrics}
+                onChange={setSelectedMetrics}
+                placeholder={selectedTestName ? "Choose metrics..." : "Select test name first"}
+                disabled={!selectedTestName}
+              />
+            </div>
+          </div>
+          {selectedMetrics.length > 0 && (
+            <div className="mt-3 p-3 bg-white rounded border">
+              <p className="text-sm font-medium mb-2">Selected Metrics:</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedMetrics.map((metric) => (
+                  <span key={metric} className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-sm">
+                    {metric}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex gap-2 mt-4">
+            <Button onClick={handleExerciseSave} className="bg-purple-600 hover:bg-purple-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save Exercise
+            </Button>
+            <Button onClick={handleExerciseCancel} variant="outline">
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isAdding && (
         <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
