@@ -214,6 +214,7 @@ export type Database = {
           "CMJ Reactive Strength Index": string | null
           "CMJ Relative Peak Power (W/kg)": number | null
           created_at: string
+          dynamic_metrics: Json | null
           id: string
           "IMTP Peak Force (N)": number | null
           "IMTP Relative Peak Force (N/kg)": number | null
@@ -230,6 +231,7 @@ export type Database = {
           "CMJ Reactive Strength Index"?: string | null
           "CMJ Relative Peak Power (W/kg)"?: number | null
           created_at?: string
+          dynamic_metrics?: Json | null
           id?: string
           "IMTP Peak Force (N)"?: number | null
           "IMTP Relative Peak Force (N/kg)"?: number | null
@@ -246,6 +248,7 @@ export type Database = {
           "CMJ Reactive Strength Index"?: string | null
           "CMJ Relative Peak Power (W/kg)"?: number | null
           created_at?: string
+          dynamic_metrics?: Json | null
           id?: string
           "IMTP Peak Force (N)"?: number | null
           "IMTP Relative Peak Force (N/kg)"?: number | null
@@ -343,6 +346,30 @@ export type Database = {
           team_name?: string
           test_date?: string | null
           weight_category_kg?: number | null
+        }
+        Relationships: []
+      }
+      elite_exercise_configs: {
+        Row: {
+          created_at: string
+          id: string
+          metrics: string[]
+          test_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metrics: string[]
+          test_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metrics?: string[]
+          test_name?: string
+          updated_at?: string
         }
         Relationships: []
       }

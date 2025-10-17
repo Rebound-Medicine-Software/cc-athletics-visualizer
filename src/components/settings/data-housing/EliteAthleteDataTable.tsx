@@ -22,7 +22,16 @@ interface EliteAthleteData {
   "CMJ Reactive Strength Index": string | null;
   "IMTP Peak Force (N)": number | null;
   "IMTP Relative Peak Force (N/kg)": number | null;
+  dynamic_metrics?: any;
   created_at: string;
+}
+
+interface ExerciseConfig {
+  id: string;
+  test_name: string;
+  metrics: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 // Metric mapping for each test type
@@ -62,9 +71,11 @@ export const EliteAthleteDataTable = () => {
   const [isAddingExercise, setIsAddingExercise] = useState(false);
   const [selectedTestName, setSelectedTestName] = useState<string>("");
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
 
   useEffect(() => {
     fetchEliteData();
+    fetchExerciseConfigs();
   }, []);
 
   const fetchEliteData = async () => {
@@ -81,6 +92,21 @@ export const EliteAthleteDataTable = () => {
       toast.error("Failed to load elite athlete data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchExerciseConfigs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('elite_exercise_configs')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setExerciseConfigs(data || []);
+    } catch (error) {
+      console.error('Error fetching exercise configs:', error);
+      toast.error("Failed to load exercise configurations");
     }
   };
 
@@ -112,7 +138,8 @@ export const EliteAthleteDataTable = () => {
             "CMJ Relative Peak Power (W/kg)": editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
             "CMJ Reactive Strength Index": editForm["CMJ Reactive Strength Index"],
             "IMTP Peak Force (N)": editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
-            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null
+            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
+            "dynamic_metrics": editForm.dynamic_metrics || {}
           })
           .eq('id', editingId);
 
@@ -134,7 +161,8 @@ export const EliteAthleteDataTable = () => {
             "CMJ Relative Peak Power (W/kg)": editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
             "CMJ Reactive Strength Index": editForm["CMJ Reactive Strength Index"],
             "IMTP Peak Force (N)": editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
-            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null
+            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
+            "dynamic_metrics": editForm.dynamic_metrics || {}
           });
 
         if (error) throw error;
@@ -181,7 +209,7 @@ export const EliteAthleteDataTable = () => {
     setSelectedMetrics([]);
   };
 
-  const handleExerciseSave = () => {
+  const handleExerciseSave = async () => {
     if (!selectedTestName) {
       toast.error("Please select a test name");
       return;
@@ -191,9 +219,22 @@ export const EliteAthleteDataTable = () => {
       return;
     }
     
-    toast.success(`Exercise configuration saved: ${selectedTestName} with ${selectedMetrics.length} metrics`);
-    // Here you would implement the logic to save the exercise configuration
-    handleExerciseCancel();
+    try {
+      const { error } = await supabase
+        .from('elite_exercise_configs')
+        .insert({
+          test_name: selectedTestName,
+          metrics: selectedMetrics
+        });
+
+      if (error) throw error;
+      toast.success(`Exercise configuration saved: ${selectedTestName}`);
+      fetchExerciseConfigs();
+      handleExerciseCancel();
+    } catch (error) {
+      console.error('Error saving exercise config:', error);
+      toast.error("Failed to save exercise configuration");
+    }
   };
 
   if (loading) {
@@ -344,6 +385,13 @@ export const EliteAthleteDataTable = () => {
               <TableHead>Weight Category</TableHead>
               <TableHead>CMJ Height (cm)</TableHead>
               <TableHead>CMJ Power (W)</TableHead>
+              {exerciseConfigs.map((config) => 
+                config.metrics.map((metric) => (
+                  <TableHead key={`${config.test_name}-${metric}`}>
+                    {config.test_name} {metric}
+                  </TableHead>
+                ))
+              )}
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -411,6 +459,23 @@ export const EliteAthleteDataTable = () => {
                         onChange={(e) => setEditForm({ ...editForm, "CMJ Peak Power (W)": Number(e.target.value) || undefined })}
                       />
                     </TableCell>
+                    {exerciseConfigs.map((config) => 
+                      config.metrics.map((metric) => (
+                        <TableCell key={`edit-${config.test_name}-${metric}`}>
+                          <Input
+                            type="number"
+                            value={editForm.dynamic_metrics?.[`${config.test_name}-${metric}`] || ''}
+                            onChange={(e) => setEditForm({ 
+                              ...editForm, 
+                              dynamic_metrics: {
+                                ...editForm.dynamic_metrics,
+                                [`${config.test_name}-${metric}`]: e.target.value ? Number(e.target.value) : null
+                              }
+                            })}
+                          />
+                        </TableCell>
+                      ))
+                    )}
                     <TableCell>
                       <div className="flex gap-2">
                         <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
@@ -432,6 +497,13 @@ export const EliteAthleteDataTable = () => {
                     <TableCell>{athlete["Weight Category (kg)"]}</TableCell>
                     <TableCell>{athlete["CMJ Jump Height (cm)"] || 'N/A'}</TableCell>
                     <TableCell>{athlete["CMJ Peak Power (W)"] || 'N/A'}</TableCell>
+                    {exerciseConfigs.map((config) => 
+                      config.metrics.map((metric) => (
+                        <TableCell key={`view-${athlete.id}-${config.test_name}-${metric}`}>
+                          {athlete.dynamic_metrics?.[`${config.test_name}-${metric}`] || 'N/A'}
+                        </TableCell>
+                      ))
+                    )}
                     <TableCell>
                       <div className="flex gap-2">
                         <Button 
