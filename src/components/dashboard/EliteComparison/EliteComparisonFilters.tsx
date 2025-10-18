@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EliteComparisonFiltersProps {
   filters: {
@@ -44,13 +45,19 @@ interface EliteComparisonFiltersProps {
 }
 
 // Available metric types that can be compared
-const availableMetricTypes = [
+const staticMetricTypes = [
   "CMJ Jump Height (cm)",
   "CMJ Peak Power (W)",
   "CMJ Relative Peak Power (W/kg)",
   "IMTP Peak Force (N)",
   "IMTP Relative Peak Force (N/kg)"
 ];
+
+interface ExerciseConfig {
+  id: string;
+  test_name: string;
+  metrics: string[];
+}
 
 export const EliteComparisonFilters = ({
   filters,
@@ -59,6 +66,41 @@ export const EliteComparisonFilters = ({
   individualFilterOptions,
   isEliteDataLoading,
 }: EliteComparisonFiltersProps) => {
+  const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
+  const [availableMetricTypes, setAvailableMetricTypes] = useState<string[]>(staticMetricTypes);
+  
+  // Fetch exercise configurations
+  useEffect(() => {
+    const fetchExerciseConfigs = async () => {
+      const { data, error } = await supabase
+        .from('elite_exercise_configs')
+        .select('*')
+        .order('test_name');
+      
+      if (!error && data) {
+        setExerciseConfigs(data);
+        
+        // Build dynamic metric types from configs
+        const dynamicMetrics = new Set<string>();
+        data.forEach(config => {
+          config.metrics.forEach((metric: string) => {
+            dynamicMetrics.add(`${config.test_name} ${metric}`);
+          });
+        });
+        
+        // Combine static and dynamic metrics
+        setAvailableMetricTypes([...staticMetricTypes, ...Array.from(dynamicMetrics)]);
+      }
+    };
+    
+    fetchExerciseConfigs();
+  }, []);
+  
+  // Get test names from both static and dynamic configs
+  const availableTestNames = React.useMemo(() => {
+    const dynamicTests = exerciseConfigs.map(config => config.test_name);
+    return [...new Set([...individualFilterOptions.testNames, ...dynamicTests])];
+  }, [individualFilterOptions.testNames, exerciseConfigs]);
   
   // Individual filter dependencies
   const athleteEnabled = true; // Always enabled
@@ -240,7 +282,7 @@ export const EliteComparisonFilters = ({
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 <SelectItem value="all">All Tests</SelectItem>
-                {individualFilterOptions.testNames.map(test => (
+                {availableTestNames.map(test => (
                   <SelectItem key={test} value={test}>
                     {test}
                   </SelectItem>

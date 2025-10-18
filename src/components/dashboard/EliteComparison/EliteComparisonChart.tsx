@@ -1,6 +1,27 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea, Cell } from "recharts";
 
+const parseMetricType = (metricType: string) => {
+  // Extract test name and metric from formats like "Countermovement Jump Jump Height (cm)"
+  const parts = metricType.split(' ');
+  if (parts.length > 2) {
+    // Could be dynamic metric like "Countermovement Jump Jump Height (cm)"
+    // Find the last occurrence of a metric pattern
+    const metricPatterns = ['Jump Height (cm)', 'Peak Power (W)', 'Relative Peak Power (W/kg)', 
+                           'Reactive Strength Index', 'Flight Time (ms)', 'Contact Time (ms)',
+                           'Average Propulsive Power (W)', 'Average Rate of Force Development (W)',
+                           'Take-off Velocity (m/s)', 'Power (W)'];
+    
+    for (const pattern of metricPatterns) {
+      if (metricType.includes(pattern)) {
+        const testName = metricType.replace(pattern, '').trim();
+        return { testName, metric: pattern };
+      }
+    }
+  }
+  return { testName: null, metric: metricType };
+};
+
 interface EliteComparisonChartProps {
   eliteData: any[];
   individualData: any[];
@@ -20,12 +41,16 @@ export const EliteComparisonChart = ({
       return [];
     }
 
+    const { testName: parsedTestName, metric: parsedMetric } = parseMetricType(metricType);
+
     // Calculate elite benchmark (average of filtered elite data)
     let eliteBenchmark = 0;
     let eliteCount = 0;
 
     eliteData.forEach(athlete => {
       let value = 0;
+      
+      // First check static metrics
       switch (metricType) {
         case "CMJ Jump Height (cm)":
           value = athlete["CMJ Jump Height (cm)"] || 0;
@@ -42,9 +67,15 @@ export const EliteComparisonChart = ({
         case "IMTP Relative Peak Force (N/kg)":
           value = athlete["IMTP Relative Peak Force (N/kg)"] || 0;
           break;
+        default:
+          // Check dynamic metrics
+          if (athlete.dynamic_metrics && parsedMetric) {
+            value = athlete.dynamic_metrics[parsedMetric] || 0;
+          }
       }
-      if (value > 0) {
-        eliteBenchmark += value;
+      
+      if (value && value > 0) {
+        eliteBenchmark += Number(value);
         eliteCount++;
       }
     });
@@ -60,6 +91,7 @@ export const EliteComparisonChart = ({
       const metrics = test.metrics as any;
       let value = 0;
       
+      // First check static metrics
       switch (metricType) {
         case "CMJ Jump Height (cm)":
           value = metrics?.jump_height_ft ? metrics.jump_height_ft * 30.48 : metrics?.jump_height || 0;
@@ -80,9 +112,38 @@ export const EliteComparisonChart = ({
           const mass = metrics?.body_mass || 0;
           value = mass > 0 ? force / mass : 0;
           break;
+        default:
+          // Check if it's a dynamic metric from test_data
+          if (parsedMetric) {
+            // Map common metric variations to actual test_data metric keys
+            const metricKeyMap: Record<string, string[]> = {
+              'Jump Height (cm)': ['jump_height_ft', 'jump_height'],
+              'Peak Power (W)': ['peak_power'],
+              'Power (W)': ['peak_power', 'power'],
+              'Reactive Strength Index': ['rsi', 'reactive_strength_index'],
+              'Flight Time (ms)': ['flight_time'],
+              'Contact Time (ms)': ['contact_time'],
+              'Average Propulsive Power (W)': ['avg_propulsive_power', 'average_propulsive_power'],
+              'Average Rate of Force Development (W)': ['avg_rfd', 'average_rfd'],
+              'Take-off Velocity (m/s)': ['takeoff_velocity', 'take_off_velocity']
+            };
+            
+            const possibleKeys = metricKeyMap[parsedMetric] || [parsedMetric.toLowerCase().replace(/[^a-z0-9]/g, '_')];
+            
+            for (const key of possibleKeys) {
+              if (metrics?.[key] !== undefined && metrics[key] !== null) {
+                value = Number(metrics[key]);
+                // Convert ft to cm for jump height
+                if (key === 'jump_height_ft') {
+                  value = value * 30.48;
+                }
+                break;
+              }
+            }
+          }
       }
       
-      if (value > 0) {
+      if (value && value > 0) {
         const currentBest = athleteBestValues.get(test.athlete_name) || 0;
         if (value > currentBest) {
           athleteBestValues.set(test.athlete_name, value);
