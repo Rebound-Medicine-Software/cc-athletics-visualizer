@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { Plus, Edit, Trash2, Save, X, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
@@ -72,6 +72,8 @@ export const EliteAthleteDataTable = () => {
   const [selectedTestName, setSelectedTestName] = useState<string>("");
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
+  const [editingColumn, setEditingColumn] = useState<{ configId: string; metric: string } | null>(null);
+  const [newColumnName, setNewColumnName] = useState<string>("");
 
   useEffect(() => {
     fetchEliteData();
@@ -237,6 +239,73 @@ export const EliteAthleteDataTable = () => {
     }
   };
 
+  const handleDeleteColumn = async (configId: string, metric: string) => {
+    if (!confirm(`Are you sure you want to delete the column "${metric}"?`)) return;
+
+    try {
+      const config = exerciseConfigs.find(c => c.id === configId);
+      if (!config) return;
+
+      const updatedMetrics = config.metrics.filter(m => m !== metric);
+
+      if (updatedMetrics.length === 0) {
+        // Delete entire config if no metrics left
+        const { error } = await supabase
+          .from('elite_exercise_configs')
+          .delete()
+          .eq('id', configId);
+
+        if (error) throw error;
+        toast.success("Exercise configuration deleted");
+      } else {
+        // Update config with remaining metrics
+        const { error } = await supabase
+          .from('elite_exercise_configs')
+          .update({ metrics: updatedMetrics })
+          .eq('id', configId);
+
+        if (error) throw error;
+        toast.success("Column deleted successfully");
+      }
+
+      fetchExerciseConfigs();
+      fetchEliteData();
+    } catch (error) {
+      console.error('Error deleting column:', error);
+      toast.error("Failed to delete column");
+    }
+  };
+
+  const handleEditColumn = async (configId: string, oldMetric: string) => {
+    if (!newColumnName.trim() || newColumnName === oldMetric) {
+      setEditingColumn(null);
+      setNewColumnName("");
+      return;
+    }
+
+    try {
+      const config = exerciseConfigs.find(c => c.id === configId);
+      if (!config) return;
+
+      const updatedMetrics = config.metrics.map(m => m === oldMetric ? newColumnName : m);
+
+      const { error } = await supabase
+        .from('elite_exercise_configs')
+        .update({ metrics: updatedMetrics })
+        .eq('id', configId);
+
+      if (error) throw error;
+      toast.success("Column name updated successfully");
+      
+      setEditingColumn(null);
+      setNewColumnName("");
+      fetchExerciseConfigs();
+    } catch (error) {
+      console.error('Error updating column name:', error);
+      toast.error("Failed to update column name");
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading elite athlete data...</div>;
   }
@@ -256,6 +325,74 @@ export const EliteAthleteDataTable = () => {
           </Button>
         </div>
       </div>
+
+      {exerciseConfigs.length > 0 && (
+        <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+          <h4 className="text-md font-semibold mb-3 flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Edit/Delete Columns
+          </h4>
+          <div className="space-y-2">
+            {exerciseConfigs.map((config) =>
+              config.metrics.map((metric) => {
+                const isEditing = editingColumn?.configId === config.id && editingColumn?.metric === metric;
+                return (
+                  <div key={`${config.id}-${metric}`} className="flex items-center gap-2 bg-white p-2 rounded border">
+                    {isEditing ? (
+                      <>
+                        <Input
+                          value={newColumnName}
+                          onChange={(e) => setNewColumnName(e.target.value)}
+                          placeholder="New column name"
+                          className="flex-1"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleEditColumn(config.id, metric)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <Save className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingColumn(null);
+                            setNewColumnName("");
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex-1 font-medium">{config.test_name} - {metric}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setEditingColumn({ configId: config.id, metric });
+                            setNewColumnName(metric);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteColumn(config.id, metric)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       {isAddingExercise && (
         <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
