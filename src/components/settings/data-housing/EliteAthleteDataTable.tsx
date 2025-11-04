@@ -73,14 +73,15 @@ export const EliteAthleteDataTable = () => {
   const [selectedTestName, setSelectedTestName] = useState<string>("");
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
-  const [editingColumn, setEditingColumn] = useState<{ configId: string; metric: string; isCMJ?: boolean } | null>(null);
+  const [editingColumn, setEditingColumn] = useState<{ configId: string; metric: string } | null>(null);
   const [newColumnName, setNewColumnName] = useState<string>("");
   const [isEditDeleteDialogOpen, setIsEditDeleteDialogOpen] = useState(false);
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>([]);
 
   const cmjColumns = [
     { id: 'cmj_height', label: 'CMJ Height (cm)', dbColumn: 'CMJ Jump Height (cm)' },
     { id: 'cmj_power', label: 'CMJ Power (W)', dbColumn: 'CMJ Peak Power (W)' }
-  ];
+  ].filter(col => !hiddenCMJColumns.includes(col.id));
 
   useEffect(() => {
     fetchEliteData();
@@ -247,14 +248,16 @@ export const EliteAthleteDataTable = () => {
   };
 
   const handleDeleteColumn = async (configId: string, metric: string, isCMJ: boolean = false) => {
-    if (isCMJ) {
-      toast.error("CMJ columns cannot be deleted from this interface");
-      return;
-    }
-
     if (!confirm(`Are you sure you want to delete the column "${metric}"?`)) return;
 
     try {
+      if (isCMJ) {
+        // For CMJ columns, just hide them from view
+        setHiddenCMJColumns(prev => [...prev, configId]);
+        toast.success("Column hidden successfully");
+        return;
+      }
+
       const config = exerciseConfigs.find(c => c.id === configId);
       if (!config) return;
 
@@ -296,7 +299,7 @@ export const EliteAthleteDataTable = () => {
     }
 
     if (isCMJ) {
-      toast.error("CMJ column names cannot be edited from this interface");
+      toast.error("CMJ column names are fixed and cannot be edited");
       setEditingColumn(null);
       setNewColumnName("");
       return;
@@ -352,7 +355,7 @@ export const EliteAthleteDataTable = () => {
               <div className="space-y-2 mt-4">
                 {/* CMJ Columns */}
                 {cmjColumns.map((column) => {
-                  const isEditing = editingColumn?.configId === column.id && editingColumn?.isCMJ;
+                  const isEditing = editingColumn?.configId === column.id;
                   return (
                     <div key={column.id} className="flex items-center gap-2 bg-muted p-3 rounded border">
                       {isEditing ? (
@@ -388,7 +391,7 @@ export const EliteAthleteDataTable = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setEditingColumn({ configId: column.id, metric: column.label, isCMJ: true });
+                              setEditingColumn({ configId: column.id, metric: column.label });
                               setNewColumnName(column.label);
                             }}
                           >
@@ -410,7 +413,7 @@ export const EliteAthleteDataTable = () => {
                 {/* Exercise Config Columns */}
                 {exerciseConfigs.map((config) =>
                   config.metrics.map((metric) => {
-                    const isEditing = editingColumn?.configId === config.id && editingColumn?.metric === metric && !editingColumn?.isCMJ;
+                    const isEditing = editingColumn?.configId === config.id && editingColumn?.metric === metric;
                     return (
                       <div key={`${config.id}-${metric}`} className="flex items-center gap-2 bg-muted p-3 rounded border">
                         {isEditing ? (
@@ -446,7 +449,7 @@ export const EliteAthleteDataTable = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setEditingColumn({ configId: config.id, metric, isCMJ: false });
+                                setEditingColumn({ configId: config.id, metric });
                                 setNewColumnName(metric);
                               }}
                             >
@@ -602,8 +605,8 @@ export const EliteAthleteDataTable = () => {
               <TableHead>Sport</TableHead>
               <TableHead>Age Group</TableHead>
               <TableHead>Weight Category</TableHead>
-              <TableHead>CMJ Height (cm)</TableHead>
-              <TableHead>CMJ Power (W)</TableHead>
+              {!hiddenCMJColumns.includes('cmj_height') && <TableHead>CMJ Height (cm)</TableHead>}
+              {!hiddenCMJColumns.includes('cmj_power') && <TableHead>CMJ Power (W)</TableHead>}
               {exerciseConfigs.map((config) => 
                 config.metrics.map((metric) => (
                   <TableHead key={`${config.test_name}-${metric}`}>
@@ -664,20 +667,24 @@ export const EliteAthleteDataTable = () => {
                         onChange={(e) => setEditForm({ ...editForm, "Weight Category (kg)": e.target.value })}
                       />
                     </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={editForm["CMJ Jump Height (cm)"] || ''}
-                        onChange={(e) => setEditForm({ ...editForm, "CMJ Jump Height (cm)": Number(e.target.value) || undefined })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        value={editForm["CMJ Peak Power (W)"] || ''}
-                        onChange={(e) => setEditForm({ ...editForm, "CMJ Peak Power (W)": Number(e.target.value) || undefined })}
-                      />
-                    </TableCell>
+                    {!hiddenCMJColumns.includes('cmj_height') && (
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={editForm["CMJ Jump Height (cm)"] || ''}
+                          onChange={(e) => setEditForm({ ...editForm, "CMJ Jump Height (cm)": Number(e.target.value) || undefined })}
+                        />
+                      </TableCell>
+                    )}
+                    {!hiddenCMJColumns.includes('cmj_power') && (
+                      <TableCell>
+                        <Input
+                          type="number"
+                          value={editForm["CMJ Peak Power (W)"] || ''}
+                          onChange={(e) => setEditForm({ ...editForm, "CMJ Peak Power (W)": Number(e.target.value) || undefined })}
+                        />
+                      </TableCell>
+                    )}
                     {exerciseConfigs.map((config) => 
                       config.metrics.map((metric) => (
                         <TableCell key={`edit-${config.test_name}-${metric}`}>
@@ -714,8 +721,8 @@ export const EliteAthleteDataTable = () => {
                     <TableCell>{athlete["Sport"]}</TableCell>
                     <TableCell>{athlete["Age Group"]}</TableCell>
                     <TableCell>{athlete["Weight Category (kg)"]}</TableCell>
-                    <TableCell>{athlete["CMJ Jump Height (cm)"] || 'N/A'}</TableCell>
-                    <TableCell>{athlete["CMJ Peak Power (W)"] || 'N/A'}</TableCell>
+                    {!hiddenCMJColumns.includes('cmj_height') && <TableCell>{athlete["CMJ Jump Height (cm)"] || 'N/A'}</TableCell>}
+                    {!hiddenCMJColumns.includes('cmj_power') && <TableCell>{athlete["CMJ Peak Power (W)"] || 'N/A'}</TableCell>}
                     {exerciseConfigs.map((config) => 
                       config.metrics.map((metric) => (
                         <TableCell key={`view-${athlete.id}-${config.test_name}-${metric}`}>
