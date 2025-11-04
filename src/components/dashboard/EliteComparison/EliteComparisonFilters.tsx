@@ -309,19 +309,6 @@ export const EliteComparisonFilters = ({
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          {/* Athlete Name */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <MultiSelectDropdown
-              options={athleteOptions}
-              value={filters.athleteName}
-              onChange={handleAthleteNameChange}
-              placeholder="Select Athletes"
-              className="bg-white"
-              labelClassName="bg-white"
-            />
-          </div>
-
           {/* Weight */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Weight (kg)</label>
@@ -333,6 +320,19 @@ export const EliteComparisonFilters = ({
               className="bg-white"
               labelClassName="bg-white"
               disabled={!weightEnabled}
+            />
+          </div>
+
+          {/* Athlete Name */}
+          <div className="flex flex-col">
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <MultiSelectDropdown
+              options={athleteOptions}
+              value={filters.athleteName}
+              onChange={handleAthleteNameChange}
+              placeholder="Select Athletes"
+              className="bg-white"
+              labelClassName="bg-white"
             />
           </div>
 
