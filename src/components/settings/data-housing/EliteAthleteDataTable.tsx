@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Save, X, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
@@ -74,6 +75,7 @@ export const EliteAthleteDataTable = () => {
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
   const [editingColumn, setEditingColumn] = useState<{ configId: string; metric: string } | null>(null);
   const [newColumnName, setNewColumnName] = useState<string>("");
+  const [isEditDeleteDialogOpen, setIsEditDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchEliteData();
@@ -319,6 +321,80 @@ export const EliteAthleteDataTable = () => {
             <Plus className="w-4 h-4 mr-2" />
             Add New Exercise
           </Button>
+          {exerciseConfigs.length > 0 && (
+            <Dialog open={isEditDeleteDialogOpen} onOpenChange={setIsEditDeleteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" disabled={isAdding || !!editingId || isAddingExercise}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit/Delete Columns
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit or Delete Columns</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-2 mt-4">
+                  {exerciseConfigs.map((config) =>
+                    config.metrics.map((metric) => {
+                      const isEditing = editingColumn?.configId === config.id && editingColumn?.metric === metric;
+                      return (
+                        <div key={`${config.id}-${metric}`} className="flex items-center gap-2 bg-muted p-3 rounded border">
+                          {isEditing ? (
+                            <>
+                              <Input
+                                value={newColumnName}
+                                onChange={(e) => setNewColumnName(e.target.value)}
+                                placeholder="New column name"
+                                className="flex-1"
+                              />
+                              <Button
+                                size="sm"
+                                onClick={() => handleEditColumn(config.id, metric)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Save className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingColumn(null);
+                                  setNewColumnName("");
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="flex-1 font-medium">{config.test_name} - {metric}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingColumn({ configId: config.id, metric });
+                                  setNewColumnName(metric);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteColumn(config.id, metric)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId || isAddingExercise}>
             <Plus className="w-4 h-4 mr-2" />
             Add Elite Athlete
@@ -326,73 +402,6 @@ export const EliteAthleteDataTable = () => {
         </div>
       </div>
 
-      {exerciseConfigs.length > 0 && (
-        <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
-          <h4 className="text-md font-semibold mb-3 flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Edit/Delete Columns
-          </h4>
-          <div className="space-y-2">
-            {exerciseConfigs.map((config) =>
-              config.metrics.map((metric) => {
-                const isEditing = editingColumn?.configId === config.id && editingColumn?.metric === metric;
-                return (
-                  <div key={`${config.id}-${metric}`} className="flex items-center gap-2 bg-white p-2 rounded border">
-                    {isEditing ? (
-                      <>
-                        <Input
-                          value={newColumnName}
-                          onChange={(e) => setNewColumnName(e.target.value)}
-                          placeholder="New column name"
-                          className="flex-1"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={() => handleEditColumn(config.id, metric)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <Save className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingColumn(null);
-                            setNewColumnName("");
-                          }}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex-1 font-medium">{config.test_name} - {metric}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingColumn({ configId: config.id, metric });
-                            setNewColumnName(metric);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteColumn(config.id, metric)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
 
       {isAddingExercise && (
         <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
