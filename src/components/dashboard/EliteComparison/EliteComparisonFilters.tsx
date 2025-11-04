@@ -65,7 +65,35 @@ export const EliteComparisonFilters = ({
 }: EliteComparisonFiltersProps) => {
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
   const [availableMetricTypes, setAvailableMetricTypes] = useState<string[]>([]);
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
+    const stored = localStorage.getItem('hiddenCMJColumns');
+    return stored ? JSON.parse(stored) : [];
+  });
   
+  // Listen for localStorage changes (when columns are hidden/deleted)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'hiddenCMJColumns') {
+        const newHidden = e.newValue ? JSON.parse(e.newValue) : [];
+        setHiddenCMJColumns(newHidden);
+      }
+    };
+
+    // Also listen for custom event (for same-tab updates)
+    const handleCustomUpdate = () => {
+      const stored = localStorage.getItem('hiddenCMJColumns');
+      setHiddenCMJColumns(stored ? JSON.parse(stored) : []);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('hiddenColumnsUpdated', handleCustomUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('hiddenColumnsUpdated', handleCustomUpdate);
+    };
+  }, []);
+
   // Fetch exercise configurations and build dynamic metrics
   useEffect(() => {
     const fetchExerciseConfigs = async () => {
@@ -76,39 +104,36 @@ export const EliteComparisonFilters = ({
       
       if (!error && data) {
         setExerciseConfigs(data);
-        
-        // Get hidden CMJ columns from localStorage
-        const hiddenCMJColumns = (() => {
-          const stored = localStorage.getItem('hiddenCMJColumns');
-          return stored ? JSON.parse(stored) : [];
-        })();
-        
-        // Filter CMJ dynamic columns based on hidden state
-        const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
-          if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
-            return false;
-          }
-          if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) {
-            return false;
-          }
-          return true;
-        });
-        
-        // Build dynamic metric types from exercise configs
-        const dynamicMetrics = new Set<string>();
-        data.forEach(config => {
-          config.metrics.forEach((metric: string) => {
-            dynamicMetrics.add(`${config.test_name} - ${metric}`);
-          });
-        });
-        
-        // Only show dynamic columns (CMJ + exercise configs)
-        setAvailableMetricTypes([...visibleCMJColumns, ...Array.from(dynamicMetrics)]);
       }
     };
     
     fetchExerciseConfigs();
   }, []);
+
+  // Update available metric types when configs or hidden columns change
+  useEffect(() => {
+    // Filter CMJ dynamic columns based on hidden state
+    const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
+      if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
+        return false;
+      }
+      if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) {
+        return false;
+      }
+      return true;
+    });
+    
+    // Build dynamic metric types from exercise configs
+    const dynamicMetrics = new Set<string>();
+    exerciseConfigs.forEach(config => {
+      config.metrics.forEach((metric: string) => {
+        dynamicMetrics.add(`${config.test_name} - ${metric}`);
+      });
+    });
+    
+    // Only show dynamic columns (CMJ + exercise configs)
+    setAvailableMetricTypes([...visibleCMJColumns, ...Array.from(dynamicMetrics)]);
+  }, [exerciseConfigs, hiddenCMJColumns]);
   
   // Get test names from both static and dynamic configs
   const availableTestNames = React.useMemo(() => {

@@ -259,6 +259,10 @@ export const EliteAthleteDataTable = () => {
         const updatedHidden = [...hiddenCMJColumns, configId];
         setHiddenCMJColumns(updatedHidden);
         localStorage.setItem('hiddenCMJColumns', JSON.stringify(updatedHidden));
+        
+        // Dispatch custom event for same-tab updates
+        window.dispatchEvent(new Event('hiddenColumnsUpdated'));
+        
         toast.success("Column hidden successfully");
         return;
       }
