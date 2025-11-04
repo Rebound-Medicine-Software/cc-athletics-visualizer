@@ -2,11 +2,15 @@ import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceArea, Cell } from "recharts";
 
 const parseMetricType = (metricType: string) => {
-  // Extract test name and metric from formats like "Countermovement Jump Jump Height (cm)"
+  // Extract test name and metric from formats like "Countermovement Jump - Jump Height (cm)"
+  if (metricType.includes(' - ')) {
+    const [testName, metric] = metricType.split(' - ');
+    return { testName: testName.trim(), metric: metric.trim() };
+  }
+  
+  // Fallback for old format without dash
   const parts = metricType.split(' ');
   if (parts.length > 2) {
-    // Could be dynamic metric like "Countermovement Jump Jump Height (cm)"
-    // Find the last occurrence of a metric pattern
     const metricPatterns = ['Jump Height (cm)', 'Peak Power (W)', 'Relative Peak Power (W/kg)', 
                            'Reactive Strength Index', 'Flight Time (ms)', 'Contact Time (ms)',
                            'Average Propulsive Power (W)', 'Average Rate of Force Development (W)',

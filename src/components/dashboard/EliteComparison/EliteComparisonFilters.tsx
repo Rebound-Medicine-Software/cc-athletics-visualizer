@@ -84,7 +84,7 @@ export const EliteComparisonFilters = ({
         const dynamicMetrics = new Set<string>();
         data.forEach(config => {
           config.metrics.forEach((metric: string) => {
-            dynamicMetrics.add(`${config.test_name} ${metric}`);
+            dynamicMetrics.add(`${config.test_name} - ${metric}`);
           });
         });
         
