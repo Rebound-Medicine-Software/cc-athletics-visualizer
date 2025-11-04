@@ -54,28 +54,22 @@ export const EliteComparisonChart = ({
     eliteData.forEach(athlete => {
       let value = 0;
       
-      // First check static metrics
-      switch (metricType) {
-        case "CMJ Jump Height (cm)":
-          value = athlete["CMJ Jump Height (cm)"] || 0;
-          break;
-        case "CMJ Peak Power (W)":
-          value = athlete["CMJ Peak Power (W)"] || 0;
-          break;
-        case "CMJ Relative Peak Power (W/kg)":
-          value = athlete["CMJ Relative Peak Power (W/kg)"] || 0;
-          break;
-        case "IMTP Peak Force (N)":
-          value = athlete["IMTP Peak Force (N)"] || 0;
-          break;
-        case "IMTP Relative Peak Force (N/kg)":
-          value = athlete["IMTP Relative Peak Force (N/kg)"] || 0;
-          break;
-        default:
-          // Check dynamic metrics
-          if (athlete.dynamic_metrics && parsedMetric) {
-            value = athlete.dynamic_metrics[parsedMetric] || 0;
-          }
+      // Check if it matches static metric pattern (with or without dash)
+      const metricToCheck = parsedMetric || metricType;
+      
+      if (metricToCheck.includes("Jump Height (cm)")) {
+        value = athlete["CMJ Jump Height (cm)"] || 0;
+      } else if (metricToCheck.includes("Peak Power (W)") && !metricToCheck.includes("Relative")) {
+        value = athlete["CMJ Peak Power (W)"] || 0;
+      } else if (metricToCheck.includes("Relative Peak Power (W/kg)")) {
+        value = athlete["CMJ Relative Peak Power (W/kg)"] || 0;
+      } else if (metricToCheck.includes("Peak Force (N)") && !metricToCheck.includes("Relative")) {
+        value = athlete["IMTP Peak Force (N)"] || 0;
+      } else if (metricToCheck.includes("Relative Peak Force (N/kg)")) {
+        value = athlete["IMTP Relative Peak Force (N/kg)"] || 0;
+      } else if (athlete.dynamic_metrics && parsedMetric) {
+        // Check dynamic metrics
+        value = athlete.dynamic_metrics[parsedMetric] || 0;
       }
       
       if (value && value > 0) {
@@ -95,56 +89,52 @@ export const EliteComparisonChart = ({
       const metrics = test.metrics as any;
       let value = 0;
       
-      // First check static metrics
-      switch (metricType) {
-        case "CMJ Jump Height (cm)":
-          value = metrics?.jump_height_ft ? metrics.jump_height_ft * 30.48 : metrics?.jump_height || 0;
-          break;
-        case "CMJ Peak Power (W)":
-          value = metrics?.peak_power || 0;
-          break;
-        case "CMJ Relative Peak Power (W/kg)":
-          const peakPower = metrics?.peak_power || 0;
-          const bodyMass = metrics?.body_mass || 0;
-          value = bodyMass > 0 ? peakPower / bodyMass : 0;
-          break;
-        case "IMTP Peak Force (N)":
-          value = metrics?.peak_force || metrics?.force_peak || 0;
-          break;
-        case "IMTP Relative Peak Force (N/kg)":
-          const force = metrics?.peak_force || metrics?.force_peak || 0;
-          const mass = metrics?.body_mass || 0;
-          value = mass > 0 ? force / mass : 0;
-          break;
-        default:
-          // Check if it's a dynamic metric from test_data
-          if (parsedMetric) {
+      // Check if it matches static metric pattern (with or without dash)
+      const metricToCheck = parsedMetric || metricType;
+      
+      if (metricToCheck.includes("Jump Height (cm)")) {
+        value = metrics?.jump_height_ft ? metrics.jump_height_ft * 30.48 : metrics?.jump_height || 0;
+      } else if (metricToCheck.includes("Peak Power (W)") && !metricToCheck.includes("Relative")) {
+        value = metrics?.peak_power || 0;
+      } else if (metricToCheck.includes("Relative Peak Power (W/kg)")) {
+        const peakPower = metrics?.peak_power || 0;
+        const bodyMass = metrics?.body_mass || 0;
+        value = bodyMass > 0 ? peakPower / bodyMass : 0;
+      } else if (metricToCheck.includes("Peak Force (N)") && !metricToCheck.includes("Relative")) {
+        value = metrics?.peak_force || metrics?.force_peak || 0;
+      } else if (metricToCheck.includes("Relative Peak Force (N/kg)")) {
+        const force = metrics?.peak_force || metrics?.force_peak || 0;
+        const mass = metrics?.body_mass || 0;
+        value = mass > 0 ? force / mass : 0;
+      } else {
+        // Check if it's a dynamic metric from test_data
+        if (parsedMetric) {
             // Map common metric variations to actual test_data metric keys
-            const metricKeyMap: Record<string, string[]> = {
-              'Jump Height (cm)': ['jump_height_ft', 'jump_height'],
-              'Peak Power (W)': ['peak_power'],
-              'Power (W)': ['peak_power', 'power'],
-              'Reactive Strength Index': ['rsi', 'reactive_strength_index'],
-              'Flight Time (ms)': ['flight_time'],
-              'Contact Time (ms)': ['contact_time'],
-              'Average Propulsive Power (W)': ['avg_propulsive_power', 'average_propulsive_power'],
-              'Average Rate of Force Development (W)': ['avg_rfd', 'average_rfd'],
-              'Take-off Velocity (m/s)': ['takeoff_velocity', 'take_off_velocity']
-            };
-            
-            const possibleKeys = metricKeyMap[parsedMetric] || [parsedMetric.toLowerCase().replace(/[^a-z0-9]/g, '_')];
-            
-            for (const key of possibleKeys) {
-              if (metrics?.[key] !== undefined && metrics[key] !== null) {
-                value = Number(metrics[key]);
-                // Convert ft to cm for jump height
-                if (key === 'jump_height_ft') {
-                  value = value * 30.48;
-                }
-                break;
+          const metricKeyMap: Record<string, string[]> = {
+            'Jump Height (cm)': ['jump_height_ft', 'jump_height'],
+            'Peak Power (W)': ['peak_power'],
+            'Power (W)': ['peak_power', 'power'],
+            'Reactive Strength Index': ['rsi', 'reactive_strength_index'],
+            'Flight Time (ms)': ['flight_time'],
+            'Contact Time (ms)': ['contact_time'],
+            'Average Propulsive Power (W)': ['avg_propulsive_power', 'average_propulsive_power'],
+            'Average Rate of Force Development (W)': ['avg_rfd', 'average_rfd'],
+            'Take-off Velocity (m/s)': ['takeoff_velocity', 'take_off_velocity']
+          };
+          
+          const possibleKeys = metricKeyMap[parsedMetric] || [parsedMetric.toLowerCase().replace(/[^a-z0-9]/g, '_')];
+          
+          for (const key of possibleKeys) {
+            if (metrics?.[key] !== undefined && metrics[key] !== null) {
+              value = Number(metrics[key]);
+              // Convert ft to cm for jump height
+              if (key === 'jump_height_ft') {
+                value = value * 30.48;
               }
+              break;
             }
           }
+        }
       }
       
       if (value && value > 0) {
