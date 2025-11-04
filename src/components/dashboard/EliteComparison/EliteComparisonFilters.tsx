@@ -44,13 +44,10 @@ interface EliteComparisonFiltersProps {
   isEliteDataLoading: boolean;
 }
 
-// Available metric types that can be compared
-const staticMetricTypes = [
+// Dynamic columns from Elite Athlete Data table (CMJ columns)
+const cmjDynamicColumns = [
   "CMJ Jump Height (cm)",
-  "CMJ Peak Power (W)",
-  "CMJ Relative Peak Power (W/kg)",
-  "IMTP Peak Force (N)",
-  "IMTP Relative Peak Force (N/kg)"
+  "CMJ Peak Power (W)"
 ];
 
 interface ExerciseConfig {
@@ -67,9 +64,9 @@ export const EliteComparisonFilters = ({
   isEliteDataLoading,
 }: EliteComparisonFiltersProps) => {
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
-  const [availableMetricTypes, setAvailableMetricTypes] = useState<string[]>(staticMetricTypes);
+  const [availableMetricTypes, setAvailableMetricTypes] = useState<string[]>([]);
   
-  // Fetch exercise configurations
+  // Fetch exercise configurations and build dynamic metrics
   useEffect(() => {
     const fetchExerciseConfigs = async () => {
       const { data, error } = await supabase
@@ -86,8 +83,8 @@ export const EliteComparisonFilters = ({
           return stored ? JSON.parse(stored) : [];
         })();
         
-        // Filter out hidden CMJ columns from static metrics
-        const visibleStaticMetrics = staticMetricTypes.filter(metric => {
+        // Filter CMJ dynamic columns based on hidden state
+        const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
           if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
             return false;
           }
@@ -97,7 +94,7 @@ export const EliteComparisonFilters = ({
           return true;
         });
         
-        // Build dynamic metric types from configs
+        // Build dynamic metric types from exercise configs
         const dynamicMetrics = new Set<string>();
         data.forEach(config => {
           config.metrics.forEach((metric: string) => {
@@ -105,8 +102,8 @@ export const EliteComparisonFilters = ({
           });
         });
         
-        // Combine visible static and dynamic metrics
-        setAvailableMetricTypes([...visibleStaticMetrics, ...Array.from(dynamicMetrics)]);
+        // Only show dynamic columns (CMJ + exercise configs)
+        setAvailableMetricTypes([...visibleCMJColumns, ...Array.from(dynamicMetrics)]);
       }
     };
     
