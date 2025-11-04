@@ -80,6 +80,23 @@ export const EliteComparisonFilters = ({
       if (!error && data) {
         setExerciseConfigs(data);
         
+        // Get hidden CMJ columns from localStorage
+        const hiddenCMJColumns = (() => {
+          const stored = localStorage.getItem('hiddenCMJColumns');
+          return stored ? JSON.parse(stored) : [];
+        })();
+        
+        // Filter out hidden CMJ columns from static metrics
+        const visibleStaticMetrics = staticMetricTypes.filter(metric => {
+          if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
+            return false;
+          }
+          if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) {
+            return false;
+          }
+          return true;
+        });
+        
         // Build dynamic metric types from configs
         const dynamicMetrics = new Set<string>();
         data.forEach(config => {
@@ -88,8 +105,8 @@ export const EliteComparisonFilters = ({
           });
         });
         
-        // Combine static and dynamic metrics
-        setAvailableMetricTypes([...staticMetricTypes, ...Array.from(dynamicMetrics)]);
+        // Combine visible static and dynamic metrics
+        setAvailableMetricTypes([...visibleStaticMetrics, ...Array.from(dynamicMetrics)]);
       }
     };
     

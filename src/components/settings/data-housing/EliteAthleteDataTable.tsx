@@ -76,7 +76,10 @@ export const EliteAthleteDataTable = () => {
   const [editingColumn, setEditingColumn] = useState<{ configId: string; metric: string } | null>(null);
   const [newColumnName, setNewColumnName] = useState<string>("");
   const [isEditDeleteDialogOpen, setIsEditDeleteDialogOpen] = useState(false);
-  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>([]);
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
+    const stored = localStorage.getItem('hiddenCMJColumns');
+    return stored ? JSON.parse(stored) : [];
+  });
 
   const cmjColumns = [
     { id: 'cmj_height', label: 'CMJ Height (cm)', dbColumn: 'CMJ Jump Height (cm)' },
@@ -253,7 +256,9 @@ export const EliteAthleteDataTable = () => {
     try {
       if (isCMJ) {
         // For CMJ columns, just hide them from view
-        setHiddenCMJColumns(prev => [...prev, configId]);
+        const updatedHidden = [...hiddenCMJColumns, configId];
+        setHiddenCMJColumns(updatedHidden);
+        localStorage.setItem('hiddenCMJColumns', JSON.stringify(updatedHidden));
         toast.success("Column hidden successfully");
         return;
       }
