@@ -65,10 +65,26 @@ export const EliteComparisonFilters = ({
 }: EliteComparisonFiltersProps) => {
   const [exerciseConfigs, setExerciseConfigs] = useState<ExerciseConfig[]>([]);
   const [availableMetricTypes, setAvailableMetricTypes] = useState<string[]>([]);
-  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
-    const stored = localStorage.getItem('hiddenCMJColumns');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>([]);
+  
+  // Update hidden columns from localStorage on mount and when page gains focus
+  useEffect(() => {
+    const updateHiddenColumns = () => {
+      const stored = localStorage.getItem('hiddenCMJColumns');
+      const parsed = stored ? JSON.parse(stored) : [];
+      console.log('Hidden CMJ columns from localStorage:', parsed);
+      setHiddenCMJColumns(parsed);
+    };
+    
+    updateHiddenColumns();
+    
+    // Update when window gains focus (switching tabs/routes)
+    window.addEventListener('focus', updateHiddenColumns);
+    
+    return () => {
+      window.removeEventListener('focus', updateHiddenColumns);
+    };
+  }, []);
   
   // Listen for localStorage changes (when columns are hidden/deleted)
   useEffect(() => {
@@ -112,16 +128,22 @@ export const EliteComparisonFilters = ({
 
   // Update available metric types when configs or hidden columns change
   useEffect(() => {
+    console.log('Updating metric types with hiddenCMJColumns:', hiddenCMJColumns);
+    
     // Filter CMJ dynamic columns based on hidden state
     const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
       if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
+        console.log('Filtering out CMJ Jump Height (cm)');
         return false;
       }
       if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) {
+        console.log('Filtering out CMJ Peak Power (W)');
         return false;
       }
       return true;
     });
+    
+    console.log('Visible CMJ columns:', visibleCMJColumns);
     
     // Build dynamic metric types from exercise configs
     const dynamicMetrics = new Set<string>();
@@ -132,7 +154,9 @@ export const EliteComparisonFilters = ({
     });
     
     // Only show dynamic columns (CMJ + exercise configs)
-    setAvailableMetricTypes([...visibleCMJColumns, ...Array.from(dynamicMetrics)]);
+    const finalMetrics = [...visibleCMJColumns, ...Array.from(dynamicMetrics)];
+    console.log('Final available metrics:', finalMetrics);
+    setAvailableMetricTypes(finalMetrics);
   }, [exerciseConfigs, hiddenCMJColumns]);
   
   // Get test names from both static and dynamic configs
