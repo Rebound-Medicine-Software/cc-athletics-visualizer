@@ -23,7 +23,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     ageGroup: "all",
     // Individual Filters (CC Athletics Data)
     athleteName: [] as string[],
-    weight: [] as string[],
+    teamName: [] as string[],
     testName: "all",
     metricType: "all"
   });
@@ -36,7 +36,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
       weightCategory: "all", 
       ageGroup: "all",
       athleteName: [],
-      weight: [],
+      teamName: [],
       testName: "all",
       metricType: "all"
     });
@@ -59,27 +59,18 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     // Get unique athletes first
     const uniqueAthletes = [...new Set(data.map(item => item.athlete_name).filter(Boolean))];
     
+    // Get unique team names
+    const uniqueTeamNames = [...new Set(data.map(item => item.team_name).filter(Boolean))];
+    
     // Filter data to selected athletes if any are selected
     const filteredData = filters.athleteName.length > 0 
       ? data.filter(item => filters.athleteName.includes(item.athlete_name))
       : data;
     
-    // Get one body_mass per athlete (use the most recent test)
-    const athleteWeights = new Map<string, number>();
-    filteredData.forEach(item => {
-      const metrics = item.metrics as any;
-      if (metrics?.body_mass && item.athlete_name) {
-        // Only set if not already set (assumes data is ordered by date, most recent first)
-        if (!athleteWeights.has(item.athlete_name)) {
-          athleteWeights.set(item.athlete_name, metrics.body_mass);
-        }
-      }
-    });
-    
     return {
       athletes: uniqueAthletes,
-      testNames: [...new Set(filteredData.map(item => item.test_name).filter(Boolean))],
-      weights: [...athleteWeights.values()].sort((a, b) => a - b)
+      teamNames: uniqueTeamNames,
+      testNames: [...new Set(filteredData.map(item => item.test_name).filter(Boolean))]
     };
   }, [data, filters.athleteName]);
 
@@ -112,18 +103,15 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     if (filters.athleteName.length > 0) {
       filtered = filtered.filter(item => filters.athleteName.includes(item.athlete_name));
     }
+    if (filters.teamName.length > 0) {
+      filtered = filtered.filter(item => filters.teamName.includes(item.team_name));
+    }
     if (filters.testName !== "all") {
       filtered = filtered.filter(item => item.test_name === filters.testName);
     }
-    if (filters.weight.length > 0) {
-      filtered = filtered.filter(item => {
-        const metrics = item.metrics as any;
-        return filters.weight.includes(metrics?.body_mass?.toString() || "");
-      });
-    }
     
     return filtered;
-  }, [data, filters.athleteName, filters.testName, filters.weight]);
+  }, [data, filters.athleteName, filters.teamName, filters.testName]);
 
   return (
     <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>

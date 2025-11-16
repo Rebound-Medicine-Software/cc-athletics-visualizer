@@ -16,7 +16,7 @@ interface EliteComparisonFiltersProps {
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
-    weight: string[];
+    teamName: string[];
     testName: string;
     metricType: string;
   };
@@ -26,7 +26,7 @@ interface EliteComparisonFiltersProps {
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
-    weight: string[];
+    teamName: string[];
     testName: string;
     metricType: string;
   }>>;
@@ -38,8 +38,8 @@ interface EliteComparisonFiltersProps {
   };
   individualFilterOptions: {
     athletes: string[];
+    teamNames: string[];
     testNames: string[];
-    weights: number[];
   };
   isEliteDataLoading: boolean;
 }
@@ -166,26 +166,26 @@ export const EliteComparisonFilters = ({
   }, [individualFilterOptions.testNames, exerciseConfigs]);
   
   // Individual filter dependencies
-  const athleteEnabled = true; // Always enabled
-  const weightEnabled = filters.athleteName.length > 0;
-  const testNameEnabled = filters.weight.length > 0;
+  const teamNameEnabled = true; // Always enabled
+  const athleteEnabled = filters.teamName.length > 0;
+  const testNameEnabled = filters.athleteName.length > 0;
   const metricTypeEnabled = filters.testName !== "all";
 
   // Handle cascading filter changes for Individual Filters
-  const handleAthleteNameChange = (value: string[]) => {
+  const handleTeamNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
-      athleteName: value,
-      weight: value.length === 0 ? [] : prev.weight,
+      teamName: value,
+      athleteName: value.length === 0 ? [] : prev.athleteName,
       testName: value.length === 0 ? "all" : prev.testName,
       metricType: value.length === 0 ? "all" : prev.metricType
     }));
   };
 
-  const handleWeightChange = (value: string[]) => {
+  const handleAthleteNameChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
-      weight: value,
+      athleteName: value,
       testName: value.length === 0 ? "all" : prev.testName,
       metricType: value.length === 0 ? "all" : prev.metricType
     }));
@@ -199,14 +199,14 @@ export const EliteComparisonFilters = ({
     }));
   };
 
+  const teamNameOptions = individualFilterOptions.teamNames.map(team => ({ 
+    value: team, 
+    label: team 
+  }));
+
   const athleteOptions = individualFilterOptions.athletes.map(athlete => ({ 
     value: athlete, 
     label: athlete 
-  }));
-
-  const weightOptions = individualFilterOptions.weights.map(weight => ({
-    value: weight.toString(),
-    label: `${weight} kg`
   }));
 
   return (
@@ -309,17 +309,17 @@ export const EliteComparisonFilters = ({
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-          {/* Weight */}
+          {/* Team Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Weight (kg)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
             <MultiSelectDropdown
-              options={weightOptions}
-              value={filters.weight}
-              onChange={handleWeightChange}
-              placeholder="Select Weights"
+              options={teamNameOptions}
+              value={filters.teamName}
+              onChange={handleTeamNameChange}
+              placeholder="Select Teams"
               className="bg-white"
               labelClassName="bg-white"
-              disabled={!weightEnabled}
+              disabled={!teamNameEnabled}
             />
           </div>
 
@@ -333,6 +333,7 @@ export const EliteComparisonFilters = ({
               placeholder="Select Athletes"
               className="bg-white"
               labelClassName="bg-white"
+              disabled={!athleteEnabled}
             />
           </div>
 
