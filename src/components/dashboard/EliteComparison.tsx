@@ -54,25 +54,30 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     };
   }, [eliteData]);
 
-  // Process CC Athletics data for filter options
+  // Process CC Athletics data for filter options with cascading dependencies
   const individualFilterOptions = useMemo(() => {
-    // Get unique athletes first
-    const uniqueAthletes = [...new Set(data.map(item => item.athlete_name).filter(Boolean))];
-    
-    // Get unique team names
+    // Always show all team names
     const uniqueTeamNames = [...new Set(data.map(item => item.team_name).filter(Boolean))];
     
-    // Filter data to selected athletes if any are selected
-    const filteredData = filters.athleteName.length > 0 
-      ? data.filter(item => filters.athleteName.includes(item.athlete_name))
+    // Filter athletes based on selected teams
+    const teamFilteredData = filters.teamName.length > 0
+      ? data.filter(item => filters.teamName.includes(item.team_name))
       : data;
+    const uniqueAthletes = [...new Set(teamFilteredData.map(item => item.athlete_name).filter(Boolean))];
+    
+    // Filter test names based on selected teams and athletes
+    let testFilteredData = teamFilteredData;
+    if (filters.athleteName.length > 0) {
+      testFilteredData = testFilteredData.filter(item => filters.athleteName.includes(item.athlete_name));
+    }
+    const uniqueTestNames = [...new Set(testFilteredData.map(item => item.test_name).filter(Boolean))];
     
     return {
-      athletes: uniqueAthletes,
       teamNames: uniqueTeamNames,
-      testNames: [...new Set(filteredData.map(item => item.test_name).filter(Boolean))]
+      athletes: uniqueAthletes,
+      testNames: uniqueTestNames
     };
-  }, [data, filters.athleteName]);
+  }, [data, filters.teamName, filters.athleteName]);
 
   // Filter elite data based on comparator filters
   const filteredEliteData = useMemo(() => {
