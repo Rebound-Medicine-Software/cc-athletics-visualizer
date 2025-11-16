@@ -258,9 +258,10 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !sportEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !sportEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="All Sports" />
+                <SelectValue placeholder="Select Sport" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All Sports</SelectItem>
                 {eliteFilterOptions.sports.map(sport => (
                   <SelectItem key={sport} value={sport}>
                     {sport}
@@ -279,9 +280,10 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !sexEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !sexEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="All" />
+                <SelectValue placeholder="Select Sex" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All</SelectItem>
                 {eliteFilterOptions.sexes.map(sex => (
                   <SelectItem key={sex} value={sex}>
                     {sex.charAt(0).toUpperCase() + sex.slice(1)}
@@ -300,9 +302,10 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !weightCategoryEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !weightCategoryEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="All Categories" />
+                <SelectValue placeholder="Select Weight Category" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All Categories</SelectItem>
                 {eliteFilterOptions.weightCategories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -321,9 +324,10 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !ageGroupEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !ageGroupEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="All Ages" />
+                <SelectValue placeholder="Select Age Group" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
+                <SelectItem value="all">All Ages</SelectItem>
                 {eliteFilterOptions.ageGroups.map(age => (
                   <SelectItem key={age} value={age.toString()}>
                     {age} years
