@@ -258,7 +258,7 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !sportEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !sportEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Sport" />
+                <SelectValue placeholder="All Sports" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 {eliteFilterOptions.sports.map(sport => (
@@ -279,7 +279,7 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !sexEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !sexEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Sex" />
+                <SelectValue placeholder="All" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 {eliteFilterOptions.sexes.map(sex => (
@@ -300,7 +300,7 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !weightCategoryEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !weightCategoryEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Weight Category" />
+                <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 {eliteFilterOptions.weightCategories.map(category => (
@@ -321,7 +321,7 @@ export const EliteComparisonFilters = ({
               disabled={isEliteDataLoading || !ageGroupEnabled}
             >
               <SelectTrigger className={`${(isEliteDataLoading || !ageGroupEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Age Group" />
+                <SelectValue placeholder="All Ages" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 {eliteFilterOptions.ageGroups.map(age => (
