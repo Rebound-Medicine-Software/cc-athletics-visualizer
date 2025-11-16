@@ -42,17 +42,40 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     });
   }, [resetFiltersKey]);
 
-  // Process elite data for filter options
+  // Process elite data for filter options with cascading dependencies
   const eliteFilterOptions = useMemo(() => {
     if (!eliteData) return { sports: [], sexes: [], weightCategories: [], ageGroups: [] };
 
+    // Always show all sports
+    const sports = [...new Set(eliteData.map(item => item.Sport).filter(Boolean))];
+    
+    // Filter by sport for sex options
+    const sportFiltered = filters.sport !== "all"
+      ? eliteData.filter(item => item.Sport === filters.sport)
+      : eliteData;
+    const sexes = [...new Set(sportFiltered.map(item => item.Sex).filter(Boolean))];
+    
+    // Filter by sport + sex for weight categories
+    let sexFiltered = sportFiltered;
+    if (filters.sex !== "all") {
+      sexFiltered = sexFiltered.filter(item => item.Sex === filters.sex);
+    }
+    const weightCategories = [...new Set(sexFiltered.map(item => item["Weight Category (kg)"]).filter(Boolean))];
+    
+    // Filter by sport + sex + weight for age groups
+    let weightFiltered = sexFiltered;
+    if (filters.weightCategory !== "all") {
+      weightFiltered = weightFiltered.filter(item => item["Weight Category (kg)"] === filters.weightCategory);
+    }
+    const ageGroups = [...new Set(weightFiltered.map(item => item["Age Group"]).filter(Boolean))].sort((a, b) => a - b);
+
     return {
-      sports: [...new Set(eliteData.map(item => item.Sport).filter(Boolean))],
-      sexes: [...new Set(eliteData.map(item => item.Sex).filter(Boolean))],
-      weightCategories: [...new Set(eliteData.map(item => item["Weight Category (kg)"]).filter(Boolean))],
-      ageGroups: [...new Set(eliteData.map(item => item["Age Group"]).filter(Boolean))].sort((a, b) => a - b)
+      sports,
+      sexes,
+      weightCategories,
+      ageGroups
     };
-  }, [eliteData]);
+  }, [eliteData, filters.sport, filters.sex, filters.weightCategory]);
 
   // Process CC Athletics data for filter options with cascading dependencies
   const individualFilterOptions = useMemo(() => {

@@ -165,11 +165,45 @@ export const EliteComparisonFilters = ({
     return [...new Set([...individualFilterOptions.testNames, ...dynamicTests])];
   }, [individualFilterOptions.testNames, exerciseConfigs]);
   
+  // Comparator filter dependencies
+  const sportEnabled = true; // Always enabled
+  const sexEnabled = filters.sport !== "all";
+  const weightCategoryEnabled = filters.sex !== "all";
+  const ageGroupEnabled = filters.weightCategory !== "all";
+
   // Individual filter dependencies
   const teamNameEnabled = true; // Always enabled
   const athleteEnabled = filters.teamName.length > 0;
   const testNameEnabled = filters.athleteName.length > 0;
   const metricTypeEnabled = filters.testName !== "all";
+
+  // Handle cascading filter changes for Comparator Filters
+  const handleSportChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      sport: value,
+      sex: value === "all" ? "all" : prev.sex,
+      weightCategory: value === "all" ? "all" : prev.weightCategory,
+      ageGroup: value === "all" ? "all" : prev.ageGroup
+    }));
+  };
+
+  const handleSexChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      sex: value,
+      weightCategory: value === "all" ? "all" : prev.weightCategory,
+      ageGroup: value === "all" ? "all" : prev.ageGroup
+    }));
+  };
+
+  const handleWeightCategoryChange = (value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      weightCategory: value,
+      ageGroup: value === "all" ? "all" : prev.ageGroup
+    }));
+  };
 
   // Handle cascading filter changes for Individual Filters
   const handleTeamNameChange = (value: string[]) => {
@@ -220,10 +254,10 @@ export const EliteComparisonFilters = ({
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sport</label>
             <Select 
               value={filters.sport} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, sport: value }))}
-              disabled={isEliteDataLoading}
+              onValueChange={handleSportChange}
+              disabled={isEliteDataLoading || !sportEnabled}
             >
-              <SelectTrigger className={`${isEliteDataLoading ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${(isEliteDataLoading || !sportEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Sport" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -239,13 +273,13 @@ export const EliteComparisonFilters = ({
 
           {/* Sex */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!sexEnabled ? "text-gray-400" : "text-gray-700"}`}>Sex</label>
             <Select 
               value={filters.sex} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, sex: value }))}
-              disabled={isEliteDataLoading}
+              onValueChange={handleSexChange}
+              disabled={isEliteDataLoading || !sexEnabled}
             >
-              <SelectTrigger className={`${isEliteDataLoading ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${(isEliteDataLoading || !sexEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Sex" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -261,13 +295,13 @@ export const EliteComparisonFilters = ({
 
           {/* Weight Category */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Weight Category (kg)</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!weightCategoryEnabled ? "text-gray-400" : "text-gray-700"}`}>Weight Category (kg)</label>
             <Select 
               value={filters.weightCategory} 
-              onValueChange={(value) => setFilters(prev => ({ ...prev, weightCategory: value }))}
-              disabled={isEliteDataLoading}
+              onValueChange={handleWeightCategoryChange}
+              disabled={isEliteDataLoading || !weightCategoryEnabled}
             >
-              <SelectTrigger className={`${isEliteDataLoading ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${(isEliteDataLoading || !weightCategoryEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Weight Category" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -283,13 +317,13 @@ export const EliteComparisonFilters = ({
 
           {/* Age Group */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Age Group</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!ageGroupEnabled ? "text-gray-400" : "text-gray-700"}`}>Age Group</label>
             <Select 
               value={filters.ageGroup} 
               onValueChange={(value) => setFilters(prev => ({ ...prev, ageGroup: value }))}
-              disabled={isEliteDataLoading}
+              disabled={isEliteDataLoading || !ageGroupEnabled}
             >
-              <SelectTrigger className={`${isEliteDataLoading ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${(isEliteDataLoading || !ageGroupEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Age Group" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -325,13 +359,13 @@ export const EliteComparisonFilters = ({
 
           {/* Athlete Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!athleteEnabled ? "text-gray-400" : "text-gray-700"}`}>Athlete Name</label>
             <MultiSelectDropdown
               options={athleteOptions}
               value={filters.athleteName}
               onChange={handleAthleteNameChange}
               placeholder="Select Athletes"
-              className="bg-white"
+              className={`${!athleteEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}
               labelClassName="bg-white"
               disabled={!athleteEnabled}
             />
@@ -339,9 +373,9 @@ export const EliteComparisonFilters = ({
 
           {/* Test Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!testNameEnabled ? "text-gray-400" : "text-gray-700"}`}>Test Name</label>
             <Select value={filters.testName} onValueChange={handleTestNameChange} disabled={!testNameEnabled}>
-              <SelectTrigger className={`${!testNameEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${!testNameEnabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
@@ -357,13 +391,13 @@ export const EliteComparisonFilters = ({
 
           {/* Metric Type */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <label className={`block text-sm font-medium mb-2 text-center ${!metricTypeEnabled ? "text-gray-400" : "text-gray-700"}`}>Metric Type</label>
             <Select 
               value={filters.metricType} 
               onValueChange={(value) => setFilters(prev => ({ ...prev, metricType: value }))}
               disabled={!metricTypeEnabled}
             >
-              <SelectTrigger className={`${!metricTypeEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+              <SelectTrigger className={`${!metricTypeEnabled ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
