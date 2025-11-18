@@ -261,7 +261,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Sport" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Sports</SelectItem>
                 {eliteFilterOptions.sports.map(sport => (
                   <SelectItem key={sport} value={sport}>
                     {sport}
@@ -283,7 +282,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Sex" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All</SelectItem>
                 {eliteFilterOptions.sexes.map(sex => (
                   <SelectItem key={sex} value={sex}>
                     {sex.charAt(0).toUpperCase() + sex.slice(1)}
@@ -305,7 +303,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Weight Category" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Categories</SelectItem>
                 {eliteFilterOptions.weightCategories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category}
@@ -327,7 +324,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Age Group" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Ages</SelectItem>
                 {eliteFilterOptions.ageGroups.map(age => (
                   <SelectItem key={age} value={age.toString()}>
                     {age} years
@@ -379,7 +375,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Tests</SelectItem>
                 {availableTestNames.map(test => (
                   <SelectItem key={test} value={test}>
                     {test}
@@ -401,7 +396,6 @@ export const EliteComparisonFilters = ({
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                <SelectItem value="all">All Metrics</SelectItem>
                 {availableMetricTypes.map(metric => (
                   <SelectItem key={metric} value={metric}>
                     {metric}
