@@ -11,8 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface EliteComparisonFiltersProps {
   filters: {
-    sport: string;
-    sex: string;
+    sport: string[];
+    sex: string[];
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
@@ -21,8 +21,8 @@ interface EliteComparisonFiltersProps {
     metricType: string;
   };
   setFilters: React.Dispatch<React.SetStateAction<{
-    sport: string;
-    sex: string;
+    sport: string[];
+    sex: string[];
     weightCategory: string;
     ageGroup: string;
     athleteName: string[];
@@ -167,8 +167,8 @@ export const EliteComparisonFilters = ({
   
   // Comparator filter dependencies
   const sportEnabled = true; // Always enabled
-  const sexEnabled = !!filters.sport;
-  const weightCategoryEnabled = !!filters.sex;
+  const sexEnabled = filters.sport.length > 0;
+  const weightCategoryEnabled = filters.sex.length > 0;
   const ageGroupEnabled = !!filters.weightCategory;
 
   // Individual filter dependencies
@@ -178,22 +178,22 @@ export const EliteComparisonFilters = ({
   const metricTypeEnabled = !!filters.testName;
 
   // Handle cascading filter changes for Comparator Filters
-  const handleSportChange = (value: string) => {
+  const handleSportChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       sport: value,
-      sex: "",
-      weightCategory: "",
-      ageGroup: ""
+      sex: value.length === 0 ? [] : prev.sex,
+      weightCategory: value.length === 0 ? "" : prev.weightCategory,
+      ageGroup: value.length === 0 ? "" : prev.ageGroup
     }));
   };
 
-  const handleSexChange = (value: string) => {
+  const handleSexChange = (value: string[]) => {
     setFilters(prev => ({
       ...prev,
       sex: value,
-      weightCategory: "",
-      ageGroup: ""
+      weightCategory: value.length === 0 ? "" : prev.weightCategory,
+      ageGroup: value.length === 0 ? "" : prev.ageGroup
     }));
   };
 
@@ -243,6 +243,16 @@ export const EliteComparisonFilters = ({
     label: athlete 
   }));
 
+  const sportOptions = eliteFilterOptions.sports.map(sport => ({
+    value: sport,
+    label: sport
+  }));
+
+  const sexOptions = eliteFilterOptions.sexes.map(sex => ({
+    value: sex,
+    label: sex.charAt(0).toUpperCase() + sex.slice(1)
+  }));
+
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full">
       {/* Comparator Filters Section */}
@@ -252,43 +262,29 @@ export const EliteComparisonFilters = ({
           {/* Sport */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sport</label>
-            <Select 
-              value={filters.sport} 
-              onValueChange={handleSportChange}
-              disabled={isEliteDataLoading || !sportEnabled}
-            >
-              <SelectTrigger className={`${(isEliteDataLoading || !sportEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Sport" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {eliteFilterOptions.sports.map(sport => (
-                  <SelectItem key={sport} value={sport}>
-                    {sport}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={sportOptions}
+              value={filters.sport}
+              onChange={handleSportChange}
+              placeholder="Select Sports"
+              className="bg-white"
+              labelClassName="bg-white"
+              disabled={!sportEnabled || isEliteDataLoading}
+            />
           </div>
 
           {/* Sex */}
           <div className="flex flex-col">
             <label className={`block text-sm font-medium mb-2 text-center ${!sexEnabled ? "text-gray-400" : "text-gray-700"}`}>Sex</label>
-            <Select 
-              value={filters.sex} 
-              onValueChange={handleSexChange}
-              disabled={isEliteDataLoading || !sexEnabled}
-            >
-              <SelectTrigger className={`${(isEliteDataLoading || !sexEnabled) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
-                <SelectValue placeholder="Select Sex" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {eliteFilterOptions.sexes.map(sex => (
-                  <SelectItem key={sex} value={sex}>
-                    {sex.charAt(0).toUpperCase() + sex.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectDropdown
+              options={sexOptions}
+              value={filters.sex}
+              onChange={handleSexChange}
+              placeholder="Select Sex"
+              className={`${!sexEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}
+              labelClassName="bg-white"
+              disabled={!sexEnabled || isEliteDataLoading}
+            />
           </div>
 
           {/* Weight Category */}

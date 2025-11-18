@@ -17,8 +17,8 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
   
   const [filters, setFilters] = useState({
     // Comparator Filters (Elite Data)
-    sport: "",
-    sex: "", 
+    sport: [] as string[],
+    sex: [] as string[], 
     weightCategory: "",
     ageGroup: "",
     // Individual Filters (CC Athletics Data)
@@ -31,8 +31,8 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
   // Reset all filters when key changes
   useEffect(() => {
     setFilters({
-      sport: "",
-      sex: "",
+      sport: [],
+      sex: [],
       weightCategory: "", 
       ageGroup: "",
       athleteName: [],
@@ -50,15 +50,15 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     const sports = [...new Set(eliteData.map(item => item.Sport).filter(Boolean))];
     
     // Filter by sport for sex options
-    const sportFiltered = filters.sport
-      ? eliteData.filter(item => item.Sport === filters.sport)
+    const sportFiltered = filters.sport.length > 0
+      ? eliteData.filter(item => filters.sport.includes(item.Sport))
       : eliteData;
     const sexes = [...new Set(sportFiltered.map(item => item.Sex).filter(Boolean))];
     
     // Filter by sport + sex for weight categories
     let sexFiltered = sportFiltered;
-    if (filters.sex) {
-      sexFiltered = sexFiltered.filter(item => item.Sex === filters.sex);
+    if (filters.sex.length > 0) {
+      sexFiltered = sexFiltered.filter(item => filters.sex.includes(item.Sex));
     }
     const weightCategories = [...new Set(sexFiltered.map(item => item["Weight Category (kg)"]).filter(Boolean))];
     
@@ -108,11 +108,11 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     
     let filtered = eliteData;
     
-    if (filters.sport) {
-      filtered = filtered.filter(item => item.Sport === filters.sport);
+    if (filters.sport.length > 0) {
+      filtered = filtered.filter(item => filters.sport.includes(item.Sport));
     }
-    if (filters.sex) {
-      filtered = filtered.filter(item => item.Sex === filters.sex);
+    if (filters.sex.length > 0) {
+      filtered = filtered.filter(item => filters.sex.includes(item.Sex));
     }
     if (filters.weightCategory) {
       filtered = filtered.filter(item => item["Weight Category (kg)"] === filters.weightCategory);
