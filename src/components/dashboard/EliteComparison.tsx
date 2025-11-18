@@ -17,28 +17,28 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
   
   const [filters, setFilters] = useState({
     // Comparator Filters (Elite Data)
-    sport: "all",
-    sex: "all", 
-    weightCategory: "all",
-    ageGroup: "all",
+    sport: "",
+    sex: "", 
+    weightCategory: "",
+    ageGroup: "",
     // Individual Filters (CC Athletics Data)
     athleteName: [] as string[],
     teamName: [] as string[],
-    testName: "all",
-    metricType: "all"
+    testName: "",
+    metricType: ""
   });
 
   // Reset all filters when key changes
   useEffect(() => {
     setFilters({
-      sport: "all",
-      sex: "all",
-      weightCategory: "all", 
-      ageGroup: "all",
+      sport: "",
+      sex: "",
+      weightCategory: "", 
+      ageGroup: "",
       athleteName: [],
       teamName: [],
-      testName: "all",
-      metricType: "all"
+      testName: "",
+      metricType: ""
     });
   }, [resetFiltersKey]);
 
@@ -50,21 +50,21 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     const sports = [...new Set(eliteData.map(item => item.Sport).filter(Boolean))];
     
     // Filter by sport for sex options
-    const sportFiltered = filters.sport !== "all"
+    const sportFiltered = filters.sport
       ? eliteData.filter(item => item.Sport === filters.sport)
       : eliteData;
     const sexes = [...new Set(sportFiltered.map(item => item.Sex).filter(Boolean))];
     
     // Filter by sport + sex for weight categories
     let sexFiltered = sportFiltered;
-    if (filters.sex !== "all") {
+    if (filters.sex) {
       sexFiltered = sexFiltered.filter(item => item.Sex === filters.sex);
     }
     const weightCategories = [...new Set(sexFiltered.map(item => item["Weight Category (kg)"]).filter(Boolean))];
     
     // Filter by sport + sex + weight for age groups
     let weightFiltered = sexFiltered;
-    if (filters.weightCategory !== "all") {
+    if (filters.weightCategory) {
       weightFiltered = weightFiltered.filter(item => item["Weight Category (kg)"] === filters.weightCategory);
     }
     const ageGroups = [...new Set(weightFiltered.map(item => item["Age Group"]).filter(Boolean))].sort((a, b) => a - b);
@@ -108,16 +108,16 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     
     let filtered = eliteData;
     
-    if (filters.sport !== "all") {
+    if (filters.sport) {
       filtered = filtered.filter(item => item.Sport === filters.sport);
     }
-    if (filters.sex !== "all") {
+    if (filters.sex) {
       filtered = filtered.filter(item => item.Sex === filters.sex);
     }
-    if (filters.weightCategory !== "all") {
+    if (filters.weightCategory) {
       filtered = filtered.filter(item => item["Weight Category (kg)"] === filters.weightCategory);
     }
-    if (filters.ageGroup !== "all") {
+    if (filters.ageGroup) {
       filtered = filtered.filter(item => item["Age Group"] === parseInt(filters.ageGroup));
     }
     
@@ -134,7 +134,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     if (filters.teamName.length > 0) {
       filtered = filtered.filter(item => filters.teamName.includes(item.team_name));
     }
-    if (filters.testName !== "all") {
+    if (filters.testName) {
       filtered = filtered.filter(item => item.test_name === filters.testName);
     }
     
