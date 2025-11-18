@@ -167,24 +167,24 @@ export const EliteComparisonFilters = ({
   
   // Comparator filter dependencies
   const sportEnabled = true; // Always enabled
-  const sexEnabled = filters.sport !== "all";
-  const weightCategoryEnabled = filters.sex !== "all";
-  const ageGroupEnabled = filters.weightCategory !== "all";
+  const sexEnabled = !!filters.sport;
+  const weightCategoryEnabled = !!filters.sex;
+  const ageGroupEnabled = !!filters.weightCategory;
 
   // Individual filter dependencies
   const teamNameEnabled = true; // Always enabled
   const athleteEnabled = filters.teamName.length > 0;
   const testNameEnabled = filters.athleteName.length > 0;
-  const metricTypeEnabled = filters.testName !== "all";
+  const metricTypeEnabled = !!filters.testName;
 
   // Handle cascading filter changes for Comparator Filters
   const handleSportChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
       sport: value,
-      sex: value === "all" ? "all" : prev.sex,
-      weightCategory: value === "all" ? "all" : prev.weightCategory,
-      ageGroup: value === "all" ? "all" : prev.ageGroup
+      sex: "",
+      weightCategory: "",
+      ageGroup: ""
     }));
   };
 
@@ -192,8 +192,8 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       sex: value,
-      weightCategory: value === "all" ? "all" : prev.weightCategory,
-      ageGroup: value === "all" ? "all" : prev.ageGroup
+      weightCategory: "",
+      ageGroup: ""
     }));
   };
 
@@ -201,7 +201,7 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       weightCategory: value,
-      ageGroup: value === "all" ? "all" : prev.ageGroup
+      ageGroup: ""
     }));
   };
 
@@ -211,8 +211,8 @@ export const EliteComparisonFilters = ({
       ...prev,
       teamName: value,
       athleteName: value.length === 0 ? [] : prev.athleteName,
-      testName: value.length === 0 ? "all" : prev.testName,
-      metricType: value.length === 0 ? "all" : prev.metricType
+      testName: value.length === 0 ? "" : prev.testName,
+      metricType: value.length === 0 ? "" : prev.metricType
     }));
   };
 
@@ -220,8 +220,8 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       athleteName: value,
-      testName: value.length === 0 ? "all" : prev.testName,
-      metricType: value.length === 0 ? "all" : prev.metricType
+      testName: value.length === 0 ? "" : prev.testName,
+      metricType: value.length === 0 ? "" : prev.metricType
     }));
   };
 
@@ -229,7 +229,7 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       testName: value,
-      metricType: value === "all" ? "all" : prev.metricType
+      metricType: ""
     }));
   };
 
