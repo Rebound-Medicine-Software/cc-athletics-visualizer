@@ -58,13 +58,23 @@ const JUMP_TEST_NAMES = [
   "Drop Jump"
 ];
 
-// Default metrics for non-jump tests (isometric, etc.) - dual_leg stance with total_metrics
-const DEFAULT_METRIC_DISPLAY_NAMES: Record<string, string> = {
+// Isometric metric field to display name mapping (used across all isometric rules)
+const ISOMETRIC_METRIC_DISPLAY_NAMES: Record<string, string> = {
   "rfd_max": "Maximum Rate of Force Development",
   "force_peak": "Maximum Peak Force Capacity",
   "force_50ms": "Early Maximum Peak Force Capacity (50ms)",
   "force_250ms": "Late Maximum Peak Force Capacity (250ms)"
 };
+
+// Reverse mapping: display name to field name
+const DISPLAY_NAME_TO_FIELD: Record<string, string> = Object.entries(ISOMETRIC_METRIC_DISPLAY_NAMES)
+  .reduce((acc, [field, display]) => ({ ...acc, [display]: field }), {});
+
+// Valid metric sources for isometric tests
+type MetricSource = "total_metrics" | "cha1_metrics" | "cha2_metrics";
+
+// Stance types
+type StanceType = "dual_leg" | "left_leg" | "right_leg";
 
 interface ExerciseConfig {
   id: string;
@@ -199,10 +209,11 @@ export const EliteComparisonFilters = ({
         setAvailableMetricTypes(visibleCMJColumns);
       }
     } else {
-      // For non-jump tests (isometric, etc.), use default metrics from total_metrics
-      const defaultMetrics = Object.values(DEFAULT_METRIC_DISPLAY_NAMES);
-      console.log('Non-jump test metrics:', defaultMetrics);
-      setAvailableMetricTypes(defaultMetrics);
+      // For non-jump tests (isometric, etc.), use isometric metrics from total_metrics
+      // Rule 1: Default behavior - stance = "dual_leg", metrics_source = "total_metrics"
+      const isometricMetrics = Object.values(ISOMETRIC_METRIC_DISPLAY_NAMES) as string[];
+      console.log('Isometric test metrics:', isometricMetrics);
+      setAvailableMetricTypes(isometricMetrics);
     }
   }, [filters.testName, exerciseConfigs, hiddenCMJColumns]);
   
