@@ -148,14 +148,26 @@ export const SendReportsModal = () => {
       const { report_url, filename, test_count, tests } = response.data;
       console.log('Report generated:', report_url);
 
-      // Download the PDF
-      const link = document.createElement('a');
-      link.href = report_url;
-      link.download = filename;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Fetch as blob to avoid ad-blocker blocking Supabase URLs
+      try {
+        const pdfResponse = await fetch(report_url);
+        const blob = await pdfResponse.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up blob URL
+        window.URL.revokeObjectURL(blobUrl);
+      } catch (fetchError) {
+        console.error('Error downloading PDF, falling back to direct link:', fetchError);
+        // Fallback: open in new tab
+        window.open(report_url, '_blank');
+      }
 
       toast({
         title: "Success",
