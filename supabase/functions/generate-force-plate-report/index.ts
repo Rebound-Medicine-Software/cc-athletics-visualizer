@@ -8,7 +8,7 @@ const corsHeaders = {
 }
 
 interface TestMetrics {
-  [key: string]: number | string | undefined;
+  [key: string]: any;
 }
 
 interface TestRecord {
@@ -28,13 +28,153 @@ interface GroupedTest {
   personalRecord: TestMetrics | null;
 }
 
+interface CardConfig {
+  icon: string;
+  title: string;
+  metricKey: string;
+  keyOverride?: string;
+  unit: string;
+}
+
+// Get metric card configurations matching dashboard's metricCardConfig.ts
+function getCardConfigs(testName: string): CardConfig[] {
+  switch (testName) {
+    case "Countermovement Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "Peak Power", metricKey: "peak_power", unit: "W" },
+        { icon: "⚡", title: "Peak Power / Body Mass", metricKey: "relative_peak_power", unit: "W/kg" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+      ];
+    case "Squat Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "Take-off Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
+        { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "N/s" },
+        { icon: "⚡", title: "Avg Propulsive Power", metricKey: "avg_propulsive_power", unit: "W" },
+      ];
+    case "Drop Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+      ];
+    case "Pogo Jump":
+      return [
+        { icon: "📏", title: "Jump Height", metricKey: "avg_jump_height", unit: "m" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "" },
+        { icon: "⚡", title: "Power", metricKey: "avg_power", unit: "W" },
+        { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", unit: "ms" },
+      ];
+    default:
+      // Isometric tests
+      return [
+        { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
+        { icon: "📈", title: "RFD Max", metricKey: "rfd_max", unit: "N/s" },
+        { icon: "⚡", title: "Impulse 50ms", metricKey: "impulse_50ms", unit: "N·s" },
+        { icon: "⚡", title: "Impulse 250ms", metricKey: "impulse_250ms", unit: "N·s" },
+      ];
+  }
+}
+
+// Extract limb symmetry data matching dashboard's IndividualComparisonSection.tsx logic
+function calculateLimbSymmetry(testName: string, metrics: TestMetrics): { leftValue: number; rightValue: number; asymmetryPercent: number } | null {
+  let leftValue = 0;
+  let rightValue = 0;
+
+  // Apply data logic based on test name - matching dashboard logic exactly
+  if (testName === "Drop Jump") {
+    leftValue = metrics.p1_avg_force || 0;
+    rightValue = metrics.p2_avg_force || 0;
+  } else if (testName === "Countermovement Jump") {
+    leftValue = metrics.p1_avg_force || 0;
+    rightValue = metrics.p2_avg_force || 0;
+  } else if (testName === "Squat Jump") {
+    leftValue = metrics.p1_avg_force || 0;
+    rightValue = metrics.p2_avg_force || 0;
+  } else if (testName === "Pogo Jump") {
+    leftValue = metrics.avg_fp1_contribution || 0;
+    rightValue = metrics.avg_fp2_contribution || 0;
+  } else {
+    // Isometric tests - check for isometric_analysis structure
+    if (metrics.isometric_analysis?.trials) {
+      const trials = metrics.isometric_analysis.trials;
+      
+      // Look for dual trials with separate left/right values
+      for (const trial of trials) {
+        if (trial.stance === 'dual') {
+          if (trial.total_metrics?.force_peak_left && trial.total_metrics?.force_peak_right) {
+            leftValue = trial.total_metrics.force_peak_left;
+            rightValue = trial.total_metrics.force_peak_right;
+            break;
+          } else if (trial.cha1_metrics?.force_peak && trial.cha2_metrics?.force_peak) {
+            leftValue = trial.cha1_metrics.force_peak;
+            rightValue = trial.cha2_metrics.force_peak;
+            break;
+          }
+        }
+      }
+
+      // If no dual trials found, collect separate left/right leg trials
+      if (leftValue === 0 && rightValue === 0) {
+        const leftTrials = trials.filter((t: any) => t.stance === 'left_leg' || t.stance === 'left');
+        const rightTrials = trials.filter((t: any) => t.stance === 'right_leg' || t.stance === 'right');
+
+        if (leftTrials.length > 0) {
+          leftValue = leftTrials.reduce((sum: number, t: any) => sum + (t.total_metrics?.force_peak || 0), 0) / leftTrials.length;
+        }
+        if (rightTrials.length > 0) {
+          rightValue = rightTrials.reduce((sum: number, t: any) => sum + (t.total_metrics?.force_peak || 0), 0) / rightTrials.length;
+        }
+      }
+    }
+  }
+
+  const total = leftValue + rightValue;
+  if (total === 0) return null;
+
+  // Asymmetry formula: |Left - Right| / Max(Left, Right) × 100
+  const asymmetryPercent = Math.abs(leftValue - rightValue) / Math.max(leftValue, rightValue) * 100;
+
+  return {
+    leftValue,
+    rightValue,
+    asymmetryPercent
+  };
+}
+
+// Format metric value based on type (convert units like dashboard does)
+function formatMetricValue(value: number, metricKey: string): number {
+  switch (metricKey) {
+    case 'jump_height_ft':
+    case 'jump_height_cm':
+      // Convert from meters to centimeters (or feet to cm)
+      return value * 100;
+    case 'contact_time':
+    case 'flight_time':
+    case 'avg_flight_time':
+    case 'avg_contact_time':
+      // Convert from seconds to milliseconds
+      return value * 1000;
+    default:
+      return value;
+  }
+}
+
+// Get metric value from record, applying any key overrides
+function getMetricValue(metrics: TestMetrics, config: CardConfig): number | null {
+  const value = metrics[config.metricKey];
+  if (typeof value !== 'number') return null;
+  return formatMetricValue(value, config.keyOverride || config.metricKey);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    // Use service role key directly without user auth headers to bypass RLS for storage upload
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -73,7 +213,6 @@ serve(async (req) => {
       // Sort by date descending
       group.records.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())
       
-      // Latest record
       const latest = group.records[0]
       group.latestDate = latest.test_date
       group.latestMetrics = latest.metrics
@@ -84,7 +223,7 @@ serve(async (req) => {
         metrics: r.metrics
       }))
       
-      // Baseline (average of first 3 sessions or 28-day average)
+      // Baseline (average of first 3 sessions)
       const oldestRecords = group.records.slice(-3)
       if (oldestRecords.length >= 2) {
         const baselineMetrics: TestMetrics = {}
@@ -115,9 +254,10 @@ serve(async (req) => {
     
     for (const [testName, group] of groupedTests) {
       try {
-        // Get primary metric for the test
-        const primaryMetric = getPrimaryMetric(testName, group.latestMetrics)
-        const limbData = getLimbData(group.latestMetrics)
+        const cardConfigs = getCardConfigs(testName)
+        const primaryConfig = cardConfigs[0]
+        const primaryValue = getMetricValue(group.latestMetrics, primaryConfig)
+        const limbData = calculateLimbSymmetry(testName, group.latestMetrics)
         
         const insightResponse = await fetch(
           `${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-ai-coach-insight`,
@@ -131,13 +271,15 @@ serve(async (req) => {
               testMetrics: {
                 testName,
                 testDate: group.latestDate,
-                currentValue: primaryMetric.value,
-                metricType: primaryMetric.name,
-                metricUnit: primaryMetric.unit,
-                previousValues: group.previousValues.slice(0, 5).map(p => p.metrics[primaryMetric.key]),
-                baseline: group.baseline?.[primaryMetric.key],
-                personalRecord: group.personalRecord?.[primaryMetric.key],
-                ...limbData,
+                currentValue: primaryValue,
+                metricType: primaryConfig.title,
+                metricUnit: primaryConfig.unit,
+                previousValues: group.previousValues.slice(0, 5).map(p => getMetricValue(p.metrics, primaryConfig)),
+                baseline: group.baseline ? getMetricValue(group.baseline, primaryConfig) : null,
+                personalRecord: group.personalRecord ? getMetricValue(group.personalRecord, primaryConfig) : null,
+                leftLimb: limbData?.leftValue,
+                rightLimb: limbData?.rightValue,
+                asymmetryPercent: limbData?.asymmetryPercent,
               }
             })
           }
@@ -158,28 +300,35 @@ serve(async (req) => {
       }
     }
 
-    // Generate PDF
+    // Generate PDF with improved styling matching the HTML template
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
       format: 'a4'
     })
 
-    // Colors
-    const primaryColor = [30, 64, 175] // Blue
-    const darkColor = [15, 23, 42] // Slate 900
-    const textColor = [51, 65, 85] // Slate 700
-    const lightTextColor = [100, 116, 139] // Slate 500
-    const successColor = [22, 163, 74] // Green
-    const warningColor = [234, 179, 8] // Yellow
-    const dangerColor = [220, 38, 38] // Red
-    const bgColor = [248, 250, 252] // Slate 50
+    // Colors matching the HTML template
+    const colors = {
+      headerBg: [31, 41, 55],       // #1F2933
+      primary: [30, 78, 216],       // #1D4ED8
+      dark: [17, 24, 39],           // #111827
+      text: [75, 85, 99],           // #4B5563
+      lightText: [107, 114, 128],   // #6B7280
+      muted: [156, 163, 175],       // #9CA3AF
+      success: [5, 150, 105],       // #059669
+      danger: [185, 28, 28],        // #B91C1C
+      cardBg: [248, 250, 253],      // #F8FAFD
+      sectionBg: [248, 250, 253],   // #F8FAFD
+      border: [229, 231, 235],      // #E5E7EB
+      coachBg: [239, 246, 255],     // #EFF6FF
+      coachBorder: [191, 219, 254], // #BFDBFE
+    }
 
     // Get date range
     const allDates = test_data.map((r: TestRecord) => new Date(r.test_date))
     const minDate = new Date(Math.min(...allDates.map((d: Date) => d.getTime())))
     const maxDate = new Date(Math.max(...allDates.map((d: Date) => d.getTime())))
-    const dateRange = `${formatDate(minDate)} - ${formatDate(maxDate)}`
+    const dateRange = `${formatDate(minDate)} – ${formatDate(maxDate)}`
 
     let pageNumber = 0
 
@@ -190,318 +339,339 @@ serve(async (req) => {
       }
       pageNumber++
 
-      let yPos = 15
+      const pageWidth = 210
+      const marginLeft = 15
+      const marginRight = 15
+      const contentWidth = pageWidth - marginLeft - marginRight
 
-      // Header
-      doc.setFillColor(darkColor[0], darkColor[1], darkColor[2])
-      doc.rect(0, 0, 210, 35, 'F')
-
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(16)
+      // ===== HEADER =====
+      let yPos = 18
+      
+      // Title and meta on same line
+      doc.setFontSize(11)
       doc.setFont('helvetica', 'bold')
-      doc.text('FORCE PLATE PERFORMANCE REPORT', 15, 15)
+      doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.text('FORCE PLATE PERFORMANCE REPORT', marginLeft, yPos)
 
-      doc.setFontSize(10)
+      // Right-aligned meta info
+      doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      doc.text(`${athlete_name}  |  ${team_name || 'N/A'}  |  ${dateRange}`, 15, 25)
+      doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+      doc.text(dateRange, pageWidth - marginRight, yPos - 2, { align: 'right' })
+      doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, pageWidth - marginRight, yPos + 4, { align: 'right' })
 
-      // Test Name Section
-      yPos = 45
+      // Athlete info
+      yPos += 8
+      doc.setFontSize(9)
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, marginLeft, yPos)
 
-      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
-      doc.rect(15, yPos, 180, 12, 'F')
+      // Divider line
+      yPos += 4
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+      doc.setLineWidth(0.3)
+      doc.line(marginLeft, yPos, pageWidth - marginRight, yPos)
 
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(14)
+      // ===== TEST NAME SECTION =====
+      yPos += 10
+      doc.setFillColor(colors.sectionBg[0], colors.sectionBg[1], colors.sectionBg[2])
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+      doc.roundedRect(marginLeft, yPos, contentWidth, 18, 2, 2, 'FD')
+
+      yPos += 8
+      doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
-      doc.text(testName.toUpperCase(), 20, yPos + 8)
+      doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.text(testName.toUpperCase(), marginLeft + 6, yPos)
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
-      doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, 150, yPos + 8)
+      doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+      doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, pageWidth - marginRight - 6, yPos, { align: 'right' })
 
-      yPos += 20
+      yPos += 16
 
-      // Individual Scores Section
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-      doc.setFontSize(12)
+      // ===== TWO-COLUMN LAYOUT: Metrics + Summary =====
+      const leftColWidth = 100
+      const rightColWidth = 75
+      const gap = 5
+
+      // Left Column: Individual Scores
+      const leftColX = marginLeft
+      
+      doc.setFillColor(255, 255, 255)
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+      doc.roundedRect(leftColX, yPos, leftColWidth, 65, 2, 2, 'FD')
+
+      let scoreY = yPos + 7
+      doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
-      doc.text('INDIVIDUAL SCORES', 15, yPos)
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+      doc.text('Individual Scores', leftColX + 5, scoreY)
 
-      yPos += 8
+      scoreY += 8
 
-      // Metrics grid
-      const metrics = group.latestMetrics
-      const metricKeys = Object.keys(metrics).filter(k => typeof metrics[k] === 'number')
-      const gridCols = 3
-      const colWidth = 58
-      const cellHeight = 18
+      // Metrics grid (2 columns inside card)
+      const cardConfigs = getCardConfigs(testName)
+      const metricsPerCol = 2
+      const metricColWidth = 46
 
-      metricKeys.slice(0, 9).forEach((key, index) => {
-        const col = index % gridCols
-        const row = Math.floor(index / gridCols)
-        const x = 15 + col * colWidth
-        const y = yPos + row * cellHeight
+      cardConfigs.forEach((config, i) => {
+        const col = i % metricsPerCol
+        const row = Math.floor(i / metricsPerCol)
+        const metricX = leftColX + 5 + col * metricColWidth
+        const metricY = scoreY + row * 13
 
-        // Cell background
-        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-        doc.roundedRect(x, y, colWidth - 3, cellHeight - 2, 2, 2, 'F')
-
-        // Metric name
-        doc.setFontSize(7)
+        // Metric label
+        doc.setFontSize(8)
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2])
-        doc.text(formatMetricName(key), x + 3, y + 5)
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.text(config.title, metricX, metricY)
 
         // Metric value
-        doc.setFontSize(12)
+        const value = getMetricValue(group.latestMetrics, config)
+        doc.setFontSize(11)
         doc.setFont('helvetica', 'bold')
-        doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-        const value = metrics[key]
-        doc.text(typeof value === 'number' ? value.toFixed(2) : String(value || '-'), x + 3, y + 12)
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text(value !== null ? value.toFixed(2) : '-', metricX, metricY + 5)
 
-        // Comparison to baseline/PR
-        if (group.baseline && group.baseline[key] !== undefined) {
-          const baselineVal = group.baseline[key] as number
-          const currentVal = value as number
-          const diff = currentVal - baselineVal
-          const diffPct = ((diff / baselineVal) * 100).toFixed(1)
-          
-          doc.setFontSize(6)
-          if (diff > 0) {
-            doc.setTextColor(successColor[0], successColor[1], successColor[2])
-            doc.text(`↑${diffPct}% vs baseline`, x + 30, y + 12)
-          } else if (diff < 0) {
-            doc.setTextColor(dangerColor[0], dangerColor[1], dangerColor[2])
-            doc.text(`↓${Math.abs(parseFloat(diffPct))}% vs baseline`, x + 30, y + 12)
+        // Delta vs baseline
+        if (group.baseline && value !== null) {
+          const baselineValue = getMetricValue(group.baseline, config)
+          if (baselineValue !== null && baselineValue !== 0) {
+            const diff = value - baselineValue
+            const diffPct = ((diff / baselineValue) * 100).toFixed(1)
+            
+            doc.setFontSize(7)
+            if (diff > 0) {
+              doc.setTextColor(colors.success[0], colors.success[1], colors.success[2])
+              doc.text(`+${diffPct}% vs baseline`, metricX, metricY + 9)
+            } else if (diff < 0) {
+              doc.setTextColor(colors.danger[0], colors.danger[1], colors.danger[2])
+              doc.text(`${diffPct}% vs baseline`, metricX, metricY + 9)
+            }
           }
         }
       })
 
-      yPos += Math.ceil(Math.min(metricKeys.length, 9) / gridCols) * cellHeight + 10
+      // Right Column: Comparison Summary
+      const rightColX = marginLeft + leftColWidth + gap
+      const summaryY = yPos
+      
+      doc.setFillColor(255, 255, 255)
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+      doc.roundedRect(rightColX, summaryY, rightColWidth, 65, 2, 2, 'FD')
 
-      // Historical Comparison Section
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-      doc.setFontSize(12)
+      let sumY = summaryY + 7
+      doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
-      doc.text('COMPARISONS AMONGST PREVIOUS SCORES', 15, yPos)
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+      doc.text('Comparisons Amongst Previous Scores', rightColX + 5, sumY, { maxWidth: rightColWidth - 10 })
 
-      yPos += 8
+      sumY += 12
 
-      // Draw trend chart
-      const primaryMetric = getPrimaryMetric(testName, metrics)
-      const chartData = [
-        { date: group.latestDate, value: primaryMetric.value },
-        ...group.previousValues.slice(0, 5).map(p => ({
-          date: p.date,
-          value: p.metrics[primaryMetric.key] as number
-        }))
-      ].reverse().filter(d => typeof d.value === 'number')
+      // Primary metric comparison
+      const primaryConfig = cardConfigs[0]
+      const primaryValue = getMetricValue(group.latestMetrics, primaryConfig)
+      const baselineValue = group.baseline ? getMetricValue(group.baseline, primaryConfig) : null
+      const prValue = group.personalRecord ? getMetricValue(group.personalRecord, primaryConfig) : null
 
-      if (chartData.length > 1) {
-        const chartX = 15
-        const chartY = yPos
-        const chartWidth = 85
-        const chartHeight = 40
+      // Summary rows
+      const summaryRows = [
+        { label: 'Latest', value: primaryValue },
+        { label: 'Baseline', value: baselineValue },
+        { label: 'Personal Record', value: prValue },
+      ]
 
-        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-        doc.roundedRect(chartX, chartY, chartWidth, chartHeight, 2, 2, 'F')
+      summaryRows.forEach((row, i) => {
+        const rowY = sumY + i * 9
+        
+        // Label (left-aligned)
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.text(row.label, rightColX + 5, rowY)
 
-        const values = chartData.map(d => d.value)
-        const maxVal = Math.max(...values)
-        const minVal = Math.min(...values)
-        const range = maxVal - minVal || 1
+        // Value (right-aligned)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        const valueText = row.value !== null ? `${row.value.toFixed(2)} ${primaryConfig.unit}` : '-'
+        doc.text(valueText, rightColX + rightColWidth - 5, rowY, { align: 'right' })
+      })
 
-        // Draw line chart
-        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2])
-        doc.setLineWidth(0.5)
-
-        const points: [number, number][] = chartData.map((d, i) => [
-          chartX + 8 + (i * ((chartWidth - 16) / (chartData.length - 1))),
-          chartY + chartHeight - 8 - ((d.value - minVal) / range) * (chartHeight - 16)
-        ])
-
-        for (let i = 1; i < points.length; i++) {
-          doc.line(points[i-1][0], points[i-1][1], points[i][0], points[i][1])
-        }
-
-        // Draw points
-        points.forEach(([px, py]) => {
-          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
-          doc.circle(px, py, 1.5, 'F')
-        })
-
-        // Labels
-        doc.setFontSize(6)
-        doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2])
-        doc.text(primaryMetric.name, chartX + 3, chartY + 6)
-      }
-
-      // Baseline vs PR comparison
-      const comparisonX = 105
-      doc.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-      doc.roundedRect(comparisonX, yPos, 90, 40, 2, 2, 'F')
-
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-      doc.text('COMPARISON SUMMARY', comparisonX + 5, yPos + 8)
-
+      // Between-limb note in summary card
+      sumY += 30
+      const limbData = calculateLimbSymmetry(testName, group.latestMetrics)
       doc.setFontSize(7)
       doc.setFont('helvetica', 'normal')
-      doc.setTextColor(textColor[0], textColor[1], textColor[2])
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      if (!limbData) {
+        doc.text('Between-limb differences: L/R data not available for this test.', rightColX + 5, sumY, { maxWidth: rightColWidth - 10 })
+      }
 
-      doc.text(`Latest: ${primaryMetric.value?.toFixed(2) || '-'} ${primaryMetric.unit}`, comparisonX + 5, yPos + 16)
-      doc.text(`Baseline: ${group.baseline?.[primaryMetric.key]?.toFixed(2) || '-'} ${primaryMetric.unit}`, comparisonX + 5, yPos + 23)
-      doc.text(`Personal Record: ${group.personalRecord?.[primaryMetric.key]?.toFixed(2) || '-'} ${primaryMetric.unit}`, comparisonX + 5, yPos + 30)
+      yPos += 72
 
-      yPos += 48
+      // ===== BETWEEN-LIMB DIFFERENCES SECTION =====
+      if (limbData) {
+        doc.setFillColor(255, 255, 255)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, 40, 2, 2, 'FD')
 
-      // Between Limb Comparisons Section
-      const limbData = getLimbData(metrics)
+        let limbY = yPos + 8
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('Between-Limb Differences', marginLeft + 6, limbY)
 
-      doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-      doc.setFontSize(12)
-      doc.setFont('helvetica', 'bold')
-      doc.text('BETWEEN-LIMB DIFFERENCES', 15, yPos)
-
-      yPos += 8
-
-      if (limbData.leftLimb !== undefined && limbData.rightLimb !== undefined) {
-        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-        doc.roundedRect(15, yPos, 180, 35, 2, 2, 'F')
+        limbY += 12
 
         // Symmetry bar
         const barWidth = 120
-        const barX = 45
-        const barY = yPos + 12
+        const barX = marginLeft + 35
         const barHeight = 8
 
-        const total = limbData.leftLimb + limbData.rightLimb
-        const leftPct = (limbData.leftLimb / total) * 100
-        const rightPct = (limbData.rightLimb / total) * 100
+        const total = limbData.leftValue + limbData.rightValue
+        const leftPct = (limbData.leftValue / total) * 100
+        const rightPct = (limbData.rightValue / total) * 100
 
-        // Left side
-        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
-        doc.rect(barX, barY, (leftPct / 100) * barWidth, barHeight, 'F')
+        // Left side (primary color)
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+        doc.rect(barX, limbY, (leftPct / 100) * barWidth, barHeight, 'F')
 
-        // Right side
-        doc.setFillColor(100, 116, 139)
-        doc.rect(barX + (leftPct / 100) * barWidth, barY, (rightPct / 100) * barWidth, barHeight, 'F')
+        // Right side (gray)
+        doc.setFillColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.rect(barX + (leftPct / 100) * barWidth, limbY, (rightPct / 100) * barWidth, barHeight, 'F')
 
-        // Labels
+        // Left label
         doc.setFontSize(8)
         doc.setFont('helvetica', 'bold')
-        doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-        doc.text('LEFT', 20, barY + 5)
-        doc.text(`${limbData.leftLimb.toFixed(1)}`, 20, barY + 11)
-
-        doc.text('RIGHT', 170, barY + 5)
-        doc.text(`${limbData.rightLimb.toFixed(1)}`, 170, barY + 11)
-
-        // Asymmetry calculation
-        const asymmetry = limbData.asymmetryPercent || Math.abs(limbData.leftLimb - limbData.rightLimb) / Math.max(limbData.leftLimb, limbData.rightLimb) * 100
-
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('LEFT', marginLeft + 8, limbY + 3)
         doc.setFontSize(9)
-        const asymColor = asymmetry > 15 ? dangerColor : asymmetry > 10 ? warningColor : successColor
+        doc.text(limbData.leftValue.toFixed(1), marginLeft + 8, limbY + 9)
+
+        // Right label
+        doc.text('RIGHT', pageWidth - marginRight - 22, limbY + 3)
+        doc.setFontSize(9)
+        doc.text(limbData.rightValue.toFixed(1), pageWidth - marginRight - 22, limbY + 9)
+
+        // Asymmetry indicator
+        limbY += 18
+        const asymColor = limbData.asymmetryPercent > 15 ? colors.danger : 
+                         limbData.asymmetryPercent > 10 ? [234, 179, 8] : colors.success
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
         doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
-        doc.text(`Asymmetry: ${asymmetry.toFixed(1)}%`, barX + barWidth / 2 - 15, yPos + 30)
+        doc.text(`Asymmetry: ${limbData.asymmetryPercent.toFixed(1)}%`, barX + barWidth / 2, limbY, { align: 'center' })
 
+        // Formula note
         doc.setFontSize(6)
-        doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2])
-        doc.text('Formula: |Left - Right| / Max(Left, Right) × 100', 15, yPos + 33)
-
-        yPos += 40
-      } else {
-        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2])
-        doc.roundedRect(15, yPos, 180, 15, 2, 2, 'F')
-
-        doc.setFontSize(9)
         doc.setFont('helvetica', 'italic')
-        doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2])
-        doc.text('L/R data not available for this test', 20, yPos + 10)
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+        doc.text('Formula: |Left - Right| / Max(Left, Right) × 100', marginLeft + 8, limbY + 6)
 
-        yPos += 20
+        yPos += 45
       }
 
-      // AI Coach Insight Section
+      // ===== AI COACH INSIGHT SECTION =====
       const insight = aiInsights.get(testName)
+      const coachCardHeight = 75
 
-      doc.setFillColor(30, 58, 138) // Dark blue
-      doc.roundedRect(15, yPos, 180, 8, 2, 2, 'F')
-
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(10)
+      // Coach header bar
+      doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+      doc.roundedRect(marginLeft, yPos, contentWidth, 8, 2, 2, 'F')
+      
+      doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
-      doc.text('🤖 AI COACH INSIGHT', 20, yPos + 6)
+      doc.setTextColor(255, 255, 255)
+      doc.text('AI Coach Insight', marginLeft + 6, yPos + 5.5)
 
-      yPos += 12
+      yPos += 10
 
-      doc.setFillColor(239, 246, 255) // Light blue
-      doc.roundedRect(15, yPos, 180, 70, 2, 2, 'F')
+      // Coach content card
+      doc.setFillColor(colors.coachBg[0], colors.coachBg[1], colors.coachBg[2])
+      doc.setDrawColor(colors.coachBorder[0], colors.coachBorder[1], colors.coachBorder[2])
+      doc.roundedRect(marginLeft, yPos, contentWidth, coachCardHeight, 2, 2, 'FD')
 
       if (insight) {
-        // Explanation
-        doc.setTextColor(darkColor[0], darkColor[1], darkColor[2])
-        doc.setFontSize(8)
+        let insightY = yPos + 7
+
+        // What this means
+        doc.setFontSize(9)
         doc.setFont('helvetica', 'bold')
-        doc.text('What this means:', 20, yPos + 8)
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('What this means', marginLeft + 6, insightY)
 
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(7)
-        const explanationLines = doc.splitTextToSize(insight.explanation || '', 165)
-        doc.text(explanationLines.slice(0, 3), 20, yPos + 14)
-
-        // Recommendations
-        let recY = yPos + 26
+        insightY += 5
         doc.setFontSize(8)
-        doc.setFont('helvetica', 'bold')
-        doc.text('Training Recommendations:', 20, recY)
-
-        recY += 5
         doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+        const explanationLines = doc.splitTextToSize(insight.explanation || '', contentWidth - 14)
+        doc.text(explanationLines.slice(0, 2), marginLeft + 6, insightY)
+
+        insightY += Math.min(explanationLines.length, 2) * 4 + 6
+
+        // Training Recommendations
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('Training Recommendations', marginLeft + 6, insightY)
+
+        insightY += 5
         doc.setFontSize(7)
+        doc.setFont('helvetica', 'normal')
         
         const recommendations = insight.recommendations || []
-        recommendations.slice(0, 4).forEach((rec: string, i: number) => {
-          const recLines = doc.splitTextToSize(`${i + 1}. ${rec}`, 165)
-          doc.text(recLines[0], 20, recY)
-          recY += 5
+        recommendations.slice(0, 3).forEach((rec: string, i: number) => {
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          const recText = `${i + 1}. ${rec}`
+          const recLines = doc.splitTextToSize(recText, contentWidth - 14)
+          doc.text(recLines[0], marginLeft + 6, insightY)
+          insightY += 4
         })
 
-        // Key Cues
+        // Key Cues (inline)
         if (insight.keyCues && insight.keyCues.length > 0) {
-          recY += 2
+          insightY += 3
           doc.setFontSize(8)
           doc.setFont('helvetica', 'bold')
-          doc.text('Key Cues:', 20, recY)
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('Key Cues', marginLeft + 6, insightY)
 
-          recY += 5
-          doc.setFont('helvetica', 'normal')
+          insightY += 4
           doc.setFontSize(7)
-          doc.text(insight.keyCues.slice(0, 2).join('  •  '), 20, recY)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          const cuesText = insight.keyCues.slice(0, 2).join('   •   ')
+          doc.text(cuesText, marginLeft + 6, insightY, { maxWidth: contentWidth - 14 })
         }
 
-        // Weekly Progression
+        // Suggested Micro-Plan
         if (insight.weeklyProgression) {
-          recY += 6
+          insightY += 7
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('Suggested Micro-Plan', marginLeft + 6, insightY)
+
+          insightY += 4
           doc.setFontSize(7)
           doc.setFont('helvetica', 'italic')
-          doc.setTextColor(textColor[0], textColor[1], textColor[2])
-          const progLines = doc.splitTextToSize(`💡 ${insight.weeklyProgression}`, 165)
-          doc.text(progLines[0], 20, recY)
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          const progLines = doc.splitTextToSize(insight.weeklyProgression, contentWidth - 14)
+          doc.text(progLines[0], marginLeft + 6, insightY)
         }
       }
 
-      // Page number
+      // ===== PAGE FOOTER =====
       doc.setFontSize(8)
-      doc.setTextColor(lightTextColor[0], lightTextColor[1], lightTextColor[2])
-      doc.text(`Page ${pageNumber} of ${groupedTests.size}`, 180, 290)
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, 287, { align: 'right' })
     }
 
     // Generate filename
     const safeName = athlete_name.replace(/[^a-zA-Z0-9]/g, '_')
-    const safeRange = dateRange.replace(/[^a-zA-Z0-9]/g, '_')
+    const safeRange = dateRange.replace(/[^a-zA-Z0-9–]/g, '_')
     const fileName = `${safeName}_${safeRange}_ForcePlateReport.pdf`
 
     // Convert to buffer and upload
@@ -553,79 +723,4 @@ serve(async (req) => {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function formatMetricName(key: string): string {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim()
-}
-
-function getPrimaryMetric(testName: string, metrics: TestMetrics): { key: string; name: string; value: number; unit: string } {
-  const testLower = testName.toLowerCase()
-  
-  // Define primary metrics for each test type
-  const primaryMetrics: Record<string, { keys: string[]; name: string; unit: string }> = {
-    'cmj': { keys: ['jump_height_ft', 'jump_height', 'jumpHeight'], name: 'Jump Height', unit: 'ft' },
-    'countermovement': { keys: ['jump_height_ft', 'jump_height', 'jumpHeight'], name: 'Jump Height', unit: 'ft' },
-    'squat': { keys: ['jump_height_ft', 'jump_height', 'jumpHeight'], name: 'Jump Height', unit: 'ft' },
-    'drop': { keys: ['rsi', 'reactive_strength_index', 'reactiveStrengthIndex'], name: 'RSI', unit: '' },
-    'pogo': { keys: ['avg_rsi', 'rsi', 'avgRsi'], name: 'RSI', unit: '' },
-    'imtp': { keys: ['force_peak', 'peak_force', 'forcePeak'], name: 'Peak Force', unit: 'N' },
-    'isometric': { keys: ['force_peak', 'peak_force', 'forcePeak'], name: 'Peak Force', unit: 'N' },
-  }
-
-  for (const [key, config] of Object.entries(primaryMetrics)) {
-    if (testLower.includes(key)) {
-      for (const metricKey of config.keys) {
-        if (metrics[metricKey] !== undefined && typeof metrics[metricKey] === 'number') {
-          return { key: metricKey, name: config.name, value: metrics[metricKey] as number, unit: config.unit }
-        }
-      }
-    }
-  }
-
-  // Fallback to first numeric metric
-  const firstKey = Object.keys(metrics).find(k => typeof metrics[k] === 'number')
-  return {
-    key: firstKey || 'value',
-    name: firstKey ? formatMetricName(firstKey) : 'Value',
-    value: (firstKey ? metrics[firstKey] : 0) as number,
-    unit: ''
-  }
-}
-
-function getLimbData(metrics: TestMetrics): { leftLimb?: number; rightLimb?: number; asymmetryPercent?: number } {
-  const leftKeys = ['left_limb_force', 'leftLimbForce', 'left_force', 'left_peak_force', 'avg_left_force']
-  const rightKeys = ['right_limb_force', 'rightLimbForce', 'right_force', 'right_peak_force', 'avg_right_force']
-  const asymKeys = ['asymmetry_index', 'asymmetryIndex', 'limb_asymmetry', 'asymmetry']
-
-  let leftLimb: number | undefined
-  let rightLimb: number | undefined
-  let asymmetryPercent: number | undefined
-
-  for (const key of leftKeys) {
-    if (typeof metrics[key] === 'number') {
-      leftLimb = metrics[key] as number
-      break
-    }
-  }
-
-  for (const key of rightKeys) {
-    if (typeof metrics[key] === 'number') {
-      rightLimb = metrics[key] as number
-      break
-    }
-  }
-
-  for (const key of asymKeys) {
-    if (typeof metrics[key] === 'number') {
-      asymmetryPercent = metrics[key] as number
-      break
-    }
-  }
-
-  return { leftLimb, rightLimb, asymmetryPercent }
 }
