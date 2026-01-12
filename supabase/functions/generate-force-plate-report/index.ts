@@ -511,6 +511,123 @@ serve(async (req) => {
 
       yPos += 72
 
+      // ===== HISTORICAL TREND CHART - Average Across Dates =====
+      // Group test records by date and calculate average for each date
+      const testsByDate: Record<string, TestRecord[]> = {}
+      for (const record of group.records) {
+        const date = record.test_date
+        if (!testsByDate[date]) {
+          testsByDate[date] = []
+        }
+        testsByDate[date].push(record)
+      }
+
+      // Calculate average value per date for the primary metric
+      const trendData: { date: string; displayDate: string; avgValue: number }[] = []
+      for (const [date, records] of Object.entries(testsByDate)) {
+        const values = records
+          .map(r => getMetricValue(r.metrics, primaryConfig))
+          .filter((v): v is number => v !== null && v > 0)
+        
+        if (values.length > 0) {
+          const avgValue = values.reduce((a, b) => a + b, 0) / values.length
+          trendData.push({
+            date,
+            displayDate: formatDate(new Date(date)),
+            avgValue
+          })
+        }
+      }
+
+      // Sort by date ascending for chronological chart
+      trendData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+      // Draw trend chart if we have at least 2 data points
+      if (trendData.length >= 2) {
+        const chartHeight = 35
+        const chartCardHeight = chartHeight + 18
+        
+        doc.setFillColor(255, 255, 255)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, chartCardHeight, 2, 2, 'FD')
+
+        // Chart title
+        let chartY = yPos + 7
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text(`${primaryConfig.title} Trend (Average per Test Date)`, marginLeft + 6, chartY)
+
+        chartY += 6
+
+        // Chart area
+        const chartX = marginLeft + 25
+        const chartWidth = contentWidth - 35
+        const chartAreaHeight = chartHeight - 5
+
+        // Calculate value range
+        const values = trendData.map(d => d.avgValue)
+        const maxVal = Math.max(...values)
+        const minVal = Math.min(...values)
+        const range = maxVal - minVal || 1
+
+        // Draw Y-axis labels
+        doc.setFontSize(6)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.text(maxVal.toFixed(1), marginLeft + 5, chartY + 3)
+        doc.text(minVal.toFixed(1), marginLeft + 5, chartY + chartAreaHeight)
+
+        // Draw grid lines
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.setLineWidth(0.1)
+        doc.line(chartX, chartY, chartX + chartWidth, chartY)
+        doc.line(chartX, chartY + chartAreaHeight, chartX + chartWidth, chartY + chartAreaHeight)
+
+        // Calculate points
+        const points: { x: number; y: number; value: number; date: string }[] = trendData.map((d, i) => ({
+          x: chartX + (i * (chartWidth / (trendData.length - 1))),
+          y: chartY + chartAreaHeight - ((d.avgValue - minVal) / range) * chartAreaHeight,
+          value: d.avgValue,
+          date: d.displayDate
+        }))
+
+        // Draw connecting line
+        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2])
+        doc.setLineWidth(0.5)
+        for (let i = 1; i < points.length; i++) {
+          doc.line(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y)
+        }
+
+        // Draw points
+        points.forEach((pt, i) => {
+          // Highlight latest point
+          if (i === points.length - 1) {
+            doc.setFillColor(colors.success[0], colors.success[1], colors.success[2])
+            doc.circle(pt.x, pt.y, 2, 'F')
+          } else {
+            doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+            doc.circle(pt.x, pt.y, 1.5, 'F')
+          }
+        })
+
+        // Draw X-axis date labels (first, middle, last)
+        doc.setFontSize(5)
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        if (points.length >= 3) {
+          doc.text(points[0].date, points[0].x, chartY + chartAreaHeight + 4, { align: 'center' })
+          const midIndex = Math.floor(points.length / 2)
+          doc.text(points[midIndex].date, points[midIndex].x, chartY + chartAreaHeight + 4, { align: 'center' })
+          doc.text(points[points.length - 1].date, points[points.length - 1].x, chartY + chartAreaHeight + 4, { align: 'center' })
+        } else {
+          points.forEach(pt => {
+            doc.text(pt.date, pt.x, chartY + chartAreaHeight + 4, { align: 'center' })
+          })
+        }
+
+        yPos += chartCardHeight + 5
+      }
+
       // ===== BETWEEN-LIMB DIFFERENCES SECTION =====
       if (limbData) {
         doc.setFillColor(255, 255, 255)
