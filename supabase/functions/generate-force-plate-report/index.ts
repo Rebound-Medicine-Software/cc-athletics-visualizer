@@ -669,9 +669,9 @@ serve(async (req) => {
       doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, 287, { align: 'right' })
     }
 
-    // Generate filename
+    // Generate filename - remove all special characters including en-dash
     const safeName = athlete_name.replace(/[^a-zA-Z0-9]/g, '_')
-    const safeRange = dateRange.replace(/[^a-zA-Z0-9–]/g, '_')
+    const safeRange = dateRange.replace(/[^a-zA-Z0-9]/g, '_').replace(/__+/g, '_')
     const fileName = `${safeName}_${safeRange}_ForcePlateReport.pdf`
 
     // Convert to buffer and upload
