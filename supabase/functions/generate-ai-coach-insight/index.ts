@@ -42,18 +42,17 @@ Guidelines:
 - Use positive, encouraging language
 - Reference specific metrics when making recommendations
 - Include 2-4 specific training recommendations
-- Add 1-2 key cues the athlete can focus on
-- Optionally include a simple weekly progression example
+- Add 1-2 key coaching cues the athlete can focus on during training
+- Do NOT include any weekly plan, schedule, or micro-plan
 
 Format your response as JSON with the following structure:
 {
-  "explanation": "Brief plain-English explanation of what this test/metric indicates (2-3 sentences)",
-  "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
-  "keyCues": ["Cue 1", "Cue 2"],
-  "weeklyProgression": "Optional simple progression example"
+  "explanation": "Brief plain-English explanation of what this test/metric indicates and why it matters (2-3 sentences)",
+  "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3", "Recommendation 4"],
+  "keyCues": ["Coaching cue 1", "Coaching cue 2"]
 }`;
 
-    const userPrompt = `Analyze these force-plate test results and provide AI Coach Insight:
+    const userPrompt = `Analyze these force-plate test results and provide Report Insights:
 
 Test Name: ${testMetrics.testName}
 Test Date: ${testMetrics.testDate}
@@ -66,7 +65,7 @@ Left Limb: ${testMetrics.leftLimb} ${testMetrics.metricUnit || ''}
 Right Limb: ${testMetrics.rightLimb} ${testMetrics.metricUnit || ''}
 Asymmetry: ${testMetrics.asymmetryPercent?.toFixed(1)}% (Formula: |Left - Right| / Max(Left, Right) × 100)` : ''}
 
-Please provide insights tailored to this specific test type and the athlete's performance data.`;
+Provide a short explanation of what this test measures and why it matters, followed by 2-4 practical training recommendations to improve this metric, and 1-2 coaching cues.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -117,6 +116,8 @@ Please provide insights tailored to this specific test type and the athlete's pe
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         insight = JSON.parse(jsonMatch[0]);
+        // Remove weeklyProgression if it exists (we don't want micro-plans)
+        delete insight.weeklyProgression;
       } else {
         throw new Error("No JSON found in response");
       }
@@ -127,7 +128,6 @@ Please provide insights tailored to this specific test type and the athlete's pe
         explanation: content,
         recommendations: ["Continue with current training protocol"],
         keyCues: ["Focus on form and technique"],
-        weeklyProgression: null,
       };
     }
 
@@ -140,10 +140,9 @@ Please provide insights tailored to this specific test type and the athlete's pe
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Unknown error",
         insight: {
-          explanation: "Unable to generate AI insight at this time. Please try again later.",
+          explanation: "Unable to generate insight at this time. Please try again later.",
           recommendations: ["Maintain current training protocol"],
           keyCues: ["Focus on consistency"],
-          weeklyProgression: null,
         }
       }),
       {
