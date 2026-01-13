@@ -62,7 +62,7 @@ function getCardConfigs(testName: string): CardConfig[] {
       ];
     case "Pogo Jump":
       return [
-        { icon: "📏", title: "Jump Height", metricKey: "avg_jump_height", unit: "m" },
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", unit: "cm" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "" },
         { icon: "⚡", title: "Power", metricKey: "avg_power", unit: "W" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", unit: "ms" },
@@ -145,11 +145,15 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): { leftVa
 }
 
 // Format metric value based on type (convert units like dashboard does)
+// All length metrics are normalized to cm
 function formatMetricValue(value: number, metricKey: string): number {
   switch (metricKey) {
     case 'jump_height_ft':
     case 'jump_height_cm':
-      // Convert from meters to centimeters (or feet to cm)
+      // Convert from meters to centimeters
+      return value * 100;
+    case 'avg_jump_height':
+      // Pogo Jump height - convert from meters to centimeters
       return value * 100;
     case 'contact_time':
     case 'flight_time':
@@ -208,8 +212,58 @@ serve(async (req) => {
       groupedTests.get(testName)!.records.push(record)
     }
 
-    // Process each test group
+    // Process each test group - Select BEST result per date
     for (const [testName, group] of groupedTests) {
+      const cardConfigs = getCardConfigs(testName)
+      const primaryConfig = cardConfigs[0]
+      
+      // Determine if primary metric is "lower is better"
+      const lowerIsBetterMetrics = [
+        'contact_time', 'gct', 'ground_contact_time', 'avg_contact_time',
+        'time_to_peak_force', 'time_to_takeoff', 'braking_time', 'propulsive_time'
+      ]
+      const isLowerBetter = lowerIsBetterMetrics.some(m => 
+        primaryConfig.metricKey.toLowerCase().includes(m) || 
+        primaryConfig.title.toLowerCase().includes('contact') ||
+        primaryConfig.title.toLowerCase().includes('gct')
+      )
+      
+      // Group records by date and pick BEST per date
+      const recordsByDate: Record<string, TestRecord[]> = {}
+      for (const record of group.records) {
+        const date = record.test_date
+        if (!recordsByDate[date]) {
+          recordsByDate[date] = []
+        }
+        recordsByDate[date].push(record)
+      }
+      
+      // Select best record per date
+      const bestRecordsPerDate: TestRecord[] = []
+      for (const [date, records] of Object.entries(recordsByDate)) {
+        if (records.length === 1) {
+          bestRecordsPerDate.push(records[0])
+        } else {
+          // Find best based on primary metric
+          let bestRecord = records[0]
+          let bestValue = getMetricValue(records[0].metrics, primaryConfig) ?? (isLowerBetter ? Infinity : -Infinity)
+          
+          for (const record of records.slice(1)) {
+            const value = getMetricValue(record.metrics, primaryConfig)
+            if (value !== null) {
+              if (isLowerBetter ? value < bestValue : value > bestValue) {
+                bestValue = value
+                bestRecord = record
+              }
+            }
+          }
+          bestRecordsPerDate.push(bestRecord)
+        }
+      }
+      
+      // Replace group records with best-per-date records
+      group.records = bestRecordsPerDate
+      
       // Sort by date descending
       group.records.sort((a, b) => new Date(b.test_date).getTime() - new Date(a.test_date).getTime())
       
@@ -237,13 +291,18 @@ serve(async (req) => {
         group.baseline = baselineMetrics
       }
       
-      // Personal Record (max for each metric)
+      // Personal Record (best for each metric - considering lower/higher is better for primary)
       const prMetrics: TestMetrics = {}
       const metricKeys = Object.keys(group.records[0]?.metrics || {})
       for (const key of metricKeys) {
         const values = group.records.map(r => r.metrics[key]).filter(v => typeof v === 'number') as number[]
         if (values.length > 0) {
-          prMetrics[key] = Math.max(...values)
+          // For primary metric, use appropriate comparison; for others default to max
+          if (key === primaryConfig.metricKey && isLowerBetter) {
+            prMetrics[key] = Math.min(...values)
+          } else {
+            prMetrics[key] = Math.max(...values)
+          }
         }
       }
       group.personalRecord = prMetrics
@@ -290,12 +349,11 @@ serve(async (req) => {
           aiInsights.set(testName, insight)
         }
       } catch (e) {
-        console.error(`Failed to get AI insight for ${testName}:`, e)
+        console.error(`Failed to get insight for ${testName}:`, e)
         aiInsights.set(testName, {
-          explanation: "AI insight unavailable. Continue with your current training protocol.",
+          explanation: "Insight unavailable. Continue with your current training protocol.",
           recommendations: ["Maintain consistent training", "Focus on proper form"],
-          keyCues: ["Quality over quantity"],
-          weeklyProgression: null
+          keyCues: ["Quality over quantity"]
         })
       }
     }
@@ -718,28 +776,38 @@ serve(async (req) => {
         yPos += 45
       }
 
-      // ===== AI COACH INSIGHT SECTION =====
+      // ===== REPORT INSIGHTS SECTION =====
       const insight = aiInsights.get(testName)
-      const coachCardHeight = 75
+      
+      // Calculate available space - ensure we don't overflow the page
+      const pageHeight = 297 // A4 height in mm
+      const bottomMargin = 18 // Space for footer + buffer
+      const maxYForContent = pageHeight - bottomMargin
+      const availableSpace = maxYForContent - yPos
+      
+      // Dynamically size the insight card based on available space
+      // Minimum 55mm, maximum 70mm, or whatever fits
+      const idealCardHeight = 65
+      const insightCardHeight = Math.min(idealCardHeight, Math.max(45, availableSpace - 10))
 
-      // Coach header bar
+      // Insight header bar
       doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
       doc.roundedRect(marginLeft, yPos, contentWidth, 8, 2, 2, 'F')
       
       doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(255, 255, 255)
-      doc.text('AI Coach Insight', marginLeft + 6, yPos + 5.5)
+      doc.text('Report Insights', marginLeft + 6, yPos + 5.5)
 
       yPos += 10
 
-      // Coach content card
+      // Insight content card
       doc.setFillColor(colors.coachBg[0], colors.coachBg[1], colors.coachBg[2])
       doc.setDrawColor(colors.coachBorder[0], colors.coachBorder[1], colors.coachBorder[2])
-      doc.roundedRect(marginLeft, yPos, contentWidth, coachCardHeight, 2, 2, 'FD')
+      doc.roundedRect(marginLeft, yPos, contentWidth, insightCardHeight, 2, 2, 'FD')
 
       if (insight) {
-        let insightY = yPos + 7
+        let insightY = yPos + 6
 
         // What this means
         doc.setFontSize(9)
@@ -747,14 +815,14 @@ serve(async (req) => {
         doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
         doc.text('What this means', marginLeft + 6, insightY)
 
-        insightY += 5
-        doc.setFontSize(8)
+        insightY += 4
+        doc.setFontSize(7.5)
         doc.setFont('helvetica', 'normal')
         doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
         const explanationLines = doc.splitTextToSize(insight.explanation || '', contentWidth - 14)
-        doc.text(explanationLines.slice(0, 2), marginLeft + 6, insightY)
+        doc.text(explanationLines.slice(0, 3), marginLeft + 6, insightY)
 
-        insightY += Math.min(explanationLines.length, 2) * 4 + 6
+        insightY += Math.min(explanationLines.length, 3) * 3.5 + 5
 
         // Training Recommendations
         doc.setFontSize(9)
@@ -762,56 +830,41 @@ serve(async (req) => {
         doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
         doc.text('Training Recommendations', marginLeft + 6, insightY)
 
-        insightY += 5
+        insightY += 4
         doc.setFontSize(7)
         doc.setFont('helvetica', 'normal')
         
         const recommendations = insight.recommendations || []
-        recommendations.slice(0, 3).forEach((rec: string, i: number) => {
+        const maxRecs = insightCardHeight < 55 ? 2 : 4 // Show fewer recs if space is tight
+        recommendations.slice(0, maxRecs).forEach((rec: string, i: number) => {
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
           const recText = `${i + 1}. ${rec}`
           const recLines = doc.splitTextToSize(recText, contentWidth - 14)
           doc.text(recLines[0], marginLeft + 6, insightY)
-          insightY += 4
+          insightY += 3.5
         })
 
-        // Key Cues (inline)
-        if (insight.keyCues && insight.keyCues.length > 0) {
-          insightY += 3
+        // Coaching Cues (inline) - only if we have space
+        if (insight.keyCues && insight.keyCues.length > 0 && insightY < yPos + insightCardHeight - 8) {
+          insightY += 2
           doc.setFontSize(8)
           doc.setFont('helvetica', 'bold')
           doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-          doc.text('Key Cues', marginLeft + 6, insightY)
+          doc.text('Coaching Cues', marginLeft + 6, insightY)
 
-          insightY += 4
+          insightY += 3.5
           doc.setFontSize(7)
           doc.setFont('helvetica', 'normal')
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
           const cuesText = insight.keyCues.slice(0, 2).join('   •   ')
           doc.text(cuesText, marginLeft + 6, insightY, { maxWidth: contentWidth - 14 })
         }
-
-        // Suggested Micro-Plan
-        if (insight.weeklyProgression) {
-          insightY += 7
-          doc.setFontSize(8)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-          doc.text('Suggested Micro-Plan', marginLeft + 6, insightY)
-
-          insightY += 4
-          doc.setFontSize(7)
-          doc.setFont('helvetica', 'italic')
-          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-          const progLines = doc.splitTextToSize(insight.weeklyProgression, contentWidth - 14)
-          doc.text(progLines[0], marginLeft + 6, insightY)
-        }
       }
 
       // ===== PAGE FOOTER =====
       doc.setFontSize(8)
       doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-      doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, 287, { align: 'right' })
+      doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
     }
 
     // Generate filename - remove all special characters including en-dash
