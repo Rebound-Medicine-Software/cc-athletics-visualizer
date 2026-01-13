@@ -511,8 +511,19 @@ serve(async (req) => {
 
       yPos += 72
 
-      // ===== HISTORICAL TREND CHART - Average Across Dates =====
-      // Group test records by date and calculate average for each date
+      // ===== HISTORICAL TREND CHART - Best Value Per Date =====
+      // Determine if this metric is "lower is better" (contact time, GCT, etc.)
+      const lowerIsBetterMetrics = [
+        'contact_time', 'gct', 'ground_contact_time', 'avg_contact_time',
+        'time_to_peak_force', 'time_to_takeoff', 'braking_time', 'propulsive_time'
+      ]
+      const isLowerBetter = lowerIsBetterMetrics.some(m => 
+        primaryConfig.metricKey.toLowerCase().includes(m) || 
+        primaryConfig.title.toLowerCase().includes('contact') ||
+        primaryConfig.title.toLowerCase().includes('gct')
+      )
+
+      // Group test records by date
       const testsByDate: Record<string, TestRecord[]> = {}
       for (const record of group.records) {
         const date = record.test_date
@@ -522,19 +533,20 @@ serve(async (req) => {
         testsByDate[date].push(record)
       }
 
-      // Calculate average value per date for the primary metric
-      const trendData: { date: string; displayDate: string; avgValue: number }[] = []
+      // Calculate BEST value per date for the primary metric
+      const trendData: { date: string; displayDate: string; bestValue: number }[] = []
       for (const [date, records] of Object.entries(testsByDate)) {
         const values = records
           .map(r => getMetricValue(r.metrics, primaryConfig))
           .filter((v): v is number => v !== null && v > 0)
         
         if (values.length > 0) {
-          const avgValue = values.reduce((a, b) => a + b, 0) / values.length
+          // Best = lowest for contact time metrics, highest for everything else
+          const bestValue = isLowerBetter ? Math.min(...values) : Math.max(...values)
           trendData.push({
             date,
             displayDate: formatDate(new Date(date)),
-            avgValue
+            bestValue
           })
         }
       }
@@ -542,8 +554,8 @@ serve(async (req) => {
       // Sort by date ascending for chronological chart
       trendData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-      // Draw trend chart if we have at least 2 data points
-      if (trendData.length >= 2) {
+      // Draw trend chart if we have at least 1 data point (show single point too)
+      if (trendData.length >= 1) {
         const chartHeight = 35
         const chartCardHeight = chartHeight + 18
         
@@ -556,7 +568,8 @@ serve(async (req) => {
         doc.setFontSize(9)
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-        doc.text(`${primaryConfig.title} Trend (Average per Test Date)`, marginLeft + 6, chartY)
+        const betterLabel = isLowerBetter ? 'lower is better' : 'higher is better'
+        doc.text(`${primaryConfig.title} Trend (Best per Date - ${betterLabel})`, marginLeft + 6, chartY)
 
         chartY += 6
 
@@ -566,10 +579,10 @@ serve(async (req) => {
         const chartAreaHeight = chartHeight - 5
 
         // Calculate value range
-        const values = trendData.map(d => d.avgValue)
+        const values = trendData.map(d => d.bestValue)
         const maxVal = Math.max(...values)
         const minVal = Math.min(...values)
-        const range = maxVal - minVal || 1
+        const range = maxVal - minVal || maxVal * 0.1 || 1 // Handle single value case
 
         // Draw Y-axis labels
         doc.setFontSize(6)
@@ -586,35 +599,50 @@ serve(async (req) => {
 
         // Calculate points
         const points: { x: number; y: number; value: number; date: string }[] = trendData.map((d, i) => ({
-          x: chartX + (i * (chartWidth / (trendData.length - 1))),
-          y: chartY + chartAreaHeight - ((d.avgValue - minVal) / range) * chartAreaHeight,
-          value: d.avgValue,
+          x: trendData.length === 1 
+            ? chartX + chartWidth / 2 // Center single point
+            : chartX + (i * (chartWidth / (trendData.length - 1))),
+          y: range > 0 
+            ? chartY + chartAreaHeight - ((d.bestValue - minVal) / range) * chartAreaHeight
+            : chartY + chartAreaHeight / 2, // Center if no range
+          value: d.bestValue,
           date: d.displayDate
         }))
 
-        // Draw connecting line
-        doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2])
-        doc.setLineWidth(0.5)
-        for (let i = 1; i < points.length; i++) {
-          doc.line(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y)
+        // Draw connecting line (only if more than 1 point)
+        if (points.length > 1) {
+          doc.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2])
+          doc.setLineWidth(0.5)
+          for (let i = 1; i < points.length; i++) {
+            doc.line(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y)
+          }
         }
 
         // Draw points
         points.forEach((pt, i) => {
-          // Highlight latest point
+          // Highlight latest point (or single point)
           if (i === points.length - 1) {
             doc.setFillColor(colors.success[0], colors.success[1], colors.success[2])
-            doc.circle(pt.x, pt.y, 2, 'F')
+            doc.circle(pt.x, pt.y, 2.5, 'F')
+            // Add value label for single point
+            if (trendData.length === 1) {
+              doc.setFontSize(8)
+              doc.setFont('helvetica', 'bold')
+              doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+              doc.text(`${pt.value.toFixed(2)} ${primaryConfig.unit}`, pt.x, pt.y - 5, { align: 'center' })
+            }
           } else {
             doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
             doc.circle(pt.x, pt.y, 1.5, 'F')
           }
         })
 
-        // Draw X-axis date labels (first, middle, last)
+        // Draw X-axis date labels
         doc.setFontSize(5)
         doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
-        if (points.length >= 3) {
+        if (points.length === 1) {
+          doc.text(points[0].date, points[0].x, chartY + chartAreaHeight + 4, { align: 'center' })
+        } else if (points.length >= 3) {
           doc.text(points[0].date, points[0].x, chartY + chartAreaHeight + 4, { align: 'center' })
           const midIndex = Math.floor(points.length / 2)
           doc.text(points[midIndex].date, points[midIndex].x, chartY + chartAreaHeight + 4, { align: 'center' })
