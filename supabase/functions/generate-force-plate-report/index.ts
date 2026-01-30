@@ -229,13 +229,15 @@ serve(async (req) => {
       )
       
       // Group records by date and pick BEST per date
+      // Normalize date to YYYY-MM-DD to handle timestamps properly
       const recordsByDate: Record<string, TestRecord[]> = {}
       for (const record of group.records) {
-        const date = record.test_date
-        if (!recordsByDate[date]) {
-          recordsByDate[date] = []
+        // Extract just the date portion (YYYY-MM-DD) from potential datetime strings
+        const dateOnly = record.test_date.split('T')[0]
+        if (!recordsByDate[dateOnly]) {
+          recordsByDate[dateOnly] = []
         }
-        recordsByDate[date].push(record)
+        recordsByDate[dateOnly].push(record)
       }
       
       // Select best record per date
@@ -581,14 +583,14 @@ serve(async (req) => {
         primaryConfig.title.toLowerCase().includes('gct')
       )
 
-      // Group test records by date
+      // Group test records by date (normalize to YYYY-MM-DD)
       const testsByDate: Record<string, TestRecord[]> = {}
       for (const record of group.records) {
-        const date = record.test_date
-        if (!testsByDate[date]) {
-          testsByDate[date] = []
+        const dateOnly = record.test_date.split('T')[0]
+        if (!testsByDate[dateOnly]) {
+          testsByDate[dateOnly] = []
         }
-        testsByDate[date].push(record)
+        testsByDate[dateOnly].push(record)
       }
 
       // Calculate BEST value per date for the primary metric
