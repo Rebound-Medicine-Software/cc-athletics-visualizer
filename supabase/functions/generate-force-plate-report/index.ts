@@ -33,6 +33,7 @@ interface CardConfig {
   title: string;
   metricKey: string;
   keyOverride?: string;
+  fallbackKeys?: string[];
   unit: string;
 }
 
@@ -62,9 +63,9 @@ function getCardConfigs(testName: string): CardConfig[] {
       ];
     case "Pogo Jump":
       return [
-        { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", unit: "cm" },
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "" },
-        { icon: "⚡", title: "Power", metricKey: "avg_power", unit: "W" },
+        { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", unit: "ms" },
       ];
     default:
@@ -153,8 +154,14 @@ function formatMetricValue(value: number, metricKey: string): number {
       // Convert from meters to centimeters
       return value * 100;
     case 'avg_jump_height':
+    case 'avg_jump_height_cm':
       // Pogo Jump height - convert from meters to centimeters
-      return value * 100;
+      // But only if value appears to be in meters (< 3 means it's likely meters)
+      if (value < 3) {
+        return value * 100;
+      }
+      // Already in cm
+      return value;
     case 'contact_time':
     case 'flight_time':
     case 'avg_flight_time':
@@ -166,9 +173,22 @@ function formatMetricValue(value: number, metricKey: string): number {
   }
 }
 
-// Get metric value from record, applying any key overrides
+// Get metric value from record, applying any key overrides and fallbacks
 function getMetricValue(metrics: TestMetrics, config: CardConfig): number | null {
-  const value = metrics[config.metricKey];
+  // Try primary key first
+  let value = metrics[config.metricKey];
+  
+  // Try fallback keys if primary is not a number
+  if (typeof value !== 'number' && config.fallbackKeys) {
+    for (const fallbackKey of config.fallbackKeys) {
+      const fallbackValue = metrics[fallbackKey];
+      if (typeof fallbackValue === 'number') {
+        value = fallbackValue;
+        break;
+      }
+    }
+  }
+  
   if (typeof value !== 'number') return null;
   return formatMetricValue(value, config.keyOverride || config.metricKey);
 }
