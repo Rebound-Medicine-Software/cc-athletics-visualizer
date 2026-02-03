@@ -890,9 +890,11 @@ serve(async (req) => {
     }
 
     // Generate filename - remove all special characters including en-dash
-    const safeName = athlete_name.replace(/[^a-zA-Z0-9]/g, '_')
-    const safeRange = dateRange.replace(/[^a-zA-Z0-9]/g, '_').replace(/__+/g, '_')
-    const fileName = `${safeName}_${safeRange}_ForcePlateReport.pdf`
+    const safeName = athlete_name.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    const safeTeamName = (team_name || 'Unknown').replace(/[^a-zA-Z0-9\s]/g, '').trim()
+    const fromDateStr = formatDateForFilename(minDate)
+    const toDateStr = formatDateForFilename(maxDate)
+    const fileName = `${safeName} ${fromDateStr} - ${toDateStr} ${safeTeamName} Force Plate Report.pdf`.replace(/\s+/g, ' ')
 
     // Convert to buffer and upload
     const pdfBuffer = doc.output('arraybuffer')
@@ -943,4 +945,11 @@ serve(async (req) => {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function formatDateForFilename(date: Date): string {
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
 }
