@@ -19,7 +19,7 @@ import { MultiSelectDropdown } from "@/components/ui/MultiSelectDropdown";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { FileText, Download, Mail, Loader2, User } from "lucide-react";
+import { FileText, Download, Mail, Loader2, User, Eye, X } from "lucide-react";
 
 export const SendReportsModal = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +27,9 @@ export const SendReportsModal = () => {
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>("");
   
   const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
 
@@ -108,6 +111,93 @@ export const SendReportsModal = () => {
       testCount: athleteTests.length,
     };
   }, [selectedAthlete, testData]);
+
+  const handlePreviewReport = async () => {
+    if (!selectedAthlete || !selectedAthleteData) {
+      toast({
+        title: "Error",
+        description: "Please select an athlete.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsPreviewing(true);
+    try {
+      console.log(`Generating preview for: ${selectedAthleteData.name}`);
+
+      const athleteId = athleteIdByKey[selectedAthlete];
+
+      const response = await supabase.functions.invoke('generate-force-plate-report', {
+        body: {
+          athlete_id: athleteId || null,
+          athlete_name: selectedAthleteData.name,
+          team_name: selectedAthleteData.team,
+          test_data: selectedAthleteData.tests,
+        }
+      });
+
+      if (response.error) {
+        console.error('Error generating report:', response.error);
+        toast({
+          title: "Error",
+          description: "Failed to generate PDF report.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { report_url, filename } = response.data;
+      setPreviewUrl(report_url);
+      setPreviewFilename(filename);
+      
+      toast({
+        title: "Preview Ready",
+        description: "Report generated. You can now preview or download it.",
+      });
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF preview.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  const handleDownloadFromPreview = async () => {
+    if (!previewUrl || !previewFilename) return;
+    
+    try {
+      const pdfResponse = await fetch(previewUrl);
+      const blob = await pdfResponse.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = previewFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast({
+        title: "Success",
+        description: "PDF downloaded successfully!",
+      });
+    } catch (fetchError) {
+      console.error('Error downloading PDF:', fetchError);
+      window.open(previewUrl, '_blank');
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewUrl(null);
+    setPreviewFilename("");
+  };
 
   const handleGenerateAndDownload = async () => {
     if (!selectedAthlete || !selectedAthleteData) {
@@ -260,7 +350,58 @@ export const SendReportsModal = () => {
     }
   };
 
-  const isLoading = isGenerating || isSending;
+  const isLoading = isGenerating || isSending || isPreviewing;
+
+  // If preview is active, show the preview modal
+  if (previewUrl) {
+    return (
+      <Dialog open={true} onOpenChange={(open) => !open && handleClosePreview()}>
+        <DialogContent className="sm:max-w-4xl h-[85vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Report Preview
+              </span>
+              <span className="text-sm font-normal text-muted-foreground">
+                {previewFilename}
+              </span>
+            </DialogTitle>
+            <DialogDescription>
+              Review the report below. Click "Save as PDF" to download or close to go back.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 min-h-0 border rounded-lg overflow-hidden bg-muted/30">
+            <iframe 
+              src={previewUrl} 
+              className="w-full h-full"
+              title="PDF Preview"
+            />
+          </div>
+          
+          <div className="flex gap-3 pt-4 flex-shrink-0">
+            <Button
+              onClick={handleDownloadFromPreview}
+              className="flex-1"
+              variant="default"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Save as PDF
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleClosePreview}
+              className="flex-1"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Close Preview
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -353,10 +494,29 @@ export const SendReportsModal = () => {
           {/* Action Buttons */}
           <div className="flex flex-col gap-3 pt-2">
             <Button
-              onClick={handleGenerateAndDownload}
+              onClick={handlePreviewReport}
               disabled={isLoading || !selectedAthlete}
               className="w-full"
               variant="default"
+            >
+              {isPreviewing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating Preview...
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Preview Report
+                </>
+              )}
+            </Button>
+
+            <Button
+              onClick={handleGenerateAndDownload}
+              disabled={isLoading || !selectedAthlete}
+              className="w-full"
+              variant="secondary"
             >
               {isGenerating ? (
                 <>
@@ -366,7 +526,7 @@ export const SendReportsModal = () => {
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  Generate & Download PDF
+                  Download PDF Directly
                 </>
               )}
             </Button>
@@ -375,7 +535,7 @@ export const SendReportsModal = () => {
               onClick={handleSendViaEmail}
               disabled={isLoading || !selectedAthlete}
               className="w-full"
-              variant="secondary"
+              variant="outline"
             >
               {isSending ? (
                 <>
@@ -391,7 +551,7 @@ export const SendReportsModal = () => {
             </Button>
 
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => setIsOpen(false)}
               disabled={isLoading}
               className="w-full"
