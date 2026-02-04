@@ -236,6 +236,16 @@ serve(async (req) => {
     for (const [testName, group] of groupedTests) {
       const cardConfigs = getCardConfigs(testName)
       const primaryConfig = cardConfigs[0]
+
+      // IMPORTANT (Pogo): CC Athletics provides BOTH per-session averages (repetition_number = 0)
+      // and individual jumps (repetition_number >= 1). For reports we only want to compare
+      // session averages between dates (matches CC Athletics UI & avoids anomaly single-jump outliers).
+      if (testName === 'Pogo Jump') {
+        const avgRows = group.records.filter((r) => (r.repetition_number ?? 0) === 0)
+        if (avgRows.length > 0) {
+          group.records = avgRows
+        }
+      }
       
       // Determine if primary metric is "lower is better"
       const lowerIsBetterMetrics = [
