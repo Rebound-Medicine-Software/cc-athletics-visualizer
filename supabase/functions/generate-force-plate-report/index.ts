@@ -64,9 +64,11 @@ function getCardConfigs(testName: string): CardConfig[] {
     case "Pogo Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "avg_rsi", unit: "" },
+        { icon: "⚡", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "⚡", title: "mRSI", metricKey: "avg_modified_rsi", fallbackKeys: ["modified_rsi", "rsi_modified"], unit: "m/s" },
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
-        { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", unit: "ms" },
+        { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
+        { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
     default:
       // Isometric tests
