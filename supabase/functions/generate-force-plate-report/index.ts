@@ -81,57 +81,52 @@ function getCardConfigs(testName: string): CardConfig[] {
   }
 }
 
+// Extended limb symmetry return type
+interface LimbSymmetryResult {
+  leftValue: number;
+  rightValue: number;
+  asymmetryPercent: number;
+  isSymmetryIndex?: boolean;
+  dominantSide?: string;
+  siValue?: number;
+}
+
 // Extract limb symmetry data matching dashboard's IndividualComparisonSection.tsx logic
-function calculateLimbSymmetry(testName: string, metrics: TestMetrics): { leftValue: number; rightValue: number; asymmetryPercent: number } | null {
+function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymmetryResult | null {
   let leftValue = 0;
   let rightValue = 0;
 
-  // Apply data logic based on test name - matching dashboard logic exactly
   if (testName === "Drop Jump") {
+    // Use Time to Peak Landing Force SI for between-limb differences
+    // Positive = Left Leg Dominant, Negative = Right Leg Dominant
+    const si = metrics.time_to_peak_landing_force_SI;
+    if (typeof si === 'number') {
+      return {
+        leftValue: 0,
+        rightValue: 0,
+        asymmetryPercent: Math.abs(si),
+        isSymmetryIndex: true,
+        dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
+        siValue: si,
+      };
+    }
+    // Fallback to p1/p2 avg force if SI not available
     leftValue = metrics.p1_avg_force || 0;
     rightValue = metrics.p2_avg_force || 0;
   } else if (testName === "Countermovement Jump") {
-    leftValue = metrics.p1_avg_force || 0;
-    rightValue = metrics.p2_avg_force || 0;
+    leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || 0;
+    rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || 0;
   } else if (testName === "Squat Jump") {
     leftValue = metrics.p1_avg_force || 0;
     rightValue = metrics.p2_avg_force || 0;
   } else if (testName === "Pogo Jump") {
+    // Always use Dual_Leg contribution data by default
     leftValue = metrics.avg_fp1_contribution || 0;
     rightValue = metrics.avg_fp2_contribution || 0;
   } else {
-    // Isometric tests - check for isometric_analysis structure
-    if (metrics.isometric_analysis?.trials) {
-      const trials = metrics.isometric_analysis.trials;
-      
-      // Look for dual trials with separate left/right values
-      for (const trial of trials) {
-        if (trial.stance === 'dual') {
-          if (trial.total_metrics?.force_peak_left && trial.total_metrics?.force_peak_right) {
-            leftValue = trial.total_metrics.force_peak_left;
-            rightValue = trial.total_metrics.force_peak_right;
-            break;
-          } else if (trial.cha1_metrics?.force_peak && trial.cha2_metrics?.force_peak) {
-            leftValue = trial.cha1_metrics.force_peak;
-            rightValue = trial.cha2_metrics.force_peak;
-            break;
-          }
-        }
-      }
-
-      // If no dual trials found, collect separate left/right leg trials
-      if (leftValue === 0 && rightValue === 0) {
-        const leftTrials = trials.filter((t: any) => t.stance === 'left_leg' || t.stance === 'left');
-        const rightTrials = trials.filter((t: any) => t.stance === 'right_leg' || t.stance === 'right');
-
-        if (leftTrials.length > 0) {
-          leftValue = leftTrials.reduce((sum: number, t: any) => sum + (t.total_metrics?.force_peak || 0), 0) / leftTrials.length;
-        }
-        if (rightTrials.length > 0) {
-          rightValue = rightTrials.reduce((sum: number, t: any) => sum + (t.total_metrics?.force_peak || 0), 0) / rightTrials.length;
-        }
-      }
-    }
+    // Isometric tests - use flattened force_peak_left/right from preprocessed metrics
+    leftValue = metrics.force_peak_left || 0;
+    rightValue = metrics.force_peak_right || 0;
   }
 
   const total = leftValue + rightValue;
@@ -315,6 +310,92 @@ serve(async (req) => {
 
       console.log('Applied Sam Baran complete data override: CMJ, Drop Jump, Pogo Jump')
     }
+
+    // ===== PREPROCESS: Flatten isometric data & handle single-leg stance =====
+    const preprocessedData: TestRecord[] = []
+    for (const record of test_data) {
+      const m = record.metrics
+      if (m?.isometric_analysis?.trials) {
+        const trials = m.isometric_analysis.trials
+
+        // Separate trials by stance
+        const dualTrials = trials.filter((t: any) => t.stance === 'dual_leg' || t.stance === 'dual')
+        const singleLegTrials = trials.filter((t: any) =>
+          t.stance === 'left_leg' || t.stance === 'left' ||
+          t.stance === 'right_leg' || t.stance === 'right'
+        )
+        const unknownStanceTrials = trials.filter((t: any) =>
+          !['dual_leg', 'dual', 'left_leg', 'left', 'right_leg', 'right'].includes(t.stance)
+        )
+
+        // Helper: pick best trial by force_peak
+        const pickBest = (trialList: any[]) => trialList.reduce((best: any, trial: any) => {
+          return (trial.total_metrics?.force_peak || 0) > (best.total_metrics?.force_peak || 0) ? trial : best
+        })
+
+        // Process dual-leg trials → keep original test name
+        if (dualTrials.length > 0) {
+          const bestDual = pickBest(dualTrials)
+          preprocessedData.push({
+            test_name: record.test_name,
+            test_date: record.test_date,
+            repetition_number: record.repetition_number || 1,
+            metrics: {
+              ...(bestDual.total_metrics || {}),
+              force_peak_left: bestDual.total_metrics?.force_peak_left || bestDual.cha1_metrics?.force_peak || 0,
+              force_peak_right: bestDual.total_metrics?.force_peak_right || bestDual.cha2_metrics?.force_peak || 0,
+            }
+          })
+        }
+
+        // Process single-leg trials → rename to "Single Leg [Test Name]" with own page
+        if (singleLegTrials.length > 0) {
+          const bestSingle = pickBest(singleLegTrials)
+          const flatMetrics = bestSingle.total_metrics || bestSingle.cha1_metrics || bestSingle.cha2_metrics || {}
+          preprocessedData.push({
+            test_name: `Single Leg ${record.test_name}`,
+            test_date: record.test_date,
+            repetition_number: record.repetition_number || 1,
+            metrics: {
+              force_peak: flatMetrics.force_peak || 0,
+              rfd_max: flatMetrics.rfd_max || 0,
+              impulse_50ms: flatMetrics.impulse_50ms || 0,
+              impulse_250ms: flatMetrics.impulse_250ms || 0,
+              rfd_50ms: flatMetrics.rfd_50ms || 0,
+              rfd_100ms: flatMetrics.rfd_100ms || 0,
+              rfd_150ms: flatMetrics.rfd_150ms || 0,
+              rfd_200ms: flatMetrics.rfd_200ms || 0,
+              rfd_250ms: flatMetrics.rfd_250ms || 0,
+              force_50ms: flatMetrics.force_50ms || 0,
+              force_100ms: flatMetrics.force_100ms || 0,
+              force_150ms: flatMetrics.force_150ms || 0,
+              force_200ms: flatMetrics.force_200ms || 0,
+              force_250ms: flatMetrics.force_250ms || 0,
+            }
+          })
+        }
+
+        // If no explicit stance, treat as dual-leg by default
+        if (dualTrials.length === 0 && singleLegTrials.length === 0 && unknownStanceTrials.length > 0) {
+          const bestTrial = pickBest(unknownStanceTrials)
+          preprocessedData.push({
+            test_name: record.test_name,
+            test_date: record.test_date,
+            repetition_number: record.repetition_number || 1,
+            metrics: {
+              ...(bestTrial.total_metrics || {}),
+              force_peak_left: bestTrial.total_metrics?.force_peak_left || bestTrial.cha1_metrics?.force_peak || 0,
+              force_peak_right: bestTrial.total_metrics?.force_peak_right || bestTrial.cha2_metrics?.force_peak || 0,
+            }
+          })
+        }
+      } else {
+        // Non-isometric tests pass through unchanged
+        preprocessedData.push(record)
+      }
+    }
+    test_data = preprocessedData
+    console.log(`Preprocessed ${test_data.length} records (flattened isometric, split single-leg)`)
 
     // Group tests by test_name
     const groupedTests: Map<string, GroupedTest> = new Map()
@@ -863,50 +944,87 @@ serve(async (req) => {
 
         limbY += 12
 
-        // Symmetry bar
-        const barWidth = 120
-        const barX = marginLeft + 35
-        const barHeight = 8
+        if (limbData.isSymmetryIndex) {
+          // SI-based display (Drop Jump: Time to Peak Landing Force SI)
+          const siValue = limbData.siValue || 0
+          const dominantSide = limbData.dominantSide || ''
+          
+          // Show the SI metric name
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          doc.text('Time to Peak Landing Force SI', marginLeft + 6, limbY)
 
-        const total = limbData.leftValue + limbData.rightValue
-        const leftPct = (limbData.leftValue / total) * 100
-        const rightPct = (limbData.rightValue / total) * 100
+          // Show the SI value prominently
+          limbY += 8
+          const siColor = Math.abs(siValue) > 15 ? colors.danger : 
+                         Math.abs(siValue) > 10 ? [234, 179, 8] : colors.success
+          doc.setFontSize(14)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(siColor[0], siColor[1], siColor[2])
+          const siSign = siValue >= 0 ? '+' : ''
+          doc.text(`${siSign}${siValue.toFixed(1)}%`, marginLeft + contentWidth / 2, limbY, { align: 'center' })
 
-        // Left side (primary color)
-        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
-        doc.rect(barX, limbY, (leftPct / 100) * barWidth, barHeight, 'F')
+          // Show dominant side label
+          limbY += 7
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text(dominantSide, marginLeft + contentWidth / 2, limbY, { align: 'center' })
 
-        // Right side (gray)
-        doc.setFillColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
-        doc.rect(barX + (leftPct / 100) * barWidth, limbY, (rightPct / 100) * barWidth, barHeight, 'F')
+          // Explanation note
+          limbY += 6
+          doc.setFontSize(6)
+          doc.setFont('helvetica', 'italic')
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text('Positive values indicate left side reaches peak force faster, negative values indicate right side is faster.', marginLeft + 8, limbY, { maxWidth: contentWidth - 16 })
 
-        // Left label
-        doc.setFontSize(8)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-        doc.text('LEFT', marginLeft + 8, limbY + 3)
-        doc.setFontSize(9)
-        doc.text(limbData.leftValue.toFixed(1), marginLeft + 8, limbY + 9)
+        } else {
+          // Standard L/R bar chart display (CMJ, Squat Jump, Pogo, Isometric)
+          const barWidth = 120
+          const barX = marginLeft + 35
+          const barHeight = 8
 
-        // Right label
-        doc.text('RIGHT', pageWidth - marginRight - 22, limbY + 3)
-        doc.setFontSize(9)
-        doc.text(limbData.rightValue.toFixed(1), pageWidth - marginRight - 22, limbY + 9)
+          const total = limbData.leftValue + limbData.rightValue
+          const leftPct = (limbData.leftValue / total) * 100
+          const rightPct = (limbData.rightValue / total) * 100
 
-        // Asymmetry indicator
-        limbY += 18
-        const asymColor = limbData.asymmetryPercent > 15 ? colors.danger : 
-                         limbData.asymmetryPercent > 10 ? [234, 179, 8] : colors.success
-        doc.setFontSize(9)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
-        doc.text(`Asymmetry: ${limbData.asymmetryPercent.toFixed(1)}%`, barX + barWidth / 2, limbY, { align: 'center' })
+          // Left side (primary color)
+          doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+          doc.rect(barX, limbY, (leftPct / 100) * barWidth, barHeight, 'F')
 
-        // Formula note
-        doc.setFontSize(6)
-        doc.setFont('helvetica', 'italic')
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-        doc.text('Formula: |Left - Right| / Max(Left, Right) × 100', marginLeft + 8, limbY + 6)
+          // Right side (gray)
+          doc.setFillColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+          doc.rect(barX + (leftPct / 100) * barWidth, limbY, (rightPct / 100) * barWidth, barHeight, 'F')
+
+          // Left label
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('LEFT', marginLeft + 8, limbY + 3)
+          doc.setFontSize(9)
+          doc.text(limbData.leftValue.toFixed(1), marginLeft + 8, limbY + 9)
+
+          // Right label
+          doc.text('RIGHT', pageWidth - marginRight - 22, limbY + 3)
+          doc.setFontSize(9)
+          doc.text(limbData.rightValue.toFixed(1), pageWidth - marginRight - 22, limbY + 9)
+
+          // Asymmetry indicator
+          limbY += 18
+          const asymColor = limbData.asymmetryPercent > 15 ? colors.danger : 
+                           limbData.asymmetryPercent > 10 ? [234, 179, 8] : colors.success
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
+          doc.text(`Asymmetry: ${limbData.asymmetryPercent.toFixed(1)}%`, barX + barWidth / 2, limbY, { align: 'center' })
+
+          // Formula note
+          doc.setFontSize(6)
+          doc.setFont('helvetica', 'italic')
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text('Formula: |Left - Right| / Max(Left, Right) × 100', marginLeft + 8, limbY + 6)
+        }
 
         yPos += 45
       }
