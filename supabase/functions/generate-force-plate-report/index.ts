@@ -71,12 +71,13 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
     default:
-      // Isometric tests
+      // Isometric tests - dual_leg uses totals, single-leg uses left/right breakdowns
+      // The flattening step normalises both stances into these keys
       return [
         { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
-        { icon: "📈", title: "RFD Max", metricKey: "rfd_max", unit: "N/s" },
-        { icon: "⚡", title: "Impulse 50ms", metricKey: "impulse_50ms", unit: "N·s" },
-        { icon: "⚡", title: "Impulse 250ms", metricKey: "impulse_250ms", unit: "N·s" },
+        { icon: "📈", title: "RFD Max", metricKey: "rfd_max", fallbackKeys: ["force_at_max_rfd"], unit: "N/s" },
+        { icon: "⚡", title: "Impulse @ 50ms", metricKey: "force_50ms", fallbackKeys: ["impulse_50ms"], unit: "N" },
+        { icon: "⚡", title: "Impulse @ 250ms", metricKey: "force_250ms", fallbackKeys: ["impulse_250ms"], unit: "N" },
       ];
   }
 }
@@ -124,9 +125,23 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
     leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? 0;
     rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? 0;
   } else {
-    // Isometric tests - use flattened force_peak_left/right from preprocessed metrics
+    // Isometric tests - use force_peak_left/right from preprocessed metrics
     leftValue = metrics.force_peak_left || 0;
     rightValue = metrics.force_peak_right || 0;
+
+    // Signed formula: (left - right) / max(left, right) × 100
+    // Positive = Left dominant, Negative = Right dominant
+    const maxVal = Math.max(leftValue, rightValue);
+    if (maxVal === 0) return null;
+    const si = ((leftValue - rightValue) / maxVal) * 100;
+    return {
+      leftValue,
+      rightValue,
+      asymmetryPercent: Math.abs(si),
+      isSymmetryIndex: true,
+      dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
+      siValue: si,
+    };
   }
 
   const total = leftValue + rightValue;
@@ -342,40 +357,49 @@ serve(async (req) => {
 
         // Helper: flatten a trial into standard isometric metrics
         // Supports both total_metrics format AND raw cha1Peak/cha2Peak/totalPeak format from CC Athletics API
-        const flattenIsometricTrial = (trial: any) => {
-          // If total_metrics exists, use it directly
-          if (trial.total_metrics) {
+        // Flatten isometric trial into standardised metric keys
+        // Handles both total_metrics format and raw cha1Peak/cha2Peak CC Athletics format
+        const flattenIsometricTrial = (trial: any, stance?: string) => {
+          const tm = trial.total_metrics || {}
+
+          // Determine if this is a single-leg stance
+          const isSingleLeg = stance === 'left_leg' || stance === 'right_leg' ||
+                              stance === 'left' || stance === 'right'
+
+          // Left / Right peak force (always extract for between-limb calc)
+          const fpLeft = tm.force_peak_left || trial.cha1_metrics?.force_peak || trial.cha1Peak?.force || 0
+          const fpRight = tm.force_peak_right || trial.cha2_metrics?.force_peak || trial.cha2Peak?.force || 0
+
+          if (isSingleLeg) {
+            // Single-leg stance: display L/R breakdowns as the primary metrics
             return {
-              ...trial.total_metrics,
-              force_peak_left: trial.total_metrics.force_peak_left || trial.cha1_metrics?.force_peak || trial.cha1Peak?.force || 0,
-              force_peak_right: trial.total_metrics.force_peak_right || trial.cha2_metrics?.force_peak || trial.cha2Peak?.force || 0,
+              force_peak: fpLeft + fpRight, // total for card display fallback
+              force_peak_left: fpLeft,
+              force_peak_right: fpRight,
+              rfd_max: tm.force_at_max_rfd_left || tm.force_at_max_rfd_right || tm.rfd_max || trial.totalCurveRFD || 0,
+              force_at_max_rfd: tm.force_at_max_rfd_left || tm.force_at_max_rfd_right || 0,
+              force_50ms: tm.force_50ms_left || tm.force_50ms_right || tm.force_50ms || 0,
+              force_250ms: tm.force_250ms_left || tm.force_250ms_right || tm.force_250ms || 0,
+              impulse_50ms: tm.impulse_50ms || 0,
+              impulse_250ms: tm.impulse_250ms || 0,
+              // carry all total_metrics through
+              ...tm,
             }
           }
-          // Raw CC Athletics format: cha1Peak, cha2Peak, totalPeak, totalCurveRFD, totalTimeToPeak
+
+          // Dual-leg stance: use totals
           return {
-            force_peak: trial.totalPeak?.force || 0,
-            rfd_max: trial.totalCurveRFD || 0,
-            time_to_peak_force: trial.totalTimeToPeak || 0,
-            force_peak_left: trial.cha1Peak?.force || 0,
-            force_peak_right: trial.cha2Peak?.force || 0,
-            rfd_left: trial.cha1RFD || 0,
-            rfd_right: trial.cha2RFD || 0,
-            // Carry forward any additional total_metrics-style keys if they exist
-            impulse_50ms: trial.impulse_50ms || 0,
-            impulse_100ms: trial.impulse_100ms || 0,
-            impulse_150ms: trial.impulse_150ms || 0,
-            impulse_200ms: trial.impulse_200ms || 0,
-            impulse_250ms: trial.impulse_250ms || 0,
-            force_50ms: trial.force_50ms || 0,
-            force_100ms: trial.force_100ms || 0,
-            force_150ms: trial.force_150ms || 0,
-            force_200ms: trial.force_200ms || 0,
-            force_250ms: trial.force_250ms || 0,
-            rfd_50ms: trial.rfd_50ms || 0,
-            rfd_100ms: trial.rfd_100ms || 0,
-            rfd_150ms: trial.rfd_150ms || 0,
-            rfd_200ms: trial.rfd_200ms || 0,
-            rfd_250ms: trial.rfd_250ms || 0,
+            force_peak: tm.force_peak || trial.totalPeak?.force || 0,
+            rfd_max: tm.rfd_max || trial.totalCurveRFD || 0,
+            force_at_max_rfd: tm.force_at_max_rfd || 0,
+            impulse_50ms: tm.impulse_50ms || 0,
+            impulse_250ms: tm.impulse_250ms || 0,
+            force_50ms: tm.force_50ms || 0,
+            force_250ms: tm.force_250ms || 0,
+            force_peak_left: fpLeft,
+            force_peak_right: fpRight,
+            // carry all total_metrics through
+            ...tm,
           }
         }
 
@@ -386,7 +410,7 @@ serve(async (req) => {
             test_name: record.test_name,
             test_date: record.test_date,
             repetition_number: record.repetition_number || 1,
-            metrics: flattenIsometricTrial(bestDual),
+            metrics: flattenIsometricTrial(bestDual, 'dual_leg'),
           })
         }
 
@@ -397,7 +421,7 @@ serve(async (req) => {
             test_name: `Single Leg ${record.test_name}`,
             test_date: record.test_date,
             repetition_number: record.repetition_number || 1,
-            metrics: flattenIsometricTrial(bestSingle),
+            metrics: flattenIsometricTrial(bestSingle, bestSingle.stance || 'left_leg'),
           })
         }
 
