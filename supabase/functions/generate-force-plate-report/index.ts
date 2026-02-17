@@ -99,7 +99,7 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
   if (testName === "Drop Jump") {
     // Use Time to Peak Landing Force SI for between-limb differences
     // Positive = Left Leg Dominant, Negative = Right Leg Dominant
-    const si = metrics.time_to_peak_landing_force_SI;
+    const si = metrics.ttpf_symmetry_index ?? metrics.time_to_peak_landing_force_SI;
     if (typeof si === 'number') {
       return {
         leftValue: 0,
@@ -121,8 +121,8 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
     rightValue = metrics.p2_avg_force || 0;
   } else if (testName === "Pogo Jump") {
     // Always use Dual_Leg contribution data by default
-    leftValue = metrics.avg_fp1_contribution || 0;
-    rightValue = metrics.avg_fp2_contribution || 0;
+    leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? 0;
+    rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? 0;
   } else {
     // Isometric tests - use flattened force_peak_left/right from preprocessed metrics
     leftValue = metrics.force_peak_left || 0;
@@ -328,10 +328,56 @@ serve(async (req) => {
           !['dual_leg', 'dual', 'left_leg', 'left', 'right_leg', 'right'].includes(t.stance)
         )
 
-        // Helper: pick best trial by force_peak
+        // Helper: extract peak force from a trial (supports both total_metrics and raw cha1Peak/cha2Peak/totalPeak format)
+        const getTrialPeakForce = (trial: any): number => {
+          if (trial.total_metrics?.force_peak) return trial.total_metrics.force_peak
+          if (trial.totalPeak?.force) return trial.totalPeak.force
+          return 0
+        }
+
+        // Helper: pick best trial by peak force
         const pickBest = (trialList: any[]) => trialList.reduce((best: any, trial: any) => {
-          return (trial.total_metrics?.force_peak || 0) > (best.total_metrics?.force_peak || 0) ? trial : best
+          return getTrialPeakForce(trial) > getTrialPeakForce(best) ? trial : best
         })
+
+        // Helper: flatten a trial into standard isometric metrics
+        // Supports both total_metrics format AND raw cha1Peak/cha2Peak/totalPeak format from CC Athletics API
+        const flattenIsometricTrial = (trial: any) => {
+          // If total_metrics exists, use it directly
+          if (trial.total_metrics) {
+            return {
+              ...trial.total_metrics,
+              force_peak_left: trial.total_metrics.force_peak_left || trial.cha1_metrics?.force_peak || trial.cha1Peak?.force || 0,
+              force_peak_right: trial.total_metrics.force_peak_right || trial.cha2_metrics?.force_peak || trial.cha2Peak?.force || 0,
+            }
+          }
+          // Raw CC Athletics format: cha1Peak, cha2Peak, totalPeak, totalCurveRFD, totalTimeToPeak
+          return {
+            force_peak: trial.totalPeak?.force || 0,
+            rfd_max: trial.totalCurveRFD || 0,
+            time_to_peak_force: trial.totalTimeToPeak || 0,
+            force_peak_left: trial.cha1Peak?.force || 0,
+            force_peak_right: trial.cha2Peak?.force || 0,
+            rfd_left: trial.cha1RFD || 0,
+            rfd_right: trial.cha2RFD || 0,
+            // Carry forward any additional total_metrics-style keys if they exist
+            impulse_50ms: trial.impulse_50ms || 0,
+            impulse_100ms: trial.impulse_100ms || 0,
+            impulse_150ms: trial.impulse_150ms || 0,
+            impulse_200ms: trial.impulse_200ms || 0,
+            impulse_250ms: trial.impulse_250ms || 0,
+            force_50ms: trial.force_50ms || 0,
+            force_100ms: trial.force_100ms || 0,
+            force_150ms: trial.force_150ms || 0,
+            force_200ms: trial.force_200ms || 0,
+            force_250ms: trial.force_250ms || 0,
+            rfd_50ms: trial.rfd_50ms || 0,
+            rfd_100ms: trial.rfd_100ms || 0,
+            rfd_150ms: trial.rfd_150ms || 0,
+            rfd_200ms: trial.rfd_200ms || 0,
+            rfd_250ms: trial.rfd_250ms || 0,
+          }
+        }
 
         // Process dual-leg trials → keep original test name
         if (dualTrials.length > 0) {
@@ -340,38 +386,18 @@ serve(async (req) => {
             test_name: record.test_name,
             test_date: record.test_date,
             repetition_number: record.repetition_number || 1,
-            metrics: {
-              ...(bestDual.total_metrics || {}),
-              force_peak_left: bestDual.total_metrics?.force_peak_left || bestDual.cha1_metrics?.force_peak || 0,
-              force_peak_right: bestDual.total_metrics?.force_peak_right || bestDual.cha2_metrics?.force_peak || 0,
-            }
+            metrics: flattenIsometricTrial(bestDual),
           })
         }
 
         // Process single-leg trials → rename to "Single Leg [Test Name]" with own page
         if (singleLegTrials.length > 0) {
           const bestSingle = pickBest(singleLegTrials)
-          const flatMetrics = bestSingle.total_metrics || bestSingle.cha1_metrics || bestSingle.cha2_metrics || {}
           preprocessedData.push({
             test_name: `Single Leg ${record.test_name}`,
             test_date: record.test_date,
             repetition_number: record.repetition_number || 1,
-            metrics: {
-              force_peak: flatMetrics.force_peak || 0,
-              rfd_max: flatMetrics.rfd_max || 0,
-              impulse_50ms: flatMetrics.impulse_50ms || 0,
-              impulse_250ms: flatMetrics.impulse_250ms || 0,
-              rfd_50ms: flatMetrics.rfd_50ms || 0,
-              rfd_100ms: flatMetrics.rfd_100ms || 0,
-              rfd_150ms: flatMetrics.rfd_150ms || 0,
-              rfd_200ms: flatMetrics.rfd_200ms || 0,
-              rfd_250ms: flatMetrics.rfd_250ms || 0,
-              force_50ms: flatMetrics.force_50ms || 0,
-              force_100ms: flatMetrics.force_100ms || 0,
-              force_150ms: flatMetrics.force_150ms || 0,
-              force_200ms: flatMetrics.force_200ms || 0,
-              force_250ms: flatMetrics.force_250ms || 0,
-            }
+            metrics: flattenIsometricTrial(bestSingle),
           })
         }
 
@@ -382,16 +408,20 @@ serve(async (req) => {
             test_name: record.test_name,
             test_date: record.test_date,
             repetition_number: record.repetition_number || 1,
-            metrics: {
-              ...(bestTrial.total_metrics || {}),
-              force_peak_left: bestTrial.total_metrics?.force_peak_left || bestTrial.cha1_metrics?.force_peak || 0,
-              force_peak_right: bestTrial.total_metrics?.force_peak_right || bestTrial.cha2_metrics?.force_peak || 0,
-            }
+            metrics: flattenIsometricTrial(bestTrial),
           })
         }
       } else {
-        // Non-isometric tests pass through unchanged
-        preprocessedData.push(record)
+        // Non-isometric tests: check stance for single-leg renaming
+        const stance = record.metrics?.stance || record.stance
+        if (stance === 'left_leg' || stance === 'right_leg' || stance === 'left' || stance === 'right') {
+          preprocessedData.push({
+            ...record,
+            test_name: record.test_name.startsWith('Single Leg') ? record.test_name : `Single Leg ${record.test_name}`,
+          })
+        } else {
+          preprocessedData.push(record)
+        }
       }
     }
     test_data = preprocessedData
