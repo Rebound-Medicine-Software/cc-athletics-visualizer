@@ -99,22 +99,9 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
 
   if (testName === "Drop Jump") {
     // Use fp1/fp2 peak landing force for between-limb symmetry
+    // Formula: |Left - Right| / Max(Left, Right) × 100
     leftValue = metrics.fp1_peak_landing_force || 0;
     rightValue = metrics.fp2_peak_landing_force || 0;
-
-    // Calculate signed SI: (left - right) / max(left, right) × 100
-    // Positive = Left Leg Dominant, Negative = Right Leg Dominant
-    const maxVal = Math.max(leftValue, rightValue);
-    if (maxVal === 0) return null;
-    const si = ((leftValue - rightValue) / maxVal) * 100;
-    return {
-      leftValue,
-      rightValue,
-      asymmetryPercent: Math.abs(si),
-      isSymmetryIndex: true,
-      dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
-      siValue: si,
-    };
   } else if (testName === "Countermovement Jump") {
     leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || 0;
     rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || 0;
