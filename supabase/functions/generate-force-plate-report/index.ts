@@ -98,22 +98,23 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
   let rightValue = 0;
 
   if (testName === "Drop Jump") {
-    // Use Time to Peak Landing Force SI for between-limb differences
+    // Use fp1/fp2 peak landing force for between-limb symmetry
+    leftValue = metrics.fp1_peak_landing_force || 0;
+    rightValue = metrics.fp2_peak_landing_force || 0;
+
+    // Calculate signed SI: (left - right) / max(left, right) × 100
     // Positive = Left Leg Dominant, Negative = Right Leg Dominant
-    const si = metrics.ttpf_symmetry_index ?? metrics.time_to_peak_landing_force_SI;
-    if (typeof si === 'number') {
-      return {
-        leftValue: 0,
-        rightValue: 0,
-        asymmetryPercent: Math.abs(si),
-        isSymmetryIndex: true,
-        dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
-        siValue: si,
-      };
-    }
-    // Fallback to p1/p2 avg force if SI not available
-    leftValue = metrics.p1_avg_force || 0;
-    rightValue = metrics.p2_avg_force || 0;
+    const maxVal = Math.max(leftValue, rightValue);
+    if (maxVal === 0) return null;
+    const si = ((leftValue - rightValue) / maxVal) * 100;
+    return {
+      leftValue,
+      rightValue,
+      asymmetryPercent: Math.abs(si),
+      isSymmetryIndex: true,
+      dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
+      siValue: si,
+    };
   } else if (testName === "Countermovement Jump") {
     leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || 0;
     rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || 0;
@@ -451,15 +452,6 @@ serve(async (req) => {
     test_data = preprocessedData
     console.log(`Preprocessed ${test_data.length} records (flattened isometric, split single-leg)`)
 
-    // DEBUG: Log Drop Jump metric keys to identify ttpf_symmetry_index availability
-    for (const record of test_data) {
-      if (record.test_name === 'Drop Jump') {
-        console.log(`DROP JUMP metrics for ${athlete_name} on ${record.test_date}:`, JSON.stringify(Object.keys(record.metrics || {})))
-        console.log(`DROP JUMP ttpf_symmetry_index: ${record.metrics?.ttpf_symmetry_index}, time_to_peak_landing_force_SI: ${record.metrics?.time_to_peak_landing_force_SI}`)
-        console.log(`DROP JUMP p1_avg_force: ${record.metrics?.p1_avg_force}, p2_avg_force: ${record.metrics?.p2_avg_force}`)
-        break
-      }
-    }
 
     // Group tests by test_name
     const groupedTests: Map<string, GroupedTest> = new Map()
@@ -1017,7 +1009,7 @@ serve(async (req) => {
           doc.setFontSize(9)
           doc.setFont('helvetica', 'normal')
           doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-          doc.text('Time to Peak Landing Force SI', marginLeft + 6, limbY)
+          doc.text(testName === 'Drop Jump' ? 'Peak Landing Force Symmetry' : 'Symmetry Index', marginLeft + 6, limbY)
 
           // Show the SI value prominently
           limbY += 8
@@ -1041,7 +1033,7 @@ serve(async (req) => {
           doc.setFontSize(6)
           doc.setFont('helvetica', 'italic')
           doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-          doc.text('Positive values indicate left side reaches peak force faster, negative values indicate right side is faster.', marginLeft + 8, limbY, { maxWidth: contentWidth - 16 })
+          doc.text(testName === 'Drop Jump' ? 'Calculated from fp1/fp2 peak landing force. Positive = Left Leg Dominant, Negative = Right Leg Dominant.' : 'Positive values indicate left side dominant, negative values indicate right side dominant.', marginLeft + 8, limbY, { maxWidth: contentWidth - 16 })
 
         } else {
           // Standard L/R bar chart display (CMJ, Squat Jump, Pogo, Isometric)
