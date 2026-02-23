@@ -25,6 +25,7 @@ export const SendReportsModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
+  const [excludedTests, setExcludedTests] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -103,14 +104,18 @@ export const SendReportsModal = () => {
     const athleteTests = testData.filter(
       t => t.athlete_name === name && t.team_name === team
     );
+    const allTestNames = Array.from(new Set(athleteTests.map(t => t.test_name)));
+    const includedTests = athleteTests.filter(t => !excludedTests.includes(t.test_name));
+    const includedTestNames = allTestNames.filter(t => !excludedTests.includes(t));
     return {
       name,
       team,
-      tests: athleteTests,
-      testNames: Array.from(new Set(athleteTests.map(t => t.test_name))),
-      testCount: athleteTests.length,
+      tests: includedTests,
+      allTestNames,
+      testNames: includedTestNames,
+      testCount: includedTests.length,
     };
-  }, [selectedAthlete, testData]);
+  }, [selectedAthlete, testData, excludedTests]);
 
   const handlePreviewReport = async () => {
     if (!selectedAthlete || !selectedAthleteData) {
@@ -433,6 +438,7 @@ export const SendReportsModal = () => {
               onChange={(teams) => {
                 setSelectedTeams(teams);
                 setSelectedAthlete("");
+                setExcludedTests([]);
               }}
               placeholder={dataLoading ? "Loading teams..." : "Select teams to filter..."}
             />
@@ -443,7 +449,7 @@ export const SendReportsModal = () => {
             <label className="text-sm font-medium">Select Athlete *</label>
             <Select
               value={selectedAthlete}
-              onValueChange={setSelectedAthlete}
+              onValueChange={(val) => { setSelectedAthlete(val); setExcludedTests([]); }}
               disabled={dataLoading || mappingLoading}
             >
               <SelectTrigger>
@@ -477,13 +483,41 @@ export const SendReportsModal = () => {
                 <span className="text-sm text-muted-foreground">{selectedAthleteData.team}</span>
               </div>
               <div className="text-sm text-muted-foreground">
-                <p>{selectedAthleteData.testCount} test records found</p>
-                <p className="mt-1">
-                  <strong>Tests included:</strong>{' '}
-                  {selectedAthleteData.testNames.length > 0 
-                    ? selectedAthleteData.testNames.join(', ')
-                    : 'No tests found'}
-                </p>
+                <p>{selectedAthleteData.testCount} test records included</p>
+                <div className="mt-2">
+                  <strong className="text-xs">Tests included:</strong>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {selectedAthleteData.allTestNames.map((testName) => {
+                      const isExcluded = excludedTests.includes(testName);
+                      return (
+                        <span
+                          key={testName}
+                          className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-opacity ${
+                            isExcluded
+                              ? 'opacity-40 line-through bg-muted text-muted-foreground'
+                              : 'bg-primary/10 text-primary border-primary/20'
+                          }`}
+                        >
+                          {testName}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExcludedTests((prev) =>
+                                isExcluded
+                                  ? prev.filter((t) => t !== testName)
+                                  : [...prev, testName]
+                              )
+                            }
+                            className="ml-0.5 hover:text-destructive transition-colors"
+                            aria-label={isExcluded ? `Re-include ${testName}` : `Exclude ${testName}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 PDF will contain 1 page per test with historical trends, limb comparisons, and AI insights.
