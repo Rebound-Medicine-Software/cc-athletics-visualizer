@@ -451,6 +451,16 @@ serve(async (req) => {
     test_data = preprocessedData
     console.log(`Preprocessed ${test_data.length} records (flattened isometric, split single-leg)`)
 
+    // DEBUG: Log Drop Jump metric keys to identify ttpf_symmetry_index availability
+    for (const record of test_data) {
+      if (record.test_name === 'Drop Jump') {
+        console.log(`DROP JUMP metrics for ${athlete_name} on ${record.test_date}:`, JSON.stringify(Object.keys(record.metrics || {})))
+        console.log(`DROP JUMP ttpf_symmetry_index: ${record.metrics?.ttpf_symmetry_index}, time_to_peak_landing_force_SI: ${record.metrics?.time_to_peak_landing_force_SI}`)
+        console.log(`DROP JUMP p1_avg_force: ${record.metrics?.p1_avg_force}, p2_avg_force: ${record.metrics?.p2_avg_force}`)
+        break
+      }
+    }
+
     // Group tests by test_name
     const groupedTests: Map<string, GroupedTest> = new Map()
     
