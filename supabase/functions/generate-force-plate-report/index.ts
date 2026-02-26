@@ -16,6 +16,7 @@ interface TestRecord {
   test_date: string;
   metrics: TestMetrics;
   repetition_number?: number;
+  leg_stance?: string;
 }
 
 interface GroupedTest {
@@ -70,9 +71,38 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
+    case "Single Leg Countermovement Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "Peak Propulsive Power", metricKey: "peak_propulsive_power", unit: "W" },
+        { icon: "⚡", title: "Relative Peak Power", metricKey: "relative_peak_power", unit: "W/kg" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+      ];
+    case "Single Leg Squat Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
+        { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+      ];
+    case "Single Leg Drop Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
+        { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+      ];
     default:
+      // Check for single-leg isometric tests
+      if (testName.startsWith('Single Leg')) {
+        return [
+          { icon: "⚡", title: "Early Force Capacity (50ms)", metricKey: "force_50ms", unit: "N" },
+          { icon: "⚡", title: "Moderate/Late Force (250ms)", metricKey: "force_250ms", unit: "N" },
+          { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
+          { icon: "📊", title: "Stable Force Reading", metricKey: "steadiness_force", unit: "N" },
+        ];
+      }
       // Isometric tests - dual_leg uses totals, single-leg uses left/right breakdowns
-      // The flattening step normalises both stances into these keys
       return [
         { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
         { icon: "📈", title: "RFD Max", metricKey: "rfd_max", fallbackKeys: ["force_at_max_rfd"], unit: "N/s" },
@@ -402,15 +432,35 @@ serve(async (req) => {
           })
         }
 
-        // Process single-leg trials → rename to "Single Leg [Test Name]" with own page
+        // Process single-leg trials → split into separate LEFT and RIGHT records
         if (singleLegTrials.length > 0) {
-          const bestSingle = pickBest(singleLegTrials)
-          preprocessedData.push({
-            test_name: `Single Leg ${record.test_name}`,
-            test_date: record.test_date,
-            repetition_number: record.repetition_number || 1,
-            metrics: flattenIsometricTrial(bestSingle, bestSingle.stance || 'left_leg'),
-          })
+          const leftTrials = singleLegTrials.filter((t: any) => t.stance === 'left_leg' || t.stance === 'left')
+          const rightTrials = singleLegTrials.filter((t: any) => t.stance === 'right_leg' || t.stance === 'right')
+
+          if (leftTrials.length > 0) {
+            const bestLeft = pickBest(leftTrials)
+            const flatMetrics = flattenIsometricTrial(bestLeft, 'left_leg')
+            if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
+            preprocessedData.push({
+              test_name: `Single Leg ${record.test_name}`,
+              test_date: record.test_date,
+              repetition_number: record.repetition_number || 1,
+              metrics: flatMetrics,
+              leg_stance: 'left_leg',
+            })
+          }
+          if (rightTrials.length > 0) {
+            const bestRight = pickBest(rightTrials)
+            const flatMetrics = flattenIsometricTrial(bestRight, 'right_leg')
+            if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
+            preprocessedData.push({
+              test_name: `Single Leg ${record.test_name}`,
+              test_date: record.test_date,
+              repetition_number: record.repetition_number || 1,
+              metrics: flatMetrics,
+              leg_stance: 'right_leg',
+            })
+          }
         }
 
         // If no explicit stance, treat as dual-leg by default
@@ -427,9 +477,20 @@ serve(async (req) => {
         // Non-isometric tests: check stance for single-leg renaming
         const stance = record.metrics?.stance || record.stance
         if (stance === 'left_leg' || stance === 'right_leg' || stance === 'left' || stance === 'right') {
+          const metrics = { ...record.metrics }
+          // Derive relative_peak_power for single-leg CMJ
+          if (metrics.peak_power && metrics.body_mass) {
+            metrics.relative_peak_power = metrics.peak_power / metrics.body_mass
+          }
+          // Derive steadiness_force
+          if (metrics.steadiness_rsme_force) {
+            metrics.steadiness_force = metrics.steadiness_rsme_force * 9.81
+          }
           preprocessedData.push({
             ...record,
+            metrics,
             test_name: record.test_name.startsWith('Single Leg') ? record.test_name : `Single Leg ${record.test_name}`,
+            leg_stance: stance.includes('left') ? 'left_leg' : 'right_leg',
           })
         } else {
           preprocessedData.push(record)
@@ -707,6 +768,286 @@ serve(async (req) => {
       doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, pageWidth - marginRight - 6, yPos, { align: 'right' })
 
       yPos += 16
+
+      // ===== SINGLE-LEG COMPARISON PAGE =====
+      const isSingleLegTest = testName.startsWith('Single Leg')
+      if (isSingleLegTest) {
+        const leftRecords = group.records.filter((r: any) => r.leg_stance === 'left_leg')
+        const rightRecords = group.records.filter((r: any) => r.leg_stance === 'right_leg')
+        const slCardConfigs = getCardConfigs(testName)
+        const slPrimaryConfig = slCardConfigs[0]
+
+        // Group by date and pick best per date for each leg
+        const pickBestByDate = (records: TestRecord[]) => {
+          const byDate: Record<string, TestRecord[]> = {}
+          for (const r of records) {
+            const d = r.test_date.split('T')[0]
+            if (!byDate[d]) byDate[d] = []
+            byDate[d].push(r)
+          }
+          const best: Record<string, TestRecord> = {}
+          for (const [date, recs] of Object.entries(byDate)) {
+            best[date] = recs.reduce((a, b) => {
+              const va = getMetricValue(a.metrics, slPrimaryConfig) ?? -Infinity
+              const vb = getMetricValue(b.metrics, slPrimaryConfig) ?? -Infinity
+              return vb > va ? b : a
+            })
+          }
+          return best
+        }
+
+        const leftByDate = pickBestByDate(leftRecords)
+        const rightByDate = pickBestByDate(rightRecords)
+        const slAllDates = Array.from(new Set([...Object.keys(leftByDate), ...Object.keys(rightByDate)])).sort()
+
+        const slLatestDate = slAllDates[slAllDates.length - 1] || ''
+        const latestLeft = leftByDate[slLatestDate]?.metrics || {}
+        const latestRight = rightByDate[slLatestDate]?.metrics || {}
+
+        // ===== LIMB COMPARISON TABLE =====
+        const tableHeight = 14 + slCardConfigs.length * 10
+        doc.setFillColor(255, 255, 255)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, tableHeight, 2, 2, 'FD')
+
+        let tblY = yPos + 7
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('Limb Comparison', marginLeft + 6, tblY)
+
+        tblY += 8
+        const colMetric = marginLeft + 6
+        const colLeft = marginLeft + 80
+        const colRight = marginLeft + 115
+        const colAsym = marginLeft + 148
+
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.text('Metric', colMetric, tblY)
+        doc.setTextColor(30, 78, 216)
+        doc.text('LEFT', colLeft, tblY)
+        doc.setTextColor(185, 28, 28)
+        doc.text('RIGHT', colRight, tblY)
+        doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+        doc.text('ASYM %', colAsym, tblY)
+
+        tblY += 3
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.setLineWidth(0.2)
+        doc.line(colMetric, tblY, marginLeft + contentWidth - 6, tblY)
+        tblY += 5
+
+        slCardConfigs.forEach((config) => {
+          const leftVal = getMetricValue(latestLeft, config)
+          const rightVal = getMetricValue(latestRight, config)
+
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          doc.text(config.title, colMetric, tblY)
+
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text(leftVal !== null ? leftVal.toFixed(2) : '-', colLeft, tblY)
+          doc.text(rightVal !== null ? rightVal.toFixed(2) : '-', colRight, tblY)
+
+          if (leftVal !== null && rightVal !== null && Math.max(leftVal, rightVal) > 0) {
+            const asym = Math.abs(leftVal - rightVal) / Math.max(leftVal, rightVal) * 100
+            const asymColor = asym > 15 ? colors.danger : asym > 10 ? [234, 179, 8] : colors.success
+            doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
+            doc.text(`${asym.toFixed(1)}%`, colAsym, tblY)
+          } else {
+            doc.text('-', colAsym, tblY)
+          }
+
+          tblY += 10
+        })
+
+        yPos += tableHeight + 5
+
+        // ===== DUAL TREND CHART =====
+        if (slAllDates.length >= 1) {
+          const slChartHeight = 35
+          const slChartCardHeight = slChartHeight + 22
+
+          doc.setFillColor(255, 255, 255)
+          doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+          doc.roundedRect(marginLeft, yPos, contentWidth, slChartCardHeight, 2, 2, 'FD')
+
+          let slChartY = yPos + 7
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text(`${slPrimaryConfig.title} Trend (Left vs Right)`, marginLeft + 6, slChartY)
+
+          // Legend
+          slChartY += 5
+          doc.setFontSize(7)
+          doc.setDrawColor(30, 78, 216)
+          doc.setLineWidth(0.5)
+          doc.line(marginLeft + 6, slChartY - 1, marginLeft + 14, slChartY - 1)
+          doc.setTextColor(30, 78, 216)
+          doc.text('Left Leg', marginLeft + 16, slChartY)
+          doc.setDrawColor(185, 28, 28)
+          doc.line(marginLeft + 45, slChartY - 1, marginLeft + 53, slChartY - 1)
+          doc.setTextColor(185, 28, 28)
+          doc.text('Right Leg', marginLeft + 55, slChartY)
+
+          slChartY += 5
+          const slCX = marginLeft + 25
+          const slCW = contentWidth - 35
+          const slCAH = slChartHeight - 10
+
+          const allVals: number[] = []
+          for (const d of slAllDates) {
+            const lv = leftByDate[d] ? getMetricValue(leftByDate[d].metrics, slPrimaryConfig) : null
+            const rv = rightByDate[d] ? getMetricValue(rightByDate[d].metrics, slPrimaryConfig) : null
+            if (lv !== null) allVals.push(lv)
+            if (rv !== null) allVals.push(rv)
+          }
+
+          if (allVals.length > 0) {
+            const slMaxV = Math.max(...allVals)
+            const slMinV = Math.min(...allVals)
+            const slRange = slMaxV - slMinV || slMaxV * 0.1 || 1
+
+            doc.setFontSize(6)
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+            doc.text(slMaxV.toFixed(1), marginLeft + 5, slChartY + 3)
+            doc.text(slMinV.toFixed(1), marginLeft + 5, slChartY + slCAH)
+
+            doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+            doc.setLineWidth(0.1)
+            doc.line(slCX, slChartY, slCX + slCW, slChartY)
+            doc.line(slCX, slChartY + slCAH, slCX + slCW, slChartY + slCAH)
+
+            const calcPts = (byDate: Record<string, TestRecord>) => {
+              return slAllDates.map((d, i) => {
+                const rec = byDate[d]
+                const val = rec ? getMetricValue(rec.metrics, slPrimaryConfig) : null
+                return {
+                  x: slAllDates.length === 1 ? slCX + slCW / 2 : slCX + (i * (slCW / (slAllDates.length - 1))),
+                  y: val !== null ? slChartY + slCAH - ((val - slMinV) / slRange) * slCAH : null,
+                  value: val,
+                }
+              })
+            }
+
+            const lPts = calcPts(leftByDate)
+            const rPts = calcPts(rightByDate)
+
+            // Left line (blue)
+            doc.setDrawColor(30, 78, 216)
+            doc.setLineWidth(0.5)
+            let prevL: any = null
+            lPts.forEach(pt => {
+              if (pt.y !== null) {
+                if (prevL) doc.line(prevL.x, prevL.y, pt.x, pt.y)
+                doc.setFillColor(30, 78, 216)
+                doc.circle(pt.x, pt.y, 1.5, 'F')
+                prevL = pt
+              }
+            })
+
+            // Right line (red)
+            doc.setDrawColor(185, 28, 28)
+            let prevR: any = null
+            rPts.forEach(pt => {
+              if (pt.y !== null) {
+                if (prevR) doc.line(prevR.x, prevR.y, pt.x, pt.y)
+                doc.setFillColor(185, 28, 28)
+                doc.circle(pt.x, pt.y, 1.5, 'F')
+                prevR = pt
+              }
+            })
+
+            // X-axis labels
+            doc.setFontSize(5)
+            doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+            slAllDates.forEach((d, i) => {
+              const x = slAllDates.length === 1 ? slCX + slCW / 2 : slCX + (i * (slCW / (slAllDates.length - 1)))
+              doc.text(formatDate(new Date(d)), x, slChartY + slCAH + 4, { align: 'center' })
+            })
+          }
+
+          yPos += slChartCardHeight + 5
+        }
+
+        // ===== REPORT INSIGHTS =====
+        const slInsight = aiInsights.get(testName)
+        const slPageHeight = 297
+        const slBottomMargin = 18
+        const slMaxY = slPageHeight - slBottomMargin
+        const slAvailable = slMaxY - yPos
+        const slIdealH = 65
+        const slInsightH = Math.min(slIdealH, Math.max(45, slAvailable - 10))
+
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, 8, 2, 2, 'F')
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(255, 255, 255)
+        doc.text('Report Insights', marginLeft + 6, yPos + 5.5)
+        yPos += 10
+
+        doc.setFillColor(colors.coachBg[0], colors.coachBg[1], colors.coachBg[2])
+        doc.setDrawColor(colors.coachBorder[0], colors.coachBorder[1], colors.coachBorder[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, slInsightH, 2, 2, 'FD')
+
+        if (slInsight) {
+          let slIY = yPos + 6
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('What this means', marginLeft + 6, slIY)
+          slIY += 4
+          doc.setFontSize(7.5)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          const slExpLines = doc.splitTextToSize(slInsight.explanation || '', contentWidth - 14)
+          doc.text(slExpLines.slice(0, 3), marginLeft + 6, slIY)
+          slIY += Math.min(slExpLines.length, 3) * 3.5 + 5
+
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('Training Recommendations', marginLeft + 6, slIY)
+          slIY += 4
+          doc.setFontSize(7)
+          doc.setFont('helvetica', 'normal')
+          const slRecs = slInsight.recommendations || []
+          const slMaxRecs = slInsightH < 55 ? 2 : 4
+          slRecs.slice(0, slMaxRecs).forEach((rec: string, i: number) => {
+            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+            const recLines = doc.splitTextToSize(`${i + 1}. ${rec}`, contentWidth - 14)
+            doc.text(recLines[0], marginLeft + 6, slIY)
+            slIY += 3.5
+          })
+
+          if (slInsight.keyCues && slInsight.keyCues.length > 0 && slIY < yPos + slInsightH - 8) {
+            slIY += 2
+            doc.setFontSize(8)
+            doc.setFont('helvetica', 'bold')
+            doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+            doc.text('Coaching Cues', marginLeft + 6, slIY)
+            slIY += 3.5
+            doc.setFontSize(7)
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+            doc.text(slInsight.keyCues.slice(0, 2).join('   •   '), marginLeft + 6, slIY, { maxWidth: contentWidth - 14 })
+          }
+        }
+
+        // Footer
+        doc.setFontSize(8)
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+        doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, slPageHeight - 10, { align: 'right' })
+
+        continue // Skip standard rendering below
+      }
 
       // ===== TWO-COLUMN LAYOUT: Metrics + Summary =====
       const leftColWidth = 100
