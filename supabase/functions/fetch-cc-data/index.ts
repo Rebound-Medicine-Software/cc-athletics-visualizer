@@ -118,6 +118,9 @@ serve(async (req) => {
                           : rawJumpType === 'DJ' ? 'Drop Jump'
                           : 'Jump Test'
 
+          const legStance = (jump.plot_annotations?.leg_stance || jump.metric_table?.leg_stance || '').toLowerCase()
+          const isSingleLeg = legStance === 'left_leg' || legStance === 'right_leg'
+
           allTestData.push({
             athlete_id: athlete.id,
             athlete_name: athlete.name,
@@ -128,6 +131,21 @@ serve(async (req) => {
             gender: demographics.gender,
             metrics: jump.metric_table,
           })
+
+          // Create additional Single Leg entries when leg_stance is left_leg or right_leg
+          if (isSingleLeg) {
+            allTestData.push({
+              athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(jump.date).toISOString(),
+              test_name: `Single Leg ${testName}`,
+              repetition_number: index + 1,
+              gender: demographics.gender,
+              leg_stance: legStance,
+              metrics: jump.metric_table,
+            })
+          }
         })
       })
     }
@@ -142,17 +160,63 @@ serve(async (req) => {
 
         // For isometric tests, create one record per recording (not per trial)
         // and include the full isometric_analysis structure for limb symmetry calculations
+        const exerciseName = recording.exercise_name || 'Isometric Test'
         allTestData.push({
           athlete_id: athlete.id,
           athlete_name: athlete.name,
           team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
            test_date: new Date(recording.date).toISOString(),
-          test_name: recording.exercise_name || 'Isometric Test',
-          repetition_number: 1, // One record per recording session
+          test_name: exerciseName,
+          repetition_number: 1,
           gender: demographics.gender,
           metrics: {
             isometric_analysis: analysis
           },
+        })
+
+        // Create Single Leg isometric entries from trials with left/right metrics
+        const baseExercise = exerciseName.replace(/[\s_]*(Left|Right)[\s_]*Leg/gi, '').trim()
+        analysis.trials.forEach((trial, tIndex) => {
+          const tm = trial.total_metrics || {}
+          const hasLR = tm.force_50ms_left !== undefined || tm.force_peak_left !== undefined ||
+                        tm.force_50ms_right !== undefined || tm.force_peak_right !== undefined
+
+          if (hasLR) {
+            // Left leg entry
+            allTestData.push({
+              athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString(),
+              test_name: `Single Leg ${baseExercise}`,
+              repetition_number: tIndex + 1,
+              gender: demographics.gender,
+              leg_stance: 'left_leg',
+              metrics: {
+                force_50ms: tm.force_50ms_left,
+                force_250ms: tm.force_250ms_left,
+                force_peak: tm.force_peak_left,
+                steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+              },
+            })
+            // Right leg entry
+            allTestData.push({
+              athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString(),
+              test_name: `Single Leg ${baseExercise}`,
+              repetition_number: tIndex + 1,
+              gender: demographics.gender,
+              leg_stance: 'right_leg',
+              metrics: {
+                force_50ms: tm.force_50ms_right,
+                force_250ms: tm.force_250ms_right,
+                force_peak: tm.force_peak_right,
+                steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+              },
+            })
+          }
         })
       })
     }
