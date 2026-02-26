@@ -48,6 +48,28 @@ export const metricCaseLogic = (
       if (metricType === "Average Rate of Force Development") value = pick(["avg_rfd", "rate_of_force_development", "rfd_max"]);
       if (metricType === "Average Propulsive Power") value = pick(["avg_propulsive_power", "avg_power"]);
       break;
+    case "Single Leg Countermovement Jump":
+      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
+      if (metricType === "Peak Propulsive Power") value = pick(["peak_propulsive_power", "avg_propulsive_power"]);
+      if (metricType === "Relative Peak Power") {
+        const pp = pick(["peak_power"]);
+        const bm = pick(["body_mass"]);
+        if (pp !== null && bm !== null && !isNaN(Number(pp)) && !isNaN(Number(bm)) && Number(bm) !== 0) {
+          value = Number(pp) / Number(bm);
+        } else {
+          value = null;
+        }
+        yAxisLabel = "Relative Peak Power (W/kg)";
+      }
+      if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
+      break;
+    case "Single Leg Squat Jump":
+    case "Single Leg Drop Jump":
+      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
+      if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force", "fp1_peak_landing_force", "fp2_peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
+      if (metricType === "Ground Contact Time (s)") { value = pick(["time_to_takeoff", "contact_time"]); yAxisLabel = "Ground Contact Time (s)"; }
+      if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
+      break;
     case "Pogo Jump":
       if (metricType === "Jump Height (cm)" || metricType === "Jump Height (Pogo)") value = pick(["jump_height", "avg_jump_height"]);
       if (metricType === "Power" || metricType === "Peak Power") value = pick(["power", "avg_power", "peak_power"]);
@@ -55,9 +77,17 @@ export const metricCaseLogic = (
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     default:
-      if (metricType === "Maximum Rate of Force Development") value = pick(["rfd_max", "avg_rfd"]);
-      if (metricType === "Force at Max Rate of Force Development") value = pick(["force_150ms", "force_100ms", "force_50ms", "force_peak"]);
-      if (metricType === "Peak Force" || metricType === "ISO Peak Force") value = pick(["peak_force", "force_peak"]);
+      // Single Leg isometric tests (e.g. "Single Leg IMTP")
+      if (testName.startsWith("Single Leg")) {
+        if (metricType === "Early Force Capacity") { value = pick(["force_50ms"]); yAxisLabel = "Force at 50ms (N)"; }
+        if (metricType === "Moderate/Late Force Capacity") { value = pick(["force_250ms"]); yAxisLabel = "Force at 250ms (N)"; }
+        if (metricType === "Peak Force") { value = pick(["force_peak"]); yAxisLabel = "Peak Force (N)"; }
+        if (metricType === "Stable Force Reading") { value = pick(["steadiness_force_n"]); yAxisLabel = "Steadiness (N)"; }
+      } else {
+        if (metricType === "Maximum Rate of Force Development") value = pick(["rfd_max", "avg_rfd"]);
+        if (metricType === "Force at Max Rate of Force Development") value = pick(["force_150ms", "force_100ms", "force_50ms", "force_peak"]);
+        if (metricType === "Peak Force" || metricType === "ISO Peak Force") value = pick(["peak_force", "force_peak"]);
+      }
       break;
   }
 

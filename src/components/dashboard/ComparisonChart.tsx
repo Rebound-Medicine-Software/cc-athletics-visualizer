@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Legend } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { ChartLegend } from "./chart/ChartLegend";
@@ -14,9 +14,41 @@ interface ComparisonChartProps {
 }
 
 export const ComparisonChart = ({ data, testName, metricType, branding }: ComparisonChartProps) => {
+  const isSingleLegTest = testName?.startsWith("Single Leg");
+
   // Group and average data for chart: top 6 per metric value
   const chartData = (() => {
     if (!data || data.length === 0) return [];
+
+    if (isSingleLegTest) {
+      // Dual bar mode: group by athlete, separate left/right values
+      const athleteMap: Record<string, { leftValues: number[]; rightValues: number[]; team: string }> = {};
+      data.forEach(test => {
+        const { value } = metricCaseLogic(test, testName, metricType);
+        if (value !== null && !isNaN(value)) {
+          if (!athleteMap[test.athlete_name]) {
+            athleteMap[test.athlete_name] = { leftValues: [], rightValues: [], team: test.team_name };
+          }
+          if (test.leg_stance === 'left_leg') {
+            athleteMap[test.athlete_name].leftValues.push(value);
+          } else if (test.leg_stance === 'right_leg') {
+            athleteMap[test.athlete_name].rightValues.push(value);
+          }
+        }
+      });
+      return Object.entries(athleteMap)
+        .map(([name, d]) => ({
+          name: name.length > 12 ? name.substring(0, 12) + '...' : name,
+          fullName: name,
+          leftValue: d.leftValues.length > 0 ? d.leftValues.reduce((s, v) => s + v, 0) / d.leftValues.length : 0,
+          rightValue: d.rightValues.length > 0 ? d.rightValues.reduce((s, v) => s + v, 0) / d.rightValues.length : 0,
+          team: d.team,
+        }))
+        .sort((a, b) => Math.max(b.leftValue, b.rightValue) - Math.max(a.leftValue, a.rightValue))
+        .slice(0, 6);
+    }
+
+    // Standard single bar mode
     const athleteMap: Record<string, { values: number[], team: string }> = {};
     data.forEach(test => {
       const { value } = metricCaseLogic(test, testName, metricType);
@@ -38,29 +70,17 @@ export const ComparisonChart = ({ data, testName, metricType, branding }: Compar
       .slice(0, 6);
   })();
 
-  const maxValue = chartData.length > 0 ? Math.max(...chartData.map(d => d.value)) : 0;
+  const maxValue = isSingleLegTest
+    ? (chartData.length > 0 ? Math.max(...chartData.map((d: any) => Math.max(d.leftValue || 0, d.rightValue || 0))) : 0)
+    : (chartData.length > 0 ? Math.max(...chartData.map((d: any) => d.value || 0)) : 0);
+
   const bandAreas = [
-    {
-      name: "The Best",
-      color: "#bbf7d0", // tailwind green-200
-      from: maxValue * 0.9,
-      to: maxValue,
-    },
-    {
-      name: "Good",
-      color: "#fde68a", // tailwind yellow-200
-      from: maxValue * 0.75,
-      to: maxValue * 0.9,
-    },
-    {
-      name: "Modest",
-      color: "#fed7aa", // tailwind orange-200
-      from: maxValue * 0.5,
-      to: maxValue * 0.75,
-    },
+    { name: "The Best", color: "#bbf7d0", from: maxValue * 0.9, to: maxValue },
+    { name: "Good", color: "#fde68a", from: maxValue * 0.75, to: maxValue * 0.9 },
+    { name: "Modest", color: "#fed7aa", from: maxValue * 0.5, to: maxValue * 0.75 },
   ];
 
-  const yAxisLabel = chartData.length > 0 && chartData[0].value !== undefined
+  const yAxisLabel = chartData.length > 0 && data.length > 0
     ? metricCaseLogic(data[0], testName, metricType).yAxisLabel
     : metricType || "Peak Force (N)";
 
@@ -82,71 +102,71 @@ export const ComparisonChart = ({ data, testName, metricType, branding }: Compar
             className="text-center text-lg"
             style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
           >
-            Comparisons Amongst Peers{metricType ? ` - ${metricType}` : " - Peak Force"}
+            {isSingleLegTest
+              ? `Limb Comparison${metricType ? ` - ${metricType}` : ""}`
+              : `Comparisons Amongst Peers${metricType ? ` - ${metricType}` : " - Peak Force"}`
+            }
           </CardTitle>
         </CardHeader>
-      <CardContent>
-        <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
-          <ResponsiveContainer width="100%" height="95%">
-            <BarChart
-              data={chartData}
-              margin={{
-                top: 28,
-                right: 30,
-                left: 20,
-                bottom: 70,
-              }}
-              barCategoryGap="25%"
-            >
-              {/* Colored achievement bands */}
-              {maxValue > 0 &&
-                bandAreas.map(band => (
-                  <ReferenceArea
-                    key={band.name}
-                    y1={band.from}
-                    y2={band.to}
-                    label={null}
-                    fill={band.color}
-                    fillOpacity={0.55}
-                    stroke="none"
-                    ifOverflow="extendDomain"
-                  />
-                ))
-              }
-              <XAxis
-                dataKey="name"
-                tick={{ fontSize: 12 }}
-                className="text-gray-600"
-                angle={-45}
-                textAnchor="end"
-                height={65}
-              />
-              <YAxis
-                tick={{ fontSize: 13 }}
-                label={{
-                  value: yAxisLabel,
-                  angle: -90,
-                  position: 'insideLeft',
-                  style: { textAnchor: 'middle', fontSize: 14, fill: "#374151" },
-                }}
-              />
-              <Tooltip
-                cursor={{ fill: '#e0e7ef44' }}
-                contentStyle={{ borderRadius: 8, backgroundColor: "#fff" }}
-                formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
-              />
-              <Bar
-                dataKey="value"
-                fill="#374151"
-                name={yAxisLabel}
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-          <ChartLegend />
-        </div>
-      </CardContent>
-    </Card>
+        <CardContent>
+          <div className="h-[400px] md:h-[480px] w-full px-2 md:px-6">
+            <ResponsiveContainer width="100%" height="95%">
+              <BarChart
+                data={chartData}
+                margin={{ top: 28, right: 30, left: 20, bottom: 70 }}
+                barCategoryGap="25%"
+              >
+                {maxValue > 0 &&
+                  bandAreas.map(band => (
+                    <ReferenceArea
+                      key={band.name}
+                      y1={band.from}
+                      y2={band.to}
+                      label={null}
+                      fill={band.color}
+                      fillOpacity={0.55}
+                      stroke="none"
+                      ifOverflow="extendDomain"
+                    />
+                  ))
+                }
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12 }}
+                  className="text-gray-600"
+                  angle={-45}
+                  textAnchor="end"
+                  height={65}
+                />
+                <YAxis
+                  tick={{ fontSize: 13 }}
+                  label={{
+                    value: yAxisLabel,
+                    angle: -90,
+                    position: 'insideLeft',
+                    style: { textAnchor: 'middle', fontSize: 14, fill: "#374151" },
+                  }}
+                />
+                <Tooltip
+                  cursor={{ fill: '#e0e7ef44' }}
+                  contentStyle={{ borderRadius: 8, backgroundColor: "#fff" }}
+                  formatter={(v: any) => (typeof v === "number" ? v.toFixed(2) : v)}
+                />
+                {isSingleLegTest ? (
+                  <>
+                    <Bar dataKey="leftValue" fill="#3B82F6" name="Left Leg" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rightValue" fill="#EF4444" name="Right Leg" radius={[4, 4, 0, 0]} />
+                    <Legend verticalAlign="top" height={36} />
+                  </>
+                ) : (
+                  <Bar dataKey="value" fill="#374151" name={yAxisLabel} radius={[4, 4, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+            {!isSingleLegTest && <ChartLegend />}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
