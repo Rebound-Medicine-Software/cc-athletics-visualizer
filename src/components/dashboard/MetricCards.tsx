@@ -72,34 +72,44 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
     ? data.filter((d) => d.test_name === selectedTest)
     : [];
 
-  // Helper to get the recent and best value for a given metric
+  // Group by athlete + test_date, then take best rep per group
+  const getBestPerAthleteDate = (metricKey: string, lowerBetter = false) => {
+    const groups: Record<string, number[]> = {};
+    filteredData.forEach((d) => {
+      if (d.metrics && metricKey in d.metrics && typeof (d.metrics as any)[metricKey] === "number") {
+        const key = `${d.athlete_name}||${d.test_date}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push((d.metrics as any)[metricKey]);
+      }
+    });
+    // Best rep per athlete per date
+    return Object.values(groups).map(vals =>
+      lowerBetter ? Math.min(...vals) : Math.max(...vals)
+    );
+  };
+
+  // Helper to get the most recent best-per-date value for a given metric
   const getMostRecent = (metricKey: string) => {
     if (filteredData.length === 0) return null;
-    const sorted = [...filteredData].sort((a, b) => {
-      const dateA = new Date(a.test_date).getTime();
-      const dateB = new Date(b.test_date).getTime();
-      return dateB - dateA || b.repetition_number - a.repetition_number;
+    // Group by athlete+date, take best rep per group, then find most recent group
+    const groups: Record<string, { date: string; values: number[] }> = {};
+    filteredData.forEach((d) => {
+      if (d.metrics && metricKey in d.metrics && typeof (d.metrics as any)[metricKey] === "number") {
+        const key = `${d.athlete_name}||${d.test_date}`;
+        if (!groups[key]) groups[key] = { date: d.test_date, values: [] };
+        groups[key].values.push((d.metrics as any)[metricKey]);
+      }
     });
-    const firstWithMetric = sorted.find(
-      (d) =>
-        d.metrics &&
-        metricKey in d.metrics &&
-        typeof (d.metrics as any)[metricKey] === "number"
-    );
-    if (firstWithMetric) {
-      return (firstWithMetric.metrics as any)[metricKey];
-    }
-    return null;
+    const entries = Object.values(groups);
+    if (entries.length === 0) return null;
+    // Sort by date descending, return best rep from most recent date
+    entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const lowerBetter = isLowerBetter(metricKey);
+    return lowerBetter ? Math.min(...entries[0].values) : Math.max(...entries[0].values);
   };
 
   const getAllValues = (metricKey: string) => {
-    return filteredData
-      .map((d) =>
-        d.metrics && metricKey in d.metrics
-          ? (d.metrics as any)[metricKey]
-          : null
-      )
-      .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
+    return getBestPerAthleteDate(metricKey, isLowerBetter(metricKey));
   };
 
   const cardConfigs = getCardConfigs(selectedTest);
@@ -123,57 +133,45 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
         let bestValue: number | null = null;
 
         if (card.keyOverride && card.keyOverride === "jump_height_cm") {
-          // Most recent
-          const sorted = [...filteredData].sort((a, b) => {
-            const dateA = new Date(a.test_date).getTime();
-            const dateB = new Date(b.test_date).getTime();
-            return dateB - dateA || b.repetition_number - a.repetition_number;
+          // Group by athlete+date, best rep per group
+          const groups: Record<string, { date: string; values: number[] }> = {};
+          filteredData.forEach((d) => {
+            if (d.metrics) {
+              const val = resolveJumpHeight(d.metrics, "jump_height_ft", "jump_height_cm");
+              if (val !== null) {
+                const key = `${d.athlete_name}||${d.test_date}`;
+                if (!groups[key]) groups[key] = { date: d.test_date, values: [] };
+                groups[key].values.push(val);
+              }
+            }
           });
-          const found = sorted.find(
-            (d) =>
-              d.metrics &&
-              (("jump_height_cm" in d.metrics &&
-                typeof (d.metrics as any).jump_height_cm === "number") ||
-                ("jump_height_ft" in d.metrics &&
-                  typeof (d.metrics as any).jump_height_ft === "number"))
-          );
-          if (found && found.metrics) {
-            mostRecentValue = resolveJumpHeight(
-              found.metrics,
-              "jump_height_ft",
-              "jump_height_cm"
-            );
+          const entries = Object.values(groups);
+          if (entries.length > 0) {
+            // Most recent = best rep from most recent date
+            entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            mostRecentValue = Math.max(...entries[0].values);
+            // Best = best across all date groups
+            const allBests = entries.map(e => Math.max(...e.values));
+            bestValue = getBest(allBests, card.metricKey);
           }
-          // Best (by highest cm)
-          const values = filteredData
-            .map((d) =>
-              d.metrics
-                ? resolveJumpHeight(d.metrics, "jump_height_ft", "jump_height_cm")
-                : null
-            )
-            .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
-          bestValue = getBest(values, card.metricKey);
         } else if (card.metricKey === "relative_peak_power") {
-          // Most recent
-          const sorted = [...filteredData].sort((a, b) => {
-            const dateA = new Date(a.test_date).getTime();
-            const dateB = new Date(b.test_date).getTime();
-            return dateB - dateA || b.repetition_number - a.repetition_number;
+          // Group by athlete+date, best rep per group
+          const groups: Record<string, { date: string; values: number[] }> = {};
+          filteredData.forEach((d) => {
+            const val = computeRelativePeakPower(d.metrics);
+            if (val !== null) {
+              const key = `${d.athlete_name}||${d.test_date}`;
+              if (!groups[key]) groups[key] = { date: d.test_date, values: [] };
+              groups[key].values.push(val);
+            }
           });
-          const found = sorted.find(
-            (d) =>
-              d.metrics &&
-              typeof (d.metrics as any).peak_power === "number" &&
-              typeof (d.metrics as any).body_mass === "number"
-          );
-          if (found && found.metrics) {
-            mostRecentValue = computeRelativePeakPower(found.metrics);
+          const entries = Object.values(groups);
+          if (entries.length > 0) {
+            entries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            mostRecentValue = Math.max(...entries[0].values);
+            const allBests = entries.map(e => Math.max(...e.values));
+            bestValue = getBest(allBests, card.metricKey);
           }
-          // Best (by highest relative)
-          const values = filteredData
-            .map((d) => computeRelativePeakPower(d.metrics))
-            .filter((v) => typeof v === "number" && !isNaN(v)) as number[];
-          bestValue = getBest(values, card.metricKey);
         } else {
           mostRecentValue = getMostRecent(card.metricKey);
           bestValue = getBest(getAllValues(card.metricKey), card.metricKey);
