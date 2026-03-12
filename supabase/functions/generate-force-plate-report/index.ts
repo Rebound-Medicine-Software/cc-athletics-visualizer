@@ -489,10 +489,12 @@ serve(async (req) => {
           if (metrics.steadiness_rsme_force) {
             metrics.steadiness_force = metrics.steadiness_rsme_force * 9.81
           }
+          const sidePrefix = stance.includes('left') ? 'Left Side' : 'Right Side'
+          const baseTestName = record.test_name.replace(/^(Left Side|Right Side|Single Leg)\s+/i, '')
           preprocessedData.push({
             ...record,
             metrics,
-            test_name: record.test_name.startsWith('Single Leg') ? record.test_name : `Single Leg ${record.test_name}`,
+            test_name: `${sidePrefix} ${baseTestName}`,
             leg_stance: stance.includes('left') ? 'left_leg' : 'right_leg',
           })
         } else {
