@@ -773,7 +773,8 @@ serve(async (req) => {
       doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
-      doc.text(testName.toUpperCase(), marginLeft + 6, yPos)
+      const displayTestName = isSideTest ? `LIMB COMPARISON - ${testName.replace(/^(Left Side|Right Side)\s+/, '').toUpperCase()}` : testName.toUpperCase()
+      doc.text(displayTestName, marginLeft + 6, yPos)
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
