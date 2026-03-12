@@ -48,7 +48,8 @@ export const metricCaseLogic = (
       if (metricType === "Average Rate of Force Development") value = pick(["avg_rfd", "rate_of_force_development", "rfd_max"]);
       if (metricType === "Average Propulsive Power") value = pick(["avg_propulsive_power", "avg_power"]);
       break;
-    case "Single Leg Countermovement Jump":
+    case "Left Side Countermovement Jump":
+    case "Right Side Countermovement Jump":
       if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
       if (metricType === "Peak Propulsive Power") value = pick(["peak_propulsive_power", "avg_propulsive_power"]);
       if (metricType === "Relative Peak Power") {
@@ -63,8 +64,10 @@ export const metricCaseLogic = (
       }
       if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
       break;
-    case "Single Leg Squat Jump":
-    case "Single Leg Drop Jump":
+    case "Left Side Squat Jump":
+    case "Right Side Squat Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
       if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
       if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force", "fp1_peak_landing_force", "fp2_peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
       if (metricType === "Ground Contact Time (s)") { value = pick(["time_to_takeoff", "contact_time"]); yAxisLabel = "Ground Contact Time (s)"; }
@@ -77,8 +80,8 @@ export const metricCaseLogic = (
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     default:
-      // Single Leg isometric tests (e.g. "Single Leg IMTP")
-      if (testName.startsWith("Single Leg")) {
+      // Left/Right Side isometric tests (e.g. "Left Side IMTP")
+      if (testName.startsWith("Left Side") || testName.startsWith("Right Side")) {
         if (metricType === "Early Force Capacity") { value = pick(["force_50ms"]); yAxisLabel = "Force at 50ms (N)"; }
         if (metricType === "Moderate/Late Force Capacity") { value = pick(["force_250ms"]); yAxisLabel = "Force at 250ms (N)"; }
         if (metricType === "Peak Force") { value = pick(["force_peak"]); yAxisLabel = "Peak Force (N)"; }

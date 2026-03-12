@@ -71,21 +71,24 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
-    case "Single Leg Countermovement Jump":
+    case "Left Side Countermovement Jump":
+    case "Right Side Countermovement Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Propulsive Power", metricKey: "peak_propulsive_power", unit: "W" },
         { icon: "⚡", title: "Relative Peak Power", metricKey: "relative_peak_power", unit: "W/kg" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
-    case "Single Leg Squat Jump":
+    case "Left Side Squat Jump":
+    case "Right Side Squat Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
-    case "Single Leg Drop Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
@@ -93,8 +96,8 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
     default:
-      // Check for single-leg isometric tests
-      if (testName.startsWith('Single Leg')) {
+      // Check for Left/Right Side isometric tests
+      if (testName.startsWith('Left Side') || testName.startsWith('Right Side')) {
         return [
           { icon: "⚡", title: "Early Force Capacity (50ms)", metricKey: "force_50ms", unit: "N" },
           { icon: "⚡", title: "Moderate/Late Force (250ms)", metricKey: "force_250ms", unit: "N" },
@@ -441,8 +444,8 @@ serve(async (req) => {
             const bestLeft = pickBest(leftTrials)
             const flatMetrics = flattenIsometricTrial(bestLeft, 'left_leg')
             if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
-            preprocessedData.push({
-              test_name: `Single Leg ${record.test_name}`,
+             preprocessedData.push({
+              test_name: `Left Side ${record.test_name}`,
               test_date: record.test_date,
               repetition_number: record.repetition_number || 1,
               metrics: flatMetrics,
@@ -454,7 +457,7 @@ serve(async (req) => {
             const flatMetrics = flattenIsometricTrial(bestRight, 'right_leg')
             if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
             preprocessedData.push({
-              test_name: `Single Leg ${record.test_name}`,
+              test_name: `Right Side ${record.test_name}`,
               test_date: record.test_date,
               repetition_number: record.repetition_number || 1,
               metrics: flatMetrics,
@@ -486,10 +489,12 @@ serve(async (req) => {
           if (metrics.steadiness_rsme_force) {
             metrics.steadiness_force = metrics.steadiness_rsme_force * 9.81
           }
+          const sidePrefix = stance.includes('left') ? 'Left Side' : 'Right Side'
+          const baseTestName = record.test_name.replace(/^(Left Side|Right Side|Single Leg)\s+/i, '')
           preprocessedData.push({
             ...record,
             metrics,
-            test_name: record.test_name.startsWith('Single Leg') ? record.test_name : `Single Leg ${record.test_name}`,
+            test_name: `${sidePrefix} ${baseTestName}`,
             leg_stance: stance.includes('left') ? 'left_leg' : 'right_leg',
           })
         } else {
@@ -711,7 +716,15 @@ serve(async (req) => {
     let pageNumber = 0
 
     // Generate one page per test
+    const processedSidePairs = new Set<string>()
     for (const [testName, group] of groupedTests) {
+      // Skip Right Side tests if we already processed the Left Side pair
+      const isSideTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
+      if (isSideTest) {
+        const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+        if (processedSidePairs.has(baseExercise)) continue
+        processedSidePairs.add(baseExercise)
+      }
       if (pageNumber > 0) {
         doc.addPage()
       }
@@ -760,7 +773,8 @@ serve(async (req) => {
       doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
-      doc.text(testName.toUpperCase(), marginLeft + 6, yPos)
+      const displayTestName = isSideTest ? `LIMB COMPARISON - ${testName.replace(/^(Left Side|Right Side)\s+/, '').toUpperCase()}` : testName.toUpperCase()
+      doc.text(displayTestName, marginLeft + 6, yPos)
 
       doc.setFontSize(9)
       doc.setFont('helvetica', 'normal')
@@ -770,10 +784,15 @@ serve(async (req) => {
       yPos += 16
 
       // ===== SINGLE-LEG COMPARISON PAGE =====
-      const isSingleLegTest = testName.startsWith('Single Leg')
+      const isSingleLegTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
       if (isSingleLegTest) {
-        const leftRecords = group.records.filter((r: any) => r.leg_stance === 'left_leg')
-        const rightRecords = group.records.filter((r: any) => r.leg_stance === 'right_leg')
+        // Find the paired test (Left Side ↔ Right Side)
+        const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+        const pairedTestName = testName.startsWith('Left Side') ? `Right Side ${baseExercise}` : `Left Side ${baseExercise}`
+        const pairedGroup = groupedTests.get(pairedTestName)
+        const allRecords = [...group.records, ...(pairedGroup?.records || [])]
+        const leftRecords = allRecords.filter((r: any) => r.leg_stance === 'left_leg')
+        const rightRecords = allRecords.filter((r: any) => r.leg_stance === 'right_leg')
         const slCardConfigs = getCardConfigs(testName)
         const slPrimaryConfig = slCardConfigs[0]
 
@@ -889,11 +908,11 @@ serve(async (req) => {
           doc.setLineWidth(0.5)
           doc.line(marginLeft + 6, slChartY - 1, marginLeft + 14, slChartY - 1)
           doc.setTextColor(30, 78, 216)
-          doc.text('Left Leg', marginLeft + 16, slChartY)
+          doc.text('Left Side', marginLeft + 16, slChartY)
           doc.setDrawColor(185, 28, 28)
           doc.line(marginLeft + 45, slChartY - 1, marginLeft + 53, slChartY - 1)
           doc.setTextColor(185, 28, 28)
-          doc.text('Right Leg', marginLeft + 55, slChartY)
+          doc.text('Right Side', marginLeft + 55, slChartY)
 
           slChartY += 5
           const slCX = marginLeft + 25
