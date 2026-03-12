@@ -788,7 +788,7 @@ serve(async (req) => {
         // Find the paired test (Left Side ↔ Right Side)
         const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
         const pairedTestName = testName.startsWith('Left Side') ? `Right Side ${baseExercise}` : `Left Side ${baseExercise}`
-        const pairedGroup = groupedTests.find((g: any) => g.testName === pairedTestName)
+        const pairedGroup = groupedTests.get(pairedTestName)
         const allRecords = [...group.records, ...(pairedGroup?.records || [])]
         const leftRecords = allRecords.filter((r: any) => r.leg_stance === 'left_leg')
         const rightRecords = allRecords.filter((r: any) => r.leg_stance === 'right_leg')
