@@ -444,8 +444,8 @@ serve(async (req) => {
             const bestLeft = pickBest(leftTrials)
             const flatMetrics = flattenIsometricTrial(bestLeft, 'left_leg')
             if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
-            preprocessedData.push({
-              test_name: `Single Leg ${record.test_name}`,
+             preprocessedData.push({
+              test_name: `Left Side ${record.test_name}`,
               test_date: record.test_date,
               repetition_number: record.repetition_number || 1,
               metrics: flatMetrics,
@@ -457,7 +457,7 @@ serve(async (req) => {
             const flatMetrics = flattenIsometricTrial(bestRight, 'right_leg')
             if (flatMetrics.steadiness_rsme_force) flatMetrics.steadiness_force = flatMetrics.steadiness_rsme_force * 9.81
             preprocessedData.push({
-              test_name: `Single Leg ${record.test_name}`,
+              test_name: `Right Side ${record.test_name}`,
               test_date: record.test_date,
               repetition_number: record.repetition_number || 1,
               metrics: flatMetrics,
