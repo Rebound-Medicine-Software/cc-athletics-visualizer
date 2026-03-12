@@ -716,7 +716,15 @@ serve(async (req) => {
     let pageNumber = 0
 
     // Generate one page per test
+    const processedSidePairs = new Set<string>()
     for (const [testName, group] of groupedTests) {
+      // Skip Right Side tests if we already processed the Left Side pair
+      const isSideTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
+      if (isSideTest) {
+        const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+        if (processedSidePairs.has(baseExercise)) continue
+        processedSidePairs.add(baseExercise)
+      }
       if (pageNumber > 0) {
         doc.addPage()
       }
