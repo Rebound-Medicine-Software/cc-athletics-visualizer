@@ -71,21 +71,24 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
-    case "Single Leg Countermovement Jump":
+    case "Left Side Countermovement Jump":
+    case "Right Side Countermovement Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Propulsive Power", metricKey: "peak_propulsive_power", unit: "W" },
         { icon: "⚡", title: "Relative Peak Power", metricKey: "relative_peak_power", unit: "W/kg" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
-    case "Single Leg Squat Jump":
+    case "Left Side Squat Jump":
+    case "Right Side Squat Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
-    case "Single Leg Drop Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
@@ -93,8 +96,8 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
     default:
-      // Check for single-leg isometric tests
-      if (testName.startsWith('Single Leg')) {
+      // Check for Left/Right Side isometric tests
+      if (testName.startsWith('Left Side') || testName.startsWith('Right Side')) {
         return [
           { icon: "⚡", title: "Early Force Capacity (50ms)", metricKey: "force_50ms", unit: "N" },
           { icon: "⚡", title: "Moderate/Late Force (250ms)", metricKey: "force_250ms", unit: "N" },
