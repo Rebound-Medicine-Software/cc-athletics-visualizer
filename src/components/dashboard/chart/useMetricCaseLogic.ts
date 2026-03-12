@@ -80,8 +80,8 @@ export const metricCaseLogic = (
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     default:
-      // Single Leg isometric tests (e.g. "Single Leg IMTP")
-      if (testName.startsWith("Single Leg")) {
+      // Left/Right Side isometric tests (e.g. "Left Side IMTP")
+      if (testName.startsWith("Left Side") || testName.startsWith("Right Side")) {
         if (metricType === "Early Force Capacity") { value = pick(["force_50ms"]); yAxisLabel = "Force at 50ms (N)"; }
         if (metricType === "Moderate/Late Force Capacity") { value = pick(["force_250ms"]); yAxisLabel = "Force at 250ms (N)"; }
         if (metricType === "Peak Force") { value = pick(["force_peak"]); yAxisLabel = "Peak Force (N)"; }

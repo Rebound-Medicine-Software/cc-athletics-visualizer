@@ -12,15 +12,18 @@ export function getMetricTypesForTest(testName: string): string[] {
       return ["Jump Height (cm)", "Take-off Velocity", "Average Rate of Force Development", "Average Propulsive Power"];
     case "Pogo Jump":
       return ["Jump Height (cm)", "Power", "Flight Time", "Reactive Strength Index"];
-    case "Single Leg Countermovement Jump":
+    case "Left Side Countermovement Jump":
+    case "Right Side Countermovement Jump":
       return ["Jump Height (cm)", "Peak Propulsive Power", "Relative Peak Power", "Reactive Strength Index"];
-    case "Single Leg Squat Jump":
+    case "Left Side Squat Jump":
+    case "Right Side Squat Jump":
       return ["Jump Height (cm)", "Peak Landing Force", "Ground Contact Time (s)", "Reactive Strength Index"];
-    case "Single Leg Drop Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
       return ["Jump Height (cm)", "Peak Landing Force", "Ground Contact Time (s)", "Reactive Strength Index"];
     default:
-      // Single Leg isometric tests (e.g. "Single Leg IMTP")
-      if (testName.startsWith("Single Leg")) {
+      // Left/Right Side isometric tests (e.g. "Left Side IMTP")
+      if (testName.startsWith("Left Side") || testName.startsWith("Right Side")) {
         return ["Early Force Capacity", "Moderate/Late Force Capacity", "Peak Force", "Stable Force Reading"];
       }
       return ["Maximum Rate of Force Development", "Force at Max Rate of Force Development", "Peak Force"];

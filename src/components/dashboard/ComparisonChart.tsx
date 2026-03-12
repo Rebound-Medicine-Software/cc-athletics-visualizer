@@ -14,7 +14,7 @@ interface ComparisonChartProps {
 }
 
 export const ComparisonChart = ({ data, testName, metricType, branding }: ComparisonChartProps) => {
-  const isSingleLegTest = testName?.startsWith("Single Leg");
+  const isSingleLegTest = testName?.startsWith("Left Side") || testName?.startsWith("Right Side");
 
   // Group and average data for chart: top 6 per metric value
   const chartData = (() => {
