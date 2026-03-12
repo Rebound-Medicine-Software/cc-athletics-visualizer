@@ -153,7 +153,18 @@ export const SendReportsModal = () => {
       }
 
       const { report_url, filename } = response.data;
-      setPreviewUrl(report_url);
+      
+      // Fetch PDF as blob to avoid CORS/ad-blocker issues with Supabase URLs
+      try {
+        const pdfResponse = await fetch(report_url);
+        const blob = await pdfResponse.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        setPreviewUrl(blobUrl);
+      } catch (fetchError) {
+        console.error('Error fetching PDF for preview, using direct URL:', fetchError);
+        setPreviewUrl(report_url);
+      }
+      
       setPreviewFilename(filename);
       
       toast({
@@ -200,6 +211,9 @@ export const SendReportsModal = () => {
   };
 
   const handleClosePreview = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      window.URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(null);
     setPreviewFilename("");
   };
