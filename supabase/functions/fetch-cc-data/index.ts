@@ -132,14 +132,15 @@ serve(async (req) => {
             metrics: jump.metric_table,
           })
 
-          // Create additional Single Leg entries when leg_stance is left_leg or right_leg
+          // Create additional Left Side / Right Side entries when leg_stance is left_leg or right_leg
           if (isSingleLeg) {
+            const sidePrefix = legStance === 'left_leg' ? 'Left Side' : 'Right Side'
             allTestData.push({
               athlete_id: athlete.id,
               athlete_name: athlete.name,
               team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
               test_date: new Date(jump.date).toISOString(),
-              test_name: `Single Leg ${testName}`,
+              test_name: `${sidePrefix} ${testName}`,
               repetition_number: index + 1,
               gender: demographics.gender,
               leg_stance: legStance,
