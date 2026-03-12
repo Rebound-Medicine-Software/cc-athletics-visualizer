@@ -908,11 +908,11 @@ serve(async (req) => {
           doc.setLineWidth(0.5)
           doc.line(marginLeft + 6, slChartY - 1, marginLeft + 14, slChartY - 1)
           doc.setTextColor(30, 78, 216)
-          doc.text('Left Leg', marginLeft + 16, slChartY)
+          doc.text('Left Side', marginLeft + 16, slChartY)
           doc.setDrawColor(185, 28, 28)
           doc.line(marginLeft + 45, slChartY - 1, marginLeft + 53, slChartY - 1)
           doc.setTextColor(185, 28, 28)
-          doc.text('Right Leg', marginLeft + 55, slChartY)
+          doc.text('Right Side', marginLeft + 55, slChartY)
 
           slChartY += 5
           const slCX = marginLeft + 25
