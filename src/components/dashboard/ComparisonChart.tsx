@@ -154,8 +154,8 @@ export const ComparisonChart = ({ data, testName, metricType, branding }: Compar
                 />
                 {isSingleLegTest ? (
                   <>
-                    <Bar dataKey="leftValue" fill="#3B82F6" name="Left Leg" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="rightValue" fill="#EF4444" name="Right Leg" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="leftValue" fill="#3B82F6" name="Left Side" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="rightValue" fill="#EF4444" name="Right Side" radius={[4, 4, 0, 0]} />
                     <Legend verticalAlign="top" height={36} />
                   </>
                 ) : (
