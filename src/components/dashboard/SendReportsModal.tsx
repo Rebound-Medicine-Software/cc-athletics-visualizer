@@ -211,6 +211,9 @@ export const SendReportsModal = () => {
   };
 
   const handleClosePreview = () => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      window.URL.revokeObjectURL(previewUrl);
+    }
     setPreviewUrl(null);
     setPreviewFilename("");
   };
