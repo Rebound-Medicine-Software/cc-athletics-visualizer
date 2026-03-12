@@ -775,10 +775,15 @@ serve(async (req) => {
       yPos += 16
 
       // ===== SINGLE-LEG COMPARISON PAGE =====
-      const isSingleLegTest = testName.startsWith('Single Leg')
+      const isSingleLegTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
       if (isSingleLegTest) {
-        const leftRecords = group.records.filter((r: any) => r.leg_stance === 'left_leg')
-        const rightRecords = group.records.filter((r: any) => r.leg_stance === 'right_leg')
+        // Find the paired test (Left Side ↔ Right Side)
+        const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+        const pairedTestName = testName.startsWith('Left Side') ? `Right Side ${baseExercise}` : `Left Side ${baseExercise}`
+        const pairedGroup = groupedTests.find((g: any) => g.testName === pairedTestName)
+        const allRecords = [...group.records, ...(pairedGroup?.records || [])]
+        const leftRecords = allRecords.filter((r: any) => r.leg_stance === 'left_leg')
+        const rightRecords = allRecords.filter((r: any) => r.leg_stance === 'right_leg')
         const slCardConfigs = getCardConfigs(testName)
         const slPrimaryConfig = slCardConfigs[0]
 
