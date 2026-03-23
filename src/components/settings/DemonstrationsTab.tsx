@@ -52,20 +52,35 @@ export const DemonstrationsTab = () => {
     setEditForm(video);
   };
 
-  const isEmbeddableVideoUrl = (url: string): boolean => {
-    if (!url.trim()) return true; // allow empty
-    // YouTube
-    if (/(?:youtube\.com\/(?:watch|shorts|embed)|youtu\.be\/)/.test(url)) return true;
-    // Vimeo
-    if (/vimeo\.com\//.test(url)) return true;
-    // Direct video files
-    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return true;
-    return false;
+  const normalizeVideoInput = (input: string): string => {
+    const trimmed = input.trim();
+
+    const unwrapped = trimmed
+      .replace(/^['"`]+|['"`]+$/g, "")
+      .replace(/\"/g, '"')
+      .replace(/\'/g, "'")
+      .trim();
+
+    const iframeMatch = unwrapped.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    if (iframeMatch?.[1]) {
+      return iframeMatch[1].trim();
+    }
+
+    const urlMatch = unwrapped.match(/https?:\/\/[^\s"'<>]+/i);
+    if (urlMatch?.[0]) {
+      return urlMatch[0].trim();
+    }
+
+    return unwrapped;
   };
 
-  const extractUrlFromIframe = (input: string): string => {
-    const match = input.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-    return match ? match[1] : input.trim();
+  const isEmbeddableVideoUrl = (url: string): boolean => {
+    const normalizedUrl = normalizeVideoInput(url);
+    if (!normalizedUrl) return true;
+    if (/(?:youtube\.com\/(?:watch|shorts|embed)|youtu\.be\/)/i.test(normalizedUrl)) return true;
+    if (/vimeo\.com\//i.test(normalizedUrl)) return true;
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(normalizedUrl)) return true;
+    return false;
   };
 
   const handleSave = async () => {
@@ -74,15 +89,13 @@ export const DemonstrationsTab = () => {
       return;
     }
 
-    // Auto-extract URL from pasted iframe embed codes
-    let videoUrl = editForm.video_url ? extractUrlFromIframe(editForm.video_url) : editForm.video_url;
-    
+    const videoUrl = editForm.video_url ? normalizeVideoInput(editForm.video_url) : editForm.video_url;
+
     if (videoUrl && !isEmbeddableVideoUrl(videoUrl)) {
-      toast.error("Please enter a valid embeddable video URL (YouTube, Vimeo, or direct video file .mp4/.webm/.ogg/.mov)");
+      toast.error("Please enter a valid embeddable video URL (YouTube, Vimeo, iframe embed code, or direct video file .mp4/.webm/.ogg/.mov)");
       return;
     }
-    
-    // Use the cleaned URL
+
     const cleanedForm = { ...editForm, video_url: videoUrl };
 
     try {
