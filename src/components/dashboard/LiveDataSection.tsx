@@ -32,6 +32,30 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [filterSport, setFilterSport] = useState<string>("");
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
   const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+  const [exerciseConfigs, setExerciseConfigs] = useState<{ id: string; test_name: string; metrics: string[] }[]>([]);
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
+    const stored = localStorage.getItem('hiddenCMJColumns');
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  // Fetch exercise configs and listen for hidden column changes
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      const { data, error } = await supabase
+        .from('elite_exercise_configs')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (!error && data) setExerciseConfigs(data);
+    };
+    fetchConfigs();
+
+    const handleHiddenUpdate = () => {
+      const stored = localStorage.getItem('hiddenCMJColumns');
+      setHiddenCMJColumns(stored ? JSON.parse(stored) : []);
+    };
+    window.addEventListener('hiddenColumnsUpdated', handleHiddenUpdate);
+    return () => window.removeEventListener('hiddenColumnsUpdated', handleHiddenUpdate);
+  }, []);
 
   // Cascading filter options derived from Elite Athlete Data
   const eliteFilterOptions = useMemo(() => {
