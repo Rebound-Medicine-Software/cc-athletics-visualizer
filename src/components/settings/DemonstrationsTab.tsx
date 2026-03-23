@@ -91,10 +91,10 @@ export const DemonstrationsTab = () => {
         const { error } = await supabase
           .from('exercise_videos')
           .update({
-            test_name: editForm.test_name,
-            video_url: editForm.video_url,
-            Purpose: editForm.Purpose,
-            Procedure: editForm.Procedure,
+            test_name: cleanedForm.test_name,
+            video_url: cleanedForm.video_url,
+            Purpose: cleanedForm.Purpose,
+            Procedure: cleanedForm.Procedure,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingId);
@@ -106,10 +106,10 @@ export const DemonstrationsTab = () => {
         const { error } = await supabase
           .from('exercise_videos')
           .insert({
-            test_name: editForm.test_name,
-            video_url: editForm.video_url,
-            Purpose: editForm.Purpose,
-            Procedure: editForm.Procedure
+            test_name: cleanedForm.test_name,
+            video_url: cleanedForm.video_url,
+            Purpose: cleanedForm.Purpose,
+            Procedure: cleanedForm.Procedure
           });
 
         if (error) throw error;
