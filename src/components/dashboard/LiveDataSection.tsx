@@ -566,7 +566,11 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
 
       {/* Comparative Percentile Chart */}
       {filteredEliteData.length > 0 && (filterSport || filterAgeGroup || filterWeightCategory) && (() => {
-        // Map selected metric to elite data column
+        // Build the dynamic_metrics key based on current test + metric
+        const metricDisplayName2 = getMetricDisplayName(selectedMetricType);
+        const dynamicMetricKey = `${currentTestName}-${metricDisplayName2}`;
+        
+        // Map selected metric to static elite data columns (fallback)
         const metricToEliteColumn: Record<string, string> = {
           'jump_height_ft': 'CMJ Jump Height (cm)',
           'peak_power': 'CMJ Peak Power (W)',
@@ -576,33 +580,33 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         
         const eliteColumn = metricToEliteColumn[selectedMetricType];
         
-        // Calculate elite benchmark (average of filtered elite athletes for this metric)
+        // Calculate elite benchmark — prioritize dynamic_metrics over static columns
         let eliteBenchmark = 0;
-        if (eliteColumn) {
+        
+        // First: try dynamic_metrics (user-entered data)
+        const dynamicValues = filteredEliteData
+          .map(d => {
+            const dm = (d as any).dynamic_metrics;
+            if (!dm || typeof dm !== 'object') return 0;
+            // Exact key match first
+            if (dm[dynamicMetricKey] !== undefined) return Number(dm[dynamicMetricKey]);
+            // Fallback: try matching keys loosely
+            for (const key of Object.keys(dm)) {
+              if (key === dynamicMetricKey) return Number(dm[key]);
+            }
+            return 0;
+          })
+          .filter(v => v > 0 && !isNaN(v));
+        
+        if (dynamicValues.length > 0) {
+          eliteBenchmark = dynamicValues.reduce((a, b) => a + b, 0) / dynamicValues.length;
+        } else if (eliteColumn) {
+          // Fallback: use static column
           const eliteValues = filteredEliteData
             .map(d => Number((d as any)[eliteColumn]))
             .filter(v => v > 0 && !isNaN(v));
           if (eliteValues.length > 0) {
             eliteBenchmark = eliteValues.reduce((a, b) => a + b, 0) / eliteValues.length;
-          }
-        } else {
-          // Try dynamic metrics
-          const metricDisplayForDynamic = getMetricDisplayName(selectedMetricType);
-          const dynamicValues = filteredEliteData
-            .map(d => {
-              const dm = (d as any).dynamic_metrics;
-              if (!dm) return 0;
-              // Try various key patterns
-              for (const key of Object.keys(dm)) {
-                if (key.toLowerCase().includes(metricDisplayForDynamic.toLowerCase().split(' ')[0].toLowerCase())) {
-                  return Number(dm[key]);
-                }
-              }
-              return 0;
-            })
-            .filter(v => v > 0 && !isNaN(v));
-          if (dynamicValues.length > 0) {
-            eliteBenchmark = dynamicValues.reduce((a, b) => a + b, 0) / dynamicValues.length;
           }
         }
 
