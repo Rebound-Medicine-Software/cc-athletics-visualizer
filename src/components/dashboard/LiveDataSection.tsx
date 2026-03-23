@@ -32,6 +32,30 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [filterSport, setFilterSport] = useState<string>("");
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
   const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+  const [exerciseConfigs, setExerciseConfigs] = useState<{ id: string; test_name: string; metrics: string[] }[]>([]);
+  const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
+    const stored = localStorage.getItem('hiddenCMJColumns');
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  // Fetch exercise configs and listen for hidden column changes
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      const { data, error } = await supabase
+        .from('elite_exercise_configs')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (!error && data) setExerciseConfigs(data);
+    };
+    fetchConfigs();
+
+    const handleHiddenUpdate = () => {
+      const stored = localStorage.getItem('hiddenCMJColumns');
+      setHiddenCMJColumns(stored ? JSON.parse(stored) : []);
+    };
+    window.addEventListener('hiddenColumnsUpdated', handleHiddenUpdate);
+    return () => window.removeEventListener('hiddenColumnsUpdated', handleHiddenUpdate);
+  }, []);
 
   // Cascading filter options derived from Elite Athlete Data
   const eliteFilterOptions = useMemo(() => {
@@ -542,29 +566,49 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-background">
                   <tr className="border-b">
-                    <th className="text-left p-2 font-medium text-muted-foreground">Athlete</th>
-                    <th className="text-left p-2 font-medium text-muted-foreground">Team</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Team Name</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Athlete Name</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Sex</th>
                     <th className="text-left p-2 font-medium text-muted-foreground">Sport</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">CMJ Height (cm)</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">CMJ Power (W)</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">Rel. Power (W/kg)</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">RSI</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">IMTP Peak (N)</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">IMTP Rel. (N/kg)</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Age Group</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Weight Category</th>
+                    {!hiddenCMJColumns.includes('cmj_height') && (
+                      <th className="text-center p-2 font-medium text-muted-foreground">CMJ Height (cm)</th>
+                    )}
+                    {!hiddenCMJColumns.includes('cmj_power') && (
+                      <th className="text-center p-2 font-medium text-muted-foreground">CMJ Power (W)</th>
+                    )}
+                    {exerciseConfigs.map((config) =>
+                      config.metrics.map((metric) => (
+                        <th key={`${config.test_name}-${metric}`} className="text-center p-2 font-medium text-muted-foreground">
+                          {config.test_name} {metric}
+                        </th>
+                      ))
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredEliteData.map((athlete) => (
                     <tr key={athlete.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="p-2 font-medium">{athlete["Athlete Name"]}</td>
-                      <td className="p-2 text-muted-foreground">{athlete["Team Name"]}</td>
+                      <td className="p-2 font-medium">{athlete["Team Name"]}</td>
+                      <td className="p-2">{athlete["Athlete Name"]}</td>
+                      <td className="p-2">{athlete["Sex"]}</td>
                       <td className="p-2">{athlete.Sport}</td>
-                      <td className="text-center p-2">{athlete["CMJ Jump Height (cm)"] ?? "—"}</td>
-                      <td className="text-center p-2">{athlete["CMJ Peak Power (W)"] ?? "—"}</td>
-                      <td className="text-center p-2">{athlete["CMJ Relative Peak Power (W/kg)"] ?? "—"}</td>
-                      <td className="text-center p-2">{athlete["CMJ Reactive Strength Index"] ?? "—"}</td>
-                      <td className="text-center p-2">{athlete["IMTP Peak Force (N)"] ?? "—"}</td>
-                      <td className="text-center p-2">{athlete["IMTP Relative Peak Force (N/kg)"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["Age Group"] || "—"}</td>
+                      <td className="text-center p-2">{athlete["Weight Category (kg)"] || "—"}</td>
+                      {!hiddenCMJColumns.includes('cmj_height') && (
+                        <td className="text-center p-2">{athlete["CMJ Jump Height (cm)"] ?? "—"}</td>
+                      )}
+                      {!hiddenCMJColumns.includes('cmj_power') && (
+                        <td className="text-center p-2">{athlete["CMJ Peak Power (W)"] ?? "—"}</td>
+                      )}
+                      {exerciseConfigs.map((config) =>
+                        config.metrics.map((metric) => (
+                          <td key={`${athlete.id}-${config.test_name}-${metric}`} className="text-center p-2">
+                            {(athlete as any).dynamic_metrics?.[`${config.test_name}-${metric}`] ?? "—"}
+                          </td>
+                        ))
+                      )}
                     </tr>
                   ))}
                 </tbody>
