@@ -50,21 +50,27 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
     fetchVideo();
   }, [testName]);
 
-  // Helper: Converts YouTube link to embed URL
-  function getYoutubeEmbed(url: string) {
-    // Support normal, /watch, and /shorts links
-    if (!url) return "";
-    // Shorts: https://youtube.com/shorts/VIDEO_ID
+  // Helper: Converts video link to embed URL or returns null for direct video
+  function getEmbedInfo(url: string): { type: 'iframe' | 'video'; src: string } | null {
+    if (!url) return null;
+    // YouTube Shorts
     let match = url.match(/(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    // Watch: https://youtube.com/watch?v=VIDEO_ID
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    // YouTube Watch
     match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    // youtu.be/VIDEO_ID
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    // YouTube short URL
     match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-    if (match) return `https://www.youtube.com/embed/${match[1]}`;
-    // Default: try to return the original url (may still fail to embed)
-    return url;
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    // YouTube embed (already)
+    match = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+    if (match) return { type: 'iframe', src: url };
+    // Vimeo
+    match = url.match(/vimeo\.com\/(\d+)/);
+    if (match) return { type: 'iframe', src: `https://player.vimeo.com/video/${match[1]}` };
+    // Direct video file
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return { type: 'video', src: url };
+    return null;
   }
 
   // Helper: Format Procedure with extra spacing after each numbered item (e.g. "1.", "2.", ...)
