@@ -27,6 +27,51 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [isFullscreen, setIsFullscreen] = useState(false);
   const chartCardRef = useRef<HTMLDivElement>(null);
 
+  // Comparative filter state (from Elite Athlete Data)
+  const { data: eliteData } = useEliteAthleteData();
+  const [filterSport, setFilterSport] = useState<string>("");
+  const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
+  const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+
+  // Cascading filter options derived from Elite Athlete Data
+  const eliteFilterOptions = useMemo(() => {
+    if (!eliteData) return { sports: [], ageGroups: [], weightCategories: [] };
+
+    const sports = [...new Set(eliteData.map(d => d.Sport).filter(Boolean))].sort();
+
+    const sportFiltered = filterSport
+      ? eliteData.filter(d => d.Sport === filterSport)
+      : eliteData;
+
+    const ageGroups = [...new Set(
+      sportFiltered
+        .map(d => d["Age Group"])
+        .filter(v => v != null && v !== 0)
+    )].sort((a, b) => a - b);
+
+    const ageFiltered = filterAgeGroup
+      ? sportFiltered.filter(d => String(d["Age Group"]) === filterAgeGroup)
+      : sportFiltered;
+
+    const weightCategories = [...new Set(
+      ageFiltered
+        .map(d => d["Weight Category (kg)"])
+        .filter(v => v != null && v.trim() !== "")
+    )].sort();
+
+    return { sports, ageGroups, weightCategories };
+  }, [eliteData, filterSport, filterAgeGroup]);
+
+  // Filtered elite data based on comparative filters
+  const filteredEliteData = useMemo(() => {
+    if (!eliteData) return [];
+    let filtered = eliteData;
+    if (filterSport) filtered = filtered.filter(d => d.Sport === filterSport);
+    if (filterAgeGroup) filtered = filtered.filter(d => String(d["Age Group"]) === filterAgeGroup);
+    if (filterWeightCategory) filtered = filtered.filter(d => d["Weight Category (kg)"] === filterWeightCategory);
+    return filtered;
+  }, [eliteData, filterSport, filterAgeGroup, filterWeightCategory]);
+
   const toggleFullscreen = () => {
     if (!chartCardRef.current) return;
     
