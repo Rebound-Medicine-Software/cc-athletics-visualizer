@@ -258,22 +258,42 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     return teamMatch && sexMatch && dateMatch;
   });
 
-  // Get best performance per athlete per test type (or most recent)
+  // Get best performance per athlete for their most recent testing date
   const getBestPerformancePerAthlete = () => {
-    const athleteMap: Record<string, TestData> = {};
+    // Step 1: Find the most recent test date per athlete
+    const athleteMostRecentDate: Record<string, string> = {};
     
     filteredData.forEach(test => {
       if (getFullTestName(test.test_name) === currentTestName) {
         const key = `${test.athlete_name}_${test.test_name}`;
-        
-        // Get most recent test for each athlete (instead of best performance)
-        if (!athleteMap[key] || new Date(test.test_date) > new Date(athleteMap[key].test_date)) {
-          athleteMap[key] = test;
+        if (!athleteMostRecentDate[key] || test.test_date > athleteMostRecentDate[key]) {
+          athleteMostRecentDate[key] = test.test_date;
         }
       }
     });
 
-    return Object.values(athleteMap);
+    // Step 2: Among all reps on the most recent date, pick the best value
+    const athleteBestOnDate: Record<string, TestData> = {};
+    
+    filteredData.forEach(test => {
+      if (getFullTestName(test.test_name) !== currentTestName) return;
+      const key = `${test.athlete_name}_${test.test_name}`;
+      if (test.test_date !== athleteMostRecentDate[key]) return;
+
+      if (!athleteBestOnDate[key]) {
+        athleteBestOnDate[key] = test;
+      } else {
+        // Compare using the currently selected metric - pick the higher value
+        const currentMetric = selectedMetricType;
+        const existingVal = (athleteBestOnDate[key].metrics as any)?.[currentMetric];
+        const newVal = (test.metrics as any)?.[currentMetric];
+        if (typeof newVal === 'number' && (typeof existingVal !== 'number' || newVal > existingVal)) {
+          athleteBestOnDate[key] = test;
+        }
+      }
+    });
+
+    return Object.values(athleteBestOnDate);
   };
 
   // Fetch athlete avatars
