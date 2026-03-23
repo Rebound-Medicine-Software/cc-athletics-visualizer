@@ -564,79 +564,155 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         </div>
       </div>
 
-      {/* Comparative Elite Data Display */}
-      {filteredEliteData.length > 0 && (filterSport || filterAgeGroup || filterWeightCategory) && (
-        <Card 
-          className="border-2"
-          style={{ borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))' }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <span style={{ color: branding?.secondary_color || 'hsl(var(--foreground))' }}>
-                Elite Comparison Data
-                {filterSport && <Badge variant="secondary" className="ml-2">{filterSport}</Badge>}
-                {filterAgeGroup && <Badge variant="secondary" className="ml-1">Age: {filterAgeGroup}</Badge>}
-                {filterWeightCategory && <Badge variant="secondary" className="ml-1">{filterWeightCategory}</Badge>}
-              </span>
-              <span className="text-xs text-muted-foreground">{filteredEliteData.length} athletes</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-background">
-                  <tr className="border-b">
-                    <th className="text-left p-2 font-medium text-muted-foreground">Team Name</th>
-                    <th className="text-left p-2 font-medium text-muted-foreground">Athlete Name</th>
-                    <th className="text-left p-2 font-medium text-muted-foreground">Sex</th>
-                    <th className="text-left p-2 font-medium text-muted-foreground">Sport</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">Age Group</th>
-                    <th className="text-center p-2 font-medium text-muted-foreground">Weight Category</th>
-                    {!hiddenCMJColumns.includes('cmj_height') && (
-                      <th className="text-center p-2 font-medium text-muted-foreground">CMJ Height (cm)</th>
-                    )}
-                    {!hiddenCMJColumns.includes('cmj_power') && (
-                      <th className="text-center p-2 font-medium text-muted-foreground">CMJ Power (W)</th>
-                    )}
-                    {exerciseConfigs.map((config) =>
-                      config.metrics.map((metric) => (
-                        <th key={`${config.test_name}-${metric}`} className="text-center p-2 font-medium text-muted-foreground">
-                          {config.test_name} {metric}
-                        </th>
-                      ))
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEliteData.map((athlete) => (
-                    <tr key={athlete.id} className="border-b border-border/50 hover:bg-muted/30">
-                      <td className="p-2 font-medium">{athlete["Team Name"]}</td>
-                      <td className="p-2">{athlete["Athlete Name"]}</td>
-                      <td className="p-2">{athlete["Sex"]}</td>
-                      <td className="p-2">{athlete.Sport}</td>
-                      <td className="text-center p-2">{athlete["Age Group"] || "—"}</td>
-                      <td className="text-center p-2">{athlete["Weight Category (kg)"] || "—"}</td>
-                      {!hiddenCMJColumns.includes('cmj_height') && (
-                        <td className="text-center p-2">{athlete["CMJ Jump Height (cm)"] ?? "—"}</td>
-                      )}
-                      {!hiddenCMJColumns.includes('cmj_power') && (
-                        <td className="text-center p-2">{athlete["CMJ Peak Power (W)"] ?? "—"}</td>
-                      )}
-                      {exerciseConfigs.map((config) =>
-                        config.metrics.map((metric) => (
-                          <td key={`${athlete.id}-${config.test_name}-${metric}`} className="text-center p-2">
-                            {(athlete as any).dynamic_metrics?.[`${config.test_name}-${metric}`] ?? "—"}
-                          </td>
-                        ))
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Comparative Percentile Chart */}
+      {filteredEliteData.length > 0 && (filterSport || filterAgeGroup || filterWeightCategory) && (() => {
+        // Map selected metric to elite data column
+        const metricToEliteColumn: Record<string, string> = {
+          'jump_height_ft': 'CMJ Jump Height (cm)',
+          'peak_power': 'CMJ Peak Power (W)',
+          'relative_peak_power': 'CMJ Relative Peak Power (W/kg)',
+          'rsi': 'CMJ Reactive Strength Index',
+        };
+        
+        const eliteColumn = metricToEliteColumn[selectedMetricType];
+        
+        // Calculate elite benchmark (average of filtered elite athletes for this metric)
+        let eliteBenchmark = 0;
+        if (eliteColumn) {
+          const eliteValues = filteredEliteData
+            .map(d => Number((d as any)[eliteColumn]))
+            .filter(v => v > 0 && !isNaN(v));
+          if (eliteValues.length > 0) {
+            eliteBenchmark = eliteValues.reduce((a, b) => a + b, 0) / eliteValues.length;
+          }
+        } else {
+          // Try dynamic metrics
+          const metricDisplayForDynamic = getMetricDisplayName(selectedMetricType);
+          const dynamicValues = filteredEliteData
+            .map(d => {
+              const dm = (d as any).dynamic_metrics;
+              if (!dm) return 0;
+              // Try various key patterns
+              for (const key of Object.keys(dm)) {
+                if (key.toLowerCase().includes(metricDisplayForDynamic.toLowerCase().split(' ')[0].toLowerCase())) {
+                  return Number(dm[key]);
+                }
+              }
+              return 0;
+            })
+            .filter(v => v > 0 && !isNaN(v));
+          if (dynamicValues.length > 0) {
+            eliteBenchmark = dynamicValues.reduce((a, b) => a + b, 0) / dynamicValues.length;
+          }
+        }
+
+        if (eliteBenchmark <= 0 || chartData.length === 0) return null;
+
+        // Build percentile data for each live athlete
+        const percentileData = chartData.map(athlete => {
+          const percentage = (athlete.value / eliteBenchmark) * 100;
+          let band: string;
+          let color: string;
+          if (percentage >= 90) {
+            band = 'Elite (90%+)';
+            color = '#22c55e'; // green
+          } else if (percentage >= 75) {
+            band = 'Good (75-90%)';
+            color = '#eab308'; // yellow
+          } else {
+            band = 'Below (<75%)';
+            color = '#ef4444'; // red
+          }
+          return {
+            name: athlete.name,
+            fullName: athlete.fullName,
+            percentage: Math.round(percentage * 10) / 10,
+            value: athlete.value,
+            band,
+            color,
+            avatarUrl: athlete.avatarUrl,
+          };
+        });
+
+        return (
+          <Card
+            className="border-2"
+            style={{ borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))' }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span style={{ color: branding?.secondary_color || 'hsl(var(--foreground))' }}>
+                  Athlete vs Elite Benchmark — {getMetricDisplayName(selectedMetricType)}
+                  {filterSport && <Badge variant="secondary" className="ml-2">{filterSport}</Badge>}
+                  {filterAgeGroup && <Badge variant="secondary" className="ml-1">Age: {filterAgeGroup}</Badge>}
+                  {filterWeightCategory && <Badge variant="secondary" className="ml-1">{filterWeightCategory}</Badge>}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Elite Avg: {eliteBenchmark.toFixed(1)}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Legend */}
+              <div className="flex gap-4 mb-4 items-center justify-center text-xs">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ background: '#22c55e' }} /> Elite (90%+)</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ background: '#eab308' }} /> Good (75-90%)</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded" style={{ background: '#ef4444' }} /> Below (&lt;75%)</span>
+              </div>
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={percentileData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                    barCategoryGap="20%"
+                  >
+                    <ReferenceArea y1={90} y2={Math.max(100, ...percentileData.map(d => d.percentage))} fill="#22c55e" fillOpacity={0.1} stroke="none" />
+                    <ReferenceArea y1={75} y2={90} fill="#eab308" fillOpacity={0.1} stroke="none" />
+                    <ReferenceArea y1={0} y2={75} fill="#ef4444" fillOpacity={0.08} stroke="none" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={65}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 13 }}
+                      domain={[0, (dataMax: number) => Math.max(110, Math.ceil(dataMax / 10) * 10 + 10)]}
+                      label={{
+                        value: '% of Elite Benchmark',
+                        angle: -90,
+                        position: 'insideLeft',
+                        style: { textAnchor: 'middle', fontSize: 13 },
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(0,0,0,0.05)' }}
+                      contentStyle={{ borderRadius: 8, backgroundColor: '#fff', border: `2px solid ${branding?.primary_color || 'hsl(var(--border))'}` }}
+                      formatter={(value: any, name: any, props: any) => [
+                        `${props.payload.percentage}% (${props.payload.value.toFixed(2)})`,
+                        props.payload.band,
+                      ]}
+                      labelFormatter={(label: any, payload: any) => payload?.[0]?.payload?.fullName || label}
+                    />
+                    <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
+                      {percentileData.map((entry, index) => (
+                        <Cell key={`pct-${index}`} fill={entry.color} />
+                      ))}
+                      <LabelList
+                        dataKey="percentage"
+                        position="top"
+                        formatter={(v: number) => `${v}%`}
+                        style={{ fontSize: 11, fontWeight: 600, fill: '#374151' }}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
