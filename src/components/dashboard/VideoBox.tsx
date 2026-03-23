@@ -21,6 +21,13 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
   const [procedure, setProcedure] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Derive the base exercise name by stripping "Left Side " or "Right Side " prefix
+  const getBaseTestName = (name: string): string => {
+    if (name.startsWith("Left Side ")) return name.replace("Left Side ", "");
+    if (name.startsWith("Right Side ")) return name.replace("Right Side ", "");
+    return name;
+  };
+
   useEffect(() => {
     async function fetchVideo() {
       setVideoLink(null);
@@ -29,10 +36,13 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
       if (!testName) return;
       setIsLoading(true);
 
-      const { data, error } = await supabase
+      const baseTestName = getBaseTestName(testName);
+
+      // Try the base exercise name first (handles both exact and derived matches)
+      const { data } = await supabase
         .from("exercise_videos")
         .select("video_url,Purpose,Procedure")
-        .eq("test_name", testName)
+        .eq("test_name", baseTestName)
         .maybeSingle();
 
       if (data) {
