@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell, LabelList } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { Activity, Users, Target, TrendingUp, Clock, Maximize2, Minimize2 } from "lucide-react";
+import { Activity, Users, Target, TrendingUp, Clock, Maximize2, Minimize2, Filter } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { getMetricTypesForTest } from "./filters/filterUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEliteAthleteData } from "@/hooks/useEliteAthleteData";
 
 interface LiveDataSectionProps {
   data: TestData[];
@@ -25,6 +26,51 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [athleteAvatars, setAthleteAvatars] = useState<Record<string, string>>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
   const chartCardRef = useRef<HTMLDivElement>(null);
+
+  // Comparative filter state (from Elite Athlete Data)
+  const { data: eliteData } = useEliteAthleteData();
+  const [filterSport, setFilterSport] = useState<string>("");
+  const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
+  const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+
+  // Cascading filter options derived from Elite Athlete Data
+  const eliteFilterOptions = useMemo(() => {
+    if (!eliteData) return { sports: [], ageGroups: [], weightCategories: [] };
+
+    const sports = [...new Set(eliteData.map(d => d.Sport).filter(Boolean))].sort();
+
+    const sportFiltered = filterSport
+      ? eliteData.filter(d => d.Sport === filterSport)
+      : eliteData;
+
+    const ageGroups = [...new Set(
+      sportFiltered
+        .map(d => d["Age Group"])
+        .filter(v => v != null && v !== 0)
+    )].sort((a, b) => a - b);
+
+    const ageFiltered = filterAgeGroup
+      ? sportFiltered.filter(d => String(d["Age Group"]) === filterAgeGroup)
+      : sportFiltered;
+
+    const weightCategories = [...new Set(
+      ageFiltered
+        .map(d => d["Weight Category (kg)"])
+        .filter(v => v != null && v.trim() !== "")
+    )].sort();
+
+    return { sports, ageGroups, weightCategories };
+  }, [eliteData, filterSport, filterAgeGroup]);
+
+  // Filtered elite data based on comparative filters
+  const filteredEliteData = useMemo(() => {
+    if (!eliteData) return [];
+    let filtered = eliteData;
+    if (filterSport) filtered = filtered.filter(d => d.Sport === filterSport);
+    if (filterAgeGroup) filtered = filtered.filter(d => String(d["Age Group"]) === filterAgeGroup);
+    if (filterWeightCategory) filtered = filtered.filter(d => d["Weight Category (kg)"] === filterWeightCategory);
+    return filtered;
+  }, [eliteData, filterSport, filterAgeGroup, filterWeightCategory]);
 
   const toggleFullscreen = () => {
     if (!chartCardRef.current) return;
@@ -373,51 +419,160 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 justify-end">
-        <Select value={selectedSex} onValueChange={setSelectedSex}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Sex" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All</SelectItem>
-            {availableSex.map(sex => (
-              <SelectItem key={sex} value={sex}>
-                {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
-        <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="Metric Type" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableMetrics.map(metric => {
-              const metricValue = (() => {
-                switch(metric) {
-                  case "Jump Height (cm)": return "jump_height_ft";
-                  case "Peak Power": return "peak_power";
-                  case "Relative Peak Power": return "relative_peak_power";
-                  case "Contact Time": return "contact_time";
-                  case "Reactive Strength Index": return "rsi";
-                  case "Flight Time": return "flight_time";
-                  case "Power": return "peak_power";
-                  case "Take-off Velocity": return "peak_velocity";
-                  case "Average Rate of Force Development": return "avg_rfd";
-                  case "Average Propulsive Power": return "avg_propulsive_power";
-                  default: return "jump_height_ft";
-                }
-              })();
-              return (
-                <SelectItem key={metricValue} value={metricValue}>
-                  {metric}
+      <div className="flex flex-wrap gap-4 items-end">
+        {/* Comparative Data Filters */}
+        <div className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-muted/50 flex-1">
+          <div className="flex items-center gap-2 mr-1">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comparative</span>
+          </div>
+          <div className="min-w-[140px]">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
+            <Select value={filterSport} onValueChange={(v) => { setFilterSport(v); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="All Sports" />
+              </SelectTrigger>
+              <SelectContent>
+                {eliteFilterOptions.sports.map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[120px]">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Age Group</label>
+            <Select value={filterAgeGroup} onValueChange={(v) => { setFilterAgeGroup(v); setFilterWeightCategory(""); }} disabled={eliteFilterOptions.ageGroups.length === 0}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="All Ages" />
+              </SelectTrigger>
+              <SelectContent>
+                {eliteFilterOptions.ageGroups.map(a => (
+                  <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[140px]">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Weight Category</label>
+            <Select value={filterWeightCategory} onValueChange={setFilterWeightCategory} disabled={eliteFilterOptions.weightCategories.length === 0}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="All Weights" />
+              </SelectTrigger>
+              <SelectContent>
+                {eliteFilterOptions.weightCategories.map(w => (
+                  <SelectItem key={w} value={w}>{w}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(filterSport || filterAgeGroup || filterWeightCategory) && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterSport(""); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Existing filters */}
+        <div className="flex gap-3">
+          <Select value={selectedSex} onValueChange={setSelectedSex}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Sex" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {availableSex.map(sex => (
+                <SelectItem key={sex} value={sex}>
+                  {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
                 </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Metric Type" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableMetrics.map(metric => {
+                const metricValue = (() => {
+                  switch(metric) {
+                    case "Jump Height (cm)": return "jump_height_ft";
+                    case "Peak Power": return "peak_power";
+                    case "Relative Peak Power": return "relative_peak_power";
+                    case "Contact Time": return "contact_time";
+                    case "Reactive Strength Index": return "rsi";
+                    case "Flight Time": return "flight_time";
+                    case "Power": return "peak_power";
+                    case "Take-off Velocity": return "peak_velocity";
+                    case "Average Rate of Force Development": return "avg_rfd";
+                    case "Average Propulsive Power": return "avg_propulsive_power";
+                    default: return "jump_height_ft";
+                  }
+                })();
+                return (
+                  <SelectItem key={metricValue} value={metricValue}>
+                    {metric}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      {/* Comparative Elite Data Display */}
+      {filteredEliteData.length > 0 && (filterSport || filterAgeGroup || filterWeightCategory) && (
+        <Card 
+          className="border-2"
+          style={{ borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))' }}
+        >
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center justify-between">
+              <span style={{ color: branding?.secondary_color || 'hsl(var(--foreground))' }}>
+                Elite Comparison Data
+                {filterSport && <Badge variant="secondary" className="ml-2">{filterSport}</Badge>}
+                {filterAgeGroup && <Badge variant="secondary" className="ml-1">Age: {filterAgeGroup}</Badge>}
+                {filterWeightCategory && <Badge variant="secondary" className="ml-1">{filterWeightCategory}</Badge>}
+              </span>
+              <span className="text-xs text-muted-foreground">{filteredEliteData.length} athletes</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-background">
+                  <tr className="border-b">
+                    <th className="text-left p-2 font-medium text-muted-foreground">Athlete</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Team</th>
+                    <th className="text-left p-2 font-medium text-muted-foreground">Sport</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">CMJ Height (cm)</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">CMJ Power (W)</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">Rel. Power (W/kg)</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">RSI</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">IMTP Peak (N)</th>
+                    <th className="text-center p-2 font-medium text-muted-foreground">IMTP Rel. (N/kg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEliteData.map((athlete) => (
+                    <tr key={athlete.id} className="border-b border-border/50 hover:bg-muted/30">
+                      <td className="p-2 font-medium">{athlete["Athlete Name"]}</td>
+                      <td className="p-2 text-muted-foreground">{athlete["Team Name"]}</td>
+                      <td className="p-2">{athlete.Sport}</td>
+                      <td className="text-center p-2">{athlete["CMJ Jump Height (cm)"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["CMJ Peak Power (W)"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["CMJ Relative Peak Power (W/kg)"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["CMJ Reactive Strength Index"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["IMTP Peak Force (N)"] ?? "—"}</td>
+                      <td className="text-center p-2">{athlete["IMTP Relative Peak Force (N/kg)"] ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
