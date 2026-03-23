@@ -721,7 +721,7 @@ export const EliteAthleteDataTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {eliteData.map((athlete) => (
+            {filteredEliteData.map((athlete) => (
               <TableRow key={athlete.id}>
                 {editingId === athlete.id ? (
                   <>
