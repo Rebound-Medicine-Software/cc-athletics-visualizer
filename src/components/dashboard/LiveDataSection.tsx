@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, ReferenceArea, Cell, LabelList } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { Activity, Users, Target, TrendingUp, Clock, Maximize2, Minimize2 } from "lucide-react";
+import { Activity, Users, Target, TrendingUp, Clock, Maximize2, Minimize2, Filter } from "lucide-react";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 import { getMetricTypesForTest } from "./filters/filterUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useEliteAthleteData } from "@/hooks/useEliteAthleteData";
 
 interface LiveDataSectionProps {
   data: TestData[];
