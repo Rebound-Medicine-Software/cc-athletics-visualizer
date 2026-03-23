@@ -768,11 +768,9 @@ export const EliteAthleteDataTable = () => {
         </Table>
       </div>
 
-      {filteredEliteData.length === 0 && (
+      {eliteData.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          {eliteData.length === 0
-            ? 'No elite athlete data found. Click "Add Elite Athlete" to create one.'
-            : 'No athletes match the selected filters.'}
+          No elite athlete data found. Click "Add Elite Athlete" to create one.
         </div>
       )}
     </div>
