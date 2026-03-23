@@ -387,6 +387,59 @@ export const EliteAthleteDataTable = () => {
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Elite Athlete Data</h3>
         <div className="flex gap-2">
+
+      {/* Comparative Data Filters */}
+      <div className="flex flex-wrap items-end gap-3 p-4 rounded-lg border bg-muted/50">
+        <div className="flex items-center gap-2 mr-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">Comparative Filters</span>
+        </div>
+        <div className="min-w-[160px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
+          <Select value={filterSport} onValueChange={(v) => { setFilterSport(v); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+            <SelectTrigger className="bg-background">
+              <SelectValue placeholder="All Sports" />
+            </SelectTrigger>
+            <SelectContent>
+              {filterOptions.sports.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-[140px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Age Group</label>
+          <Select value={filterAgeGroup} onValueChange={(v) => { setFilterAgeGroup(v); setFilterWeightCategory(""); }} disabled={filterOptions.ageGroups.length === 0}>
+            <SelectTrigger className="bg-background">
+              <SelectValue placeholder="All Ages" />
+            </SelectTrigger>
+            <SelectContent>
+              {filterOptions.ageGroups.map(a => (
+                <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-[160px]">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">Weight Category</label>
+          <Select value={filterWeightCategory} onValueChange={setFilterWeightCategory} disabled={filterOptions.weightCategories.length === 0}>
+            <SelectTrigger className="bg-background">
+              <SelectValue placeholder="All Weights" />
+            </SelectTrigger>
+            <SelectContent>
+              {filterOptions.weightCategories.map(w => (
+                <SelectItem key={w} value={w}>{w}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {(filterSport || filterAgeGroup || filterWeightCategory) && (
+          <Button variant="ghost" size="sm" onClick={() => { setFilterSport(""); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+            Clear
+          </Button>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">{filteredEliteData.length} of {eliteData.length} athletes</span>
+      </div>
           <Button onClick={() => setIsAddingExercise(true)} disabled={isAddingExercise || isAdding || !!editingId} variant="outline">
             <Plus className="w-4 h-4 mr-2" />
             Add New Exercise
