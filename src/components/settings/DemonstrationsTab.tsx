@@ -63,16 +63,27 @@ export const DemonstrationsTab = () => {
     return false;
   };
 
+  const extractUrlFromIframe = (input: string): string => {
+    const match = input.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    return match ? match[1] : input.trim();
+  };
+
   const handleSave = async () => {
     if (!editForm.test_name?.trim()) {
       toast.error("Test name is required");
       return;
     }
 
-    if (editForm.video_url && !isEmbeddableVideoUrl(editForm.video_url)) {
+    // Auto-extract URL from pasted iframe embed codes
+    let videoUrl = editForm.video_url ? extractUrlFromIframe(editForm.video_url) : editForm.video_url;
+    
+    if (videoUrl && !isEmbeddableVideoUrl(videoUrl)) {
       toast.error("Please enter a valid embeddable video URL (YouTube, Vimeo, or direct video file .mp4/.webm/.ogg/.mov)");
       return;
     }
+    
+    // Use the cleaned URL
+    const cleanedForm = { ...editForm, video_url: videoUrl };
 
     try {
       if (editingId) {
@@ -80,10 +91,10 @@ export const DemonstrationsTab = () => {
         const { error } = await supabase
           .from('exercise_videos')
           .update({
-            test_name: editForm.test_name,
-            video_url: editForm.video_url,
-            Purpose: editForm.Purpose,
-            Procedure: editForm.Procedure,
+            test_name: cleanedForm.test_name,
+            video_url: cleanedForm.video_url,
+            Purpose: cleanedForm.Purpose,
+            Procedure: cleanedForm.Procedure,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingId);
@@ -95,10 +106,10 @@ export const DemonstrationsTab = () => {
         const { error } = await supabase
           .from('exercise_videos')
           .insert({
-            test_name: editForm.test_name,
-            video_url: editForm.video_url,
-            Purpose: editForm.Purpose,
-            Procedure: editForm.Procedure
+            test_name: cleanedForm.test_name,
+            video_url: cleanedForm.video_url,
+            Purpose: cleanedForm.Purpose,
+            Procedure: cleanedForm.Procedure
           });
 
         if (error) throw error;
