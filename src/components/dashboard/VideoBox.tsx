@@ -116,16 +116,24 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
           <div className="flex items-center justify-center h-56 w-full">
             <span className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></span>
           </div>
-        ) : videoLink ? (
+        ) : videoLink && getEmbedInfo(videoLink) ? (
           <div className="w-full flex-1 overflow-y-auto">
             <div className="aspect-video mb-2">
-              <iframe
-                title="Test Instructional Video"
-                className="w-full h-full rounded-lg"
-                src={getYoutubeEmbed(videoLink)}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+              {getEmbedInfo(videoLink)!.type === 'iframe' ? (
+                <iframe
+                  title="Test Instructional Video"
+                  className="w-full h-full rounded-lg"
+                  src={getEmbedInfo(videoLink)!.src}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  className="w-full h-full rounded-lg"
+                  src={getEmbedInfo(videoLink)!.src}
+                  controls
+                />
+              )}
             </div>
             {/* Purpose & Procedure sections */}
             {purpose && (
