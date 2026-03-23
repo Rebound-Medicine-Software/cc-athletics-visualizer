@@ -81,47 +81,6 @@ export const EliteAthleteDataTable = () => {
     return stored ? JSON.parse(stored) : [];
   });
 
-  // Comparative filter state
-  const [filterSport, setFilterSport] = useState<string>("");
-  const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
-  const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
-
-  // Derive filter options from data
-  const filterOptions = useMemo(() => {
-    const sports = [...new Set(eliteData.map(d => d.Sport).filter(Boolean))].sort();
-
-    const sportFiltered = filterSport
-      ? eliteData.filter(d => d.Sport === filterSport)
-      : eliteData;
-
-    const ageGroups = [...new Set(
-      sportFiltered
-        .map(d => d["Age Group"])
-        .filter(v => v != null && v !== 0)
-    )].sort((a, b) => a - b);
-
-    const ageFiltered = filterAgeGroup
-      ? sportFiltered.filter(d => String(d["Age Group"]) === filterAgeGroup)
-      : sportFiltered;
-
-    const weightCategories = [...new Set(
-      ageFiltered
-        .map(d => d["Weight Category (kg)"])
-        .filter(v => v != null && v.trim() !== "")
-    )].sort();
-
-    return { sports, ageGroups, weightCategories };
-  }, [eliteData, filterSport, filterAgeGroup]);
-
-  // Filtered data for display
-  const filteredEliteData = useMemo(() => {
-    let filtered = eliteData;
-    if (filterSport) filtered = filtered.filter(d => d.Sport === filterSport);
-    if (filterAgeGroup) filtered = filtered.filter(d => String(d["Age Group"]) === filterAgeGroup);
-    if (filterWeightCategory) filtered = filtered.filter(d => d["Weight Category (kg)"] === filterWeightCategory);
-    return filtered;
-  }, [eliteData, filterSport, filterAgeGroup, filterWeightCategory]);
-
   const cmjColumns = [
     { id: 'cmj_height', label: 'CMJ Height (cm)', dbColumn: 'CMJ Jump Height (cm)' },
     { id: 'cmj_power', label: 'CMJ Power (W)', dbColumn: 'CMJ Peak Power (W)' }
