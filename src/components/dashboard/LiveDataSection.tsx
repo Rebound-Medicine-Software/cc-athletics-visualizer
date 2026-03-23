@@ -337,7 +337,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const chartData = bestPerformances.map(test => {
     // Convert internal metric key to display name for metricCaseLogic
     const metricDisplayName = getMetricDisplayNameForLogic(selectedMetricType);
-    const { value } = metricCaseLogic(test, getFullTestName(test.test_name), metricDisplayName);
+    let { value } = metricCaseLogic(test, getFullTestName(test.test_name), metricDisplayName);
+    
+    // Normalize meters to centimeters for jump height metrics (threshold: < 3 means it's in meters)
+    if (value !== null && value > 0 && value < 3 && metricDisplayName.toLowerCase().includes('jump height')) {
+      value = Math.round(value * 1000) / 10; // e.g. 0.44 → 44.0
+    }
     
     console.log('Chart data for athlete:', {
       athlete: test.athlete_name,
