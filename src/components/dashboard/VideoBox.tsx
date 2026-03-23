@@ -80,17 +80,19 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
     const normalizedUrl = normalizeVideoInput(url);
     if (!normalizedUrl) return null;
 
+    const ytParams = '?rel=0&modestbranding=1&showinfo=0&iv_load_policy=3';
+
     let match = normalizedUrl.match(/(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/i);
-    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}${ytParams}` };
 
     match = normalizedUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/i);
-    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}${ytParams}` };
 
     match = normalizedUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/i);
-    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}${ytParams}` };
 
     match = normalizedUrl.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/i);
-    if (match) return { type: 'iframe', src: normalizedUrl };
+    if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}${ytParams}` };
 
     match = normalizedUrl.match(/vimeo\.com\/(\d+)/i);
     if (match) return { type: 'iframe', src: `https://player.vimeo.com/video/${match[1]}` };
