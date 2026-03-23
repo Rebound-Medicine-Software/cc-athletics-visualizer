@@ -52,9 +52,25 @@ export const DemonstrationsTab = () => {
     setEditForm(video);
   };
 
+  const isEmbeddableVideoUrl = (url: string): boolean => {
+    if (!url.trim()) return true; // allow empty
+    // YouTube
+    if (/(?:youtube\.com\/(?:watch|shorts|embed)|youtu\.be\/)/.test(url)) return true;
+    // Vimeo
+    if (/vimeo\.com\//.test(url)) return true;
+    // Direct video files
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return true;
+    return false;
+  };
+
   const handleSave = async () => {
     if (!editForm.test_name?.trim()) {
       toast.error("Test name is required");
+      return;
+    }
+
+    if (editForm.video_url && !isEmbeddableVideoUrl(editForm.video_url)) {
+      toast.error("Please enter a valid embeddable video URL (YouTube, Vimeo, or direct video file .mp4/.webm/.ogg/.mov)");
       return;
     }
 
