@@ -50,26 +50,45 @@ export const VideoBox = ({ testName, branding }: VideoBoxProps) => {
     fetchVideo();
   }, [testName]);
 
+  const normalizeVideoInput = (input: string): string => {
+    const trimmed = input.trim();
+    const unwrapped = trimmed
+      .replace(/^['"`]+|['"`]+$/g, "")
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'")
+      .trim();
+
+    const iframeMatch = unwrapped.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+    if (iframeMatch?.[1]) return iframeMatch[1].trim();
+
+    const urlMatch = unwrapped.match(/https?:\/\/[^\s"'<>]+/i);
+    return (urlMatch?.[0] || unwrapped).trim();
+  };
+
   // Helper: Converts video link to embed URL or returns null for direct video
   function getEmbedInfo(url: string): { type: 'iframe' | 'video'; src: string } | null {
-    if (!url) return null;
-    // YouTube Shorts
-    let match = url.match(/(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/);
+    const normalizedUrl = normalizeVideoInput(url);
+    if (!normalizedUrl) return null;
+
+    let match = normalizedUrl.match(/(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]+)/i);
     if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
-    // YouTube Watch
-    match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+
+    match = normalizedUrl.match(/[?&]v=([a-zA-Z0-9_-]+)/i);
     if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
-    // YouTube short URL
-    match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+
+    match = normalizedUrl.match(/youtu\.be\/([a-zA-Z0-9_-]+)/i);
     if (match) return { type: 'iframe', src: `https://www.youtube.com/embed/${match[1]}` };
-    // YouTube embed (already)
-    match = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
-    if (match) return { type: 'iframe', src: url };
-    // Vimeo
-    match = url.match(/vimeo\.com\/(\d+)/);
+
+    match = normalizedUrl.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/i);
+    if (match) return { type: 'iframe', src: normalizedUrl };
+
+    match = normalizedUrl.match(/vimeo\.com\/(\d+)/i);
     if (match) return { type: 'iframe', src: `https://player.vimeo.com/video/${match[1]}` };
-    // Direct video file
-    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) return { type: 'video', src: url };
+
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(normalizedUrl)) {
+      return { type: 'video', src: normalizedUrl };
+    }
+
     return null;
   }
 
