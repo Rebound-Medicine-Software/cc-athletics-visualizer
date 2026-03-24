@@ -605,15 +605,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         
         if (dynamicValues.length > 0) {
           eliteBenchmark = dynamicValues.reduce((a, b) => a + b, 0) / dynamicValues.length;
-        } else if (eliteColumn) {
-          // Fallback: use static column
-          const eliteValues = filteredEliteData
-            .map(d => Number((d as any)[eliteColumn]))
-            .filter(v => v > 0 && !isNaN(v));
-          if (eliteValues.length > 0) {
-            eliteBenchmark = eliteValues.reduce((a, b) => a + b, 0) / eliteValues.length;
-          }
         }
+        // No fallback to static columns — only dynamic_metrics data is used
 
         if (eliteBenchmark <= 0 || chartData.length === 0) return null;
 
