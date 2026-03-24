@@ -908,13 +908,15 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     backgroundColor: "#fff",
                     border: `2px solid ${branding?.primary_color || 'hsl(var(--border))'}`
                   }}
-                  formatter={(value: any) => [
-                    `${value.toFixed(2)}`,
-                    `${getMetricDisplayName(selectedMetricType)}`
-                  ]}
+                  formatter={(value: any, name: any, props: any) => {
+                    const entry = props?.payload;
+                    if (entry?.isBlurred) return ['***', getMetricDisplayName(selectedMetricType)];
+                    return [`${value.toFixed(2)}`, getMetricDisplayName(selectedMetricType)];
+                  }}
                   labelFormatter={(label: any, payload: any) => {
                     if (payload && payload.length > 0) {
                       const data = payload[0].payload;
+                      if (data?.isBlurred) return 'Anonymous Athlete';
                       return `${data.fullName} (${data.team})`;
                     }
                     return label;
