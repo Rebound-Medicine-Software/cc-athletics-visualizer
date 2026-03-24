@@ -158,7 +158,7 @@ const Dashboard = () => {
             handleLogout={handleLogout}
             onNavigate={handleNavigation}
           />
-          <div className="flex-1 min-w-0 px-4 xl:px-8 2xl:px-12">
+          <div className="flex-1 min-w-0 px-4 xl:px-8 2xl:px-12 pt-6 pb-12">
             <DashboardContent
               data={data || []}
               isLoading={isLoading}

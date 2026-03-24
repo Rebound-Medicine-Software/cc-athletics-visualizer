@@ -29,7 +29,7 @@ export const DashboardHeader = ({
         boxShadow: "0 4px 12px 0 rgba(0,0,0,0.03)",
       }}
     >
-      <div className="w-full px-4 py-4">
+      <div className="w-full px-6 py-5">
         <div className="flex items-center justify-between min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             {teamBranding?.logo_url ? (
