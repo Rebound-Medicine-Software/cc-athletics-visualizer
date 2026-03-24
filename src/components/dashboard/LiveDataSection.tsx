@@ -950,7 +950,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                     content={(props: any) => {
                       const { x, y, width, value, index } = props;
                       const entry = chartDataWithBlur[index];
-                      if (!entry?.avatarUrl || entry.isBlurred) return null;
+                      if (!entry?.avatarUrl) return null;
                       
                       const centerX = x + width / 2;
                       const avatarSize = 40;
@@ -963,10 +963,10 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                             width={avatarSize}
                             height={avatarSize}
                           >
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center justify-center" style={{ filter: entry.isBlurred ? 'blur(5px)' : 'none' }}>
                               <img
                                 src={entry.avatarUrl}
-                                alt={entry.fullName}
+                                alt={entry.isBlurred ? 'Anonymous' : entry.fullName}
                                 className="w-10 h-10 rounded-full border-2 object-cover"
                                 style={{ borderColor: branding?.primary_color || '#374151' }}
                               />
