@@ -213,7 +213,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       // Format the value based on metric type
       const formattedValue = formatMetricValue(avgValue, selectedMetricType);
 
-      console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}, formattedValue=${formattedValue}`);
+      console.log(`Date ${date}: avg=${avgValue}, formattedValue=${formattedValue}`);
 
       return {
         date: formatDate(date),
