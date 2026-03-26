@@ -518,6 +518,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               Clear
             </Button>
           )}
+        </div>
       </div>
 
       {/* Team filters */}
