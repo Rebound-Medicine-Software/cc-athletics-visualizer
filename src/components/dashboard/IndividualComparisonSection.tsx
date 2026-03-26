@@ -138,7 +138,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     ? apiData.filter(d => selectedTeams.includes(d.team_name))
     : apiData;
 
-  const uniqueTestNames = getUniqueTestNames(teamFilteredData);
+  const uniqueTestNames = getUniqueTestNames(teamFilteredData).filter(t => !t.startsWith("Left Side") && !t.startsWith("Right Side"));
   const uniqueAthleteNames = selectedTestName 
     ? getUniqueAthleteNames(teamFilteredData.filter(d => d.test_name === selectedTestName))
     : [];
