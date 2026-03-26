@@ -263,38 +263,49 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     console.log('Filters:', { selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate });
     console.log('Available apiData records:', apiData.length);
 
-    // Find the test record that matches our filters
-    const testRecord = apiData.find(d => 
+    // Find ALL test records that match our filters (all reps for this date)
+    const matchingRecords = apiData.filter(d => 
       d.test_name === selectedTestName && 
       d.athlete_name === selectedAthleteName && 
       d.test_date === selectedTestDate
     );
 
-    console.log('Found test record:', testRecord);
-    if (!testRecord || !testRecord.metrics) {
-      console.log('No matching test record found or no metrics');
+    console.log('Found matching records:', matchingRecords.length);
+    if (matchingRecords.length === 0) {
+      console.log('No matching test records found');
       return null;
     }
 
     let leftValue = 0;
     let rightValue = 0;
 
-    // Access the metrics from TestData
-    const metrics = testRecord.metrics as any;
+    // Average limb values across all repetitions for this date
+    const getLimbAverages = (leftKey: string, rightKey: string) => {
+      let leftSum = 0, rightSum = 0, count = 0;
+      matchingRecords.forEach(record => {
+        const m = record.metrics as any;
+        if (m[leftKey] != null || m[rightKey] != null) {
+          leftSum += (m[leftKey] || 0);
+          rightSum += (m[rightKey] || 0);
+          count++;
+        }
+      });
+      return count > 0 ? { left: leftSum / count, right: rightSum / count } : { left: 0, right: 0 };
+    };
 
     // Apply data logic based on test name and metric type - using exact API metric names
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-      // Case 1: Drop Jump with specific metrics
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Countermovement Jump") {
-      // Case 2: CMJ with any metrics
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Squat Jump") {
-      // Case 3: Squat Jump
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Pogo Jump") {
       // Case 4: Pogo Jump
       leftValue = metrics.avg_fp1_contribution || 0;
