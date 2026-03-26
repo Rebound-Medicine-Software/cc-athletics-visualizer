@@ -475,7 +475,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[140px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sport</label>
             <Select value={filterSport} onValueChange={(v) => { setFilterSport(v); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="All Sports" />
@@ -488,7 +488,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </Select>
           </div>
           <div className="min-w-[120px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Age Group</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Age Group</label>
             <Select value={filterAgeGroup} onValueChange={(v) => { setFilterAgeGroup(v); setFilterWeightCategory(""); }} disabled={eliteFilterOptions.ageGroups.length === 0}>
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="All Ages" />
@@ -501,7 +501,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </Select>
           </div>
           <div className="min-w-[140px]">
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Weight Category</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Weight Category</label>
             <Select value={filterWeightCategory} onValueChange={setFilterWeightCategory} disabled={eliteFilterOptions.weightCategories.length === 0}>
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="All Weights" />
