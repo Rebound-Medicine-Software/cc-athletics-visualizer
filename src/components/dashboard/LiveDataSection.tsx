@@ -875,7 +875,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="All Sports" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent container={chartCardRef.current}>
                     {eliteFilterOptions.sports.map(s => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
@@ -888,7 +888,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="All Ages" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent container={chartCardRef.current}>
                     {eliteFilterOptions.ageGroups.map(a => (
                       <SelectItem key={a} value={String(a)}>{a}</SelectItem>
                     ))}
@@ -901,7 +901,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="All Weights" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent container={chartCardRef.current}>
                     {eliteFilterOptions.weightCategories.map(w => (
                       <SelectItem key={w} value={w}>{w}</SelectItem>
                     ))}
@@ -914,7 +914,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Sex" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent container={chartCardRef.current}>
                     <SelectItem value="all">All</SelectItem>
                     {availableSex.map(sex => (
                       <SelectItem key={sex} value={sex}>
@@ -930,7 +930,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
                   <SelectTrigger className="bg-background">
                     <SelectValue placeholder="Metric Type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent container={chartCardRef.current}>
                     {availableMetrics.map(metric => {
                       const metricValue = (() => {
                         switch(metric) {
