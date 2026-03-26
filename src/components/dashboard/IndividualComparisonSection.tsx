@@ -192,13 +192,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     }, {} as Record<string, TestData[]>);
 
     const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
-      console.log(`Processing date ${date} with ${testsOnDate.length} tests`);
-
       // Calculate metric values for all tests on this date
       const values = testsOnDate.map(testRecord => {
         const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
         return { value: value || 0, yAxisLabel };
-      }).filter(result => result.value > 0); // Filter out zero values
+      }).filter(result => result.value > 0);
 
       if (values.length === 0) {
         return {
@@ -209,28 +207,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         };
       }
 
-      // For RSI: higher is better, show max value
-      // For Contact Time: lower is better, show min value but invert for positive trend display
-      // For others: higher is better, show max value
-      let bestValue;
-      let displayValue;
-      
-      if (selectedMetricType === 'Contact Time') {
-        // Lower contact time is better, so take minimum value
-        bestValue = Math.min(...values.map(v => v.value));
-        // Invert for positive trend visualization (subtract from max possible or use negative)
-        const maxContactTime = Math.max(...values.map(v => v.value));
-        displayValue = maxContactTime - bestValue; // Invert so improvements show as positive trend
-      } else {
-        // For RSI and all other metrics, higher is better
-        bestValue = Math.max(...values.map(v => v.value));
-        displayValue = bestValue;
-      }
+      // Average all repetition values for this date
+      const avgValue = values.reduce((sum, v) => sum + v.value, 0) / values.length;
 
       // Format the value based on metric type
-      const formattedValue = formatMetricValue(displayValue, selectedMetricType);
+      const formattedValue = formatMetricValue(avgValue, selectedMetricType);
 
-      console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}, formattedValue=${formattedValue}`);
+      console.log(`Date ${date}: avg=${avgValue}, formattedValue=${formattedValue}`);
 
       return {
         date: formatDate(date),
@@ -263,82 +246,74 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     console.log('Filters:', { selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate });
     console.log('Available apiData records:', apiData.length);
 
-    // Find the test record that matches our filters
-    const testRecord = apiData.find(d => 
+    // Find ALL test records that match our filters (all reps for this date)
+    const matchingRecords = apiData.filter(d => 
       d.test_name === selectedTestName && 
       d.athlete_name === selectedAthleteName && 
       d.test_date === selectedTestDate
     );
 
-    console.log('Found test record:', testRecord);
-    if (!testRecord || !testRecord.metrics) {
-      console.log('No matching test record found or no metrics');
+    console.log('Found matching records:', matchingRecords.length);
+    if (matchingRecords.length === 0) {
+      console.log('No matching test records found');
       return null;
     }
 
     let leftValue = 0;
     let rightValue = 0;
 
-    // Access the metrics from TestData
-    const metrics = testRecord.metrics as any;
+    // Average limb values across all repetitions for this date
+    const getLimbAverages = (leftKey: string, rightKey: string) => {
+      let leftSum = 0, rightSum = 0, count = 0;
+      matchingRecords.forEach(record => {
+        const m = record.metrics as any;
+        if (m[leftKey] != null || m[rightKey] != null) {
+          leftSum += (m[leftKey] || 0);
+          rightSum += (m[rightKey] || 0);
+          count++;
+        }
+      });
+      return count > 0 ? { left: leftSum / count, right: rightSum / count } : { left: 0, right: 0 };
+    };
 
     // Apply data logic based on test name and metric type - using exact API metric names
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
-      // Case 1: Drop Jump with specific metrics
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Countermovement Jump") {
-      // Case 2: CMJ with any metrics
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Squat Jump") {
-      // Case 3: Squat Jump
-      leftValue = metrics.p1_avg_force || 0;
-      rightValue = metrics.p2_avg_force || 0;
+      const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else if (selectedTestName === "Pogo Jump") {
-      // Case 4: Pogo Jump
-      leftValue = metrics.avg_fp1_contribution || 0;
-      rightValue = metrics.avg_fp2_contribution || 0;
+      const avg = getLimbAverages('avg_fp1_contribution', 'avg_fp2_contribution');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else {
       // Case 5: Isometric tests
+      const firstRecord = matchingRecords[0];
+      const metrics = firstRecord.metrics as any;
       console.log('=== ISOMETRIC DATA ANALYSIS ===');
-      console.log('Full metrics object:', JSON.stringify(metrics, null, 2));
-      console.log('isometric_analysis:', metrics.isometric_analysis);
       
-      if (metrics.isometric_analysis?.trials) {
-        console.log('Available trials:', metrics.isometric_analysis.trials);
-        console.log('Number of trials:', metrics.isometric_analysis.trials.length);
-        
-        // Log each trial's stance and force_peak
-        metrics.isometric_analysis.trials.forEach((trial: any, index: number) => {
-          console.log(`Trial ${index}:`, {
-            stance: trial.stance,
-            force_peak: trial.total_metrics?.force_peak,
-            total_metrics_keys: trial.total_metrics ? Object.keys(trial.total_metrics) : 'no total_metrics',
-            raw_trial: trial
-          });
-        });
-        
-        console.log('Current athlete selection:', selectedAthleteName);
-        console.log('Current test selection:', selectedTestName);
-        console.log('Current date selection:', selectedTestDate);
-        
+      if (metrics?.isometric_analysis?.trials) {
         // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
-        // Since right_leg trials may be in different test_name records
-        const matchingRecords = teamFilteredData.filter((record: TestData) => 
+        const isoRecords = teamFilteredData.filter((record: TestData) => 
           record.athlete_name === selectedAthleteName &&
           record.test_date === selectedTestDate &&
-          record.test_name.includes('Isometric') // Look for any isometric test variations
+          record.test_name.includes('Isometric')
         );
         
-        console.log('All matching isometric records for limb symmetry:', matchingRecords.length);
+        console.log('All matching isometric records for limb symmetry:', isoRecords.length);
         
         let allLeftTrials: any[] = [];
         let allRightTrials: any[] = [];
         let foundDualTrial = false;
         
-        // Collect all left_leg and right_leg trials from all matching records
-        matchingRecords.forEach((record: TestData, recordIndex: number) => {
+        isoRecords.forEach((record: TestData, recordIndex: number) => {
           console.log(`Record ${recordIndex}: ${record.test_name}`);
           
           const recordMetrics = record.metrics as any;
