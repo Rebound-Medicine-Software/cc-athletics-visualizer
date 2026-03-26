@@ -866,8 +866,102 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </Button>
           </div>
         </CardHeader>
-        <CardContent className={isFullscreen ? "h-[calc(100vh-120px)]" : ""}>
-          <div className={isFullscreen ? "h-full w-full" : "h-[500px] w-full"}>
+        <CardContent className={isFullscreen ? "h-[calc(100vh-120px)] flex flex-col" : ""}>
+          {isFullscreen && (
+            <div className="flex flex-wrap items-end justify-center gap-4 pb-4 border-b border-border mb-4">
+              <div className="min-w-[140px]">
+                <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sport</label>
+                <Select value={filterSport} onValueChange={(v) => { setFilterSport(v); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="All Sports" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eliteFilterOptions.sports.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[120px]">
+                <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Age Group</label>
+                <Select value={filterAgeGroup} onValueChange={(v) => { setFilterAgeGroup(v); setFilterWeightCategory(""); }} disabled={eliteFilterOptions.ageGroups.length === 0}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="All Ages" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eliteFilterOptions.ageGroups.map(a => (
+                      <SelectItem key={a} value={String(a)}>{a}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[140px]">
+                <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Weight Category</label>
+                <Select value={filterWeightCategory} onValueChange={setFilterWeightCategory} disabled={eliteFilterOptions.weightCategories.length === 0}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="All Weights" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eliteFilterOptions.weightCategories.map(w => (
+                      <SelectItem key={w} value={w}>{w}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[120px]">
+                <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sex</label>
+                <Select value={selectedSex} onValueChange={setSelectedSex}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Sex" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    {availableSex.map(sex => (
+                      <SelectItem key={sex} value={sex}>
+                        {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="min-w-[140px]">
+                <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Metric Type</label>
+                <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Metric Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMetrics.map(metric => {
+                      const metricValue = (() => {
+                        switch(metric) {
+                          case "Jump Height (cm)": return "jump_height_ft";
+                          case "Peak Power": return "peak_power";
+                          case "Relative Peak Power": return "relative_peak_power";
+                          case "Contact Time": return "contact_time";
+                          case "Reactive Strength Index": return "rsi";
+                          case "Flight Time": return "flight_time";
+                          case "Power": return "peak_power";
+                          case "Take-off Velocity": return "peak_velocity";
+                          case "Average Rate of Force Development": return "avg_rfd";
+                          case "Average Propulsive Power": return "avg_propulsive_power";
+                          default: return "jump_height_ft";
+                        }
+                      })();
+                      return (
+                        <SelectItem key={metricValue} value={metricValue}>{metric}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(filterSport || filterAgeGroup || filterWeightCategory) && (
+                <Button variant="ghost" size="sm" onClick={() => { setFilterSport(""); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
+                  Clear
+                </Button>
+              )}
+            </div>
+          )}
+          <div className={isFullscreen ? "flex-1 w-full" : "h-[500px] w-full"}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartDataWithBlur}
