@@ -324,14 +324,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           record.test_name.includes('Isometric')
         );
         
-        console.log('All matching isometric records for limb symmetry:', matchingRecords.length);
+        console.log('All matching isometric records for limb symmetry:', isoRecords.length);
         
         let allLeftTrials: any[] = [];
         let allRightTrials: any[] = [];
         let foundDualTrial = false;
         
-        // Collect all left_leg and right_leg trials from all matching records
-        matchingRecords.forEach((record: TestData, recordIndex: number) => {
+        isoRecords.forEach((record: TestData, recordIndex: number) => {
           console.log(`Record ${recordIndex}: ${record.test_name}`);
           
           const recordMetrics = record.metrics as any;
