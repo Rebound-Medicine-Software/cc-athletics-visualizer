@@ -49,7 +49,7 @@ export function IndividualFilters({
   // 2. Test Names - only from team-filtered data
   const uniqueTestNames = Array.from(
     new Set(teamFilteredData.map(d => d.test_name))
-  ).filter(t => t !== "All Tests" && t !== "Isometric Test");
+  ).filter(t => t !== "All Tests" && t !== "Isometric Test" && !t.startsWith("Left Side") && !t.startsWith("Right Side"));
 
   // 3. Athletes - filtered by team + test name (if selected)
   const testNameFilteredData = filters.testNames
