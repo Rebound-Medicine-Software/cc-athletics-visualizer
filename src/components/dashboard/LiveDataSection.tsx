@@ -606,9 +606,23 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             if (!dm || typeof dm !== 'object') return 0;
             // Exact key match first
             if (dm[dynamicMetricKey] !== undefined) return Number(dm[dynamicMetricKey]);
-            // Fallback: try matching keys loosely
+            // Fuzzy match: check if dynamic_metrics key starts with the test name and contains the metric name
+            const metricLower = metricDisplayName2.toLowerCase().replace(/[^a-z0-9]/g, '');
             for (const key of Object.keys(dm)) {
-              if (key === dynamicMetricKey) return Number(dm[key]);
+              const keyLower = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+              // Match if key starts with test name prefix AND contains the core metric words
+              if (key.startsWith(currentTestName + '-') || key.startsWith(currentTestName + ' - ')) {
+                const keyMetricPart = key.split(/[-–]/).slice(1).join('-').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (keyMetricPart.includes(metricLower) || metricLower.includes(keyMetricPart)) {
+                  return Number(dm[key]);
+                }
+                // Also match core words: e.g. "peak_power" should match "Power/Peak Power (W)"
+                const coreWords = metricLower.match(/[a-z]+/g) || [];
+                const allCoreWordsMatch = coreWords.length > 0 && coreWords.every(w => keyMetricPart.includes(w));
+                if (allCoreWordsMatch) {
+                  return Number(dm[key]);
+                }
+              }
             }
             return 0;
           })
