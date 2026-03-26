@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, LineChart, Line, CartesianGrid, Tooltip } from "recharts";
 import { TestData } from "@/types/forcePlateTypes";
-import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames, getUniqueTestDates } from "./filters/filterUtils";
+import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames } from "./filters/filterUtils";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
 
 interface IndividualComparisonSectionProps {
@@ -143,18 +143,36 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     ? getUniqueAthleteNames(teamFilteredData.filter(d => d.test_name === selectedTestName))
     : [];
   
+  const normalizeTestDate = (dateString: string) => {
+    if (!dateString) return "";
+
+    const isoLikeDate = dateString.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    if (isoLikeDate) return isoLikeDate;
+
+    const parsedDate = new Date(dateString);
+    if (Number.isNaN(parsedDate.getTime())) return "";
+
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, "0");
+    const day = String(parsedDate.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const uniqueTestDates = selectedAthleteName && selectedTestName
-    ? getUniqueTestDates(teamFilteredData.filter(d => 
-        d.test_name === selectedTestName && d.athlete_name === selectedAthleteName
-      ))
+    ? Array.from(new Set(
+        teamFilteredData
+          .filter(d => d.test_name === selectedTestName && d.athlete_name === selectedAthleteName)
+          .map(d => normalizeTestDate(d.test_date))
+          .filter(Boolean)
+      )).sort()
     : [];
 
   // Format dates as DD/MM/YYYY for display
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
+    const normalizedDate = normalizeTestDate(dateString);
+    if (!normalizedDate) return dateString;
+
+    const [year, month, day] = normalizedDate.split('-');
     return `${day}/${month}/${year}`;
   };
 
@@ -183,7 +201,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
     // Group tests by date to get the best value per date
     const testsByDate = athleteTests.reduce((acc, testRecord) => {
-      const date = testRecord.test_date;
+      const date = normalizeTestDate(testRecord.test_date);
+      if (!date) return acc;
+
       if (!acc[date]) {
         acc[date] = [];
       }
@@ -250,7 +270,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     const matchingRecords = apiData.filter(d => 
       d.test_name === selectedTestName && 
       d.athlete_name === selectedAthleteName && 
-      d.test_date === selectedTestDate
+      normalizeTestDate(d.test_date) === selectedTestDate
     );
 
     console.log('Found matching records:', matchingRecords.length);
@@ -303,7 +323,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
         const isoRecords = teamFilteredData.filter((record: TestData) => 
           record.athlete_name === selectedAthleteName &&
-          record.test_date === selectedTestDate &&
+          normalizeTestDate(record.test_date) === selectedTestDate &&
           record.test_name.includes('Isometric')
         );
         
@@ -412,7 +432,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       const testRecord = apiData.find(d => 
         d.test_name === selectedTestName && 
         d.athlete_name === selectedAthleteName && 
-        d.test_date === selectedTestDate
+        normalizeTestDate(d.test_date) === selectedTestDate
       );
       console.log('Found test record:', testRecord);
       if (testRecord?.metrics) {
