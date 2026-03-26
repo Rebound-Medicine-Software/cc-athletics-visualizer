@@ -192,13 +192,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     }, {} as Record<string, TestData[]>);
 
     const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
-      console.log(`Processing date ${date} with ${testsOnDate.length} tests`);
-
       // Calculate metric values for all tests on this date
       const values = testsOnDate.map(testRecord => {
         const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
         return { value: value || 0, yAxisLabel };
-      }).filter(result => result.value > 0); // Filter out zero values
+      }).filter(result => result.value > 0);
 
       if (values.length === 0) {
         return {
@@ -209,26 +207,11 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         };
       }
 
-      // For RSI: higher is better, show max value
-      // For Contact Time: lower is better, show min value but invert for positive trend display
-      // For others: higher is better, show max value
-      let bestValue;
-      let displayValue;
-      
-      if (selectedMetricType === 'Contact Time') {
-        // Lower contact time is better, so take minimum value
-        bestValue = Math.min(...values.map(v => v.value));
-        // Invert for positive trend visualization (subtract from max possible or use negative)
-        const maxContactTime = Math.max(...values.map(v => v.value));
-        displayValue = maxContactTime - bestValue; // Invert so improvements show as positive trend
-      } else {
-        // For RSI and all other metrics, higher is better
-        bestValue = Math.max(...values.map(v => v.value));
-        displayValue = bestValue;
-      }
+      // Average all repetition values for this date
+      const avgValue = values.reduce((sum, v) => sum + v.value, 0) / values.length;
 
       // Format the value based on metric type
-      const formattedValue = formatMetricValue(displayValue, selectedMetricType);
+      const formattedValue = formatMetricValue(avgValue, selectedMetricType);
 
       console.log(`Date ${date}: ${selectedMetricType}=${bestValue}, displayValue=${displayValue}, formattedValue=${formattedValue}`);
 
