@@ -33,9 +33,9 @@ export function getMetricTypesForTest(testName: string): string[] {
 // Unique filtering helpers
 
 export function getUniqueTestNames(data: TestData[]) {
-  // Remove 'All Tests', 'Isometric Test', and Left/Right Side derivatives
+  // Remove 'All Tests' and 'Isometric Test'
   return Array.from(new Set(data.map(d => d.test_name)))
-    .filter(test => test !== "All Tests" && test !== "Isometric Test" && !test.startsWith("Left Side") && !test.startsWith("Right Side"));
+    .filter(test => test !== "All Tests" && test !== "Isometric Test");
 }
 
 export function getUniqueAthleteNames(data: TestData[]) {
