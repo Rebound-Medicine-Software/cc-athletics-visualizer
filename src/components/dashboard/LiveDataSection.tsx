@@ -522,8 +522,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
       </div>
 
       {/* Team filters */}
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="flex gap-3">
+      <div className="flex flex-col items-center gap-3 p-3 rounded-lg border bg-muted/50">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Team Filters</span>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
           <Select value={selectedSex} onValueChange={setSelectedSex}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Sex" />
