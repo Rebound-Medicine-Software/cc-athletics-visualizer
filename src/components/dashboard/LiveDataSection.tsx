@@ -545,35 +545,38 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </Select>
           </div>
           
-          <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Metric Type" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableMetrics.map(metric => {
-                const metricValue = (() => {
-                  switch(metric) {
-                    case "Jump Height (cm)": return "jump_height_ft";
-                    case "Peak Power": return "peak_power";
-                    case "Relative Peak Power": return "relative_peak_power";
-                    case "Contact Time": return "contact_time";
-                    case "Reactive Strength Index": return "rsi";
-                    case "Flight Time": return "flight_time";
-                    case "Power": return "peak_power";
-                    case "Take-off Velocity": return "peak_velocity";
-                    case "Average Rate of Force Development": return "avg_rfd";
-                    case "Average Propulsive Power": return "avg_propulsive_power";
-                    default: return "jump_height_ft";
-                  }
-                })();
-                return (
-                  <SelectItem key={metricValue} value={metricValue}>
-                    {metric}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Metric Type</label>
+            <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Metric Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableMetrics.map(metric => {
+                  const metricValue = (() => {
+                    switch(metric) {
+                      case "Jump Height (cm)": return "jump_height_ft";
+                      case "Peak Power": return "peak_power";
+                      case "Relative Peak Power": return "relative_peak_power";
+                      case "Contact Time": return "contact_time";
+                      case "Reactive Strength Index": return "rsi";
+                      case "Flight Time": return "flight_time";
+                      case "Power": return "peak_power";
+                      case "Take-off Velocity": return "peak_velocity";
+                      case "Average Rate of Force Development": return "avg_rfd";
+                      case "Average Propulsive Power": return "avg_propulsive_power";
+                      default: return "jump_height_ft";
+                    }
+                  })();
+                  return (
+                    <SelectItem key={metricValue} value={metricValue}>
+                      {metric}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
