@@ -82,10 +82,25 @@ export const EliteComparisonChart = ({
       eliteBenchmark = eliteBenchmark / eliteCount;
     }
 
-    // Extract individual athlete values - best result per athlete
+    // Extract individual athlete values - best result from most recent test date
+    // Step 1: Find the most recent test date per athlete
+    const athleteMostRecentDate = new Map<string, string>();
+    individualData.forEach(test => {
+      const dateStr = (test.test_date || '').toString().slice(0, 10);
+      const current = athleteMostRecentDate.get(test.athlete_name);
+      if (!current || dateStr > current) {
+        athleteMostRecentDate.set(test.athlete_name, dateStr);
+      }
+    });
+
+    // Step 2: Get best value from most recent date only
     const athleteBestValues = new Map<string, number>();
     
     individualData.forEach(test => {
+      const dateStr = (test.test_date || '').toString().slice(0, 10);
+      const mostRecentDate = athleteMostRecentDate.get(test.athlete_name);
+      if (dateStr !== mostRecentDate) return;
+
       const metrics = test.metrics as any;
       let value = 0;
       
