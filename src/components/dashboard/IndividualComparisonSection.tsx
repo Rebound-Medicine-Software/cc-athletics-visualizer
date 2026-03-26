@@ -307,39 +307,21 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       leftValue = avg.left;
       rightValue = avg.right;
     } else if (selectedTestName === "Pogo Jump") {
-      // Case 4: Pogo Jump
-      leftValue = metrics.avg_fp1_contribution || 0;
-      rightValue = metrics.avg_fp2_contribution || 0;
+      const avg = getLimbAverages('avg_fp1_contribution', 'avg_fp2_contribution');
+      leftValue = avg.left;
+      rightValue = avg.right;
     } else {
       // Case 5: Isometric tests
+      const firstRecord = matchingRecords[0];
+      const metrics = firstRecord.metrics as any;
       console.log('=== ISOMETRIC DATA ANALYSIS ===');
-      console.log('Full metrics object:', JSON.stringify(metrics, null, 2));
-      console.log('isometric_analysis:', metrics.isometric_analysis);
       
-      if (metrics.isometric_analysis?.trials) {
-        console.log('Available trials:', metrics.isometric_analysis.trials);
-        console.log('Number of trials:', metrics.isometric_analysis.trials.length);
-        
-        // Log each trial's stance and force_peak
-        metrics.isometric_analysis.trials.forEach((trial: any, index: number) => {
-          console.log(`Trial ${index}:`, {
-            stance: trial.stance,
-            force_peak: trial.total_metrics?.force_peak,
-            total_metrics_keys: trial.total_metrics ? Object.keys(trial.total_metrics) : 'no total_metrics',
-            raw_trial: trial
-          });
-        });
-        
-        console.log('Current athlete selection:', selectedAthleteName);
-        console.log('Current test selection:', selectedTestName);
-        console.log('Current date selection:', selectedTestDate);
-        
+      if (metrics?.isometric_analysis?.trials) {
         // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
-        // Since right_leg trials may be in different test_name records
-        const matchingRecords = teamFilteredData.filter((record: TestData) => 
+        const isoRecords = teamFilteredData.filter((record: TestData) => 
           record.athlete_name === selectedAthleteName &&
           record.test_date === selectedTestDate &&
-          record.test_name.includes('Isometric') // Look for any isometric test variations
+          record.test_name.includes('Isometric')
         );
         
         console.log('All matching isometric records for limb symmetry:', matchingRecords.length);
