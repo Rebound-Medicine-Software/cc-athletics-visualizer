@@ -572,6 +572,7 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
             </SelectContent>
           </Select>
         </div>
+      </div>
 
       {/* Comparative Percentile Chart */}
       {filteredEliteData.length > 0 && (filterSport || filterAgeGroup || filterWeightCategory) && (() => {
