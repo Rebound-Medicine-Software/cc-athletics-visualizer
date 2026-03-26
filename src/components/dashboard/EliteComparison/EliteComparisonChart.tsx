@@ -108,7 +108,8 @@ export const EliteComparisonChart = ({
       const metricToCheck = parsedMetric || metricType;
       
       if (metricToCheck.includes("Jump Height (cm)")) {
-        value = metrics?.jump_height_ft ? metrics.jump_height_ft * 30.48 : metrics?.jump_height || 0;
+        const raw = metrics?.jump_height_ft ?? metrics?.jump_height ?? 0;
+        value = (raw && raw < 3) ? raw * 100 : raw; // meters to cm if < 3
       } else if (metricToCheck.includes("Peak Power (W)") && !metricToCheck.includes("Relative")) {
         value = metrics?.peak_power || 0;
       } else if (metricToCheck.includes("Relative Peak Power (W/kg)")) {
@@ -142,9 +143,10 @@ export const EliteComparisonChart = ({
           for (const key of possibleKeys) {
             if (metrics?.[key] !== undefined && metrics[key] !== null) {
               value = Number(metrics[key]);
-              // Convert ft to cm for jump height
-              if (key === 'jump_height_ft') {
-                value = value * 30.48;
+              // Convert meters to cm for jump height (values < 3 are in meters)
+              if (key === 'jump_height_ft' && value < 3) {
+                value = value * 100;
+              }
               }
               break;
             }
