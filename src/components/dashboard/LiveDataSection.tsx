@@ -467,14 +467,12 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-end">
-        {/* Comparative Data Filters */}
-        <div className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-muted/50 flex-1">
-          <div className="flex items-center gap-2 mr-1">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Comparative</span>
-          </div>
+      {/* Elite Comparisons Filters */}
+      <div className="flex flex-wrap items-end gap-3 p-3 rounded-lg border bg-muted/50">
+        <div className="flex items-center gap-2 mr-1">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Elite Comparisons</span>
+        </div>
           <div className="min-w-[140px]">
             <label className="block text-xs font-medium text-muted-foreground mb-1">Sport</label>
             <Select value={filterSport} onValueChange={(v) => { setFilterSport(v); setFilterAgeGroup(""); setFilterWeightCategory(""); }}>
