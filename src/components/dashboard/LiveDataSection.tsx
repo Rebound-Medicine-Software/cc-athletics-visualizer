@@ -528,19 +528,22 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Team Filters</span>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <Select value={selectedSex} onValueChange={setSelectedSex}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="Sex" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {availableSex.map(sex => (
-                <SelectItem key={sex} value={sex}>
-                  {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sex</label>
+            <Select value={selectedSex} onValueChange={setSelectedSex}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Sex" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                {availableSex.map(sex => (
+                  <SelectItem key={sex} value={sex}>
+                    {sex === 'male' ? 'Male' : sex === 'female' ? 'Female' : sex}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           
           <Select value={selectedMetricType} onValueChange={setSelectedMetricType}>
             <SelectTrigger className="w-40">
