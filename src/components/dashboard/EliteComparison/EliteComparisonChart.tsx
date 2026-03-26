@@ -147,7 +147,6 @@ export const EliteComparisonChart = ({
               if (key === 'jump_height_ft' && value < 3) {
                 value = value * 100;
               }
-              }
               break;
             }
           }
