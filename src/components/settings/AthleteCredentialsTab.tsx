@@ -974,6 +974,39 @@ export const AthleteCredentialsTab = () => {
         existingAthleteIds={athletes.map(a => a.cc_athlete_id)}
         onAthletesAdded={fetchAthletes}
       />
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the following athlete{selectedForDelete.size !== 1 ? 's' : ''}? They will be deleted from the <strong>NEXUS HUB</strong> database but <strong>not</strong> from the CC Athletics API.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-48 overflow-y-auto space-y-1 py-2">
+            {athletes
+              .filter((a) => selectedForDelete.has(a.id))
+              .map((a) => (
+                <div key={a.id} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-muted">
+                  <span className="font-medium">{a.name}</span>
+                  <span className="text-muted-foreground">— {a.team_name || 'No Team'}</span>
+                </div>
+              ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSelected} disabled={deleting}>
+              {deleting ? (
+                <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Deleting...</>
+              ) : (
+                <><Trash2 className="w-4 h-4 mr-2" />Delete {selectedForDelete.size} Athlete{selectedForDelete.size !== 1 ? 's' : ''}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
