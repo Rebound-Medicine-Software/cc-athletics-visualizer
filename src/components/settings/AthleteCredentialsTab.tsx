@@ -662,6 +662,12 @@ export const AthleteCredentialsTab = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selectedForDelete.size === filteredAthletes.length && filteredAthletes.length > 0}
+                    onCheckedChange={toggleAllDelete}
+                  />
+                </TableHead>
                 <TableHead>Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Team Name</TableHead>
@@ -678,6 +684,12 @@ export const AthleteCredentialsTab = () => {
             <TableBody>
               {filteredAthletes.map((athlete) => (
                 <TableRow key={athlete.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedForDelete.has(athlete.id)}
+                      onCheckedChange={() => toggleDeleteSelect(athlete.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                       <div className="space-y-2">
