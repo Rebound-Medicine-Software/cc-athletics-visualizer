@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Edit, Trash2, Save, X, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +22,7 @@ export const RegionTestingTable = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editForm, setEditForm] = useState<Partial<RegionTesting>>({});
+  const [pendingLogoFile, setPendingLogoFile] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRegions();
@@ -46,6 +48,48 @@ export const RegionTestingTable = () => {
   const handleEdit = (region: RegionTesting) => {
     setEditingId(region.id || '');
     setEditForm(region);
+    setPendingLogoFile(null);
+  };
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        setPendingLogoFile(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadLogo = async (regionId: string): Promise<string | null> => {
+    if (!pendingLogoFile || !pendingLogoFile.startsWith('data:')) return null;
+
+    try {
+      const response = await fetch(pendingLogoFile);
+      const blob = await response.blob();
+      const fileName = `region-${regionId}-${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('athlete-avatars')
+        .upload(fileName, blob, {
+          contentType: 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('athlete-avatars')
+        .getPublicUrl(fileName);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Failed to upload logo:', error);
+      toast.error("Failed to upload logo image");
+      return null;
+    }
   };
 
   const handleSave = async () => {
@@ -55,8 +99,15 @@ export const RegionTestingTable = () => {
     }
 
     try {
+      let logoUrl = editForm.logo || null;
+
       if (editingId) {
-        // Update existing
+        // Upload logo if pending
+        if (pendingLogoFile) {
+          const uploaded = await uploadLogo(editingId);
+          if (uploaded) logoUrl = uploaded;
+        }
+
         const { error } = await supabase
           .from('Region Testing')
           .update({
@@ -64,31 +115,45 @@ export const RegionTestingTable = () => {
             country: editForm.country,
             region: editForm.region,
             address: editForm.address,
-            logo: editForm.logo
+            logo: logoUrl,
           })
           .eq('id', editingId);
 
         if (error) throw error;
         toast.success("Region testing data updated successfully");
       } else {
-        // Add new
-        const { error } = await supabase
+        // For new entries, insert first to get an ID, then upload logo
+        const { data: inserted, error } = await supabase
           .from('Region Testing')
           .insert({
             "Team Name": editForm["Team Name"],
             country: editForm.country,
             region: editForm.region,
             address: editForm.address,
-            logo: editForm.logo
-          });
+            logo: null,
+          })
+          .select('id')
+          .single();
 
         if (error) throw error;
+
+        if (pendingLogoFile && inserted?.id) {
+          const uploaded = await uploadLogo(inserted.id);
+          if (uploaded) {
+            await supabase
+              .from('Region Testing')
+              .update({ logo: uploaded })
+              .eq('id', inserted.id);
+          }
+        }
+
         toast.success("Region testing data added successfully");
       }
 
       setEditingId(null);
       setIsAdding(false);
       setEditForm({});
+      setPendingLogoFile(null);
       fetchRegions();
     } catch (error) {
       console.error('Error saving region:', error);
@@ -118,17 +183,20 @@ export const RegionTestingTable = () => {
     setEditingId(null);
     setIsAdding(false);
     setEditForm({});
+    setPendingLogoFile(null);
   };
 
   if (loading) {
     return <div className="p-4">Loading region testing data...</div>;
   }
 
+  const logoPreview = pendingLogoFile || editForm.logo;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Region Testing Data</h3>
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding || !!editingId}>
+        <Button onClick={() => { setIsAdding(true); setPendingLogoFile(null); }} disabled={isAdding || !!editingId}>
           <Plus className="w-4 h-4 mr-2" />
           Add Region
         </Button>
@@ -158,11 +226,27 @@ export const RegionTestingTable = () => {
               onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
               className="md:col-span-2"
             />
-            <Input
-              placeholder="Logo URL"
-              value={editForm.logo || ''}
-              onChange={(e) => setEditForm({ ...editForm, logo: e.target.value })}
-            />
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Logo</label>
+              <div className="flex items-center gap-3">
+                {logoPreview && (
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={logoPreview} alt="Logo preview" />
+                    <AvatarFallback>LG</AvatarFallback>
+                  </Avatar>
+                )}
+                <label className="cursor-pointer flex items-center gap-2 px-3 py-2 border rounded-md text-sm hover:bg-muted transition-colors">
+                  <Upload className="w-4 h-4" />
+                  Upload Logo
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
@@ -180,11 +264,11 @@ export const RegionTestingTable = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Logo</TableHead>
             <TableHead>Team Name</TableHead>
             <TableHead>Country</TableHead>
             <TableHead>Region</TableHead>
             <TableHead>Address</TableHead>
-            <TableHead>Logo URL</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -193,6 +277,23 @@ export const RegionTestingTable = () => {
             <TableRow key={region.id}>
               {editingId === region.id ? (
                 <>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={pendingLogoFile || editForm.logo || ''} alt="Logo" />
+                        <AvatarFallback>{(editForm["Team Name"] || '').slice(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <label className="cursor-pointer">
+                        <Upload className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={editForm["Team Name"] || ''}
@@ -218,12 +319,6 @@ export const RegionTestingTable = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      value={editForm.logo || ''}
-                      onChange={(e) => setEditForm({ ...editForm, logo: e.target.value })}
-                    />
-                  </TableCell>
-                  <TableCell>
                     <div className="flex gap-2">
                       <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
                         <Save className="w-4 h-4" />
@@ -236,19 +331,16 @@ export const RegionTestingTable = () => {
                 </>
               ) : (
                 <>
+                  <TableCell>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={region.logo || ''} alt={region["Team Name"]} />
+                      <AvatarFallback>{region["Team Name"].slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell className="font-medium">{region["Team Name"]}</TableCell>
                   <TableCell>{region.country}</TableCell>
                   <TableCell>{region.region || 'N/A'}</TableCell>
                   <TableCell>{region.address || 'N/A'}</TableCell>
-                  <TableCell>
-                    {region.logo ? (
-                      <a href={region.logo} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                        View Logo
-                      </a>
-                    ) : (
-                      'N/A'
-                    )}
-                  </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
                       <Button 
@@ -278,7 +370,7 @@ export const RegionTestingTable = () => {
       </Table>
 
       {regions.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-muted-foreground">
           No region testing data found. Click "Add Region" to create one.
         </div>
       )}
