@@ -253,8 +253,11 @@ serve(async (req) => {
             team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
              test_date: new Date(recording.date).toISOString(),
             test_name: 'Pogo Jump',
-            repetition_number: 0, // 0 indicates average
+            repetition_number: 0,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: analysis.avg_metrics,
           })
         }
@@ -269,6 +272,9 @@ serve(async (req) => {
             test_name: 'Pogo Jump',
             repetition_number: index + 1,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: jump,
           })
         })
