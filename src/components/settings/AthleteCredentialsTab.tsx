@@ -901,6 +901,13 @@ export const AthleteCredentialsTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddAthleteFromApiDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        existingAthleteIds={athletes.map(a => a.cc_athlete_id)}
+        onAthletesAdded={fetchAthletes}
+      />
     </Card>
   );
 };
