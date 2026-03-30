@@ -48,13 +48,14 @@ export const AddAthleteFromApiDialog = ({
       if (!data.success) throw new Error(data.error);
 
       const map = new Map<string, CCAthlete>();
+      const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : undefined;
       data.data?.forEach((record: any) => {
         if (!map.has(record.athlete_id)) {
           map.set(record.athlete_id, {
             athlete_id: record.athlete_id,
             name: record.athlete_name,
             team_name: record.team_name,
-            gender: record.gender || undefined,
+            gender: capitalize(record.gender),
           });
         }
       });
