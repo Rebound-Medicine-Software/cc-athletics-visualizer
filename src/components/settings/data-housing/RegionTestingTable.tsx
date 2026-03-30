@@ -191,6 +191,41 @@ export const RegionTestingTable = () => {
     setPendingLogoFile(null);
   };
 
+  const toggleSelectForDelete = (id: string) => {
+    setSelectedForDelete(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedForDelete.size === regions.length) {
+      setSelectedForDelete(new Set());
+    } else {
+      setSelectedForDelete(new Set(regions.map(r => r.id!)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = Array.from(selectedForDelete);
+    try {
+      const { error } = await supabase.from('Region Testing').delete().in('id', ids);
+      if (error) throw error;
+      toast.success(`${ids.length} region(s) deleted successfully`);
+      setSelectedForDelete(new Set());
+      setShowDeleteConfirm(false);
+      fetchRegions();
+    } catch (error) {
+      console.error('Error deleting regions:', error);
+      toast.error("Failed to delete regions");
+    }
+  };
+
+  const selectedRegionNames = regions
+    .filter(r => selectedForDelete.has(r.id!))
+    .map(r => r["Team Name"]);
+
   if (loading) {
     return <div className="p-4">Loading region testing data...</div>;
   }
