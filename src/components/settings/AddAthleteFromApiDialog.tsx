@@ -13,6 +13,9 @@ interface CCAthlete {
   name: string;
   team_name: string;
   gender?: string;
+  age?: number;
+  height_cm?: number;
+  weight_kg?: number;
 }
 
 interface AddAthleteFromApiDialogProps {
