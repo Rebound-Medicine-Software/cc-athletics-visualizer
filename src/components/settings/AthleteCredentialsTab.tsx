@@ -52,6 +52,7 @@ export const AthleteCredentialsTab = () => {
     const saved = localStorage.getItem('sendSignupEmails');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [showAddDialog, setShowAddDialog] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
