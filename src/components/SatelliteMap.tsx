@@ -107,12 +107,8 @@ export const SatelliteMap = ({
       const coordinates = getTeamCoordinates(regionItem["Team Name"], regionItem.country, regionItem.region);
       if (!coordinates) return;
 
-      // Get test data for this team - NO INDIVIDUAL FILTER APPLIED HERE
-      // Only use the data that was already filtered by region filters in the parent component
+      // Get test data for this team (may be empty - that's OK, still show the marker)
       let teamTestData = data.filter(testData => testData.team_name === regionItem["Team Name"]);
-
-      // Skip if no data after filtering
-      if (teamTestData.length === 0) return;
 
       const [lng, lat] = coordinates;
       const position = L.latLng(lat, lng);
