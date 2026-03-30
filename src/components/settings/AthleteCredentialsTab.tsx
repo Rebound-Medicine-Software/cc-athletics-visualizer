@@ -548,6 +548,46 @@ export const AthleteCredentialsTab = () => {
     setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
   };
 
+  const toggleDeleteSelect = (id: string) => {
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllDelete = () => {
+    if (selectedForDelete.size === filteredAthletes.length) {
+      setSelectedForDelete(new Set());
+    } else {
+      setSelectedForDelete(new Set(filteredAthletes.map((a) => a.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedForDelete.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedForDelete);
+      const { error } = await supabase
+        .from('athletes')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      toast.success(`${ids.length} athlete(s) deleted successfully`);
+      setSelectedForDelete(new Set());
+      setShowDeleteConfirm(false);
+      fetchAthletes();
+    } catch (error: any) {
+      console.error('Error deleting athletes:', error);
+      toast.error("Failed to delete athletes: " + error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading athlete credentials...</div>;
   }
