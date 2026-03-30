@@ -107,7 +107,6 @@ export const RegionTestingTable = () => {
       let logoUrl = editForm.logo || null;
 
       if (editingId) {
-        // Upload logo if pending
         if (pendingLogoFile) {
           const uploaded = await uploadLogo(editingId);
           if (uploaded) logoUrl = uploaded;
@@ -127,7 +126,6 @@ export const RegionTestingTable = () => {
         if (error) throw error;
         toast.success("Region testing data updated successfully");
       } else {
-        // For new entries, insert first to get an ID, then upload logo
         const { data: inserted, error } = await supabase
           .from('Region Testing')
           .insert({
@@ -315,6 +313,12 @@ export const RegionTestingTable = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10">
+              <Checkbox
+                checked={regions.length > 0 && selectedForDelete.size === regions.length}
+                onCheckedChange={toggleSelectAll}
+              />
+            </TableHead>
             <TableHead>Logo</TableHead>
             <TableHead>Team Name</TableHead>
             <TableHead>Country</TableHead>
@@ -326,6 +330,12 @@ export const RegionTestingTable = () => {
         <TableBody>
           {regions.map((region) => (
             <TableRow key={region.id}>
+              <TableCell>
+                <Checkbox
+                  checked={selectedForDelete.has(region.id!)}
+                  onCheckedChange={() => toggleSelectForDelete(region.id!)}
+                />
+              </TableCell>
               {editingId === region.id ? (
                 <>
                   <TableCell>
@@ -383,35 +393,36 @@ export const RegionTestingTable = () => {
               ) : (
                 <>
                   <TableCell>
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={region.logo || ''} alt={region["Team Name"]} />
-                      <AvatarFallback>{region["Team Name"].slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                    <HoverCard>
+                      <HoverCardTrigger asChild>
+                        <div className="cursor-pointer">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={region.logo || ''} alt={region["Team Name"]} />
+                            <AvatarFallback>{region["Team Name"].slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                      </HoverCardTrigger>
+                      {region.logo && (
+                        <HoverCardContent className="w-48 p-2">
+                          <img src={region.logo} alt={region["Team Name"]} className="w-full h-auto rounded-md" />
+                          <p className="text-xs text-muted-foreground mt-1 text-center">{region["Team Name"]}</p>
+                        </HoverCardContent>
+                      )}
+                    </HoverCard>
                   </TableCell>
                   <TableCell className="font-medium">{region["Team Name"]}</TableCell>
                   <TableCell>{region.country}</TableCell>
                   <TableCell>{region.region || 'N/A'}</TableCell>
                   <TableCell>{region.address || 'N/A'}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => handleEdit(region)} 
-                        size="sm" 
-                        variant="outline"
-                        disabled={isAdding || editingId !== null}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        onClick={() => handleDelete(region.id!)} 
-                        size="sm" 
-                        variant="outline"
-                        className="text-red-600 hover:bg-red-50"
-                        disabled={isAdding || editingId !== null}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button 
+                      onClick={() => handleEdit(region)} 
+                      size="sm" 
+                      variant="outline"
+                      disabled={isAdding || editingId !== null}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
                   </TableCell>
                 </>
               )}
@@ -425,6 +436,35 @@ export const RegionTestingTable = () => {
           No region testing data found. Click "Add Region" to create one.
         </div>
       )}
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the following region(s)?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {selectedRegionNames.map((name, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                <Trash2 className="w-4 h-4 text-destructive" />
+                <span className="font-medium">{name}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            They will be deleted from the <strong>NEXUS HUB</strong> database but <strong>not</strong> from the CC Athletics API.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteSelected}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete {selectedForDelete.size} Region(s)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
