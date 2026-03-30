@@ -201,6 +201,9 @@ serve(async (req) => {
               test_name: `Left Side ${baseExercise}`,
               repetition_number: tIndex + 1,
               gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
               leg_stance: 'left_leg',
               metrics: {
                 force_50ms: tm.force_50ms_left,
@@ -218,6 +221,9 @@ serve(async (req) => {
               test_name: `Right Side ${baseExercise}`,
               repetition_number: tIndex + 1,
               gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
               leg_stance: 'right_leg',
               metrics: {
                 force_50ms: tm.force_50ms_right,
