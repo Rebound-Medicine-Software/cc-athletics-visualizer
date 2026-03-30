@@ -13,6 +13,9 @@ interface CCAthlete {
   name: string;
   team_name: string;
   gender?: string;
+  age?: number;
+  height_cm?: number;
+  weight_kg?: number;
 }
 
 interface AddAthleteFromApiDialogProps {
@@ -50,13 +53,23 @@ export const AddAthleteFromApiDialog = ({
       const map = new Map<string, CCAthlete>();
       const capitalize = (s?: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : undefined;
       data.data?.forEach((record: any) => {
-        if (!map.has(record.athlete_id)) {
-          map.set(record.athlete_id, {
-            athlete_id: record.athlete_id,
+        const id = record.athlete_id;
+        if (!map.has(id)) {
+          map.set(id, {
+            athlete_id: id,
             name: record.athlete_name,
             team_name: record.team_name,
             gender: capitalize(record.gender),
+            age: record.age ?? undefined,
+            height_cm: record.height_cm ?? undefined,
+            weight_kg: record.weight_kg ?? undefined,
           });
+        } else {
+          // Update demographics if missing from earlier record
+          const existing = map.get(id)!;
+          if (!existing.age && record.age) existing.age = record.age;
+          if (!existing.height_cm && record.height_cm) existing.height_cm = record.height_cm;
+          if (!existing.weight_kg && record.weight_kg) existing.weight_kg = record.weight_kg;
         }
       });
       setCcAthletes(Array.from(map.values()));
@@ -165,6 +178,9 @@ export const AddAthleteFromApiDialog = ({
           cc_athlete_id: a.athlete_id,
           name: a.name,
           gender: a.gender || null,
+          age: a.age ?? null,
+          height_cm: a.height_cm ?? null,
+          weight_kg: a.weight_kg ?? null,
         }));
 
       const { error } = await supabase.from("athletes").insert(toInsert);

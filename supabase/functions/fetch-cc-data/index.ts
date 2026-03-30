@@ -129,6 +129,9 @@ serve(async (req) => {
             test_name: testName,
             repetition_number: index + 1,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: jump.metric_table,
           })
 
@@ -143,6 +146,9 @@ serve(async (req) => {
               test_name: `${sidePrefix} ${testName}`,
               repetition_number: index + 1,
               gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
               leg_stance: legStance,
               metrics: jump.metric_table,
             })
@@ -170,6 +176,9 @@ serve(async (req) => {
           test_name: exerciseName,
           repetition_number: 1,
           gender: demographics.gender,
+          age: demographics.age,
+          height_cm: demographics.height_cm,
+          weight_kg: demographics.weight_kg,
           metrics: {
             isometric_analysis: analysis
           },
@@ -192,6 +201,9 @@ serve(async (req) => {
               test_name: `Left Side ${baseExercise}`,
               repetition_number: tIndex + 1,
               gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
               leg_stance: 'left_leg',
               metrics: {
                 force_50ms: tm.force_50ms_left,
@@ -209,6 +221,9 @@ serve(async (req) => {
               test_name: `Right Side ${baseExercise}`,
               repetition_number: tIndex + 1,
               gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
               leg_stance: 'right_leg',
               metrics: {
                 force_50ms: tm.force_50ms_right,
@@ -238,8 +253,11 @@ serve(async (req) => {
             team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
              test_date: new Date(recording.date).toISOString(),
             test_name: 'Pogo Jump',
-            repetition_number: 0, // 0 indicates average
+            repetition_number: 0,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: analysis.avg_metrics,
           })
         }
@@ -254,6 +272,9 @@ serve(async (req) => {
             test_name: 'Pogo Jump',
             repetition_number: index + 1,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: jump,
           })
         })
