@@ -176,6 +176,9 @@ serve(async (req) => {
           test_name: exerciseName,
           repetition_number: 1,
           gender: demographics.gender,
+          age: demographics.age,
+          height_cm: demographics.height_cm,
+          weight_kg: demographics.weight_kg,
           metrics: {
             isometric_analysis: analysis
           },
