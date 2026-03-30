@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
-import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX, Plus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +54,9 @@ export const AthleteCredentialsTab = () => {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -544,6 +548,46 @@ export const AthleteCredentialsTab = () => {
     setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
   };
 
+  const toggleDeleteSelect = (id: string) => {
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAllDelete = () => {
+    if (selectedForDelete.size === filteredAthletes.length) {
+      setSelectedForDelete(new Set());
+    } else {
+      setSelectedForDelete(new Set(filteredAthletes.map((a) => a.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedForDelete.size === 0) return;
+    setDeleting(true);
+    try {
+      const ids = Array.from(selectedForDelete);
+      const { error } = await supabase
+        .from('athletes')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      toast.success(`${ids.length} athlete(s) deleted successfully`);
+      setSelectedForDelete(new Set());
+      setShowDeleteConfirm(false);
+      fetchAthletes();
+    } catch (error: any) {
+      console.error('Error deleting athletes:', error);
+      toast.error("Failed to delete athletes: " + error.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading athlete credentials...</div>;
   }
@@ -582,6 +626,16 @@ export const AthleteCredentialsTab = () => {
               Add Athlete
             </Button>
             <Button
+              onClick={() => setShowDeleteConfirm(true)}
+              size="sm"
+              variant="destructive"
+              disabled={selectedForDelete.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete ({selectedForDelete.size})
+            </Button>
+            <Button
               variant={sendSignupEmails ? "default" : "outline"}
               size="sm"
               onClick={() => {
@@ -608,6 +662,12 @@ export const AthleteCredentialsTab = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selectedForDelete.size === filteredAthletes.length && filteredAthletes.length > 0}
+                    onCheckedChange={toggleAllDelete}
+                  />
+                </TableHead>
                 <TableHead>Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Team Name</TableHead>
@@ -624,6 +684,12 @@ export const AthleteCredentialsTab = () => {
             <TableBody>
               {filteredAthletes.map((athlete) => (
                 <TableRow key={athlete.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedForDelete.has(athlete.id)}
+                      onCheckedChange={() => toggleDeleteSelect(athlete.id)}
+                    />
+                  </TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                       <div className="space-y-2">
@@ -908,6 +974,39 @@ export const AthleteCredentialsTab = () => {
         existingAthleteIds={athletes.map(a => a.cc_athlete_id)}
         onAthletesAdded={fetchAthletes}
       />
+
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the following athlete{selectedForDelete.size !== 1 ? 's' : ''}? They will be deleted from the <strong>NEXUS HUB</strong> database but <strong>not</strong> from the CC Athletics API.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-48 overflow-y-auto space-y-1 py-2">
+            {athletes
+              .filter((a) => selectedForDelete.has(a.id))
+              .map((a) => (
+                <div key={a.id} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-muted">
+                  <span className="font-medium">{a.name}</span>
+                  <span className="text-muted-foreground">— {a.team_name || 'No Team'}</span>
+                </div>
+              ))}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSelected} disabled={deleting}>
+              {deleting ? (
+                <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Deleting...</>
+              ) : (
+                <><Trash2 className="w-4 h-4 mr-2" />Delete {selectedForDelete.size} Athlete{selectedForDelete.size !== 1 ? 's' : ''}</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
