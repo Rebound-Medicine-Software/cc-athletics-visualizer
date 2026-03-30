@@ -102,15 +102,46 @@ export const AthleteCredentialsTab = () => {
         .select('cc_team_id, logo_url');
 
       if (teamsError) throw teamsError;
+
+      // Fetch Region Testing data for logo fallback matching
+      const { data: regionTestingData, error: regionError } = await supabase
+        .from('Region Testing')
+        .select('*');
+
+      if (regionError) console.error('Error fetching region testing data:', regionError);
+
+      // Fuzzy match helper: checks if names roughly match (case-insensitive, partial match)
+      const fuzzyMatch = (name1: string, name2: string): boolean => {
+        const n1 = name1.toLowerCase().trim();
+        const n2 = name2.toLowerCase().trim();
+        if (n1 === n2) return true;
+        if (n1.includes(n2) || n2.includes(n1)) return true;
+        // Check word overlap: if >50% of words match
+        const words1 = n1.split(/\s+/);
+        const words2 = n2.split(/\s+/);
+        const commonWords = words1.filter(w => words2.some(w2 => w2.includes(w) || w.includes(w2)));
+        return commonWords.length >= Math.min(words1.length, words2.length) * 0.5 && commonWords.length > 0;
+      };
       
       // Map the athletes data to include team_name and team_logo_url
       const athletesWithTeamNames = data?.map(athlete => {
         const ccAthlete = ccAthletes.find(cc => cc.athlete_id === athlete.cc_athlete_id);
         const team = teamsData?.find(t => t.cc_team_id === athlete.cc_team_id);
+        const teamName = ccAthlete?.team_name || 'No Team';
+        
+        // Priority: 1) teams table logo, 2) Region Testing fuzzy match logo
+        let logoUrl = team?.logo_url || null;
+        if (!logoUrl && teamName !== 'No Team' && regionTestingData) {
+          const regionMatch = regionTestingData.find(r => fuzzyMatch(r["Team Name"], teamName));
+          if (regionMatch?.logo) {
+            logoUrl = regionMatch.logo;
+          }
+        }
+
         return {
           ...athlete,
-          team_name: ccAthlete?.team_name || 'No Team',
-          team_logo_url: team?.logo_url || null
+          team_name: teamName,
+          team_logo_url: logoUrl
         };
       }) || [];
       
