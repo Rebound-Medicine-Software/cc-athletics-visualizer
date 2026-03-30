@@ -59,39 +59,37 @@ export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComp
   const getFilteredRegionData = () => {
     if (!regionTestingData) return regionData;
     
-    let filteredRegionData = regionTestingData;
+    // Each dropdown only depends on filters ABOVE it in the cascade
+    // Country -> Region -> Address -> Team
     
-    // Apply country filter
+    // Regions: filtered by country only
+    let countryFiltered = regionTestingData;
     if (filters.country.length > 0) {
-      filteredRegionData = filteredRegionData.filter(item => 
-        filters.country.includes(item.country)
-      );
+      countryFiltered = countryFiltered.filter(item => filters.country.includes(item.country));
     }
     
-    // Apply region filter
+    // Addresses: filtered by country + region
+    let regionFiltered = countryFiltered;
     if (filters.region.length > 0) {
-      filteredRegionData = filteredRegionData.filter(item => 
-        item.region && filters.region.includes(item.region)
-      );
+      regionFiltered = regionFiltered.filter(item => item.region && filters.region.includes(item.region));
     }
     
-    // Apply address filter
+    // Teams: filtered by country + region + address
+    let addressFiltered = regionFiltered;
     if (filters.address.length > 0) {
-      filteredRegionData = filteredRegionData.filter(item => 
-        item.address && filters.address.includes(item.address)
-      );
+      addressFiltered = addressFiltered.filter(item => item.address && filters.address.includes(item.address));
     }
     
     return {
       countries: [...new Set(regionTestingData.map(item => item.country).filter(Boolean))],
       regions: filters.country.length > 0 
-        ? [...new Set(filteredRegionData.map(item => item.region).filter(Boolean))]
+        ? [...new Set(countryFiltered.map(item => item.region).filter(Boolean))]
         : [...new Set(regionTestingData.map(item => item.region).filter(Boolean))],
       addresses: filters.region.length > 0 
-        ? [...new Set(filteredRegionData.map(item => item.address).filter(Boolean))]
+        ? [...new Set(regionFiltered.map(item => item.address).filter(Boolean))]
         : [...new Set(regionTestingData.map(item => item.address).filter(Boolean))],
       teamNames: filters.address.length > 0 
-        ? [...new Set(filteredRegionData.map(item => item["Team Name"]).filter(Boolean))]
+        ? [...new Set(addressFiltered.map(item => item["Team Name"]).filter(Boolean))]
         : [...new Set(regionTestingData.map(item => item["Team Name"]).filter(Boolean))]
     };
   };
