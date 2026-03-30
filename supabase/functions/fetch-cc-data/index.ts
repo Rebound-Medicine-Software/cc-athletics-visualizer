@@ -129,6 +129,9 @@ serve(async (req) => {
             test_name: testName,
             repetition_number: index + 1,
             gender: demographics.gender,
+            age: demographics.age,
+            height_cm: demographics.height_cm,
+            weight_kg: demographics.weight_kg,
             metrics: jump.metric_table,
           })
 
