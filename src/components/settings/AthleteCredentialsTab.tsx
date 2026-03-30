@@ -566,13 +566,21 @@ export const AthleteCredentialsTab = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-gray-400" />
+            <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search athletes by name or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              size="sm"
+              className="ml-auto flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Athlete
+            </Button>
             <Button
               variant={sendSignupEmails ? "default" : "outline"}
               size="sm"
@@ -581,7 +589,7 @@ export const AthleteCredentialsTab = () => {
                 setSendSignupEmails(newValue);
                 localStorage.setItem('sendSignupEmails', JSON.stringify(newValue));
               }}
-              className="ml-auto flex items-center gap-2"
+              className="flex items-center gap-2"
             >
               {sendSignupEmails ? (
                 <>
