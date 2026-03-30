@@ -178,6 +178,9 @@ export const AddAthleteFromApiDialog = ({
           cc_athlete_id: a.athlete_id,
           name: a.name,
           gender: a.gender || null,
+          age: a.age ?? null,
+          height_cm: a.height_cm ?? null,
+          weight_kg: a.weight_kg ?? null,
         }));
 
       const { error } = await supabase.from("athletes").insert(toInsert);
