@@ -6,6 +6,7 @@ interface RegionTestingData {
   country: string;
   region: string | null;
   address: string | null;
+  logo: string | null;
 }
 
 export const useRegionData = () => {

@@ -1,9 +1,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TestData } from "@/types/forcePlateTypes";
 import { useRegionData } from "@/hooks/useRegionData";
+import { supabase } from "@/integrations/supabase/client";
 
 // Fix Leaflet default markers
 import 'leaflet/dist/leaflet.css';
@@ -14,6 +14,14 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
+
+interface AthleteInfo {
+  name: string;
+  age?: number;
+  height_cm?: number;
+  weight_kg?: number;
+  avatar_url?: string;
+}
 
 interface SatelliteMapProps {
   regionFilters: {
@@ -47,21 +55,45 @@ export const SatelliteMap = ({
   const map = useRef<L.Map | null>(null);
   const [markers, setMarkers] = useState<L.Marker[]>([]);
   const { data: regionTestingData } = useRegionData();
+  const [athletesByTeam, setAthletesByTeam] = useState<Record<string, AthleteInfo[]>>({});
+
+  // Fetch athletes from Supabase for popup details
+  useEffect(() => {
+    const fetchAthletes = async () => {
+      const { data: athletes } = await supabase
+        .from('athletes')
+        .select('name, age, height_cm, weight_kg, avatar_url, cc_team_id');
+      
+      if (athletes) {
+        const grouped: Record<string, AthleteInfo[]> = {};
+        athletes.forEach(a => {
+          const teamId = a.cc_team_id || 'unknown';
+          if (!grouped[teamId]) grouped[teamId] = [];
+          grouped[teamId].push({
+            name: a.name,
+            age: a.age ?? undefined,
+            height_cm: a.height_cm ? Number(a.height_cm) : undefined,
+            weight_kg: a.weight_kg ? Number(a.weight_kg) : undefined,
+            avatar_url: a.avatar_url ?? undefined,
+          });
+        });
+        setAthletesByTeam(grouped);
+      }
+    };
+    fetchAthletes();
+  }, []);
 
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Create map centered on UK
     map.current = L.map(mapContainer.current).setView([54.5, -4.5], 6);
 
-    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
       maxZoom: 18,
     }).addTo(map.current);
 
-    // Cleanup function
     return () => {
       if (map.current) {
         map.current.remove();
@@ -74,11 +106,9 @@ export const SatelliteMap = ({
   useEffect(() => {
     if (!map.current || !regionTestingData) return;
 
-    // Clear existing markers
     markers.forEach(marker => marker.remove());
     setMarkers([]);
 
-    // Filter region data based on region filters ONLY
     let filteredRegionData = regionTestingData;
     
     if (regionFilters.country.length > 0) {
@@ -99,7 +129,6 @@ export const SatelliteMap = ({
       );
     }
 
-    // Create markers for each filtered region
     const newMarkers: L.Marker[] = [];
     const bounds = L.latLngBounds([]);
 
@@ -107,14 +136,12 @@ export const SatelliteMap = ({
       const coordinates = getTeamCoordinates(regionItem["Team Name"], regionItem.country, regionItem.region);
       if (!coordinates) return;
 
-      // Get test data for this team (may be empty - that's OK, still show the marker)
       let teamTestData = data.filter(testData => testData.team_name === regionItem["Team Name"]);
 
       const [lng, lat] = coordinates;
       const position = L.latLng(lat, lng);
       bounds.extend(position);
 
-      // Create custom colored icon based on team
       const teamColor = getTeamColor(regionItem["Team Name"]);
       const customIcon = L.divIcon({
         html: `<div style="background-color: ${teamColor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
@@ -125,9 +152,14 @@ export const SatelliteMap = ({
 
       const marker = L.marker(position, { icon: customIcon });
 
-      // Create popup content with athlete data
-      const popupContent = createPopupContent(regionItem, teamTestData, regionFilters.metricType);
-      marker.bindPopup(popupContent, { maxWidth: 300 });
+      const popupContent = createPopupContent(
+        regionItem, 
+        teamTestData, 
+        regionFilters.metricType,
+        regionItem.logo,
+        athletesByTeam
+      );
+      marker.bindPopup(popupContent, { maxWidth: 360, maxHeight: 400 });
 
       marker.addTo(map.current!);
       newMarkers.push(marker);
@@ -135,13 +167,12 @@ export const SatelliteMap = ({
 
     setMarkers(newMarkers);
 
-    // Fit map to show all markers, or center on UK if no markers
     if (newMarkers.length > 0) {
       map.current.fitBounds(bounds, { padding: [20, 20] });
     } else {
       map.current.setView([54.5, -4.5], 6);
     }
-  }, [regionFilters, data, regionTestingData]);
+  }, [regionFilters, data, regionTestingData, athletesByTeam]);
 
   return (
     <div className="mt-6 relative">
@@ -153,38 +184,23 @@ export const SatelliteMap = ({
   );
 };
 
-// Helper function to get coordinates for teams based on region data
+// Helper: coordinates
 function getTeamCoordinates(teamName: string, country: string, region?: string): [number, number] | null {
-  // More accurate coordinates based on actual location data
   const locationMap: Record<string, [number, number]> = {
-    // Wales teams
-    'Two4 Martial Arts': [-3.9436, 51.6214], // Swansea
-    'Evolve Physiotherapy': [-3.9436, 51.6214], // Swansea
-    'Joshua Athletic': [-4.0237, 51.7130], // Pontarddulais
-    'Evolve Physiotherapy (Non-Consenting)': [-3.9436, 51.6214], // Swansea
-    'Chris Rees Academy': [-3.9436, 51.6214], // Swansea
-    'Leon Welch Academy': [-3.9436, 51.6214], // Swansea
-    'Llanelli Town Academy AFC': [-4.1619, 51.6823], // Llanelli
-    
-    // England teams
-    'Manchester United': [-2.2931, 53.4631], // Manchester
-    
-    // Scotland teams
-    'Tom Stoltman': [-4.2026, 57.6920], // Alness
-    
-    // Northern Ireland teams
-    'Conor McGregor': [-6.2603, 53.3498], // Dublin (should be Ireland)
-    
-    // Ireland teams
-    'Ian Garry': [-8.4863, 51.8979], // Cork
+    'Two4 Martial Arts': [-3.9436, 51.6214],
+    'Evolve Physiotherapy': [-3.9436, 51.6214],
+    'Joshua Athletic': [-4.0237, 51.7130],
+    'Evolve Physiotherapy (Non-Consenting)': [-3.9436, 51.6214],
+    'Chris Rees Academy': [-3.9436, 51.6214],
+    'Leon Welch Academy': [-3.9436, 51.6214],
+    'Llanelli Town Academy AFC': [-4.1619, 51.6823],
+    'Manchester United': [-2.2931, 53.4631],
+    'Tom Stoltman': [-4.2026, 57.6920],
+    'Conor McGregor': [-6.2603, 53.3498],
+    'Ian Garry': [-8.4863, 51.8979],
   };
+  if (locationMap[teamName]) return locationMap[teamName];
 
-  // Try exact team name match first
-  if (locationMap[teamName]) {
-    return locationMap[teamName];
-  }
-
-  // Fallback to country/region-based coordinates
   const countryCoordinates: Record<string, [number, number]> = {
     'Wales': [-3.7837, 52.1307],
     'England': [-1.1743, 52.3555],
@@ -192,8 +208,6 @@ function getTeamCoordinates(teamName: string, country: string, region?: string):
     'Northern Ireland': [-5.9301, 54.7877],
     'Ireland': [-8.2439, 53.4129],
   };
-
-  // Regional coordinates within countries
   const regionCoordinates: Record<string, [number, number]> = {
     'Swansea': [-3.9436, 51.6214],
     'Llanelli': [-4.1619, 51.6823],
@@ -202,22 +216,11 @@ function getTeamCoordinates(teamName: string, country: string, region?: string):
     'Dublin': [-6.2603, 53.3498],
     'Cork': [-8.4863, 51.8979],
   };
-
-  // Try region-based coordinates
-  if (region && regionCoordinates[region]) {
-    return regionCoordinates[region];
-  }
-
-  // Try country-based coordinates
-  if (countryCoordinates[country]) {
-    return countryCoordinates[country];
-  }
-
-  // Default fallback
-  return [-3.7837, 52.1307]; // Wales center
+  if (region && regionCoordinates[region]) return regionCoordinates[region];
+  if (countryCoordinates[country]) return countryCoordinates[country];
+  return [-3.7837, 52.1307];
 }
 
-// Helper function to get team colors based on team name
 function getTeamColor(teamName: string): string {
   const teamColors: Record<string, string> = {
     'Two4 Martial Arts': '#FF6B6B',
@@ -232,135 +235,147 @@ function getTeamColor(teamName: string): string {
     'Conor McGregor': '#FF6348',
     'Ian Garry': '#2ED573',
   };
-
   return teamColors[teamName] || '#666666';
 }
 
-// Helper function to create popup content with athlete data
-function createPopupContent(regionItem: any, teamTestData: TestData[], selectedMetricType: string): string {
+// Build popup HTML with team logo + athlete scoreboard
+function createPopupContent(
+  regionItem: any, 
+  teamTestData: TestData[], 
+  selectedMetricType: string,
+  teamLogo: string | null,
+  athletesByTeam: Record<string, AthleteInfo[]>
+): string {
   const teamName = regionItem["Team Name"];
   const country = regionItem.country;
   const region = regionItem.region;
   const address = regionItem.address;
 
-  // Group data by athlete
-  const athleteData = new Map<string, TestData[]>();
-  teamTestData.forEach(test => {
-    if (!athleteData.has(test.athlete_name)) {
-      athleteData.set(test.athlete_name, []);
-    }
-    athleteData.get(test.athlete_name)!.push(test);
+  // Collect all athlete names from test data for this team
+  const athleteNamesFromTests = new Set<string>();
+  teamTestData.forEach(t => athleteNamesFromTests.add(t.athlete_name));
+
+  // Build metric values per athlete
+  const athleteMetrics = new Map<string, { value: number; best: number }>();
+  if (selectedMetricType && selectedMetricType !== 'all') {
+    const grouped = new Map<string, number[]>();
+    teamTestData.forEach(test => {
+      if (!grouped.has(test.athlete_name)) grouped.set(test.athlete_name, []);
+      const metrics: any = typeof test.metrics === 'string' ? JSON.parse(test.metrics) : test.metrics;
+      if (!metrics) return;
+      const v = extractMetricValue(metrics, selectedMetricType);
+      if (v > 0) grouped.get(test.athlete_name)!.push(v);
+    });
+    grouped.forEach((vals, name) => {
+      if (vals.length > 0) {
+        athleteMetrics.set(name, { value: vals[vals.length - 1], best: Math.max(...vals) });
+      }
+    });
+  }
+
+  // Sort athletes by best metric value descending for scoreboard
+  const sortedAthletes = Array.from(athleteNamesFromTests).sort((a, b) => {
+    const aVal = athleteMetrics.get(a)?.best ?? 0;
+    const bVal = athleteMetrics.get(b)?.best ?? 0;
+    return bVal - aVal;
   });
 
-  let athleteHtml = '';
-  athleteData.forEach((tests, athleteName) => {
-    const testCount = tests.length;
-    
-    // Get the selected metric type value and best value if specified
-    let metricValue = 'N/A';
-    let bestValue = 'N/A';
-    let metricDisplayName = selectedMetricType || 'Peak Force';
-    
-    if (selectedMetricType && selectedMetricType !== 'all') {
-      const allMetricValues: number[] = [];
-      
-      tests.forEach(test => {
-        const metrics = typeof test.metrics === 'string' ? JSON.parse(test.metrics) : test.metrics;
-        if (metrics) {
-          let value = 0;
-          
-          switch (selectedMetricType) {
-            case "Jump Height (cm)":
-            case "Jump Height (Pogo)":
-              value = metrics.jump_height_ft ? metrics.jump_height_ft * 30.48 : 
-                     metrics.jump_height || metrics.avg_jump_height || 0;
-              break;
-            case "Peak Power":
-              value = metrics.peak_power || 0;
-              break;
-            case "Relative Peak Power":
-              const peakPower = metrics.peak_power || 0;
-              const bodyMass = metrics.body_mass || 0;
-              value = bodyMass > 0 ? peakPower / bodyMass : 0;
-              break;
-            case "Contact Time":
-              value = metrics.contact_time || metrics.avg_contact_time || 0;
-              break;
-            case "Reactive Strength Index":
-              value = metrics.rsi || metrics.avg_rsi || 0;
-              break;
-            case "Flight Time":
-              value = metrics.flight_time || metrics.avg_flight_time || 0;
-              break;
-            case "Take-off Velocity":
-              value = metrics.takeoff_velocity || metrics.peak_velocity || 0;
-              break;
-            case "Average Rate of Force Development":
-              value = metrics.avg_rfd || metrics.rfd_max || 0;
-              break;
-            case "Average Propulsive Power":
-              value = metrics.avg_propulsive_power || metrics.avg_power || 0;
-              break;
-            case "Power":
-              value = metrics.power || metrics.avg_power || 0;
-              break;
-            case "Maximum Rate of Force Development":
-              value = metrics.rfd_max || metrics.avg_rfd || 0;
-              break;
-            case "Force at Max Rate of Force Development":
-              value = metrics.force_150ms || metrics.force_100ms || metrics.force_50ms || metrics.force_peak || 0;
-              break;
-            case "Peak Force":
-              value = metrics.peak_force || metrics.force_peak || 0;
-              break;
-            case "Early Explosive Power":
-              value = metrics.force_50ms || 0;
-              break;
-            default:
-              value = metrics.peak_force || metrics.force_peak || 0;
-          }
-          
-          if (value > 0) {
-            allMetricValues.push(value);
-          }
-        }
-      });
-      
-      if (allMetricValues.length > 0) {
-        // Get the most recent value (last test)
-        metricValue = allMetricValues[allMetricValues.length - 1].toFixed(2);
-        // Get the best (highest) value
-        bestValue = Math.max(...allMetricValues).toFixed(2);
-      }
-    }
+  // Find athlete details from the athletes table — match by name
+  const allAthletes = Object.values(athletesByTeam).flat();
 
-    athleteHtml += `
-      <div style="margin-bottom: 8px; padding: 4px; background: #f8f9fa; border-radius: 4px;">
-        <div><strong>Athlete:</strong> ${athleteName}</div>
-        <div><strong>Tests:</strong> ${testCount}</div>
-        ${selectedMetricType && selectedMetricType !== 'all' ? 
-          `<div><strong>${metricDisplayName}:</strong> ${metricValue}</div>
-           <div><strong>Best ${metricDisplayName}:</strong> ${bestValue}</div>` : 
-          ''
-        }
+  // Logo HTML
+  const logoHtml = teamLogo 
+    ? `<img src="${teamLogo}" alt="${teamName}" style="width:40px;height:40px;border-radius:6px;object-fit:contain;border:1px solid #e2e8f0;" />`
+    : `<div style="width:40px;height:40px;border-radius:6px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:bold;color:#94a3b8;">${teamName.charAt(0)}</div>`;
+
+  // Athlete rows
+  let athleteRowsHtml = '';
+  sortedAthletes.forEach((name, idx) => {
+    const info = allAthletes.find(a => a.name === name);
+    const metric = athleteMetrics.get(name);
+    const rank = idx + 1;
+    const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+    
+    const avatarHtml = info?.avatar_url
+      ? `<img src="${info.avatar_url}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;" />`
+      : `<div style="width:28px;height:28px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#64748b;flex-shrink:0;">${name.charAt(0)}</div>`;
+
+    const detailParts: string[] = [];
+    if (info?.age) detailParts.push(`Age: ${info.age}`);
+    if (info?.height_cm) detailParts.push(`H: ${info.height_cm}cm`);
+    if (info?.weight_kg) detailParts.push(`W: ${info.weight_kg}kg`);
+
+    athleteRowsHtml += `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 4px;${idx % 2 === 0 ? 'background:#f8fafc;' : ''}border-radius:4px;">
+        <span style="min-width:20px;text-align:center;font-size:12px;">${rankBadge}</span>
+        ${avatarHtml}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+          <div style="font-size:9px;color:#64748b;">${detailParts.join(' · ') || 'No details'}</div>
+          ${metric ? `<div style="font-size:9px;color:#3b82f6;">Latest: ${metric.value.toFixed(2)} | Best: ${metric.best.toFixed(2)}</div>` : ''}
+        </div>
       </div>
     `;
   });
 
+  if (!athleteRowsHtml) {
+    athleteRowsHtml = `<div style="padding:12px;text-align:center;color:#94a3b8;font-size:11px;">No athlete data available</div>`;
+  }
+
   return `
-    <div style="padding: 8px; font-family: Arial, sans-serif; max-width: 280px;">
-      <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 14px; color: #333;">${teamName}</h3>
-      <div style="font-size: 11px; color: #666; margin-bottom: 8px;">
-        <div><strong>Country:</strong> ${country}</div>
-        ${region ? `<div><strong>Region:</strong> ${region}</div>` : ''}
-        ${address ? `<div><strong>Address:</strong> ${address}</div>` : ''}
+    <div style="font-family:system-ui,-apple-system,sans-serif;max-width:340px;">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px;">
+        ${logoHtml}
+        <div>
+          <h3 style="margin:0;font-size:14px;font-weight:700;color:#1e293b;">${teamName}</h3>
+          <div style="font-size:10px;color:#64748b;">${country}${region ? ' · ' + region : ''}${address ? ' · ' + address : ''}</div>
+        </div>
       </div>
-      <div style="max-height: 160px; overflow-y: auto; font-size: 11px;">
-        ${athleteHtml}
+      <div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;">
+        Athlete Scoreboard${selectedMetricType && selectedMetricType !== 'all' ? ' — ' + selectedMetricType : ''}
       </div>
-      <div style="font-size: 10px; color: #999; margin-top: 8px; text-align: center;">
-        Total Athletes: ${athleteData.size} | Total Tests: ${teamTestData.length}
+      <div style="max-height:200px;overflow-y:auto;">
+        ${athleteRowsHtml}
+      </div>
+      <div style="font-size:9px;color:#94a3b8;margin-top:6px;text-align:center;padding-top:6px;border-top:1px solid #e2e8f0;">
+        ${sortedAthletes.length} Athletes · ${teamTestData.length} Tests
       </div>
     </div>
   `;
+}
+
+function extractMetricValue(metrics: any, metricType: string): number {
+  switch (metricType) {
+    case "Jump Height (cm)":
+    case "Jump Height (Pogo)":
+      return metrics.jump_height_ft ? metrics.jump_height_ft * 30.48 : metrics.jump_height || metrics.avg_jump_height || 0;
+    case "Peak Power":
+      return metrics.peak_power || 0;
+    case "Relative Peak Power":
+      return (metrics.peak_power && metrics.body_mass && metrics.body_mass > 0) ? metrics.peak_power / metrics.body_mass : 0;
+    case "Contact Time":
+      return metrics.contact_time || metrics.avg_contact_time || 0;
+    case "Reactive Strength Index":
+      return metrics.rsi || metrics.avg_rsi || 0;
+    case "Flight Time":
+      return metrics.flight_time || metrics.avg_flight_time || 0;
+    case "Take-off Velocity":
+      return metrics.takeoff_velocity || metrics.peak_velocity || 0;
+    case "Average Rate of Force Development":
+      return metrics.avg_rfd || metrics.rfd_max || 0;
+    case "Average Propulsive Power":
+      return metrics.avg_propulsive_power || metrics.avg_power || 0;
+    case "Power":
+      return metrics.power || metrics.avg_power || 0;
+    case "Maximum Rate of Force Development":
+      return metrics.rfd_max || metrics.avg_rfd || 0;
+    case "Force at Max Rate of Force Development":
+      return metrics.force_150ms || metrics.force_100ms || metrics.force_50ms || metrics.force_peak || 0;
+    case "Peak Force":
+      return metrics.peak_force || metrics.force_peak || 0;
+    case "Early Explosive Power":
+      return metrics.force_50ms || 0;
+    default:
+      return metrics.peak_force || metrics.force_peak || 0;
+  }
 }
