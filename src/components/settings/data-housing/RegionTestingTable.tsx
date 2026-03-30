@@ -26,6 +26,8 @@ export const RegionTestingTable = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editForm, setEditForm] = useState<Partial<RegionTesting>>({});
   const [pendingLogoFile, setPendingLogoFile] = useState<string | null>(null);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchRegions();
