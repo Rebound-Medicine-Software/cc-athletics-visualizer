@@ -626,6 +626,16 @@ export const AthleteCredentialsTab = () => {
               Add Athlete
             </Button>
             <Button
+              onClick={() => setShowDeleteConfirm(true)}
+              size="sm"
+              variant="destructive"
+              disabled={selectedForDelete.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete ({selectedForDelete.size})
+            </Button>
+            <Button
               variant={sendSignupEmails ? "default" : "outline"}
               size="sm"
               onClick={() => {
