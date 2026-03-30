@@ -53,6 +53,9 @@ export const AthleteCredentialsTab = () => {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
