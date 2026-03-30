@@ -236,10 +236,21 @@ export const RegionTestingTable = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Region Testing Data</h3>
-        <Button onClick={() => { setIsAdding(true); setPendingLogoFile(null); }} disabled={isAdding || !!editingId}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Region
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowDeleteConfirm(true)}
+            variant="outline"
+            className="text-destructive hover:bg-destructive/10"
+            disabled={selectedForDelete.size === 0 || isAdding || !!editingId}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Remove Region{selectedForDelete.size > 0 ? ` (${selectedForDelete.size})` : ''}
+          </Button>
+          <Button onClick={() => { setIsAdding(true); setPendingLogoFile(null); }} disabled={isAdding || !!editingId}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Region
+          </Button>
+        </div>
       </div>
 
       {isAdding && (
