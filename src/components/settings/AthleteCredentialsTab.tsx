@@ -7,10 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
-import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX } from "lucide-react";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { AddAthleteFromApiDialog } from "./AddAthleteFromApiDialog";
 
 interface Athlete {
   id: string;
@@ -51,6 +52,7 @@ export const AthleteCredentialsTab = () => {
     const saved = localStorage.getItem('sendSignupEmails');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [showAddDialog, setShowAddDialog] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
@@ -564,13 +566,21 @@ export const AthleteCredentialsTab = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Search className="w-4 h-4 text-gray-400" />
+            <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search athletes by name or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+            <Button
+              onClick={() => setShowAddDialog(true)}
+              size="sm"
+              className="ml-auto flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Athlete
+            </Button>
             <Button
               variant={sendSignupEmails ? "default" : "outline"}
               size="sm"
@@ -579,7 +589,7 @@ export const AthleteCredentialsTab = () => {
                 setSendSignupEmails(newValue);
                 localStorage.setItem('sendSignupEmails', JSON.stringify(newValue));
               }}
-              className="ml-auto flex items-center gap-2"
+              className="flex items-center gap-2"
             >
               {sendSignupEmails ? (
                 <>
@@ -891,6 +901,13 @@ export const AthleteCredentialsTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddAthleteFromApiDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        existingAthleteIds={athletes.map(a => a.cc_athlete_id)}
+        onAthletesAdded={fetchAthletes}
+      />
     </Card>
   );
 };
