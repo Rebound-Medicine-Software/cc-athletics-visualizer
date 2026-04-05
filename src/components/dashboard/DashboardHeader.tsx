@@ -17,7 +17,6 @@ export const DashboardHeader = ({
   activeSection,
   navigationItems,
 }: DashboardHeaderProps) => {
-  const navigate = useNavigate();
   const { teamBranding, profile } = useAuth();
   return (
     <div
