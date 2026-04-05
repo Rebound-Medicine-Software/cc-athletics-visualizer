@@ -6,7 +6,7 @@ import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
 import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
-import { SendReportsModal } from "./SendReportsModal";
+
 import { LiveDataSection } from "./LiveDataSection";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
@@ -95,10 +95,6 @@ export const DashboardContent = ({
       default:
         return (
           <>
-            {/* Send Reports Button */}
-            <div className="flex justify-end">
-              <SendReportsModal />
-            </div>
             {/* Performance Highlights */}
             <HighlightsSection
               data={data}

@@ -1,9 +1,8 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { SendReportsModal } from "./SendReportsModal";
 
 interface DashboardHeaderProps {
   handleRefresh: () => void;
@@ -18,7 +17,6 @@ export const DashboardHeader = ({
   activeSection,
   navigationItems,
 }: DashboardHeaderProps) => {
-  const navigate = useNavigate();
   const { teamBranding, profile } = useAuth();
   return (
     <div
@@ -68,16 +66,7 @@ export const DashboardHeader = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh Data
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                // TODO: Implement report sending functionality
-                console.log("Send Report(s) clicked");
-              }}
-              className="text-primary border-primary hover:bg-primary/10"
-            >
-              Send Report(s)
-            </Button>
+            <SendReportsModal />
           </div>
         </div>
       </div>
