@@ -111,7 +111,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     if (filters.sport.length > 0) {
       filtered = filtered.filter(item => filters.sport.includes(item.Sport));
     }
-    if (filters.sex.length > 0) {
+    if (filters.sex.length > 0 && !filters.sex.includes("all")) {
       filtered = filtered.filter(item => filters.sex.includes(item.Sex));
     }
     if (filters.weightCategory) {
