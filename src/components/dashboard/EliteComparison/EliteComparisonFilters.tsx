@@ -188,32 +188,12 @@ export const EliteComparisonFilters = ({
     }));
   };
 
-  const handleSexChange = (value: string[]) => {
-    // If "all" was just added, select only "all"
-    if (value.includes("all") && !filters.sex.includes("all")) {
-      setFilters(prev => ({
-        ...prev,
-        sex: ["all"],
-        weightCategory: "",
-        ageGroup: ""
-      }));
-      return;
-    }
-    // If a specific sex was added while "all" is selected, remove "all"
-    if (value.includes("all") && value.length > 1) {
-      setFilters(prev => ({
-        ...prev,
-        sex: value.filter(v => v !== "all"),
-        weightCategory: "",
-        ageGroup: ""
-      }));
-      return;
-    }
+  const handleSexChange = (value: string) => {
     setFilters(prev => ({
       ...prev,
-      sex: value,
-      weightCategory: value.length === 0 ? "" : prev.weightCategory,
-      ageGroup: value.length === 0 ? "" : prev.ageGroup
+      sex: [value],
+      weightCategory: "",
+      ageGroup: ""
     }));
   };
 
@@ -299,15 +279,22 @@ export const EliteComparisonFilters = ({
           {/* Sex */}
           <div className="flex flex-col">
             <label className={`block text-sm font-medium mb-2 text-center ${!sexEnabled ? "text-gray-400" : "text-gray-700"}`}>Sex</label>
-            <MultiSelectDropdown
-              options={sexOptions}
-              value={filters.sex}
-              onChange={handleSexChange}
-              placeholder="Select Sex"
-              className={`${!sexEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}
-              labelClassName="bg-white"
+            <Select 
+              value={filters.sex[0] || ""} 
+              onValueChange={handleSexChange}
               disabled={!sexEnabled || isEliteDataLoading}
-            />
+            >
+              <SelectTrigger className={`${(!sexEnabled || isEliteDataLoading) ? "bg-gray-100 opacity-60 cursor-not-allowed" : "bg-white"}`}>
+                <SelectValue placeholder="Select Sex" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50">
+                {sexOptions.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Weight Category */}
