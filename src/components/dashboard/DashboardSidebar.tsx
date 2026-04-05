@@ -87,9 +87,9 @@ export const DashboardSidebar = ({
               >
                 <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
                 {!isNavigationCollapsed && (
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{item.label}</span>
-                    <span className="text-xs opacity-70">{item.description}</span>
+                  <div className="flex flex-col items-start min-w-0 overflow-hidden">
+                    <span className="font-medium truncate w-full">{item.label}</span>
+                    <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
                   </div>
                 )}
               </Button>
