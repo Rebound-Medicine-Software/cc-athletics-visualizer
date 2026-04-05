@@ -182,13 +182,33 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       sport: value,
-      sex: value.length === 0 ? [] : prev.sex,
+      sex: value.length === 0 ? [] : (prev.sex.length === 0 ? ["all"] : prev.sex),
       weightCategory: value.length === 0 ? "" : prev.weightCategory,
       ageGroup: value.length === 0 ? "" : prev.ageGroup
     }));
   };
 
   const handleSexChange = (value: string[]) => {
+    // If "all" was just added, select only "all"
+    if (value.includes("all") && !filters.sex.includes("all")) {
+      setFilters(prev => ({
+        ...prev,
+        sex: ["all"],
+        weightCategory: "",
+        ageGroup: ""
+      }));
+      return;
+    }
+    // If a specific sex was added while "all" is selected, remove "all"
+    if (value.includes("all") && value.length > 1) {
+      setFilters(prev => ({
+        ...prev,
+        sex: value.filter(v => v !== "all"),
+        weightCategory: "",
+        ageGroup: ""
+      }));
+      return;
+    }
     setFilters(prev => ({
       ...prev,
       sex: value,
@@ -248,10 +268,13 @@ export const EliteComparisonFilters = ({
     label: sport
   }));
 
-  const sexOptions = eliteFilterOptions.sexes.map(sex => ({
-    value: sex,
-    label: sex.charAt(0).toUpperCase() + sex.slice(1)
-  }));
+  const sexOptions = [
+    { value: "all", label: "All" },
+    ...eliteFilterOptions.sexes.map(sex => ({
+      value: sex,
+      label: sex.charAt(0).toUpperCase() + sex.slice(1)
+    }))
+  ];
 
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full">
