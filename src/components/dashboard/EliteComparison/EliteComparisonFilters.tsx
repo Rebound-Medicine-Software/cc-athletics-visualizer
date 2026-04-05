@@ -189,6 +189,26 @@ export const EliteComparisonFilters = ({
   };
 
   const handleSexChange = (value: string[]) => {
+    // If "all" was just added, select only "all"
+    if (value.includes("all") && !filters.sex.includes("all")) {
+      setFilters(prev => ({
+        ...prev,
+        sex: ["all"],
+        weightCategory: "",
+        ageGroup: ""
+      }));
+      return;
+    }
+    // If a specific sex was added while "all" is selected, remove "all"
+    if (value.includes("all") && value.length > 1) {
+      setFilters(prev => ({
+        ...prev,
+        sex: value.filter(v => v !== "all"),
+        weightCategory: "",
+        ageGroup: ""
+      }));
+      return;
+    }
     setFilters(prev => ({
       ...prev,
       sex: value,
