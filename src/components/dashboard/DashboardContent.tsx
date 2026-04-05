@@ -95,10 +95,6 @@ export const DashboardContent = ({
       default:
         return (
           <>
-            {/* Send Reports Button */}
-            <div className="flex justify-end">
-              <SendReportsModal />
-            </div>
             {/* Performance Highlights */}
             <HighlightsSection
               data={data}
