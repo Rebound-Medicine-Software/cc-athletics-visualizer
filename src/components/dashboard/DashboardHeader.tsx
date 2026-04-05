@@ -1,9 +1,8 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { SendReportsModal } from "./SendReportsModal";
 
 interface DashboardHeaderProps {
   handleRefresh: () => void;
