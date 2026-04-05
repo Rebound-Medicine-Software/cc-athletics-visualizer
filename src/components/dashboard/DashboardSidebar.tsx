@@ -82,7 +82,7 @@ export const DashboardSidebar = ({
               <Button
                 key={item.id}
                 variant={activeSection === item.id ? "default" : "ghost"}
-                className={`w-full justify-start text-left ${isNavigationCollapsed ? "px-2" : ""}`}
+                className={`w-full justify-start text-left overflow-hidden ${isNavigationCollapsed ? "px-2" : ""}`}
                 onClick={() => handleItemClick(item.id)}
               >
                 <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
