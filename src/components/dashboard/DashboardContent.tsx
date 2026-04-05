@@ -6,7 +6,7 @@ import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
 import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
-import { SendReportsModal } from "./SendReportsModal";
+
 import { LiveDataSection } from "./LiveDataSection";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
