@@ -182,7 +182,7 @@ export const EliteComparisonFilters = ({
     setFilters(prev => ({
       ...prev,
       sport: value,
-      sex: value.length === 0 ? [] : prev.sex,
+      sex: value.length === 0 ? [] : (prev.sex.length === 0 ? ["all"] : prev.sex),
       weightCategory: value.length === 0 ? "" : prev.weightCategory,
       ageGroup: value.length === 0 ? "" : prev.ageGroup
     }));
