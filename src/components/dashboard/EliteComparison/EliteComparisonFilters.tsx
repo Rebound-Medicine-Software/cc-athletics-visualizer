@@ -248,10 +248,13 @@ export const EliteComparisonFilters = ({
     label: sport
   }));
 
-  const sexOptions = eliteFilterOptions.sexes.map(sex => ({
-    value: sex,
-    label: sex.charAt(0).toUpperCase() + sex.slice(1)
-  }));
+  const sexOptions = [
+    { value: "all", label: "All" },
+    ...eliteFilterOptions.sexes.map(sex => ({
+      value: sex,
+      label: sex.charAt(0).toUpperCase() + sex.slice(1)
+    }))
+  ];
 
   return (
     <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full">
