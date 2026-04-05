@@ -57,7 +57,7 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
     
     // Filter by sport + sex for weight categories
     let sexFiltered = sportFiltered;
-    if (filters.sex.length > 0) {
+    if (filters.sex.length > 0 && !filters.sex.includes("all")) {
       sexFiltered = sexFiltered.filter(item => filters.sex.includes(item.Sex));
     }
     const weightCategories = [...new Set(sexFiltered.map(item => item["Weight Category (kg)"]).filter(Boolean))];
