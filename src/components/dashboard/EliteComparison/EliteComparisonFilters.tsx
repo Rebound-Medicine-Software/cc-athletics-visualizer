@@ -141,12 +141,8 @@ export const EliteComparisonFilters = ({
     const isCMJ = selectedTest.toLowerCase().includes('cmj') || selectedTest === 'Countermovement Jump';
     
     if (isCMJ) {
-      const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
-        if (metric === 'Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) return false;
-        if (metric === 'Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) return false;
-        return true;
-      });
-      setAvailableMetricTypes(visibleCMJColumns);
+      // Show all CMJ metrics in the dashboard filter regardless of hidden columns in settings
+      setAvailableMetricTypes(cmjDynamicColumns);
       return;
     }
 
