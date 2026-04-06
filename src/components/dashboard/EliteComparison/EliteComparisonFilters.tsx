@@ -126,38 +126,37 @@ export const EliteComparisonFilters = ({
     fetchExerciseConfigs();
   }, []);
 
-  // Update available metric types when configs or hidden columns change
+  // Update available metric types based on selected test name
   useEffect(() => {
-    console.log('Updating metric types with hiddenCMJColumns:', hiddenCMJColumns);
+    const selectedTest = filters.testName;
     
-    // Filter CMJ dynamic columns based on hidden state
-    const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
-      if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) {
-        console.log('Filtering out CMJ Jump Height (cm)');
-        return false;
-      }
-      if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) {
-        console.log('Filtering out CMJ Peak Power (W)');
-        return false;
-      }
-      return true;
-    });
+    if (!selectedTest) {
+      setAvailableMetricTypes([]);
+      return;
+    }
+
+    // Check if the selected test is "CMJ" (matches the hardcoded CMJ columns)
+    const isCMJ = selectedTest.toLowerCase().includes('cmj') || selectedTest === 'Countermovement Jump';
     
-    console.log('Visible CMJ columns:', visibleCMJColumns);
-    
-    // Build dynamic metric types from exercise configs
-    const dynamicMetrics = new Set<string>();
-    exerciseConfigs.forEach(config => {
-      config.metrics.forEach((metric: string) => {
-        dynamicMetrics.add(`${config.test_name} - ${metric}`);
+    if (isCMJ) {
+      const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
+        if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) return false;
+        if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) return false;
+        return true;
       });
-    });
-    
-    // Only show dynamic columns (CMJ + exercise configs)
-    const finalMetrics = [...visibleCMJColumns, ...Array.from(dynamicMetrics)];
-    console.log('Final available metrics:', finalMetrics);
-    setAvailableMetricTypes(finalMetrics);
-  }, [exerciseConfigs, hiddenCMJColumns]);
+      setAvailableMetricTypes(visibleCMJColumns);
+      return;
+    }
+
+    // Find matching exercise config for the selected test name
+    const matchingConfig = exerciseConfigs.find(config => config.test_name === selectedTest);
+    if (matchingConfig) {
+      const configMetrics = matchingConfig.metrics.map((metric: string) => `${matchingConfig.test_name} - ${metric}`);
+      setAvailableMetricTypes(configMetrics);
+    } else {
+      setAvailableMetricTypes([]);
+    }
+  }, [exerciseConfigs, hiddenCMJColumns, filters.testName]);
   
   // Get test names from both static and dynamic configs
   const availableTestNames = React.useMemo(() => {
