@@ -46,8 +46,10 @@ interface EliteComparisonFiltersProps {
 
 // Dynamic columns from Elite Athlete Data table (CMJ columns)
 const cmjDynamicColumns = [
-  "CMJ Jump Height (cm)",
-  "CMJ Peak Power (W)"
+  "Jump Height (cm)",
+  "Peak Power (W)",
+  "Relative Peak Power (W/kg)",
+  "Reactive Strength Index (RSI)"
 ];
 
 interface ExerciseConfig {
@@ -140,8 +142,8 @@ export const EliteComparisonFilters = ({
     
     if (isCMJ) {
       const visibleCMJColumns = cmjDynamicColumns.filter(metric => {
-        if (metric === 'CMJ Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) return false;
-        if (metric === 'CMJ Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) return false;
+        if (metric === 'Jump Height (cm)' && hiddenCMJColumns.includes('cmj_height')) return false;
+        if (metric === 'Peak Power (W)' && hiddenCMJColumns.includes('cmj_power')) return false;
         return true;
       });
       setAvailableMetricTypes(visibleCMJColumns);
