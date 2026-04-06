@@ -41,6 +41,20 @@ export function IndividualFilters({
   resetFiltersKey
 }: IndividualFiltersProps) {
 
+  // Fetch exercise configs from elite_exercise_configs table
+  const [exerciseConfigs, setExerciseConfigs] = useState<{ test_name: string; metrics: string[] }[]>([]);
+  
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      const { data, error } = await supabase
+        .from('elite_exercise_configs')
+        .select('test_name, metrics')
+        .order('created_at', { ascending: true });
+      if (!error && data) setExerciseConfigs(data);
+    };
+    fetchConfigs();
+  }, []);
+
   // Cascading filtering logic with mutual connections
   // 1. Apply team filter from Performance Insights first
   const teamFilteredData = selectedTeams.length > 0
@@ -64,10 +78,13 @@ export function IndividualFilters({
     : testNameFilteredData;
   const uniqueTestDates = Array.from(new Set(athleteFilteredData.map(d => d.test_date))).sort();
 
-  // 5. Metric Types - based on selected test name only (these are predefined)
-  const availableMetricTypes = filters.testNames
-    ? getMetricTypesForTest(filters.testNames)
-    : [];
+  // 5. Metric Types - from elite_exercise_configs if available, otherwise fallback to hardcoded
+  const availableMetricTypes = (() => {
+    if (!filters.testNames) return [];
+    const config = exerciseConfigs.find(c => c.test_name === filters.testNames);
+    if (config) return config.metrics;
+    return getMetricTypesForTest(filters.testNames);
+  })();
 
   // Convert to option shape
   const athleteOptions = filteredAthleteNames.map(a => ({ value: a, label: a }));
