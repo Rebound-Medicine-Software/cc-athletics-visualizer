@@ -170,7 +170,7 @@ export const Filters = ({
 
   // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
   const sexEnabled = filters.teamName.length > 0;
-  const athleteEnabled = filters.sex && filters.sex !== "all";
+  const athleteEnabled = sexEnabled && !!filters.sex;
   const testNameEnabled = filters.athleteName.length > 0;
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
@@ -184,8 +184,7 @@ export const Filters = ({
     setFilters(prev => ({
       ...prev,
       teamName: value,
-      // Only reset dependent filters when team is completely cleared
-      sex: value.length === 0 ? "all" : prev.sex,
+      sex: value.length === 0 ? "all" : (prev.sex || "all"),
       athleteName: value.length === 0 ? [] : prev.athleteName,
       testName: value.length === 0 ? "all" : prev.testName
     }));
