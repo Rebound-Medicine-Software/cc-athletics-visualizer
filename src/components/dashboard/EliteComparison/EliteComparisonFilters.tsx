@@ -140,6 +140,7 @@ export const EliteComparisonFilters = ({
     // Check if the selected test is "CMJ" (matches the hardcoded CMJ columns)
     const isCMJ = selectedTest.toLowerCase().includes('cmj') || selectedTest === 'Countermovement Jump';
     
+    if (isCMJ) {
       // Show all CMJ metrics in the dashboard filter regardless of hidden columns in settings
       setAvailableMetricTypes(cmjDynamicColumns);
       return;
