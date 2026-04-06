@@ -170,7 +170,7 @@ export const Filters = ({
 
   // Individual Filters: Team Name (always enabled) > Sex > Athlete Name > Test Name
   const sexEnabled = filters.teamName.length > 0;
-  const athleteEnabled = filters.sex && filters.sex !== "all";
+  const athleteEnabled = sexEnabled && !!filters.sex;
   const testNameEnabled = filters.athleteName.length > 0;
 
   // Region Filters: Country (always enabled) > Region > Address > Metric Type
