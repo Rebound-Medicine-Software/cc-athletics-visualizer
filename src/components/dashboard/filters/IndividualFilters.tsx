@@ -7,6 +7,7 @@ import { getMetricTypesForTest } from "./filterUtils";
 import { formatDate } from "@/utils/dateUtils";
 import { RefreshCcw } from "lucide-react";
 import { TestData } from "@/types/forcePlateTypes";
+import { supabase } from "@/integrations/supabase/client";
 
 // Props for filter component (accepts parent filter state and handlers)
 interface IndividualFiltersProps {
