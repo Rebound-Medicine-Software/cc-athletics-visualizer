@@ -149,7 +149,7 @@ export const EliteComparisonFilters = ({
     // Find matching exercise config for the selected test name
     const matchingConfig = exerciseConfigs.find(config => config.test_name === selectedTest);
     if (matchingConfig) {
-      const configMetrics = matchingConfig.metrics.map((metric: string) => `${matchingConfig.test_name} - ${metric}`);
+      const configMetrics = matchingConfig.metrics.map((metric: string) => metric);
       setAvailableMetricTypes(configMetrics);
     } else {
       setAvailableMetricTypes([]);
