@@ -46,8 +46,10 @@ interface EliteComparisonFiltersProps {
 
 // Dynamic columns from Elite Athlete Data table (CMJ columns)
 const cmjDynamicColumns = [
-  "CMJ Jump Height (cm)",
-  "CMJ Peak Power (W)"
+  "Jump Height (cm)",
+  "Peak Power (W)",
+  "Relative Peak Power (W/kg)",
+  "Reactive Strength Index (RSI)"
 ];
 
 interface ExerciseConfig {
