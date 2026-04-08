@@ -20,6 +20,11 @@ export type Database = {
           avatar_url: string | null
           cc_athlete_id: string
           cc_team_id: string | null
+          consent_ip_address: string | null
+          consent_signed_at: string | null
+          consent_signed_name: string | null
+          consent_status: string
+          consent_token: string | null
           created_at: string | null
           email: string | null
           gender: string | null
@@ -36,6 +41,11 @@ export type Database = {
           avatar_url?: string | null
           cc_athlete_id: string
           cc_team_id?: string | null
+          consent_ip_address?: string | null
+          consent_signed_at?: string | null
+          consent_signed_name?: string | null
+          consent_status?: string
+          consent_token?: string | null
           created_at?: string | null
           email?: string | null
           gender?: string | null
@@ -52,6 +62,11 @@ export type Database = {
           avatar_url?: string | null
           cc_athlete_id?: string
           cc_team_id?: string | null
+          consent_ip_address?: string | null
+          consent_signed_at?: string | null
+          consent_signed_name?: string | null
+          consent_status?: string
+          consent_token?: string | null
           created_at?: string | null
           email?: string | null
           gender?: string | null
