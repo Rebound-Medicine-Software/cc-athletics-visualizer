@@ -78,7 +78,7 @@ serve(async (req) => {
       })
     }
 
-    notificationapi.init('n3g0q177rbzrr6riq8re90n1yc', notificationsApiKey, {
+    notificationapi.init('vb71ipi0lqnhmn54oedqyx2h9m', notificationsApiKey, {
       baseURL: 'https://api.eu.notificationapi.com',
       domainKey: notificationsDomainKey,
     })
