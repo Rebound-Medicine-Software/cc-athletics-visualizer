@@ -100,6 +100,7 @@ serve(async (req) => {
           login_password: loginPassword,
           consent_url: consentUrl,
         },
+        templateId: 'send_consent_email',
       })
 
       const messages = extractMessages(notificationResponse?.data)
