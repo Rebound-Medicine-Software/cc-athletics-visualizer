@@ -27,6 +27,9 @@ interface Athlete {
   avatar_url?: string;
   email?: string;
   password_hash?: string;
+  consent_status?: string;
+  consent_token?: string;
+  consent_signed_at?: string;
   created_at: string;
   team_name?: string;
   team_logo_url?: string;
