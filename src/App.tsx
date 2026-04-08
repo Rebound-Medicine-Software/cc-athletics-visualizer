@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Setup from "./pages/Setup";
 import Settings from "./pages/Settings";
+import AthleteConsent from "./pages/AthleteConsent";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/admin(Dashboard)" element={<SuperAdminDashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings(Consumer1)" element={<Settings />} />
+            <Route path="/consent" element={<AthleteConsent />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
