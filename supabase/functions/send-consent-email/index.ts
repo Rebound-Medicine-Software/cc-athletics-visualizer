@@ -32,7 +32,7 @@ serve(async (req) => {
       )
     }
 
-    const { athleteEmail, athleteName, organisationName, consentToken, loginPassword, siteUrl } = parsed.data
+    const { athleteEmail, athleteName, organisationName, organisationLogo, consentToken, loginPassword, siteUrl } = parsed.data
     const consentUrl = `${siteUrl}/consent?token=${consentToken}`
 
     // Initialize NotificationAPI
