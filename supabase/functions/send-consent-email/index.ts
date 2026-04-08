@@ -1,11 +1,39 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import notificationapi from 'npm:notificationapi-node-server-sdk@1.1.0'
+import notificationapi, { Channels } from 'npm:notificationapi-node-server-sdk@1.1.0'
 import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
+
+const notificationsApiKey = Deno.env.get('NOTIFICATIONS_API_KEY')
+const notificationsDomainKey = Deno.env.get('NOTIFICATIONS_API_DOMAIN_KEY')
+
+const jsonHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+}
+
+const respond = (ok: boolean, payload: Record<string, unknown>) =>
+  new Response(JSON.stringify({ ok, ...payload }), {
+    status: 200,
+    headers: jsonHeaders,
+  })
+
+const extractMessages = (payload: unknown): string[] => {
+  if (!payload || typeof payload !== 'object') return []
+
+  const maybeMessages = (payload as { messages?: unknown }).messages
+  return Array.isArray(maybeMessages)
+    ? maybeMessages.filter((message): message is string => typeof message === 'string')
+    : []
+}
+
+const hasFatalWarning = (messages: string[]) =>
+  messages.some((message) =>
+    /all delivery channels are disabled|no default email template set|template with id/i.test(message)
+  )
 
 const BodySchema = z.object({
   athleteId: z.string().uuid(),
@@ -26,34 +54,47 @@ serve(async (req) => {
   try {
     const parsed = BodySchema.safeParse(await req.json())
     if (!parsed.success) {
-      return new Response(
-        JSON.stringify({ error: parsed.error.flatten().fieldErrors }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return respond(false, {
+        error: 'Invalid consent email payload',
+        fieldErrors: parsed.error.flatten().fieldErrors,
+      })
     }
 
-    const { athleteEmail, athleteName, organisationName, organisationLogo, consentToken, loginPassword, siteUrl } = parsed.data
+    const {
+      athleteId,
+      athleteEmail,
+      athleteName,
+      organisationName,
+      organisationLogo,
+      consentToken,
+      loginPassword,
+      siteUrl,
+    } = parsed.data
     const consentUrl = `${siteUrl}/consent?token=${consentToken}`
 
-    // Initialize NotificationAPI
-    notificationapi.init(
-      'n3g0q177rbzrr6riq8re90n1yc',
-      'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
-      {
-        baseURL: 'https://api.eu.notificationapi.com'
-      }
-    )
+    if (!notificationsApiKey || !notificationsDomainKey) {
+      return respond(false, {
+        error: 'Pingram is not configured correctly for this function.',
+      })
+    }
+
+    notificationapi.init('n3g0q177rbzrr6riq8re90n1yc', notificationsApiKey, {
+      baseURL: 'https://api.eu.notificationapi.com',
+      domainKey: notificationsDomainKey,
+    })
 
     console.log('Sending consent email via NotificationAPI to:', athleteEmail)
 
     try {
-      await notificationapi.send({
-        type: 'send_consent_email',
-        to: {
-          id: athleteEmail,
+      const notificationResponse = await notificationapi.send({
+        notificationId: 'send_consent_email',
+        templateId: 'send_consent_email',
+        forceChannels: [Channels.EMAIL],
+        user: {
+          id: athleteId,
           email: athleteEmail,
         },
-        parameters: {
+        mergeTags: {
           athlete_name: athleteName,
           organisation_name: organisationName,
           organisation_logo: organisationLogo,
@@ -61,23 +102,47 @@ serve(async (req) => {
           login_password: loginPassword,
           consent_url: consentUrl,
         },
-        templateId: 'send_consent_email',
       })
-      console.log('NotificationAPI send completed successfully')
-    } catch (notifError: any) {
-      console.error('NotificationAPI error:', notifError?.message || 'Unknown error')
-      // NotificationAPI may throw circular-reference objects but still send the email
-    }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+      const messages = extractMessages(notificationResponse?.data)
+      const trackingId =
+        notificationResponse?.data && typeof notificationResponse.data === 'object'
+          ? (notificationResponse.data as { trackingId?: unknown }).trackingId
+          : undefined
+
+      if (messages.length > 0) {
+        console.warn('NotificationAPI returned warnings:', messages)
+      }
+
+      if (hasFatalWarning(messages)) {
+        return respond(false, {
+          error: 'Pingram accepted the request but did not send an email.',
+          details: messages,
+          trackingId,
+        })
+      }
+
+      console.log('NotificationAPI send completed successfully')
+      return respond(true, {
+        message: 'Consent email sent successfully.',
+        trackingId,
+        warnings: messages,
+      })
+    } catch (notifError: any) {
+      const details = extractMessages(notifError?.response?.data)
+      const errorMessage =
+        notifError?.response?.data?.message || notifError?.message || 'Unknown NotificationAPI error'
+
+      console.error('NotificationAPI error:', errorMessage)
+      return respond(false, {
+        error: errorMessage,
+        details,
+      })
+    }
   } catch (error: any) {
     console.error('Edge function error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return respond(false, {
+      error: error?.message || 'Unexpected edge function error',
+    })
   }
 })
