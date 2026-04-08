@@ -624,7 +624,7 @@ export const AthleteCredentialsTab = () => {
 
       const siteUrl = window.location.origin;
 
-      const { error } = await supabase.functions.invoke('send-consent-email', {
+      const { data, error } = await supabase.functions.invoke('send-consent-email', {
         body: {
           athleteId: athlete.id,
           athleteEmail: athlete.email,
@@ -638,6 +638,11 @@ export const AthleteCredentialsTab = () => {
       });
 
       if (error) throw error;
+      if (!data?.ok) {
+        const details = Array.isArray(data?.details) ? ` (${data.details.join(' | ')})` : '';
+        throw new Error((data?.error || 'Consent email was not sent') + details);
+      }
+
       toast.success(`Consent email sent to ${athlete.email}`);
     } catch (err: any) {
       console.error('Error sending consent email:', err);
