@@ -592,6 +592,58 @@ export const AthleteCredentialsTab = () => {
     }
   };
 
+  const sendConsentEmail = async (athlete: Athlete) => {
+    if (!athlete.email) {
+      toast.error("Athlete must have an email address before sending consent");
+      return;
+    }
+    if (!athlete.consent_token) {
+      toast.error("No consent token found for this athlete");
+      return;
+    }
+    if (!athlete.password_hash) {
+      toast.error("Athlete must have a password set before sending consent");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: orgProfile } = await supabase
+        .from('profiles')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', orgProfile?.team_id || '')
+        .single();
+
+      const siteUrl = window.location.origin;
+
+      const { error } = await supabase.functions.invoke('send-consent-email', {
+        body: {
+          athleteId: athlete.id,
+          athleteEmail: athlete.email,
+          athleteName: athlete.name,
+          organisationName: team?.name || 'Your Organisation',
+          consentToken: athlete.consent_token,
+          loginPassword: athlete.password_hash,
+          siteUrl,
+        },
+      });
+
+      if (error) throw error;
+      toast.success(`Consent email sent to ${athlete.email}`);
+    } catch (err: any) {
+      console.error('Error sending consent email:', err);
+      toast.error("Failed to send consent email: " + (err.message || "Unknown error"));
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading athlete credentials...</div>;
   }
