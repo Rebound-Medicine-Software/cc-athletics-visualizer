@@ -2,9 +2,11 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import notificationapi from 'npm:notificationapi-node-server-sdk';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+const notificationsApiKey = Deno.env.get('NOTIFICATIONS_API_KEY')
+
 notificationapi.init(
-  'n3g0q177rbzrr6riq8re90n1yc',
-  'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',{
+  'vb71ipi0lqnhmn54oedqyx2h9m',
+  notificationsApiKey, {
     baseURL: 'https://api.eu.notificationapi.com'
   }
 );
