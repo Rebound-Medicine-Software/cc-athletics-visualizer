@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import notificationapi, { Channels } from 'npm:notificationapi-node-server-sdk@1.1.0'
+import notificationapi from 'npm:notificationapi-node-server-sdk@1.1.0'
 import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
@@ -87,14 +87,12 @@ serve(async (req) => {
 
     try {
       const notificationResponse = await notificationapi.send({
-        notificationId: 'send_consent_email',
-        templateId: 'send_consent_email',
-        forceChannels: [Channels.EMAIL],
-        user: {
+        type: 'send_consent_email',
+        to: {
           id: athleteId,
           email: athleteEmail,
         },
-        mergeTags: {
+        parameters: {
           athlete_name: athleteName,
           organisation_name: organisationName,
           organisation_logo: organisationLogo,
