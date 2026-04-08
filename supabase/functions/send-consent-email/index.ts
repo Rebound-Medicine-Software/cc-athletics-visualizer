@@ -12,6 +12,7 @@ const BodySchema = z.object({
   athleteEmail: z.string().email(),
   athleteName: z.string().min(1).max(255),
   organisationName: z.string().min(1).max(255),
+  organisationLogo: z.string().default(''),
   consentToken: z.string().uuid(),
   loginPassword: z.string().min(1),
   siteUrl: z.string().url(),
