@@ -190,6 +190,8 @@ export const HighlightsSection = ({
         }}
       >
         <CardContent className="p-4">
+          {/* Section Title */}
+          <h2 className="text-lg font-semibold text-center mb-4 text-foreground">Athlete Highlights</h2>
           {/* Header */}
           <div className="flex justify-center mb-4">
             <Button 
