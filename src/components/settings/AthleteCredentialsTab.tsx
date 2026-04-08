@@ -916,6 +916,38 @@ export const AthleteCredentialsTab = () => {
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
                   <TableCell>{athlete.height_cm || 'N/A'}</TableCell>
                   <TableCell>
+                    <div className="flex items-center gap-2">
+                      {athlete.consent_status === 'confirmed' ? (
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Confirmed
+                        </Badge>
+                      ) : athlete.consent_status === 'declined' ? (
+                        <Badge variant="destructive">
+                          Declined
+                        </Badge>
+                      ) : (
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Pending
+                          </Badge>
+                          {athlete.email && athlete.password_hash && (
+                            <Button
+                              onClick={() => sendConsentEmail(athlete)}
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs px-2"
+                            >
+                              <Shield className="w-3 h-3 mr-1" />
+                              Send Consent
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     {editingId === athlete.id ? (
                        <div className="space-y-2">
                          <div className="flex gap-1">
