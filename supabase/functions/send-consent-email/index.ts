@@ -55,6 +55,7 @@ serve(async (req) => {
       parameters: {
         athlete_name: athleteName,
         organisation_name: organisationName,
+        organisation_logo: organisationLogo,
         athlete_email: athleteEmail,
         login_password: loginPassword,
         consent_url: consentUrl,
