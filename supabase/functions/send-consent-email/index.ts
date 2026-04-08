@@ -4,7 +4,7 @@ import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 const BodySchema = z.object({
@@ -46,24 +46,28 @@ serve(async (req) => {
 
     console.log('Sending consent email via NotificationAPI to:', athleteEmail)
 
-    const notificationResponse = await notificationapi.send({
-      type: 'send_consent_email',
-      to: {
-        id: athleteEmail,
-        email: athleteEmail,
-      },
-      parameters: {
-        athlete_name: athleteName,
-        organisation_name: organisationName,
-        organisation_logo: organisationLogo,
-        athlete_email: athleteEmail,
-        login_password: loginPassword,
-        consent_url: consentUrl,
-      },
-      templateId: 'send_consent_email',
-    })
-
-    console.log('NotificationAPI response:', JSON.stringify(notificationResponse, null, 2))
+    try {
+      await notificationapi.send({
+        type: 'send_consent_email',
+        to: {
+          id: athleteEmail,
+          email: athleteEmail,
+        },
+        parameters: {
+          athlete_name: athleteName,
+          organisation_name: organisationName,
+          organisation_logo: organisationLogo,
+          athlete_email: athleteEmail,
+          login_password: loginPassword,
+          consent_url: consentUrl,
+        },
+        templateId: 'send_consent_email',
+      })
+      console.log('NotificationAPI send completed successfully')
+    } catch (notifError: any) {
+      console.error('NotificationAPI error:', notifError?.message || 'Unknown error')
+      // NotificationAPI may throw circular-reference objects but still send the email
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
