@@ -1056,7 +1056,8 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_my_role: { Args: never; Returns: string }
+      get_my_team_id: { Args: never; Returns: string }
     }
     Enums: {
       test_name_enum: "cmj" | "squat_jump" | "drop_jump" | "pogo_jump"
