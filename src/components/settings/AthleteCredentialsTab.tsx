@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX, Plus, Trash2 } from "lucide-react";
+import { UserCheck, Edit, Save, X, Search, Upload, RefreshCw, Eye, EyeOff, Mail, MailX, Plus, Trash2, Shield, Clock, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +28,9 @@ interface Athlete {
   avatar_url?: string;
   email?: string;
   password_hash?: string;
+  consent_status?: string;
+  consent_token?: string;
+  consent_signed_at?: string;
   created_at: string;
   team_name?: string;
   team_logo_url?: string;
@@ -588,6 +592,58 @@ export const AthleteCredentialsTab = () => {
     }
   };
 
+  const sendConsentEmail = async (athlete: Athlete) => {
+    if (!athlete.email) {
+      toast.error("Athlete must have an email address before sending consent");
+      return;
+    }
+    if (!athlete.consent_token) {
+      toast.error("No consent token found for this athlete");
+      return;
+    }
+    if (!athlete.password_hash) {
+      toast.error("Athlete must have a password set before sending consent");
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data: orgProfile } = await supabase
+        .from('profiles')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', orgProfile?.team_id || '')
+        .single();
+
+      const siteUrl = window.location.origin;
+
+      const { error } = await supabase.functions.invoke('send-consent-email', {
+        body: {
+          athleteId: athlete.id,
+          athleteEmail: athlete.email,
+          athleteName: athlete.name,
+          organisationName: team?.name || 'Your Organisation',
+          consentToken: athlete.consent_token,
+          loginPassword: athlete.password_hash,
+          siteUrl,
+        },
+      });
+
+      if (error) throw error;
+      toast.success(`Consent email sent to ${athlete.email}`);
+    } catch (err: any) {
+      console.error('Error sending consent email:', err);
+      toast.error("Failed to send consent email: " + (err.message || "Unknown error"));
+    }
+  };
+
   if (loading) {
     return <div className="p-4">Loading athlete credentials...</div>;
   }
@@ -678,6 +734,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Gender</TableHead>
                 <TableHead>Weight (kg)</TableHead>
                 <TableHead>Height (cm)</TableHead>
+                <TableHead>Consent Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -858,6 +915,38 @@ export const AthleteCredentialsTab = () => {
                   <TableCell>{athlete.gender || 'N/A'}</TableCell>
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
                   <TableCell>{athlete.height_cm || 'N/A'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {athlete.consent_status === 'confirmed' ? (
+                        <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Confirmed
+                        </Badge>
+                      ) : athlete.consent_status === 'declined' ? (
+                        <Badge variant="destructive">
+                          Declined
+                        </Badge>
+                      ) : (
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-300">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Pending
+                          </Badge>
+                          {athlete.email && athlete.password_hash && (
+                            <Button
+                              onClick={() => sendConsentEmail(athlete)}
+                              size="sm"
+                              variant="outline"
+                              className="h-6 text-xs px-2"
+                            >
+                              <Shield className="w-3 h-3 mr-1" />
+                              Send Consent
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {editingId === athlete.id ? (
                        <div className="space-y-2">
