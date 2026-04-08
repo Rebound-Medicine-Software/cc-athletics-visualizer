@@ -12,6 +12,7 @@ const BodySchema = z.object({
   athleteEmail: z.string().email(),
   athleteName: z.string().min(1).max(255),
   organisationName: z.string().min(1).max(255),
+  organisationLogo: z.string().default(''),
   consentToken: z.string().uuid(),
   loginPassword: z.string().min(1),
   siteUrl: z.string().url(),
@@ -31,7 +32,7 @@ serve(async (req) => {
       )
     }
 
-    const { athleteEmail, athleteName, organisationName, consentToken, loginPassword, siteUrl } = parsed.data
+    const { athleteEmail, athleteName, organisationName, organisationLogo, consentToken, loginPassword, siteUrl } = parsed.data
     const consentUrl = `${siteUrl}/consent?token=${consentToken}`
 
     // Initialize NotificationAPI
@@ -54,6 +55,7 @@ serve(async (req) => {
       parameters: {
         athlete_name: athleteName,
         organisation_name: organisationName,
+        organisation_logo: organisationLogo,
         athlete_email: athleteEmail,
         login_password: loginPassword,
         consent_url: consentUrl,

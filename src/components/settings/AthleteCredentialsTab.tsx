@@ -618,7 +618,7 @@ export const AthleteCredentialsTab = () => {
 
       const { data: team } = await supabase
         .from('teams')
-        .select('name')
+        .select('name, logo_url')
         .eq('id', orgProfile?.team_id || '')
         .single();
 
@@ -630,6 +630,7 @@ export const AthleteCredentialsTab = () => {
           athleteEmail: athlete.email,
           athleteName: athlete.name,
           organisationName: team?.name || 'Your Organisation',
+          organisationLogo: team?.logo_url || '',
           consentToken: athlete.consent_token,
           loginPassword: athlete.password_hash,
           siteUrl,
