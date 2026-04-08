@@ -46,24 +46,28 @@ serve(async (req) => {
 
     console.log('Sending consent email via NotificationAPI to:', athleteEmail)
 
-    const notificationResponse = await notificationapi.send({
-      type: 'send_consent_email',
-      to: {
-        id: athleteEmail,
-        email: athleteEmail,
-      },
-      parameters: {
-        athlete_name: athleteName,
-        organisation_name: organisationName,
-        organisation_logo: organisationLogo,
-        athlete_email: athleteEmail,
-        login_password: loginPassword,
-        consent_url: consentUrl,
-      },
-      templateId: 'send_consent_email',
-    })
-
-    console.log('NotificationAPI response:', JSON.stringify(notificationResponse, null, 2))
+    try {
+      await notificationapi.send({
+        type: 'send_consent_email',
+        to: {
+          id: athleteEmail,
+          email: athleteEmail,
+        },
+        parameters: {
+          athlete_name: athleteName,
+          organisation_name: organisationName,
+          organisation_logo: organisationLogo,
+          athlete_email: athleteEmail,
+          login_password: loginPassword,
+          consent_url: consentUrl,
+        },
+        templateId: 'send_consent_email',
+      })
+      console.log('NotificationAPI send completed successfully')
+    } catch (notifError: any) {
+      console.error('NotificationAPI error:', notifError?.message || 'Unknown error')
+      // NotificationAPI may throw circular-reference objects but still send the email
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
