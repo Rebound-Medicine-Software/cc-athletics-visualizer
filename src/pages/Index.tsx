@@ -1,17 +1,31 @@
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => navigate('/auth'), 5000);
-    return () => clearTimeout(timer);
+    // Start fade-out at 8.5s, navigate at 10s
+    const fadeTimer = setTimeout(() => setIsFadingOut(true), 8500);
+    const navTimer = setTimeout(() => navigate('/auth'), 10000);
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(navTimer);
+    };
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex justify-center items-center overflow-hidden" style={{ background: '#1e3a6e', fontFamily: "Circular, Arial, sans-serif" }}>
+    <div
+      className="min-h-screen flex justify-center items-center overflow-hidden transition-all duration-[1500ms]"
+      style={{
+        background: '#1e3a6e',
+        fontFamily: "Circular, Arial, sans-serif",
+        opacity: isFadingOut ? 0 : 1,
+        transform: isFadingOut ? 'scale(1.05)' : 'scale(1)',
+      }}
+    >
       <style>{`
         @font-face {
           font-family: "Circular";
@@ -119,7 +133,7 @@ const Index = () => {
           width: 0;
           background: #ffffff;
           border-radius: 2px;
-          animation: nh-load 3.5s linear forwards;
+          animation: nh-load 8s linear forwards;
         }
       `}</style>
 
