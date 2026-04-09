@@ -272,28 +272,28 @@ const Auth = () => {
   const renderAuthContent = () => {
     if (!userRole) {
       return (
-        <Card className="w-full max-w-md bg-[hsl(216,58%,10%)] backdrop-blur-sm shadow-xl border-[hsl(216,35%,22%)]">
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl border-gray-200">
           <CardHeader className="text-center space-y-4">
-            <CardTitle className="text-2xl font-bold text-white">
+            <CardTitle className="text-2xl font-bold text-[#1e3a6e]">
               Welcome to NEXUS HUB
             </CardTitle>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-gray-500">
               Please select your role to continue
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={() => setUserRole('clinician')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-[hsl(216,35%,28%)] bg-[hsl(216,50%,16%)] text-white hover:bg-[hsl(214,58%,27%)] hover:border-[hsl(214,70%,45%)]">
-              <UserCheck className="w-8 h-8 text-[hsl(214,70%,45%)]" />
+            <Button onClick={() => setUserRole('clinician')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-gray-200 bg-gray-50 text-[#1e3a6e] hover:bg-[#1e3a6e]/10 hover:border-[#1e3a6e]/40">
+              <UserCheck className="w-8 h-8 text-[#1e3a6e]" />
               <div>
-                <div className="font-semibold text-white">Clinician</div>
-                <div className="text-sm text-gray-300">Healthcare provider or coach</div>
+                <div className="font-semibold text-[#1e3a6e]">Clinician</div>
+                <div className="text-sm text-gray-500">Healthcare provider or coach</div>
               </div>
             </Button>
-            <Button onClick={() => setUserRole('client')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-[hsl(216,35%,28%)] bg-[hsl(216,50%,16%)] text-white hover:bg-[hsl(38,92%,50%)/0.15] hover:border-[hsl(38,92%,50%)]">
+            <Button onClick={() => setUserRole('client')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-gray-200 bg-gray-50 text-[#1e3a6e] hover:bg-[hsl(38,92%,50%)]/10 hover:border-[hsl(38,92%,50%)]">
               <Heart className="w-8 h-8 text-[hsl(38,92%,50%)]" />
               <div>
-                <div className="font-semibold text-white">Athlete/Patient</div>
-                <div className="text-sm text-gray-300">Receiving treatment or training</div>
+                <div className="font-semibold text-[#1e3a6e]">Athlete/Patient</div>
+                <div className="text-sm text-gray-500">Receiving treatment or training</div>
               </div>
             </Button>
           </CardContent>
@@ -530,9 +530,7 @@ const Auth = () => {
       <div
         className="absolute inset-0 transition-all duration-[2000ms] ease-in-out"
         style={{
-          background: isTransitioning
-            ? 'linear-gradient(135deg, #eff6ff, #ffffff, #fff7ed)'
-            : '#1e3a6e',
+          background: '#1e3a6e',
         }}
       />
 
