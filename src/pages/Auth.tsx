@@ -20,6 +20,12 @@ const Auth = () => {
   const [userRole, setUserRole] = useState<'clinician' | 'client' | null>(null);
   const [showForgotModal, setShowForgotModal] = useState<'password' | 'email' | 'both' | null>(null);
   const [resetEmail, setResetEmail] = useState("");
+  const [authVisible, setAuthVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAuthVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
   const [resetMessage, setResetMessage] = useState("");
   
   const [loginData, setLoginData] = useState({
