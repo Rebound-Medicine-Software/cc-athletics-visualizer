@@ -272,28 +272,28 @@ const Auth = () => {
   const renderAuthContent = () => {
     if (!userRole) {
       return (
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
+        <Card className="w-full max-w-md bg-[hsl(216,58%,10%)] backdrop-blur-sm shadow-xl border-[hsl(216,35%,22%)]">
           <CardHeader className="text-center space-y-4">
-            <CardTitle className="text-2xl font-bold text-gray-800">
+            <CardTitle className="text-2xl font-bold text-white">
               Welcome to NEXUS HUB
             </CardTitle>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-300">
               Please select your role to continue
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={() => setUserRole('clinician')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left hover:bg-blue-50 hover:border-blue-300">
-              <UserCheck className="w-8 h-8 text-blue-600" />
+            <Button onClick={() => setUserRole('clinician')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-[hsl(216,35%,28%)] bg-[hsl(216,50%,16%)] text-white hover:bg-[hsl(214,58%,27%)] hover:border-[hsl(214,70%,45%)]">
+              <UserCheck className="w-8 h-8 text-[hsl(214,70%,45%)]" />
               <div>
-                <div className="font-semibold">Clinician</div>
-                <div className="text-sm text-gray-500">Healthcare provider or coach</div>
+                <div className="font-semibold text-white">Clinician</div>
+                <div className="text-sm text-gray-300">Healthcare provider or coach</div>
               </div>
             </Button>
-            <Button onClick={() => setUserRole('client')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left hover:bg-orange-50 hover:border-orange-300">
-              <Heart className="w-8 h-8 text-orange-600" />
+            <Button onClick={() => setUserRole('client')} variant="outline" className="w-full h-16 flex items-center gap-4 text-left border-[hsl(216,35%,28%)] bg-[hsl(216,50%,16%)] text-white hover:bg-[hsl(38,92%,50%)/0.15] hover:border-[hsl(38,92%,50%)]">
+              <Heart className="w-8 h-8 text-[hsl(38,92%,50%)]" />
               <div>
-                <div className="font-semibold">Athlete/Patient</div>
-                <div className="text-sm text-gray-500">Receiving treatment or training</div>
+                <div className="font-semibold text-white">Athlete/Patient</div>
+                <div className="text-sm text-gray-300">Receiving treatment or training</div>
               </div>
             </Button>
           </CardContent>
@@ -302,16 +302,16 @@ const Auth = () => {
     }
 
     return (
-      <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
+      <Card className="w-full max-w-md bg-[hsl(216,58%,10%)] backdrop-blur-sm shadow-xl border-[hsl(216,35%,22%)]">
         <CardHeader className="text-center space-y-4">
-          <CardTitle className="text-2xl font-bold text-gray-800">
+          <CardTitle className="text-2xl font-bold text-white">
             {userRole === 'clinician' ? 'Clinician Portal' : 'Athlete/Patient Portal'}
           </CardTitle>
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-300">
             <Shield className="w-4 h-4" />
             <span>HIPAA-compliant security with Row Level Security (RLS)</span>
           </div>
-          <Button onClick={() => setUserRole(null)} variant="ghost" size="sm" className="text-xs">← Change role</Button>
+          <Button onClick={() => setUserRole(null)} variant="ghost" size="sm" className="text-xs text-gray-300 hover:text-white">← Change role</Button>
         </CardHeader>
         <CardContent>
           {userRole === 'clinician' ? (
@@ -323,13 +323,13 @@ const Auth = () => {
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
               <TabsContent value="login" className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-email" className="flex items-center gap-2"><Mail className="w-4 h-4" />Email</Label>
-                  <Input id="login-email" type="email" placeholder="Enter your email" value={loginData.email} onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))} />
+                  <Label htmlFor="login-email" className="flex items-center gap-2 text-white"><Mail className="w-4 h-4" />Email</Label>
+                  <Input id="login-email" type="email" placeholder="Enter your email" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={loginData.email} onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="login-password" className="flex items-center gap-2"><Lock className="w-4 h-4" />Password</Label>
+                  <Label htmlFor="login-password" className="flex items-center gap-2 text-white"><Lock className="w-4 h-4" />Password</Label>
                   <div className="relative">
-                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={loginData.password} onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))} />
+                    <Input id="login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={loginData.password} onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
@@ -337,11 +337,11 @@ const Auth = () => {
                 </div>
                 <Button onClick={handleLogin} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">{isLoading ? "Signing in..." : "Sign In"}</Button>
                 {resetMessage && <Alert><AlertDescription>{resetMessage}</AlertDescription></Alert>}
-                <div className="space-y-2 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 text-center">Need help accessing your account?</p>
+                <div className="space-y-2 pt-4 border-t border-[hsl(216,35%,22%)]">
+                  <p className="text-sm text-gray-300 text-center">Need help accessing your account?</p>
                   <Dialog open={showForgotModal === 'password'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('password')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('password')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Your Password?
                       </Button>
                     </DialogTrigger>
@@ -356,7 +356,7 @@ const Auth = () => {
                   </Dialog>
                   <Dialog open={showForgotModal === 'email'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('email')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('email')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Your Email?
                       </Button>
                     </DialogTrigger>
@@ -371,7 +371,7 @@ const Auth = () => {
                   </Dialog>
                   <Dialog open={showForgotModal === 'both'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('both')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('both')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Both Your Password and Email?
                       </Button>
                     </DialogTrigger>
@@ -393,28 +393,28 @@ const Auth = () => {
                 </div>
               </TabsContent>
               <TabsContent value="signup" className="space-y-4">
-                <div className="text-center text-sm text-gray-600 mb-4">Create Organisation Account (for first-time Clinician setup)</div>
+                <div className="text-center text-sm text-gray-300 mb-4">Create Organisation Account (for first-time Clinician setup)</div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="first-name" className="flex items-center gap-2"><User className="w-4 h-4" />First Name</Label>
-                    <Input id="first-name" placeholder="First name" value={signupData.firstName} onChange={(e) => setSignupData(prev => ({ ...prev, firstName: e.target.value }))} />
+                    <Label htmlFor="first-name" className="flex items-center gap-2 text-white"><User className="w-4 h-4" />First Name</Label>
+                    <Input id="first-name" placeholder="First name" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={signupData.firstName} onChange={(e) => setSignupData(prev => ({ ...prev, firstName: e.target.value }))} />
                   </div>
                   <div className="space-y-2 flex flex-col items-center">
-                    <Label htmlFor="last-name" className="flex items-center gap-2"><User className="w-4 h-4" />Last Name</Label>
-                    <Input id="last-name" placeholder="Last name" value={signupData.lastName} onChange={(e) => setSignupData(prev => ({ ...prev, lastName: e.target.value }))} />
+                    <Label htmlFor="last-name" className="flex items-center gap-2 text-white"><User className="w-4 h-4" />Last Name</Label>
+                    <Input id="last-name" placeholder="Last name" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={signupData.lastName} onChange={(e) => setSignupData(prev => ({ ...prev, lastName: e.target.value }))} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="flex items-center gap-2"><Mail className="w-4 h-4" />Email</Label>
-                  <Input id="signup-email" type="email" placeholder="Enter your email" value={signupData.email} onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))} />
+                  <Label htmlFor="signup-email" className="flex items-center gap-2 text-white"><Mail className="w-4 h-4" />Email</Label>
+                  <Input id="signup-email" type="email" placeholder="Enter your email" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={signupData.email} onChange={(e) => setSignupData(prev => ({ ...prev, email: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="signup-password" className="flex items-center gap-2"><Lock className="w-4 h-4" />Password</Label>
+                    <Label htmlFor="signup-password" className="flex items-center gap-2 text-white"><Lock className="w-4 h-4" />Password</Label>
                     <Button type="button" variant="outline" size="sm" onClick={handleGeneratePassword} className="text-xs h-6"><RefreshCw className="w-3 h-3 mr-1" />Generate Safe Password</Button>
                   </div>
                   <div className="relative">
-                    <Input id="signup-password" type={showPassword ? "text" : "password"} placeholder="Create a password" value={signupData.password} onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))} />
+                    <Input id="signup-password" type={showPassword ? "text" : "password"} placeholder="Create a password" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={signupData.password} onChange={(e) => setSignupData(prev => ({ ...prev, password: e.target.value }))} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
@@ -430,9 +430,9 @@ const Auth = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Label htmlFor="confirm-password" className="text-white">Confirm Password</Label>
                   <div className="relative">
-                    <Input id="confirm-password" type={showPassword ? "text" : "password"} placeholder="Confirm your password" value={signupData.confirmPassword} onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))} />
+                    <Input id="confirm-password" type={showPassword ? "text" : "password"} placeholder="Confirm your password" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={signupData.confirmPassword} onChange={(e) => setSignupData(prev => ({ ...prev, confirmPassword: e.target.value }))} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
@@ -446,13 +446,13 @@ const Auth = () => {
               {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="client-login-email" className="flex items-center gap-2"><Mail className="w-4 h-4" />Email</Label>
-                  <Input id="client-login-email" type="email" placeholder="Enter your email" value={loginData.email} onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))} />
+                  <Label htmlFor="client-login-email" className="flex items-center gap-2 text-white"><Mail className="w-4 h-4" />Email</Label>
+                  <Input id="client-login-email" type="email" placeholder="Enter your email" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={loginData.email} onChange={(e) => setLoginData(prev => ({ ...prev, email: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="client-login-password" className="flex items-center gap-2"><Lock className="w-4 h-4" />Password</Label>
+                  <Label htmlFor="client-login-password" className="flex items-center gap-2 text-white"><Lock className="w-4 h-4" />Password</Label>
                   <div className="relative">
-                    <Input id="client-login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={loginData.password} onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))} />
+                    <Input id="client-login-password" type={showPassword ? "text" : "password"} placeholder="Enter your password" className="bg-[hsl(216,50%,16%)] border-[hsl(216,35%,28%)] text-white placeholder:text-gray-400" value={loginData.password} onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))} />
                     <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3" onClick={() => setShowPassword(!showPassword)}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
@@ -460,11 +460,11 @@ const Auth = () => {
                 </div>
                 <Button onClick={handleLogin} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">{isLoading ? "Signing in..." : "Sign In"}</Button>
                 {resetMessage && <Alert><AlertDescription>{resetMessage}</AlertDescription></Alert>}
-                <div className="space-y-2 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600 text-center">Need help accessing your account?</p>
+                <div className="space-y-2 pt-4 border-t border-[hsl(216,35%,22%)]">
+                  <p className="text-sm text-gray-300 text-center">Need help accessing your account?</p>
                   <Dialog open={showForgotModal === 'password'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('password')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('password')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Your Password?
                       </Button>
                     </DialogTrigger>
@@ -479,7 +479,7 @@ const Auth = () => {
                   </Dialog>
                   <Dialog open={showForgotModal === 'email'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('email')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('email')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Your Email?
                       </Button>
                     </DialogTrigger>
@@ -494,7 +494,7 @@ const Auth = () => {
                   </Dialog>
                   <Dialog open={showForgotModal === 'both'} onOpenChange={(open) => !open && setShowForgotModal(null)}>
                     <DialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="w-full justify-start text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => setShowForgotModal('both')}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start text-[hsl(214,70%,55%)] hover:text-[hsl(214,70%,65%)] hover:bg-[hsl(214,58%,27%)/0.2]" onClick={() => setShowForgotModal('both')}>
                         <HelpCircle className="w-4 h-4 mr-2" />Forgotten Both?
                       </Button>
                     </DialogTrigger>
