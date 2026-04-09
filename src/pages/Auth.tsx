@@ -275,7 +275,7 @@ const Auth = () => {
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
           <CardHeader className="text-center space-y-4">
             <CardTitle className="text-2xl font-bold text-gray-800">
-              Welcome to NexusHub
+              Welcome to NEXUS HUB
             </CardTitle>
             <p className="text-sm text-gray-600">
               Please select your role to continue
