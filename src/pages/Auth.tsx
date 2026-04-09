@@ -130,8 +130,8 @@ const Auth = () => {
     const t1 = setTimeout(() => setLoadPhase(1), 100);
     // Phase 1→2: start morphing at 8s
     const t2 = setTimeout(() => setLoadPhase(2), 8000);
-    // Phase 2→3: auth fully visible at 10s
-    const t3 = setTimeout(() => setLoadPhase(3), 10000);
+    // Phase 2→3: auth fully visible at 12s (slower transition)
+    const t3 = setTimeout(() => setLoadPhase(3), 12000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
@@ -526,9 +526,9 @@ const Auth = () => {
     <div className="min-h-screen relative overflow-hidden">
       <style>{LOADING_STYLES}</style>
 
-      {/* Background — morphs from solid dark blue to light gradient */}
+      {/* Background — solid navy */}
       <div
-        className="absolute inset-0 transition-all duration-[2000ms] ease-in-out"
+        className="absolute inset-0 transition-all duration-[4000ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
         style={{
           background: '#1e3a6e',
         }}
@@ -536,10 +536,10 @@ const Auth = () => {
 
       {/* Loading overlay with logo, title, subtitle, progress */}
       <div
-        className="absolute inset-0 flex items-center justify-center transition-all duration-[2000ms] ease-in-out z-10"
+        className="absolute inset-0 flex items-center justify-center transition-all duration-[4000ms] ease-[cubic-bezier(0.4,0,0.2,1)] z-10"
         style={{
           opacity: isTransitioning ? 0 : 1,
-          transform: isTransitioning ? 'scale(0.8) translateY(-60px)' : 'scale(1) translateY(0)',
+          transform: isTransitioning ? 'scale(0.85) translateY(-40px)' : 'scale(1) translateY(0)',
           pointerEvents: isTransitioning ? 'none' : 'auto',
         }}
       >
@@ -600,7 +600,7 @@ const Auth = () => {
 
       {/* Small logo that persists above the auth card */}
       <div
-        className="absolute left-1/2 transition-all duration-[2000ms] ease-in-out z-20"
+        className="absolute left-1/2 transition-all duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] z-20"
         style={{
           transform: isTransitioning
             ? 'translate(-50%, 0) scale(1)'
@@ -618,10 +618,10 @@ const Auth = () => {
 
       {/* Auth content — slides up from below */}
       <div
-        className="relative z-20 min-h-screen flex items-center justify-center p-4 transition-all duration-[2000ms] ease-in-out"
+        className="relative z-20 min-h-screen flex items-center justify-center p-4 transition-all duration-[4000ms] ease-[cubic-bezier(0.25,0.1,0.25,1)]"
         style={{
           opacity: isTransitioning ? 1 : 0,
-          transform: isTransitioning ? 'translateY(0)' : 'translateY(80px)',
+          transform: isTransitioning ? 'translateY(0)' : 'translateY(60px)',
           pointerEvents: isAuthVisible ? 'auto' : 'none',
         }}
       >
