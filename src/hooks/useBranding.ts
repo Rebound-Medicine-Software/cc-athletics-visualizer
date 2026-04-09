@@ -139,10 +139,10 @@ export const useBranding = (teamId: string | null | undefined, userRole?: string
   const resetBranding = () => {
     const root = document.documentElement;
     
-    // Reset to original Lovable defaults
-    root.style.setProperty('--primary', '214 58% 27%');
-    root.style.setProperty('--secondary', '216 45% 20%');
-    root.style.setProperty('--accent', '38 92% 50%');
+    // Reset to light theme defaults
+    root.style.removeProperty('--primary');
+    root.style.removeProperty('--secondary');
+    root.style.removeProperty('--accent');
     
     root.style.removeProperty('--team-primary');
     root.style.removeProperty('--team-secondary');
