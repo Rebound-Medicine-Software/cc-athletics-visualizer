@@ -140,9 +140,9 @@ export const useBranding = (teamId: string | null | undefined, userRole?: string
     const root = document.documentElement;
     
     // Reset to original Lovable defaults
-    root.style.setProperty('--primary', '214 100% 50%');
-    root.style.setProperty('--secondary', '210 40% 96.1%');
-    root.style.setProperty('--accent', '45 100% 51%');
+    root.style.setProperty('--primary', '214 58% 27%');
+    root.style.setProperty('--secondary', '216 45% 20%');
+    root.style.setProperty('--accent', '38 92% 50%');
     
     root.style.removeProperty('--team-primary');
     root.style.removeProperty('--team-secondary');
