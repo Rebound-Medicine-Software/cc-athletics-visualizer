@@ -402,7 +402,7 @@ const Auth = () => {
   // Role selection screen
   if (!userRole) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
+      <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4 transition-all duration-1000 ${authVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
           <CardHeader className="text-center space-y-4">
             <div className="flex justify-center">
@@ -452,7 +452,7 @@ const Auth = () => {
 
   // Main auth screen
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center p-4 transition-all duration-1000 ${authVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
       <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm shadow-xl">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
