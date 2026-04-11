@@ -232,6 +232,7 @@ export function ReportFiltersContainer({
             </Select>
           </div>
         </div>
+          </div>
 
         {/* Metric Cards */}
         {metricCardsSlot && (
