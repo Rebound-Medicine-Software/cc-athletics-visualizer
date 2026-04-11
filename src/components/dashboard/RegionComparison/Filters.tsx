@@ -341,7 +341,7 @@ export const Filters = ({
               <SelectTrigger className={`${!sexEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
                 <SelectValue placeholder="Select Sex" />
               </SelectTrigger>
-              <SelectContent className="bg-white z-50">
+               <SelectContent className="bg-white z-[1000]">
                 <SelectItem value="all">All</SelectItem>
                 {filteredIndividualData.sexOptions.map(sex => (
                   <SelectItem key={sex} value={sex}>
@@ -378,7 +378,7 @@ export const Filters = ({
               <SelectTrigger className={`${!testNameEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
                 <SelectValue placeholder="Select Test" />
               </SelectTrigger>
-              <SelectContent className="bg-white z-50">
+               <SelectContent className="bg-white z-[1000]">
                 <SelectItem value="all">All Tests</SelectItem>
                 {filteredIndividualData.tests.map(test => (
                   <SelectItem key={test} value={test}>
@@ -458,7 +458,7 @@ export const Filters = ({
               <SelectTrigger className={`${!metricTypeEnabled ? "bg-gray-100 opacity-60" : "bg-white"}`}>
                 <SelectValue placeholder="Select Metric" />
               </SelectTrigger>
-              <SelectContent className="bg-white z-50">
+              <SelectContent className="bg-white z-[1000]">
                 <SelectItem value="all">All Metrics</SelectItem>
                 {availableMetricTypes.map(metric => (
                   <SelectItem key={metric} value={metric}>
