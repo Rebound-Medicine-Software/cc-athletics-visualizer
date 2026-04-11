@@ -137,7 +137,9 @@ export const HighlightsSection = ({
           borderColor: branding?.primary_color ? `${branding.primary_color}50` : 'hsl(var(--primary) / 0.3)'
         }}
       >
-        <CardHeader>
+        <CardHeader className="sticky top-[80px] z-30 rounded-t-lg" style={{
+          backgroundColor: branding?.primary_color ? `${branding.primary_color}15` : 'hsl(var(--primary) / 0.08)',
+        }}>
           <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Team Name */}
