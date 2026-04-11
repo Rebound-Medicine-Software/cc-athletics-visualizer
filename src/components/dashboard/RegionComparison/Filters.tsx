@@ -316,7 +316,7 @@ export const Filters = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full">
+    <div className="bg-white rounded-lg border border-gray-300 p-4 shadow-sm mb-4 max-w-full relative z-[500]">
       {/* Individual Filters Section */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-800 mb-4 text-center">Individual Filters</h3>

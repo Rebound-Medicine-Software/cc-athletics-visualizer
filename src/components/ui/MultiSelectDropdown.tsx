@@ -88,7 +88,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
       </button>
       {open && !disabled && (
         <div className={cn(
-          "absolute z-50 mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
+          "absolute z-[1000] mt-1 w-full bg-popover rounded-md shadow-lg border border-border max-h-60 overflow-auto flex flex-col",
           dropdownClassName
         )}>
            {options.map(opt => (
