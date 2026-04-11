@@ -150,7 +150,9 @@ export const EliteComparison = ({ data, resetFiltersKey, branding }: EliteCompar
           borderColor: branding?.primary_color ? `${branding.primary_color}30` : 'hsl(var(--border))'
         }}
       >
-        <CardHeader>
+        <CardHeader className="sticky top-[80px] z-30 rounded-t-lg" style={{
+          backgroundColor: branding?.primary_color ? `${branding.primary_color}08` : 'hsl(var(--muted) / 0.5)',
+        }}>
           <EliteComparisonFilters
             filters={filters}
             setFilters={setFilters}

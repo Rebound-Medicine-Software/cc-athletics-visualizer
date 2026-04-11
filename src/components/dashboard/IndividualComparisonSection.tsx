@@ -577,6 +577,10 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         }}
       >
         <CardContent className="p-4">
+          {/* Sticky filter area */}
+          <div className="sticky top-[80px] z-30 pb-4 rounded-t-lg" style={{
+            backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
+          }}>
           {/* Header */}
           <div className="flex justify-center mb-4">
             <Button 
@@ -593,7 +597,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {/* Test Name */}
           <div className="flex flex-col">
             <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
@@ -674,6 +678,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             </Select>
           </div>
         </div>
+          </div>
 
 
         {/* Charts Container */}
