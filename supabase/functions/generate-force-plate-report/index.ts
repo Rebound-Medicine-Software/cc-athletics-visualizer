@@ -1545,16 +1545,21 @@ serve(async (req) => {
       throw uploadError
     }
 
-    const { data: urlData } = supabaseClient.storage
+    const { data: signedUrlData, error: signedUrlError } = await supabaseClient.storage
       .from('athlete-reports')
-      .getPublicUrl(fileName)
+      .createSignedUrl(fileName, 3600) // 1 hour expiry
 
-    console.log('Force plate PDF generated successfully:', urlData.publicUrl)
+    if (signedUrlError) {
+      console.error('Error creating signed URL:', signedUrlError)
+      throw signedUrlError
+    }
+
+    console.log('Force plate PDF generated successfully:', signedUrlData.signedUrl)
 
     return new Response(
       JSON.stringify({
         success: true,
-        report_url: urlData.publicUrl,
+        report_url: signedUrlData.signedUrl,
         filename: fileName,
         athlete_name,
         athlete_id,
