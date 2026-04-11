@@ -500,7 +500,7 @@ export const SendReportsModal = () => {
                 <p>{selectedAthleteData.testCount} test records included</p>
                 <div className="mt-2">
                   <strong className="text-xs">Tests included:</strong>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
+                  <div className="flex flex-wrap gap-1.5 mt-1 max-h-32 overflow-y-auto pr-1">
                     {selectedAthleteData.allTestNames.map((testName) => {
                       const isExcluded = excludedTests.includes(testName);
                       return (
