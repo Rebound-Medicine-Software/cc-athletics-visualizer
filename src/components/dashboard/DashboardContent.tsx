@@ -8,6 +8,7 @@ import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
 
 import { LiveDataSection } from "./LiveDataSection";
+import { BookingCalendar } from "./BookingCalendar";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
@@ -93,6 +94,8 @@ export const DashboardContent = ({
             branding={branding}
           />
         );
+      case "bookings":
+        return <BookingCalendar />;
       case "profiles":
         return <StaffCredentialsTab />;
       default:
