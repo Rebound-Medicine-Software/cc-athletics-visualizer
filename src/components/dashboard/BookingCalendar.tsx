@@ -14,7 +14,7 @@ import {
   Calendar, ExternalLink, Settings, Link2, CheckCircle2,
   LogIn, UserPlus, ArrowRight, RefreshCw, Unlink
 } from "lucide-react";
-import { useEffect as useEffectOnce } from "react";
+
 
 export const BookingCalendar = () => {
   const { profile } = useAuth();
