@@ -26,6 +26,7 @@ export const DemonstrationsTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ExerciseVideo>>({});
+  const [modalVideo, setModalVideo] = useState<{ url: string; type: 'youtube' | 'vimeo' | 'direct' | 'unknown'; id?: string } | null>(null);
 
   useEffect(() => {
     fetchVideos();
