@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
 import { ApiKeysTab } from "@/components/settings/ApiKeysTab";
 import { DemonstrationsTab } from "@/components/settings/DemonstrationsTab";
-import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
+
 import { DataHousingTab } from "@/components/settings/DataHousingTab";
 import { AthleteCredentialsTab } from "@/components/settings/AthleteCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
@@ -98,17 +98,6 @@ const Settings = () => {
                 Demonstrations
               </TabsTrigger>
               <TabsTrigger 
-                value="staff-credentials"
-                className="rounded-none"
-                style={{
-                  backgroundColor: 'transparent',
-                  color: 'hsl(var(--foreground))',
-                  borderBottom: '2px solid transparent'
-                }}
-              >
-                Staff Credentials
-              </TabsTrigger>
-              <TabsTrigger 
                 value="data-housing"
                 className="rounded-none"
                 style={{
@@ -162,9 +151,6 @@ const Settings = () => {
               <DemonstrationsTab />
             </TabsContent>
 
-            <TabsContent value="staff-credentials" className="p-6">
-              <StaffCredentialsTab />
-            </TabsContent>
 
             <TabsContent value="data-housing" className="p-6">
               <DataHousingTab />
