@@ -70,7 +70,9 @@ const Dashboard = () => {
 
   const handleNavigation = (section: string) => {
     if (section === "settings") {
-      navigate("/settings(Consumer1)");
+      navigate("/settings");
+    } else if (section === "profiles") {
+      navigate("/settings?tab=staff-credentials");
     } else if (section === "admin") {
       navigate("/admin");
     } else {

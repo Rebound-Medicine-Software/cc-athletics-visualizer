@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +16,8 @@ import { BrandingTab } from "@/components/settings/BrandingTab";
 
 const Settings = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "api-keys";
   const { profile } = useAuth();
   const { branding } = useBranding(profile?.team_id, profile?.role);
 
@@ -64,7 +66,7 @@ const Settings = () => {
             borderColor: branding?.primary_color ? `${branding.primary_color}30` : 'hsl(var(--border))'
           }}
         >
-          <Tabs defaultValue="api-keys" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="w-full justify-start border-b bg-transparent rounded-none h-auto p-0">
               <TabsTrigger 
                 value="api-keys"

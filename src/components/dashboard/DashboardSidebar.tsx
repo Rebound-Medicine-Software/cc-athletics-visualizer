@@ -27,7 +27,7 @@ export const DashboardSidebar = ({
   onNavigate,
 }: DashboardSidebarProps) => {
   const handleItemClick = (itemId: string) => {
-    if (itemId === "settings") {
+    if (itemId === "settings" || itemId === "profiles") {
       onNavigate?.(itemId);
     } else {
       setActiveSection(itemId);
