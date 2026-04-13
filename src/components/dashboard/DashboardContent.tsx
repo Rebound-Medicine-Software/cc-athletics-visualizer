@@ -94,6 +94,8 @@ export const DashboardContent = ({
             branding={branding}
           />
         );
+      case "bookings":
+        return <BookingCalendar />;
       case "profiles":
         return <StaffCredentialsTab />;
       default:
