@@ -20,6 +20,70 @@ interface ExerciseVideo {
   updated_at: string;
 }
 
+const DirectVideoPreview = ({ url, onOpen }: { url: string; onOpen: () => void }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  return (
+    <button
+      onClick={onOpen}
+      onMouseEnter={() => videoRef.current?.play().catch(() => {})}
+      onMouseLeave={() => {
+        if (videoRef.current) {
+          videoRef.current.pause();
+          videoRef.current.currentTime = 0;
+        }
+      }}
+      className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
+    >
+      <video
+        ref={videoRef}
+        src={url}
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <Play className="w-8 h-8 text-white fill-white" />
+      </div>
+    </button>
+  );
+};
+
+const VideoThumbnailYT = ({ ytId, url, onOpen }: { ytId: string; url: string; onOpen: () => void }) => {
+  const [hovering, setHovering] = useState(false);
+
+  return (
+    <button
+      onClick={onOpen}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
+    >
+      {hovering ? (
+        <iframe
+          src={`https://www.youtube.com/embed/${ytId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${ytId}&rel=0&modestbranding=1&showinfo=0`}
+          className="w-full h-full pointer-events-none"
+          allow="autoplay"
+          title="Video preview"
+        />
+      ) : (
+        <>
+          <img
+            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+            alt="Video preview"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Play className="w-8 h-8 text-white fill-white" />
+          </div>
+        </>
+      )}
+    </button>
+  );
+};
+
 export const DemonstrationsTab = () => {
   const [videos, setVideos] = useState<ExerciseVideo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -376,7 +440,7 @@ export const DemonstrationsTab = () => {
                       <TableCell className="font-medium">{video.test_name}</TableCell>
                       <TableCell className="w-48 min-w-[120px]">
                         {video.video_url ? (
-                          <VideoPreviewCell url={video.video_url} />
+                          renderVideoPreview(video.video_url)
                         ) : (
                           <span className="text-muted-foreground">No URL</span>
                         )}
