@@ -22,6 +22,7 @@ import {
   X,
   RotateCw,
   Shield,
+  BarChart3,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -114,7 +115,7 @@ const Dashboard = () => {
   const navigationItems = [
     { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
     { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
-    { id: "dashboard", label: "Analytics", icon: Activity, description: "Testing reports" },
+    { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
     { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
     { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
     { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
