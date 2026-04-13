@@ -64,60 +64,113 @@ export const DemonstrationsTab = () => {
     return match?.[1] || null;
   };
 
-  const renderVideoPreview = (url: string) => {
+  const openVideoModal = (url: string) => {
     const ytId = getYouTubeId(url);
     if (ytId) {
+      setModalVideo({ url, type: 'youtube', id: ytId });
+      return;
+    }
+    const vimeoId = getVimeoId(url);
+    if (vimeoId) {
+      setModalVideo({ url, type: 'vimeo', id: vimeoId });
+      return;
+    }
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+      setModalVideo({ url, type: 'direct' });
+      return;
+    }
+    setModalVideo({ url, type: 'unknown' });
+  };
+
+  const VideoPreviewCell = ({ url }: { url: string }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const ytId = getYouTubeId(url);
+    const vimeoId = getVimeoId(url);
+    const isDirect = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
+
+    const handleMouseEnter = () => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+    };
+    const handleMouseLeave = () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+        videoRef.current.currentTime = 0;
+      }
+    };
+
+    if (ytId) {
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+        <button
+          onClick={() => openVideoModal(url)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
+        >
           <img
             src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
             alt="Video preview"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Video className="w-6 h-6 text-white" />
+            <Play className="w-8 h-8 text-white fill-white" />
           </div>
-        </a>
+        </button>
       );
     }
 
-    const vimeoId = getVimeoId(url);
     if (vimeoId) {
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+        <button
+          onClick={() => openVideoModal(url)}
+          className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
+        >
           <iframe
-            src={`https://player.vimeo.com/video/${vimeoId}?background=1&autoplay=1&loop=1&muted=1`}
+            src={`https://player.vimeo.com/video/${vimeoId}?background=1&autoplay=0&loop=1&muted=1`}
             className="w-full h-full pointer-events-none"
             allow="autoplay"
             title="Video preview"
           />
-        </a>
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Play className="w-8 h-8 text-white fill-white" />
+          </div>
+        </button>
       );
     }
 
-    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+    if (isDirect) {
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+        <button
+          onClick={() => openVideoModal(url)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
+        >
           <video
+            ref={videoRef}
             src={url}
-            autoPlay
             loop
             muted
             playsInline
+            preload="metadata"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Video className="w-6 h-6 text-white" />
+            <Play className="w-8 h-8 text-white fill-white" />
           </div>
-        </a>
+        </button>
       );
     }
 
     return (
-      <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+      <button
+        onClick={() => openVideoModal(url)}
+        className="text-primary hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+      >
         <Video className="w-4 h-4" />
         View Video
-      </a>
+      </button>
     );
   };
 
