@@ -52,6 +52,73 @@ export const DemonstrationsTab = () => {
     setEditForm(video);
   };
 
+  const getYouTubeId = (url: string): string | null => {
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    return match?.[1] || null;
+  };
+
+  const getVimeoId = (url: string): string | null => {
+    const match = url.match(/vimeo\.com\/(\d+)/);
+    return match?.[1] || null;
+  };
+
+  const renderVideoPreview = (url: string) => {
+    const ytId = getYouTubeId(url);
+    if (ytId) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+          <img
+            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
+            alt="Video preview"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Video className="w-6 h-6 text-white" />
+          </div>
+        </a>
+      );
+    }
+
+    const vimeoId = getVimeoId(url);
+    if (vimeoId) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+          <iframe
+            src={`https://player.vimeo.com/video/${vimeoId}?background=1&autoplay=1&loop=1&muted=1`}
+            className="w-full h-full pointer-events-none"
+            allow="autoplay"
+            title="Video preview"
+          />
+        </a>
+      );
+    }
+
+    if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer" className="block w-32 h-20 rounded overflow-hidden relative group">
+          <video
+            src={url}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <Video className="w-6 h-6 text-white" />
+          </div>
+        </a>
+      );
+    }
+
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+        <Video className="w-4 h-4" />
+        View Video
+      </a>
+    );
+  };
+
   const normalizeVideoInput = (input: string): string => {
     const trimmed = input.trim();
 
@@ -242,7 +309,7 @@ export const DemonstrationsTab = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Test Name</TableHead>
-                <TableHead>Video URL</TableHead>
+                <TableHead>Preview</TableHead>
                 <TableHead>Purpose</TableHead>
                 <TableHead>Procedure</TableHead>
                 <TableHead>Actions</TableHead>
@@ -295,16 +362,9 @@ export const DemonstrationsTab = () => {
                       <TableCell className="font-medium">{video.test_name}</TableCell>
                       <TableCell>
                         {video.video_url ? (
-                          <a 
-                            href={video.video_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            View Video
-                          </a>
+                          renderVideoPreview(video.video_url)
                         ) : (
-                          <span className="text-gray-400">No URL</span>
+                          <span className="text-muted-foreground">No URL</span>
                         )}
                       </TableCell>
                       <TableCell>{video.Purpose || <span className="text-gray-400">Not set</span>}</TableCell>
