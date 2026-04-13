@@ -309,7 +309,7 @@ export const DemonstrationsTab = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Test Name</TableHead>
-                <TableHead>Video URL</TableHead>
+                <TableHead>Preview</TableHead>
                 <TableHead>Purpose</TableHead>
                 <TableHead>Procedure</TableHead>
                 <TableHead>Actions</TableHead>
