@@ -82,41 +82,18 @@ export const DemonstrationsTab = () => {
     setModalVideo({ url, type: 'unknown' });
   };
 
-  const VideoPreviewCell = ({ url }: { url: string }) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
+  const renderVideoPreview = (url: string) => {
     const ytId = getYouTubeId(url);
     const vimeoId = getVimeoId(url);
     const isDirect = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url);
 
-    const handleMouseEnter = () => {
-      if (videoRef.current) {
-        videoRef.current.play().catch(() => {});
-      }
-    };
-    const handleMouseLeave = () => {
-      if (videoRef.current) {
-        videoRef.current.pause();
-        videoRef.current.currentTime = 0;
-      }
-    };
-
     if (ytId) {
       return (
-        <button
-          onClick={() => openVideoModal(url)}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
-        >
-          <img
-            src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`}
-            alt="Video preview"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Play className="w-8 h-8 text-white fill-white" />
-          </div>
-        </button>
+        <VideoThumbnailYT
+          ytId={ytId}
+          url={url}
+          onOpen={() => openVideoModal(url)}
+        />
       );
     }
 
@@ -141,25 +118,7 @@ export const DemonstrationsTab = () => {
 
     if (isDirect) {
       return (
-        <button
-          onClick={() => openVideoModal(url)}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="block w-full aspect-video rounded overflow-hidden relative group cursor-pointer border-0 bg-transparent p-0"
-        >
-          <video
-            ref={videoRef}
-            src={url}
-            loop
-            muted
-            playsInline
-            preload="metadata"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <Play className="w-8 h-8 text-white fill-white" />
-          </div>
-        </button>
+        <DirectVideoPreview url={url} onOpen={() => openVideoModal(url)} />
       );
     }
 
