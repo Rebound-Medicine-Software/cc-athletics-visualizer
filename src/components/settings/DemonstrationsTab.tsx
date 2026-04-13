@@ -459,6 +459,46 @@ export const DemonstrationsTab = () => {
           )}
         </div>
       </CardContent>
+
+      <Dialog open={!!modalVideo} onOpenChange={(open) => !open && setModalVideo(null)}>
+        <DialogContent className="max-w-4xl w-[90vw] p-0 bg-black border-none overflow-hidden">
+          {modalVideo?.type === 'youtube' && modalVideo.id && (
+            <iframe
+              src={`https://www.youtube.com/embed/${modalVideo.id}?autoplay=1&rel=0&modestbranding=1&showinfo=0&iv_load_policy=3`}
+              className="w-full aspect-video"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title="Video player"
+            />
+          )}
+          {modalVideo?.type === 'vimeo' && modalVideo.id && (
+            <iframe
+              src={`https://player.vimeo.com/video/${modalVideo.id}?autoplay=1`}
+              className="w-full aspect-video"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title="Video player"
+            />
+          )}
+          {modalVideo?.type === 'direct' && (
+            <video
+              src={modalVideo.url}
+              controls
+              autoPlay
+              className="w-full aspect-video"
+            />
+          )}
+          {modalVideo?.type === 'unknown' && (
+            <iframe
+              src={modalVideo.url}
+              className="w-full aspect-video"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title="Video player"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
