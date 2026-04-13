@@ -84,7 +84,7 @@ const Settings = () => {
                   })
                 }}
               >
-                API Keys
+                Integrations
               </TabsTrigger>
               <TabsTrigger 
                 value="demonstrations"
