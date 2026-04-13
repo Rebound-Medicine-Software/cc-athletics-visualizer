@@ -415,9 +415,9 @@ export const DemonstrationsTab = () => {
                   ) : (
                     <>
                       <TableCell className="font-medium">{video.test_name}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-48 min-w-[120px]">
                         {video.video_url ? (
-                          renderVideoPreview(video.video_url)
+                          <VideoPreviewCell url={video.video_url} />
                         ) : (
                           <span className="text-muted-foreground">No URL</span>
                         )}
