@@ -70,7 +70,7 @@ const Settings = () => {
             <TabsList className="w-full justify-center border-b bg-transparent rounded-none h-auto p-0">
               <TabsTrigger 
                 value="api-keys"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
@@ -88,7 +88,7 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="demonstrations"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
@@ -99,7 +99,7 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="data-housing"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
@@ -110,7 +110,7 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="athlete-credentials"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
@@ -121,7 +121,7 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="tier-management"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
@@ -132,7 +132,7 @@ const Settings = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="branding"
-                className="rounded-none"
+                className="flex-1 rounded-none"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'hsl(var(--foreground))',
