@@ -362,16 +362,9 @@ export const DemonstrationsTab = () => {
                       <TableCell className="font-medium">{video.test_name}</TableCell>
                       <TableCell>
                         {video.video_url ? (
-                          <a 
-                            href={video.video_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            View Video
-                          </a>
+                          renderVideoPreview(video.video_url)
                         ) : (
-                          <span className="text-gray-400">No URL</span>
+                          <span className="text-muted-foreground">No URL</span>
                         )}
                       </TableCell>
                       <TableCell>{video.Purpose || <span className="text-gray-400">Not set</span>}</TableCell>
