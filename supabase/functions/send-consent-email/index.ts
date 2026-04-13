@@ -1,5 +1,5 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { Pingram } from 'npm:pingram'
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
+import notificationapi from 'npm:notificationapi-node-server-sdk@1.1.0'
 import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
@@ -55,23 +55,19 @@ serve(async (req) => {
     } = parsed.data
     const consentUrl = `${siteUrl}/consent?token=${consentToken}`
 
-    const apiKey = Deno.env.get('PINGRAM_API_KEY')
-    if (!apiKey) {
-      return respond(false, {
-        error: 'PINGRAM_API_KEY is not configured.',
-      })
-    }
-
-    const pingram = new Pingram({
-      apiKey,
-      baseUrl: 'https://api.pingram.io',
-    })
-
-    console.log('Sending consent email via Pingram to:', athleteEmail)
+    console.log('Sending consent email via NotificationAPI to:', athleteEmail)
 
     try {
-      const result = await pingram.send({
-        type: 'email_compose_preview',
+      notificationapi.init(
+        'n3g0q177rbzrr6riq8re90n1yc',
+        'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
+        {
+          baseURL: 'https://api.eu.notificationapi.com'
+        }
+      )
+
+      const result = await notificationapi.send({
+        type: 'send_consent_email',
         to: {
           id: athleteEmail,
           email: athleteEmail,
@@ -84,16 +80,15 @@ serve(async (req) => {
           login_password: loginPassword,
           consent_url: consentUrl,
         },
-        templateId: 'send_consent_email',
       })
 
-      console.log('Pingram send completed successfully:', JSON.stringify(result))
+      console.log('NotificationAPI send completed successfully:', JSON.stringify(result))
       return respond(true, {
         message: 'Consent email sent successfully.',
       })
     } catch (sendError: any) {
-      const errorMessage = sendError?.message || 'Unknown Pingram error'
-      console.error('Pingram send error:', errorMessage, sendError)
+      const errorMessage = sendError?.message || 'Unknown NotificationAPI error'
+      console.error('NotificationAPI send error:', errorMessage, sendError)
       return respond(false, {
         error: errorMessage,
       })
