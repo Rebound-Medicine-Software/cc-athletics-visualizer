@@ -8,6 +8,7 @@ import { IndividualComparisonSection } from "./IndividualComparisonSection";
 import { EliteComparison } from "./EliteComparison";
 
 import { LiveDataSection } from "./LiveDataSection";
+import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -92,6 +93,8 @@ export const DashboardContent = ({
             branding={branding}
           />
         );
+      case "profiles":
+        return <StaffCredentialsTab />;
       default:
         return (
           <>

@@ -72,7 +72,7 @@ const Dashboard = () => {
     if (section === "settings") {
       navigate("/settings");
     } else if (section === "profiles") {
-      navigate("/settings?tab=staff-credentials");
+      setActiveSection("profiles");
     } else if (section === "admin") {
       navigate("/admin");
     } else {
