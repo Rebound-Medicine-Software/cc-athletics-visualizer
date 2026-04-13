@@ -22,6 +22,7 @@ import {
   X,
   RotateCw,
   Shield,
+  BarChart3,
 } from "lucide-react";
 
 const Dashboard = () => {
