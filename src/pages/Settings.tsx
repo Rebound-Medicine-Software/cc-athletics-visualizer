@@ -67,7 +67,7 @@ const Settings = () => {
           }}
         >
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="w-full justify-start border-b bg-transparent rounded-none h-auto p-0">
+            <TabsList className="w-full justify-center border-b bg-transparent rounded-none h-auto p-0">
               <TabsTrigger 
                 value="api-keys"
                 className="rounded-none"
