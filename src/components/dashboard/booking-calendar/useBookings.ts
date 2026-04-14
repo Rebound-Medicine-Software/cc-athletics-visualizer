@@ -330,8 +330,10 @@ export const useBookings = () => {
   return {
     bookings,
     eventTypes,
+    schedules,
     isLoading,
     calConnected,
+    callCalProxy,
     createBooking,
     updateBooking,
     deleteBooking,
