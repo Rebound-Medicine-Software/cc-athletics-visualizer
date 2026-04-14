@@ -53,11 +53,11 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
-    const calHeaders: Record<string, string> = {
+    const makeHeaders = (version: string): Record<string, string> => ({
       Authorization: `Bearer ${calApiKey}`,
       "Content-Type": "application/json",
-      "cal-api-version": CAL_API_VERSION,
-    };
+      "cal-api-version": version,
+    });
 
     // GET bookings
     if (action === "list-bookings" && req.method === "GET") {
