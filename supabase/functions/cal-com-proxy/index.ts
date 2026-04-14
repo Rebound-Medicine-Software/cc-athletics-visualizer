@@ -7,7 +7,9 @@ const corsHeaders = {
 };
 
 const CAL_API_BASE = "https://api.cal.com/v2";
-const CAL_API_VERSION = "2024-08-13";
+const CAL_API_VERSION_BOOKINGS = "2024-08-13";
+const CAL_API_VERSION_EVENT_TYPES = "2024-06-14";
+const CAL_API_VERSION_SCHEDULES = "2024-06-11";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
