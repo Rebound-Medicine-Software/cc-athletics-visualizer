@@ -59,7 +59,7 @@ export const BookingCalendar = () => {
     loadCalSettings();
   }, [profile?.team_id]);
 
-  // Initialize Cal.com embed API
+  // Initialize Cal.com embed API and hide promotions
   useEffect(() => {
     if (isConnected && calUsername) {
       (async () => {
@@ -71,6 +71,37 @@ export const BookingCalendar = () => {
         });
       })();
     }
+
+    // Inject CSS to hide Cal.com promotional banners/overlays
+    const styleId = "cal-promo-hide";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        [data-cal-namespace] [class*="upgrade"],
+        [data-cal-namespace] [class*="Upgrade"],
+        [data-cal-namespace] [class*="teams-banner"],
+        [data-cal-namespace] [class*="TeamsBanner"],
+        [data-cal-namespace] [class*="promo"],
+        [data-cal-namespace] [class*="Promo"],
+        [data-cal-namespace] [class*="upsell"],
+        [data-cal-namespace] [class*="Upsell"],
+        iframe[src*="cal.com"] ~ div[class*="upgrade"],
+        div[class*="try-teams"],
+        div[class*="TryTeams"] {
+          display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const el = document.getElementById(styleId);
+      if (el) el.remove();
+    };
   }, [isConnected, calUsername]);
 
   const handleConnect = async () => {
