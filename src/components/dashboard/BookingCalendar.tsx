@@ -12,8 +12,9 @@ import { toast } from "sonner";
 import Cal, { getCalApi } from "@calcom/embed-react";
 import {
   Calendar, ExternalLink, Settings, Link2, CheckCircle2,
-  LogIn, UserPlus, ArrowRight, RefreshCw, Unlink
+  LogIn, UserPlus, ArrowRight, RefreshCw, Unlink, LayoutGrid
 } from "lucide-react";
+import { NookalCalendar } from "./booking-calendar/NookalCalendar";
 
 
 export const BookingCalendar = () => {
@@ -348,6 +349,10 @@ export const BookingCalendar = () => {
             <Calendar className="w-4 h-4" />
             Book Appointment
           </TabsTrigger>
+          <TabsTrigger value="schedule" className="gap-2">
+            <LayoutGrid className="w-4 h-4" />
+            Schedule
+          </TabsTrigger>
           <TabsTrigger value="manage" className="gap-2">
             <Settings className="w-4 h-4" />
             Manage Calendar
@@ -367,6 +372,10 @@ export const BookingCalendar = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="schedule" className="mt-4">
+          <NookalCalendar />
         </TabsContent>
 
         <TabsContent value="manage" className="mt-4">
