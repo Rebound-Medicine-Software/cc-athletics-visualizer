@@ -63,8 +63,16 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
                 {format(new Date(b.appointment_date), "HH:mm")}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{b.title}</div>
-                {b.notes && b.notes !== b.title && (
+                <div className="font-medium text-sm truncate flex items-center gap-1.5">
+                  {b.title}
+                  {b.source === "cal" && (
+                    <Calendar className="w-3 h-3 text-blue-500 shrink-0" />
+                  )}
+                </div>
+                {b.attendeeName && (
+                  <div className="text-xs text-muted-foreground truncate">{b.attendeeName}</div>
+                )}
+                {b.notes && b.notes !== b.title && !b.attendeeName && (
                   <div className="text-xs text-muted-foreground truncate">{b.notes}</div>
                 )}
               </div>
