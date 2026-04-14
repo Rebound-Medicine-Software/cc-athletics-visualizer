@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { CalendarView, BookingEvent } from "./types";
@@ -9,15 +9,20 @@ import { WeekView } from "./WeekView";
 import { DayView } from "./DayView";
 import { ListView } from "./ListView";
 import { BookingDialog } from "./BookingDialog";
+import { OutOfHoursConfirmDialog } from "./OutOfHoursConfirmDialog";
 import { RefreshCw } from "lucide-react";
 
 export const NookalCalendar = () => {
-  const { bookings, eventTypes, isLoading, createBooking, updateBooking, deleteBooking, resizeBooking } = useBookings();
+  const { bookings, eventTypes, schedules, isLoading, createBooking, updateBooking, deleteBooking, resizeBooking } = useBookings();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>("month");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<BookingEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Out-of-hours confirmation state
+  const [oohDialogOpen, setOohDialogOpen] = useState(false);
+  const [pendingDrop, setPendingDrop] = useState<{ eventId: string; newDate: Date } | null>(null);
 
   const navigate = useCallback((dir: 1 | -1) => {
     setCurrentDate((d) =>
@@ -26,6 +31,27 @@ export const NookalCalendar = () => {
       (dir === 1 ? addDays(d, 1) : subDays(d, 1))
     );
   }, [view]);
+
+  // Check if a date/time falls within Cal.com schedule working hours
+  const isWithinWorkingHours = useCallback((date: Date): boolean => {
+    if (schedules.length === 0) return true; // No schedules = can't check, allow
+    
+    // JS getDay: 0=Sun,1=Mon,...,6=Sat — Cal.com uses same convention
+    const dayOfWeek = date.getDay();
+    const timeStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+    // Check across all schedules — if ANY schedule covers this day+time, it's ok
+    for (const schedule of schedules) {
+      for (const slot of schedule.availability) {
+        if (slot.days.includes(dayOfWeek)) {
+          if (timeStr >= slot.startTime && timeStr < slot.endTime) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }, [schedules]);
 
   const handleDateClick = (date: Date) => {
     setSelectedBooking(null);
@@ -39,9 +65,32 @@ export const NookalCalendar = () => {
     setDialogOpen(true);
   };
 
-  const handleEventDrop = (eventId: string, newDate: Date) => {
+  const handleEventDrop = useCallback((eventId: string, newDate: Date) => {
+    const booking = bookings.find((b) => b.id === eventId);
+    
+    // Only check working hours for Cal.com bookings
+    if (booking?.source === "cal" && !isWithinWorkingHours(newDate)) {
+      setPendingDrop({ eventId, newDate });
+      setOohDialogOpen(true);
+      return;
+    }
+    
     updateBooking(eventId, { appointment_date: newDate.toISOString() });
-  };
+  }, [bookings, isWithinWorkingHours, updateBooking]);
+
+  const handleOohConfirm = useCallback(() => {
+    if (pendingDrop) {
+      updateBooking(pendingDrop.eventId, { appointment_date: pendingDrop.newDate.toISOString() });
+    }
+    setOohDialogOpen(false);
+    setPendingDrop(null);
+  }, [pendingDrop, updateBooking]);
+
+  const handleOohCancel = useCallback(() => {
+    setOohDialogOpen(false);
+    setPendingDrop(null);
+    // No action — booking stays where it was
+  }, []);
 
   const handleEventResize = (bookingId: string, newDurationMinutes: number, matchingEventTypeId: number) => {
     resizeBooking(bookingId, newDurationMinutes, matchingEventTypeId);
@@ -115,6 +164,13 @@ export const NookalCalendar = () => {
           onSave={createBooking}
           onUpdate={updateBooking}
           onDelete={deleteBooking}
+        />
+
+        <OutOfHoursConfirmDialog
+          open={oohDialogOpen}
+          targetDate={pendingDrop?.newDate ?? null}
+          onConfirm={handleOohConfirm}
+          onCancel={handleOohCancel}
         />
       </CardContent>
     </Card>

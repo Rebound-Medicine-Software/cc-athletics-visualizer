@@ -8,6 +8,7 @@ export const useBookings = () => {
   const { profile } = useAuth();
   const [bookings, setBookings] = useState<BookingEvent[]>([]);
   const [eventTypes, setEventTypes] = useState<Array<{ id: number; title: string; slug: string; length: number }>>([]);
+  const [schedules, setSchedules] = useState<Array<{ id: number; name: string; availability: Array<{ days: number[]; startTime: string; endTime: string }> }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [calConnected, setCalConnected] = useState(false);
 
@@ -154,10 +155,32 @@ export const useBookings = () => {
     }
   }, [calConnected, callCalProxy]);
 
+  const fetchSchedules = useCallback(async () => {
+    if (!calConnected) return;
+    try {
+      const data = await callCalProxy("list-schedules");
+      const raw = data?.data || data?.schedules || [];
+      setSchedules(
+        (Array.isArray(raw) ? raw : []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          availability: (s.availability || []).map((a: any) => ({
+            days: a.days || [],
+            startTime: a.startTime || "09:00",
+            endTime: a.endTime || "17:00",
+          })),
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching schedules:", err);
+    }
+  }, [calConnected, callCalProxy]);
+
   useEffect(() => {
     fetchBookings();
     fetchEventTypes();
-  }, [fetchBookings, fetchEventTypes]);
+    fetchSchedules();
+  }, [fetchBookings, fetchEventTypes, fetchSchedules]);
 
   const createBooking = async (date: Date, title: string, notes?: string) => {
     if (!profile?.team_id) {
@@ -307,8 +330,10 @@ export const useBookings = () => {
   return {
     bookings,
     eventTypes,
+    schedules,
     isLoading,
     calConnected,
+    callCalProxy,
     createBooking,
     updateBooking,
     deleteBooking,
