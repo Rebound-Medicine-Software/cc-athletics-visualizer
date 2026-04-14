@@ -56,7 +56,7 @@ export const WeekView = ({ currentDate, bookings, onDateClick, onEventClick, onE
     }
   }, [eventTypes, onEventResize]);
 
-  const { dragState, startDrag } = useDragBooking({
+  const { dragState, startDrag, wasDragging } = useDragBooking({
     pixelsPerHour: HOUR_HEIGHT,
     onMoveEnd: handleMoveEnd,
     onResizeEnd: handleResizeEnd,
@@ -195,7 +195,7 @@ export const WeekView = ({ currentDate, bookings, onDateClick, onEventClick, onE
                         isDragging && "ring-2 ring-primary shadow-lg opacity-90"
                       )}
                       onMouseDown={(e) => startDrag(e, b, "move")}
-                      onClick={(e) => { e.stopPropagation(); if (!isDragging) onEventClick(b); }}
+                      onClick={(e) => { e.stopPropagation(); if (!wasDragging()) onEventClick(b); }}
                     >
                       <div className="truncate font-medium">
                         {isDragging && dragState?.type === "move" && previewLabel ? (
