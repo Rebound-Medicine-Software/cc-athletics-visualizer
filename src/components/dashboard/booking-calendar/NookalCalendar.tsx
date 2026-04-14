@@ -84,6 +84,8 @@ export const NookalCalendar = () => {
             onDateClick={handleDateClick}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
+            eventTypes={eventTypes}
+            onEventResize={handleEventResize}
           />
         )}
         {view === "day" && (
@@ -93,6 +95,8 @@ export const NookalCalendar = () => {
             onDateClick={handleDateClick}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
+            eventTypes={eventTypes}
+            onEventResize={handleEventResize}
           />
         )}
         {view === "list" && (
