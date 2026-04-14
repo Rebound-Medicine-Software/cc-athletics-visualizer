@@ -100,6 +100,10 @@ const AthleteConsent = () => {
             <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Invalid or Expired Link</h2>
             <p className="text-muted-foreground">This consent link is not valid. Please contact your practitioner for a new link.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/")}><Home className="w-4 h-4 mr-2" />Home</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -114,6 +118,10 @@ const AthleteConsent = () => {
             <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Already Confirmed</h2>
             <p className="text-muted-foreground">You have already provided your consent. You can now log into the system using the credentials sent to your email.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/auth")}><Home className="w-4 h-4 mr-2" />Log In</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -130,6 +138,9 @@ const AthleteConsent = () => {
             <p className="text-muted-foreground">
               Thank you, <strong>{signedName}</strong>. Your consent has been recorded. You can now log into the system using the credentials sent to your email.
             </p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button onClick={() => navigate("/auth")}><Home className="w-4 h-4 mr-2" />Log In</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -144,6 +155,10 @@ const AthleteConsent = () => {
             <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Something Went Wrong</h2>
             <p className="text-muted-foreground">An error occurred. Please try again or contact your practitioner.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/")}><Home className="w-4 h-4 mr-2" />Home</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
