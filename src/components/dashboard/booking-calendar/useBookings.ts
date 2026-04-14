@@ -293,7 +293,12 @@ export const useBookings = () => {
       toast.success(`Booking updated to ${newDurationMinutes} minutes`);
       await fetchBookings();
     } catch (err: any) {
-      toast.error(`Failed to resize booking: ${err.message}`);
+      const msg = err.message || "Unknown error";
+      if (msg.includes("already has booking") || msg.includes("not available")) {
+        toast.error("Cannot resize: the new time slot conflicts with an existing booking or is outside working hours.");
+      } else {
+        toast.error(`Failed to resize booking: ${msg}`);
+      }
       // Try to refetch in case partial changes happened
       await fetchBookings();
     }
