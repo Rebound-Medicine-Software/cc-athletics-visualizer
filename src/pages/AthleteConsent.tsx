@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type ConsentState = "loading" | "ready" | "submitted" | "already_confirmed" | "invalid" | "error";
 
 const AthleteConsent = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [state, setState] = useState<ConsentState>("loading");
