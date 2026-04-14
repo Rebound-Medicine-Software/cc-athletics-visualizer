@@ -224,6 +224,11 @@ export const useBookings = () => {
 
     // Cal.com booking — cancel via API
     if (booking?.source === "cal") {
+      // Prevent cancelling bookings that have already ended
+      if (booking.end_date && new Date(booking.end_date) < new Date()) {
+        toast.error("Cannot cancel a booking that has already ended");
+        return;
+      }
       try {
         await callCalProxy("cancel-booking", "POST", {
           uid: booking.uid,
