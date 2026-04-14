@@ -155,10 +155,32 @@ export const useBookings = () => {
     }
   }, [calConnected, callCalProxy]);
 
+  const fetchSchedules = useCallback(async () => {
+    if (!calConnected) return;
+    try {
+      const data = await callCalProxy("list-schedules");
+      const raw = data?.data || data?.schedules || [];
+      setSchedules(
+        (Array.isArray(raw) ? raw : []).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          availability: (s.availability || []).map((a: any) => ({
+            days: a.days || [],
+            startTime: a.startTime || "09:00",
+            endTime: a.endTime || "17:00",
+          })),
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching schedules:", err);
+    }
+  }, [calConnected, callCalProxy]);
+
   useEffect(() => {
     fetchBookings();
     fetchEventTypes();
-  }, [fetchBookings, fetchEventTypes]);
+    fetchSchedules();
+  }, [fetchBookings, fetchEventTypes, fetchSchedules]);
 
   const createBooking = async (date: Date, title: string, notes?: string) => {
     if (!profile?.team_id) {
