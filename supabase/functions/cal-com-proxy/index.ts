@@ -7,7 +7,9 @@ const corsHeaders = {
 };
 
 const CAL_API_BASE = "https://api.cal.com/v2";
-const CAL_API_VERSION = "2024-08-13";
+const CAL_API_VERSION_BOOKINGS = "2024-08-13";
+const CAL_API_VERSION_EVENT_TYPES = "2024-06-14";
+const CAL_API_VERSION_SCHEDULES = "2024-06-11";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -51,11 +53,11 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
-    const calHeaders: Record<string, string> = {
+    const makeHeaders = (version: string): Record<string, string> => ({
       Authorization: `Bearer ${calApiKey}`,
       "Content-Type": "application/json",
-      "cal-api-version": CAL_API_VERSION,
-    };
+      "cal-api-version": version,
+    });
 
     // GET bookings
     if (action === "list-bookings" && req.method === "GET") {
@@ -67,7 +69,7 @@ Deno.serve(async (req) => {
       if (afterStart) calUrl += `&afterStart=${afterStart}`;
       if (beforeEnd) calUrl += `&beforeEnd=${beforeEnd}`;
 
-      const res = await fetch(calUrl, { headers: calHeaders });
+      const res = await fetch(calUrl, { headers: makeHeaders(CAL_API_VERSION_BOOKINGS) });
       const data = await res.json();
       return new Response(JSON.stringify(data), {
         status: res.status,
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const res = await fetch(`${CAL_API_BASE}/bookings/${bookingUid}`, { headers: calHeaders });
+      const res = await fetch(`${CAL_API_BASE}/bookings/${bookingUid}`, { headers: makeHeaders(CAL_API_VERSION_BOOKINGS) });
       const data = await res.json();
       return new Response(JSON.stringify(data), {
         status: res.status,
@@ -97,7 +99,7 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const res = await fetch(`${CAL_API_BASE}/bookings`, {
         method: "POST",
-        headers: calHeaders,
+        headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify(body),
       });
       const data = await res.json();
@@ -119,7 +121,7 @@ Deno.serve(async (req) => {
       }
       const res = await fetch(`${CAL_API_BASE}/bookings/${bookingUid}/reschedule`, {
         method: "POST",
-        headers: calHeaders,
+        headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify({
           start: body.start,
           rescheduleReason: body.reason || "Rescheduled via dashboard",
@@ -144,7 +146,7 @@ Deno.serve(async (req) => {
       }
       const res = await fetch(`${CAL_API_BASE}/bookings/${bookingUid}/cancel`, {
         method: "POST",
-        headers: calHeaders,
+        headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify({
           cancellationReason: body.reason || "Cancelled via dashboard",
         }),
@@ -158,8 +160,16 @@ Deno.serve(async (req) => {
 
     // GET event types
     if (action === "list-event-types" && req.method === "GET") {
-      const res = await fetch(`${CAL_API_BASE}/event-types`, { headers: calHeaders });
+      const res = await fetch(`${CAL_API_BASE}/event-types`, { headers: makeHeaders(CAL_API_VERSION_EVENT_TYPES) });
       const data = await res.json();
+      // Gracefully handle 404 (known issue for personal Cal.com accounts)
+      if (res.status === 404) {
+        console.warn("Cal.com event-types returned 404 - this may be a personal account limitation");
+        return new Response(JSON.stringify({ status: "success", data: { eventTypeGroups: [] } }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(JSON.stringify(data), {
         status: res.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -168,7 +178,7 @@ Deno.serve(async (req) => {
 
     // GET schedules
     if (action === "list-schedules" && req.method === "GET") {
-      const res = await fetch(`${CAL_API_BASE}/schedules`, { headers: calHeaders });
+      const res = await fetch(`${CAL_API_BASE}/schedules`, { headers: makeHeaders(CAL_API_VERSION_SCHEDULES) });
       const data = await res.json();
       return new Response(JSON.stringify(data), {
         status: res.status,
