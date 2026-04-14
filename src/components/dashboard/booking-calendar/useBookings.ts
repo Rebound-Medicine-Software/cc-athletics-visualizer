@@ -8,6 +8,7 @@ export const useBookings = () => {
   const { profile } = useAuth();
   const [bookings, setBookings] = useState<BookingEvent[]>([]);
   const [eventTypes, setEventTypes] = useState<Array<{ id: number; title: string; slug: string; length: number }>>([]);
+  const [schedules, setSchedules] = useState<Array<{ id: number; name: string; availability: Array<{ days: number[]; startTime: string; endTime: string }> }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [calConnected, setCalConnected] = useState(false);
 
