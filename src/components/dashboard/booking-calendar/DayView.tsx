@@ -43,12 +43,16 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
   const getBookingsForHour = (hour: number) =>
     dayBookings.filter((b) => new Date(b.appointment_date).getHours() === hour);
 
-  const handleDrop = (e: React.DragEvent, hour: number) => {
+  const handleDrop = (e: React.DragEvent, hour: number, containerEl: HTMLElement | null) => {
     e.preventDefault();
     const eventId = e.dataTransfer.getData("eventId");
-    if (eventId) {
+    if (eventId && containerEl) {
+      const rect = containerEl.getBoundingClientRect();
+      const yOffset = e.clientY - rect.top;
+      const fractionOfHour = yOffset / HOUR_HEIGHT;
+      const minuteSlot = Math.floor(fractionOfHour * 4) * 15; // snap to 15-min
       const newDate = new Date(currentDate);
-      newDate.setHours(hour, 0, 0, 0);
+      newDate.setHours(hour, Math.min(minuteSlot, 45), 0, 0);
       onEventDrop(eventId, newDate);
     }
   };
