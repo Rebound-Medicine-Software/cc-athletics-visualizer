@@ -119,12 +119,17 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      if (!body?.start) {
+        return new Response(JSON.stringify({ error: "start required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const res = await fetch(`${CAL_API_BASE}/bookings/${bookingUid}/reschedule`, {
         method: "POST",
         headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify({
           start: body.start,
-          rescheduleReason: body.reason || "Rescheduled via dashboard",
         }),
       });
       const data = await res.json();
