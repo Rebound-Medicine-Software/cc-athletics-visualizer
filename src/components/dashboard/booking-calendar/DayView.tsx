@@ -2,6 +2,15 @@ import { useMemo } from "react";
 import { format, isSameDay } from "date-fns";
 import { BookingEvent } from "./types";
 import { cn } from "@/lib/utils";
+import { useResizeBooking } from "./useResizeBooking";
+import { GripHorizontal } from "lucide-react";
+
+interface EventType {
+  id: number;
+  title: string;
+  slug: string;
+  length: number;
+}
 
 interface DayViewProps {
   currentDate: Date;
@@ -9,9 +18,12 @@ interface DayViewProps {
   onDateClick: (date: Date) => void;
   onEventClick: (event: BookingEvent) => void;
   onEventDrop: (eventId: string, newDate: Date) => void;
+  eventTypes?: EventType[];
+  onEventResize?: (bookingId: string, newDurationMinutes: number, matchingEventTypeId: number) => void;
 }
 
 const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6am–9pm
+const HOUR_HEIGHT = 56;
 
 const statusColor: Record<string, string> = {
   scheduled: "bg-blue-100 border-blue-400 text-blue-800",
@@ -19,9 +31,10 @@ const statusColor: Record<string, string> = {
   completed: "bg-gray-100 border-gray-400 text-gray-700",
   cancelled: "bg-red-100 border-red-400 text-red-800",
   "no-show": "bg-yellow-100 border-yellow-400 text-yellow-800",
+  accepted: "bg-blue-100 border-blue-400 text-blue-800",
 };
 
-export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEventDrop }: DayViewProps) => {
+export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEventDrop, eventTypes = [], onEventResize }: DayViewProps) => {
   const dayBookings = useMemo(
     () => bookings.filter((b) => isSameDay(new Date(b.appointment_date), currentDate)),
     [bookings, currentDate]
@@ -39,6 +52,14 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
       onEventDrop(eventId, newDate);
     }
   };
+
+  const { resizingId, handleResizeStart, getResizePreview, availableDurations } = useResizeBooking({
+    eventTypes,
+    onResize: onEventResize || (() => {}),
+    pixelsPerHour: HOUR_HEIGHT,
+  });
+
+  const canResize = (b: BookingEvent) => b.source === "cal" && availableDurations.length > 1 && onEventResize;
 
   return (
     <div className="border rounded-lg overflow-auto max-h-[650px]">
@@ -60,26 +81,51 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
               {format(new Date(2000, 0, 1, hour), "h:mm a")}
             </div>
             <div className="flex-1 p-1 space-y-1">
-              {events.map((b) => (
-                <div
-                  key={b.id}
-                  draggable
-                  onDragStart={(e) => e.dataTransfer.setData("eventId", b.id)}
-                  onClick={(e) => { e.stopPropagation(); onEventClick(b); }}
-                  className={cn(
-                    "px-3 py-2 rounded-md border-l-3 cursor-grab active:cursor-grabbing",
-                    statusColor[b.status || "scheduled"]
-                  )}
-                >
-                  <div className="text-sm font-medium">{b.title}</div>
-                  <div className="text-xs opacity-70">
-                    {format(new Date(b.appointment_date), "h:mm a")} · {b.status}
+              {events.map((b) => {
+                const preview = getResizePreview(b);
+                const isResizing = resizingId === b.id;
+                const start = new Date(b.appointment_date);
+                const end = new Date(b.end_date);
+                const durationMin = (end.getTime() - start.getTime()) / 60000;
+                const heightPx = preview ? preview.heightPx : Math.max(32, (durationMin / 60) * HOUR_HEIGHT);
+
+                return (
+                  <div
+                    key={b.id}
+                    className="relative"
+                    style={{ height: `${heightPx}px` }}
+                  >
+                    <div
+                      draggable={!isResizing}
+                      onDragStart={(e) => e.dataTransfer.setData("eventId", b.id)}
+                      onClick={(e) => { e.stopPropagation(); onEventClick(b); }}
+                      className={cn(
+                        "absolute inset-0 px-3 py-2 rounded-md border-l-3 cursor-grab active:cursor-grabbing overflow-hidden",
+                        statusColor[b.status || "scheduled"],
+                        isResizing && "ring-2 ring-primary shadow-lg"
+                      )}
+                    >
+                      <div className="text-sm font-medium truncate">{b.title}</div>
+                      <div className="text-xs opacity-70">
+                        {format(start, "h:mm a")} – {format(end, "h:mm a")} · {preview ? preview.label : `${durationMin} min`}
+                      </div>
+                      {b.notes && b.notes !== b.title && (
+                        <div className="text-xs mt-1 opacity-60 truncate">{b.notes}</div>
+                      )}
+                    </div>
+                    {/* Resize handle */}
+                    {canResize(b) && (
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center cursor-s-resize hover:bg-primary/10 rounded-b-md group z-10"
+                        onMouseDown={(e) => handleResizeStart(e, b)}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <GripHorizontal className="w-4 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    )}
                   </div>
-                  {b.notes && b.notes !== b.title && (
-                    <div className="text-xs mt-1 opacity-60">{b.notes}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
