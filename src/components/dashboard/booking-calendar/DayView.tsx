@@ -79,7 +79,7 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
               onDateClick(d);
             }}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, hour)}
+            onDrop={(e) => handleDrop(e, hour, e.currentTarget as HTMLElement)}
           >
             <div className="w-16 shrink-0 border-r py-2 text-xs text-muted-foreground text-right pr-3">
               {format(new Date(2000, 0, 1, hour), "h:mm a")}
