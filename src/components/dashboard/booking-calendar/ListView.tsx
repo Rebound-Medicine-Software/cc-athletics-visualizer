@@ -3,7 +3,7 @@ import { format, isAfter, isBefore, startOfDay, addDays } from "date-fns";
 import { BookingEvent } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Clock } from "lucide-react";
+import { Edit, Trash2, Clock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ListViewProps {
@@ -15,9 +15,11 @@ interface ListViewProps {
 const statusVariant: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-800 border-blue-200",
   confirmed: "bg-green-100 text-green-800 border-green-200",
+  accepted: "bg-green-100 text-green-800 border-green-200",
   completed: "bg-gray-100 text-gray-600 border-gray-200",
   cancelled: "bg-red-100 text-red-700 border-red-200",
   "no-show": "bg-yellow-100 text-yellow-800 border-yellow-200",
+  past: "bg-gray-100 text-gray-600 border-gray-200",
 };
 
 export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) => {
@@ -61,8 +63,16 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
                 {format(new Date(b.appointment_date), "HH:mm")}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-sm truncate">{b.title}</div>
-                {b.notes && b.notes !== b.title && (
+                <div className="font-medium text-sm truncate flex items-center gap-1.5">
+                  {b.title}
+                  {b.source === "cal" && (
+                    <Calendar className="w-3 h-3 text-blue-500 shrink-0" />
+                  )}
+                </div>
+                {b.attendeeName && (
+                  <div className="text-xs text-muted-foreground truncate">{b.attendeeName}</div>
+                )}
+                {b.notes && b.notes !== b.title && !b.attendeeName && (
                   <div className="text-xs text-muted-foreground truncate">{b.notes}</div>
                 )}
               </div>
