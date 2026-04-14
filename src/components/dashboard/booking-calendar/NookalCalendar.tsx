@@ -12,7 +12,7 @@ import { BookingDialog } from "./BookingDialog";
 import { RefreshCw } from "lucide-react";
 
 export const NookalCalendar = () => {
-  const { bookings, isLoading, createBooking, updateBooking, deleteBooking } = useBookings();
+  const { bookings, eventTypes, isLoading, createBooking, updateBooking, deleteBooking, resizeBooking } = useBookings();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>("month");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,6 +41,10 @@ export const NookalCalendar = () => {
 
   const handleEventDrop = (eventId: string, newDate: Date) => {
     updateBooking(eventId, { appointment_date: newDate.toISOString() });
+  };
+
+  const handleEventResize = (bookingId: string, newDurationMinutes: number, matchingEventTypeId: number) => {
+    resizeBooking(bookingId, newDurationMinutes, matchingEventTypeId);
   };
 
   if (isLoading) {
