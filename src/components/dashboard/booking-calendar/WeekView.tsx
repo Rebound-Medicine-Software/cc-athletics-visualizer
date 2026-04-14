@@ -46,12 +46,16 @@ export const WeekView = ({ currentDate, bookings, onDateClick, onEventClick, onE
       return isSameDay(d, day) && d.getHours() === hour;
     });
 
-  const handleDrop = (e: React.DragEvent, day: Date, hour: number) => {
+  const handleDrop = (e: React.DragEvent, day: Date, hour: number, containerEl: HTMLElement | null) => {
     e.preventDefault();
     const eventId = e.dataTransfer.getData("eventId");
-    if (eventId) {
+    if (eventId && containerEl) {
+      const rect = containerEl.getBoundingClientRect();
+      const yOffset = e.clientY - rect.top;
+      const fractionOfHour = yOffset / HOUR_HEIGHT;
+      const minuteSlot = Math.floor(fractionOfHour * 4) * 15;
       const newDate = new Date(day);
-      newDate.setHours(hour, 0, 0, 0);
+      newDate.setHours(hour, Math.min(minuteSlot, 45), 0, 0);
       onEventDrop(eventId, newDate);
     }
   };
@@ -99,7 +103,7 @@ export const WeekView = ({ currentDate, bookings, onDateClick, onEventClick, onE
                     onDateClick(d);
                   }}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => handleDrop(e, day, hour)}
+                  onDrop={(e) => handleDrop(e, day, hour, e.currentTarget as HTMLElement)}
                 >
                   {events.map((b) => {
                     const preview = getResizePreview(b);
