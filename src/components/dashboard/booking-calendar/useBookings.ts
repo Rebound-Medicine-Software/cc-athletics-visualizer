@@ -196,7 +196,12 @@ export const useBookings = () => {
         await fetchBookings();
         return;
       } catch (err: any) {
-        toast.error(`Failed to reschedule: ${err.message}`);
+        const msg = err.message || "Unknown error";
+        if (msg.includes("already has booking") || msg.includes("not available")) {
+          toast.error("This time slot is unavailable. The user already has a booking or is outside working hours.");
+        } else {
+          toast.error(`Failed to reschedule: ${msg}`);
+        }
         return;
       }
     }
