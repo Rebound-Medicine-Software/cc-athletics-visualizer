@@ -254,6 +254,46 @@ export const useBookings = () => {
     }
   };
 
+  const resizeBooking = async (bookingId: string, newDurationMinutes: number, matchingEventTypeId: number) => {
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking || booking.source !== "cal") {
+      toast.error("Duration resize is only supported for Cal.com bookings");
+      return;
+    }
+
+    // Check if booking is in the past
+    if (booking.end_date && new Date(booking.end_date) < new Date()) {
+      toast.error("Cannot modify a booking that has already ended");
+      return;
+    }
+
+    try {
+      // Step 1: Cancel the existing booking
+      await callCalProxy("cancel-booking", "POST", {
+        uid: booking.uid,
+        reason: "Duration changed via dashboard – rebooking",
+      });
+
+      // Step 2: Create a new booking with the matching event type
+      await callCalProxy("create-booking", "POST", {
+        eventTypeId: matchingEventTypeId,
+        start: booking.appointment_date,
+        attendee: {
+          name: booking.attendeeName || "Attendee",
+          email: booking.attendeeEmail || "",
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      });
+
+      toast.success(`Booking updated to ${newDurationMinutes} minutes`);
+      await fetchBookings();
+    } catch (err: any) {
+      toast.error(`Failed to resize booking: ${err.message}`);
+      // Try to refetch in case partial changes happened
+      await fetchBookings();
+    }
+  };
+
   return {
     bookings,
     eventTypes,
@@ -262,6 +302,7 @@ export const useBookings = () => {
     createBooking,
     updateBooking,
     deleteBooking,
+    resizeBooking,
     refetch: fetchBookings,
   };
 };
