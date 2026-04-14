@@ -56,7 +56,7 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
     }
   }, [eventTypes, onEventResize]);
 
-  const { dragState, startDrag } = useDragBooking({
+  const { dragState, startDrag, wasDragging } = useDragBooking({
     pixelsPerHour: HOUR_HEIGHT,
     onMoveEnd: handleMoveEnd,
     onResizeEnd: handleResizeEnd,
@@ -158,7 +158,7 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
                     isDragging && "ring-2 ring-primary shadow-lg opacity-90"
                   )}
                   onMouseDown={(e) => startDrag(e, b, "move")}
-                  onClick={(e) => { e.stopPropagation(); if (!isDragging) onEventClick(b); }}
+                  onClick={(e) => { e.stopPropagation(); if (!wasDragging()) onEventClick(b); }}
                 >
                   <div className="text-sm font-medium truncate">{b.title}</div>
                   <div className="text-xs opacity-70">

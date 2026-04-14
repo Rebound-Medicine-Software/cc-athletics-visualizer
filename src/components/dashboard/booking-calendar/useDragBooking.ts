@@ -17,18 +17,23 @@ export const useDragBooking = ({ pixelsPerHour, onMoveEnd, onResizeEnd }: UseDra
   const [dragState, setDragState] = useState<DragState | null>(null);
   const startYRef = useRef(0);
   const bookingRef = useRef<BookingEvent | null>(null);
+  const didDragRef = useRef(false);
   const SNAP_PX = pixelsPerHour / 4; // 15 minutes
+
+  const wasDragging = useCallback(() => didDragRef.current, []);
 
   const startDrag = useCallback((e: React.MouseEvent, booking: BookingEvent, type: "move" | "resize") => {
     e.stopPropagation();
     e.preventDefault();
     startYRef.current = e.clientY;
     bookingRef.current = booking;
+    didDragRef.current = false;
     setDragState({ bookingId: booking.id, type, snappedDeltaPx: 0 });
 
     const onMouseMove = (me: MouseEvent) => {
       const rawDelta = me.clientY - startYRef.current;
       const snapped = Math.round(rawDelta / SNAP_PX) * SNAP_PX;
+      if (Math.abs(snapped) > 2) didDragRef.current = true;
       setDragState(prev => prev ? { ...prev, snappedDeltaPx: snapped } : null);
     };
 
@@ -61,5 +66,5 @@ export const useDragBooking = ({ pixelsPerHour, onMoveEnd, onResizeEnd }: UseDra
     document.addEventListener("mouseup", onMouseUp);
   }, [SNAP_PX, pixelsPerHour, onMoveEnd, onResizeEnd]);
 
-  return { dragState, startDrag };
+  return { dragState, startDrag, wasDragging };
 };
