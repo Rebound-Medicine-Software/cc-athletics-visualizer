@@ -3,7 +3,7 @@ import { format, isAfter, isBefore, startOfDay, addDays } from "date-fns";
 import { BookingEvent } from "./types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Clock } from "lucide-react";
+import { Edit, Trash2, Clock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ListViewProps {
