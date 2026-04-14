@@ -43,12 +43,16 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
   const getBookingsForHour = (hour: number) =>
     dayBookings.filter((b) => new Date(b.appointment_date).getHours() === hour);
 
-  const handleDrop = (e: React.DragEvent, hour: number) => {
+  const handleDrop = (e: React.DragEvent, hour: number, containerEl: HTMLElement | null) => {
     e.preventDefault();
     const eventId = e.dataTransfer.getData("eventId");
-    if (eventId) {
+    if (eventId && containerEl) {
+      const rect = containerEl.getBoundingClientRect();
+      const yOffset = e.clientY - rect.top;
+      const fractionOfHour = yOffset / HOUR_HEIGHT;
+      const minuteSlot = Math.floor(fractionOfHour * 4) * 15; // snap to 15-min
       const newDate = new Date(currentDate);
-      newDate.setHours(hour, 0, 0, 0);
+      newDate.setHours(hour, Math.min(minuteSlot, 45), 0, 0);
       onEventDrop(eventId, newDate);
     }
   };
@@ -75,7 +79,7 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
               onDateClick(d);
             }}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDrop(e, hour)}
+            onDrop={(e) => handleDrop(e, hour, e.currentTarget as HTMLElement)}
           >
             <div className="w-16 shrink-0 border-r py-2 text-xs text-muted-foreground text-right pr-3">
               {format(new Date(2000, 0, 1, hour), "h:mm a")}
