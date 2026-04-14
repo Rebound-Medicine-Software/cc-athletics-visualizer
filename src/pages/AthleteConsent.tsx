@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Shield, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, CheckCircle2, AlertCircle, Loader2, ArrowLeft, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type ConsentState = "loading" | "ready" | "submitted" | "already_confirmed" | "invalid" | "error";
 
 const AthleteConsent = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [state, setState] = useState<ConsentState>("loading");
@@ -99,6 +100,10 @@ const AthleteConsent = () => {
             <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Invalid or Expired Link</h2>
             <p className="text-muted-foreground">This consent link is not valid. Please contact your practitioner for a new link.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/")}><Home className="w-4 h-4 mr-2" />Home</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -113,6 +118,10 @@ const AthleteConsent = () => {
             <CheckCircle2 className="w-12 h-12 text-green-600 mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Already Confirmed</h2>
             <p className="text-muted-foreground">You have already provided your consent. You can now log into the system using the credentials sent to your email.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/auth")}><Home className="w-4 h-4 mr-2" />Log In</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -129,6 +138,9 @@ const AthleteConsent = () => {
             <p className="text-muted-foreground">
               Thank you, <strong>{signedName}</strong>. Your consent has been recorded. You can now log into the system using the credentials sent to your email.
             </p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button onClick={() => navigate("/auth")}><Home className="w-4 h-4 mr-2" />Log In</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -143,6 +155,10 @@ const AthleteConsent = () => {
             <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
             <h2 className="text-xl font-semibold text-foreground">Something Went Wrong</h2>
             <p className="text-muted-foreground">An error occurred. Please try again or contact your practitioner.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <Button variant="outline" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+              <Button onClick={() => navigate("/")}><Home className="w-4 h-4 mr-2" />Home</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
