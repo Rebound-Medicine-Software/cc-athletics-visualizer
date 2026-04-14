@@ -48,8 +48,11 @@ export const useBookings = () => {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const errBody = await res.json().catch(() => ({ error: "Request failed" }));
+        const message = typeof errBody?.error === "string" ? errBody.error : 
+                        typeof errBody?.error?.message === "string" ? errBody.error.message :
+                        `HTTP ${res.status}`;
+        throw new Error(message);
       }
       return res.json();
     },
