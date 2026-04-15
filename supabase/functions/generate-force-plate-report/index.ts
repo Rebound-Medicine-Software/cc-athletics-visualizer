@@ -756,6 +756,19 @@ serve(async (req) => {
     const maxDate = new Date(Math.max(...allDates.map((d: Date) => d.getTime())))
     const dateRange = `${formatDate(minDate)} – ${formatDate(maxDate)}`
 
+    // Calculate total page count (accounting for side-pair merging)
+    const processedSidePairsCount = new Set<string>()
+    let totalPages = 0
+    for (const [testName] of groupedTests) {
+      const isSideTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
+      if (isSideTest) {
+        const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+        if (processedSidePairsCount.has(baseExercise)) continue
+        processedSidePairsCount.add(baseExercise)
+      }
+      totalPages++
+    }
+
     let pageNumber = 0
 
     // Generate one page per test
