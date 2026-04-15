@@ -235,7 +235,11 @@ export const SendReportsModal = () => {
 
     const filteredTestNames = allTestNames.filter((t) => !parentTestsWithOnlySideData.includes(t));
 
-    const includedTests = athleteTests.filter((test) => !excludedTests.includes(test.test_name));
+    const includedTests = athleteTests.filter(
+      (test) =>
+        !excludedTests.includes(test.test_name) &&
+        !parentTestsWithOnlySideData.includes(test.test_name),
+    );
     const includedTestNames = filteredTestNames.filter((testName) => !excludedTests.includes(testName));
 
     return {
