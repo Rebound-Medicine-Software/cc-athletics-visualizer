@@ -95,6 +95,14 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
       ];
+    case "Left Side Pogo Jump":
+    case "Right Side Pogo Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
+        { icon: "⚡", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
+        { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
+      ];
     default:
       // Check for Left/Right Side isometric tests
       if (testName.startsWith('Left Side') || testName.startsWith('Right Side')) {
@@ -533,7 +541,7 @@ serve(async (req) => {
       // IMPORTANT (Pogo): CC Athletics provides BOTH per-session averages (repetition_number = 0)
       // and individual jumps (repetition_number >= 1). For reports we only want to compare
       // session averages between dates (matches CC Athletics UI & avoids anomaly single-jump outliers).
-      if (testName === 'Pogo Jump') {
+      if (testName === 'Pogo Jump' || testName === 'Left Side Pogo Jump' || testName === 'Right Side Pogo Jump') {
         const avgRows = group.records.filter((r) => (r.repetition_number ?? 0) === 0)
         if (avgRows.length > 0) {
           group.records = avgRows

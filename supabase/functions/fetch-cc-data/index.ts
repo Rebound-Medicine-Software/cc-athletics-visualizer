@@ -245,6 +245,15 @@ serve(async (req) => {
         const analysis = recording.pogo_jump_analysis
         if (!analysis) return
 
+        // Detect leg_stance from recording-level or avg_metrics
+        const pogoLegStance = (
+          recording.leg_stance ||
+          analysis.leg_stance ||
+          analysis.avg_metrics?.leg_stance ||
+          ''
+        ).toLowerCase()
+        const isPogoSingleLeg = pogoLegStance === 'left_leg' || pogoLegStance === 'right_leg'
+
         // Add average metrics row
         if (analysis.avg_metrics) {
           allTestData.push({
@@ -258,8 +267,28 @@ serve(async (req) => {
             age: demographics.age,
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
+            leg_stance: pogoLegStance || undefined,
             metrics: analysis.avg_metrics,
           })
+
+          // Create Left/Right Side Pogo Jump entries
+          if (isPogoSingleLeg) {
+            const sidePrefix = pogoLegStance === 'left_leg' ? 'Left Side' : 'Right Side'
+            allTestData.push({
+              athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString(),
+              test_name: `${sidePrefix} Pogo Jump`,
+              repetition_number: 0,
+              gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
+              leg_stance: pogoLegStance,
+              metrics: analysis.avg_metrics,
+            })
+          }
         }
 
         // Add individual jump data
@@ -275,8 +304,28 @@ serve(async (req) => {
             age: demographics.age,
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
+            leg_stance: pogoLegStance || undefined,
             metrics: jump,
           })
+
+          // Create Left/Right Side individual jump entries
+          if (isPogoSingleLeg) {
+            const sidePrefix = pogoLegStance === 'left_leg' ? 'Left Side' : 'Right Side'
+            allTestData.push({
+              athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString(),
+              test_name: `${sidePrefix} Pogo Jump`,
+              repetition_number: index + 1,
+              gender: demographics.gender,
+              age: demographics.age,
+              height_cm: demographics.height_cm,
+              weight_kg: demographics.weight_kg,
+              leg_stance: pogoLegStance,
+              metrics: jump,
+            })
+          }
         })
       })
     }

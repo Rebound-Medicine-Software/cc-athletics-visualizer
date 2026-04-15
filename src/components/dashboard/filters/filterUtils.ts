@@ -12,6 +12,9 @@ export function getMetricTypesForTest(testName: string): string[] {
       return ["Jump Height (cm)", "Take-off Velocity", "Average Rate of Force Development", "Average Propulsive Power"];
     case "Pogo Jump":
       return ["Jump Height (cm)", "Power", "Flight Time", "Reactive Strength Index"];
+    case "Left Side Pogo Jump":
+    case "Right Side Pogo Jump":
+      return ["Jump Height (cm)", "Power", "Flight Time", "Contact Time", "Reactive Strength Index"];
     case "Left Side Countermovement Jump":
     case "Right Side Countermovement Jump":
       return ["Jump Height (cm)", "Peak Propulsive Power", "Relative Peak Power", "Reactive Strength Index"];

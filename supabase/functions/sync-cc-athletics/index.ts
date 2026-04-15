@@ -210,6 +210,14 @@ serve(async (req) => {
         const analysis = recording.pogo_jump_analysis
         if (!analysis) return
 
+        const pogoLegStance = (
+          recording.leg_stance ||
+          analysis.leg_stance ||
+          analysis.avg_metrics?.leg_stance ||
+          ''
+        ).toLowerCase()
+        const isPogoSingleLeg = pogoLegStance === 'left_leg' || pogoLegStance === 'right_leg'
+
         // Add average metrics row
         if (analysis.avg_metrics) {
           allTestData.push({
@@ -218,10 +226,24 @@ serve(async (req) => {
             team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
             test_date: new Date(recording.date).toISOString().split('T')[0],
             test_name: 'Pogo Jump',
-            repetition_number: 0, // 0 indicates average
+            repetition_number: 0,
             metrics: analysis.avg_metrics,
             test_type: 'pogo',
           })
+
+          if (isPogoSingleLeg) {
+            const sidePrefix = pogoLegStance === 'left_leg' ? 'Left Side' : 'Right Side'
+            allTestData.push({
+              cc_athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString().split('T')[0],
+              test_name: `${sidePrefix} Pogo Jump`,
+              repetition_number: 0,
+              metrics: analysis.avg_metrics,
+              test_type: 'pogo',
+            })
+          }
         }
 
         // Add individual jump data
@@ -236,6 +258,20 @@ serve(async (req) => {
             metrics: jump,
             test_type: 'pogo',
           })
+
+          if (isPogoSingleLeg) {
+            const sidePrefix = pogoLegStance === 'left_leg' ? 'Left Side' : 'Right Side'
+            allTestData.push({
+              cc_athlete_id: athlete.id,
+              athlete_name: athlete.name,
+              team_name: teamMap.get(athlete.team_id) || 'Unknown Team',
+              test_date: new Date(recording.date).toISOString().split('T')[0],
+              test_name: `${sidePrefix} Pogo Jump`,
+              repetition_number: index + 1,
+              metrics: jump,
+              test_type: 'pogo',
+            })
+          }
         })
       })
     }
