@@ -768,6 +768,7 @@ serve(async (req) => {
       }
       totalPages++
     }
+    totalPages++ // Summary overview page at the end
 
     let pageNumber = 0
 
@@ -1595,6 +1596,221 @@ serve(async (req) => {
       }
 
       // ===== PAGE FOOTER =====
+      doc.setFontSize(8)
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+    }
+
+    // ===== SUMMARY OVERVIEW PAGE =====
+    {
+      doc.addPage()
+      pageNumber++
+
+      const pageWidth = 210
+      const pageHeight = 297
+      const marginLeft = 15
+      const marginRight = 15
+      const contentWidth = pageWidth - marginLeft - marginRight
+
+      // Header bar
+      doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.rect(0, 0, pageWidth, 20, 'F')
+
+      let headerTextX = marginLeft
+      if (logoDataUrl) {
+        try {
+          const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
+          doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, 10, 10)
+          headerTextX = marginLeft + 14
+        } catch (_) { /* ignore */ }
+      }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(255, 255, 255)
+      const summaryHeaderTitle = branding?.org_name
+        ? `${branding.org_name.toUpperCase()} | PERFORMANCE SUMMARY`
+        : 'PERFORMANCE SUMMARY'
+      doc.text(summaryHeaderTitle, headerTextX, 12)
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(220, 220, 220)
+      doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, pageWidth - marginRight, 12, { align: 'right' })
+
+      let yPos = 28
+
+      // Section title
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+      doc.text('Performance Overview', marginLeft, yPos)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text('Tests ranked from areas requiring most attention to strongest outcomes', marginLeft, yPos + 5)
+
+      yPos += 14
+
+      // Collect primary metric scores for ranking
+      const testScores: { testName: string; primaryMetric: string; value: number | null; unit: string; baseline: number | null; personalRecord: number | null; changePercent: number | null; insight: any }[] = []
+      const summaryProcessedPairs = new Set<string>()
+
+      for (const [testName, group] of groupedTests) {
+        const isSideTest = testName.startsWith('Left Side') || testName.startsWith('Right Side')
+        if (isSideTest) {
+          const baseExercise = testName.replace(/^(Left Side|Right Side)\s+/, '')
+          if (summaryProcessedPairs.has(baseExercise)) continue
+          summaryProcessedPairs.add(baseExercise)
+        }
+
+        const configs = getCardConfigs(testName)
+        const primaryConfig = configs[0]
+        const currentValue = getMetricValue(group.latestMetrics, primaryConfig)
+        const baselineValue = group.baseline ? getMetricValue(group.baseline, primaryConfig) : null
+        const prValue = group.personalRecord ? getMetricValue(group.personalRecord, primaryConfig) : null
+
+        let changePercent: number | null = null
+        if (currentValue !== null && baselineValue !== null && baselineValue !== 0) {
+          changePercent = ((currentValue - baselineValue) / Math.abs(baselineValue)) * 100
+        }
+
+        const displayName = isSideTest
+          ? `${testName.replace(/^(Left Side|Right Side)\s+/, '')} (Limb Comparison)`
+          : testName
+
+        testScores.push({
+          testName: displayName,
+          primaryMetric: primaryConfig.title,
+          value: currentValue,
+          unit: primaryConfig.unit,
+          baseline: baselineValue,
+          personalRecord: prValue,
+          changePercent,
+          insight: aiInsights.get(testName) || null,
+        })
+      }
+
+      // Sort: worst (lowest change%) first, best last
+      testScores.sort((a, b) => {
+        const aScore = a.changePercent ?? 0
+        const bScore = b.changePercent ?? 0
+        return aScore - bScore
+      })
+
+      // Render each test row
+      const rowHeight = 32
+      testScores.forEach((score, index) => {
+        if (yPos + rowHeight + 10 > pageHeight - 20) {
+          // Footer before overflow
+          doc.setFontSize(8)
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+          doc.addPage()
+          pageNumber++
+          yPos = 20
+        }
+
+        const isWeakest = index === 0
+        const isStrongest = index === testScores.length - 1
+        const rankColor = isWeakest ? colors.danger : isStrongest ? colors.success : colors.primary
+
+        // Row background
+        doc.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 250, index % 2 === 0 ? 255 : 253)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, rowHeight, 1.5, 1.5, 'FD')
+
+        // Rank badge
+        doc.setFillColor(rankColor[0], rankColor[1], rankColor[2])
+        doc.roundedRect(marginLeft + 3, yPos + 3, 16, 7, 1, 1, 'F')
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(255, 255, 255)
+        doc.text(`#${index + 1}`, marginLeft + 11, yPos + 7.5, { align: 'center' })
+
+        // Test name
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text(score.testName, marginLeft + 22, yPos + 7)
+
+        // KPI values
+        doc.setFontSize(7.5)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+
+        const valueStr = score.value !== null ? `${score.value.toFixed(1)} ${score.unit}`.trim() : 'N/A'
+        const changeStr = score.changePercent !== null
+          ? `${score.changePercent >= 0 ? '+' : ''}${score.changePercent.toFixed(1)}% from baseline`
+          : ''
+        const prStr = score.personalRecord !== null ? `PR: ${score.personalRecord.toFixed(1)} ${score.unit}`.trim() : ''
+
+        doc.text(`Current: ${valueStr}`, marginLeft + 22, yPos + 12)
+        if (changeStr) {
+          const changeColor = (score.changePercent || 0) >= 0 ? colors.success : colors.danger
+          doc.setTextColor(changeColor[0], changeColor[1], changeColor[2])
+          doc.text(changeStr, marginLeft + 80, yPos + 12)
+        }
+        if (prStr) {
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text(prStr, marginLeft + 140, yPos + 12)
+        }
+
+        // Simplified recommendation and coaching cue
+        const insight = score.insight
+        if (insight) {
+          doc.setFontSize(6.5)
+          doc.setFont('helvetica', 'italic')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+
+          const rec = insight.recommendations?.[0] || ''
+          if (rec) {
+            const recLines = doc.splitTextToSize(`Recommendation: ${rec}`, contentWidth - 25)
+            doc.text(recLines[0], marginLeft + 22, yPos + 18)
+          }
+
+          const cue = insight.keyCues?.[0] || ''
+          if (cue) {
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2])
+            const cueLines = doc.splitTextToSize(`Coaching Cue: "${cue}"`, contentWidth - 25)
+            doc.text(cueLines[0], marginLeft + 22, yPos + 23)
+          }
+        }
+
+        // Status label
+        const statusLabel = isWeakest ? 'Needs Focus' : isStrongest ? 'Strongest' : ''
+        if (statusLabel) {
+          doc.setFontSize(7)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(rankColor[0], rankColor[1], rankColor[2])
+          doc.text(statusLabel, pageWidth - marginRight - 5, yPos + 7, { align: 'right' })
+        }
+
+        yPos += rowHeight + 3
+      })
+
+      // Legend
+      yPos += 5
+      if (yPos + 15 < pageHeight - 20) {
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+
+        doc.setFillColor(colors.danger[0], colors.danger[1], colors.danger[2])
+        doc.circle(marginLeft + 2, yPos, 1.5, 'F')
+        doc.text('Needs most attention', marginLeft + 6, yPos + 1)
+
+        doc.setFillColor(colors.success[0], colors.success[1], colors.success[2])
+        doc.circle(marginLeft + 42, yPos, 1.5, 'F')
+        doc.text('Strongest outcome', marginLeft + 46, yPos + 1)
+
+        doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+        doc.circle(marginLeft + 80, yPos, 1.5, 'F')
+        doc.text('Intermediate', marginLeft + 84, yPos + 1)
+      }
+
+      // Footer
       doc.setFontSize(8)
       doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
       doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
