@@ -246,10 +246,34 @@ serve(async (req) => {
     )
 
     const body = await req.json()
-    let { athlete_id, athlete_name, team_name, test_data } = body
+    let { athlete_id, athlete_name, team_name, test_data, branding } = body
 
     if (!athlete_name || !test_data || test_data.length === 0) {
       throw new Error('athlete_name and test_data are required')
+    }
+
+    // Fetch and encode logo image if branding has a logo_url
+    let logoDataUrl: string | null = null
+    if (branding?.logo_url) {
+      try {
+        console.log('Fetching org logo from:', branding.logo_url)
+        const logoResponse = await fetch(branding.logo_url)
+        if (logoResponse.ok) {
+          const logoBuffer = await logoResponse.arrayBuffer()
+          const logoBytes = new Uint8Array(logoBuffer)
+          let binary = ''
+          for (let i = 0; i < logoBytes.length; i++) {
+            binary += String.fromCharCode(logoBytes[i])
+          }
+          const base64 = btoa(binary)
+          const contentType = logoResponse.headers.get('content-type') || 'image/png'
+          const format = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG'
+          logoDataUrl = `data:${contentType};base64,${base64}`
+          console.log(`Logo fetched successfully (${format}, ${logoBytes.length} bytes)`)
+        }
+      } catch (logoErr) {
+        console.error('Failed to fetch logo:', logoErr)
+      }
     }
 
     console.log(`Generating force plate PDF report for: ${athlete_name}`)
@@ -698,10 +722,21 @@ serve(async (req) => {
       format: 'a4'
     })
 
-    // Colors matching the HTML template
+    // Helper: convert hex color string to RGB array
+    const hexToRgb = (hex: string): number[] => {
+      const h = hex.replace('#', '')
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+    }
+
+    // Derive header/primary colors from branding if available
+    const brandPrimary = branding?.primary_color ? hexToRgb(branding.primary_color) : null
+    const brandSecondary = branding?.secondary_color ? hexToRgb(branding.secondary_color) : null
+    const brandAccent = branding?.accent_color ? hexToRgb(branding.accent_color) : null
+
+    // Colors matching the HTML template — overridden by org branding when available
     const colors = {
-      headerBg: [31, 41, 55],       // #1F2933
-      primary: [30, 78, 216],       // #1D4ED8
+      headerBg: brandPrimary || [31, 41, 55],       // org primary or #1F2933
+      primary: brandPrimary || [30, 78, 216],        // org primary or #1D4ED8
       dark: [17, 24, 39],           // #111827
       text: [75, 85, 99],           // #4B5563
       lightText: [107, 114, 128],   // #6B7280
@@ -712,7 +747,7 @@ serve(async (req) => {
       sectionBg: [248, 250, 253],   // #F8FAFD
       border: [229, 231, 235],      // #E5E7EB
       coachBg: [239, 246, 255],     // #EFF6FF
-      coachBorder: [191, 219, 254], // #BFDBFE
+      coachBorder: brandAccent || [191, 219, 254], // #BFDBFE
     }
 
     // Get date range
@@ -744,23 +779,43 @@ serve(async (req) => {
       const contentWidth = pageWidth - marginLeft - marginRight
 
       // ===== HEADER =====
-      let yPos = 18
-      
-      // Title and meta on same line
+      // Branded header bar
+      const headerBarHeight = 14
+      let yPos = 10
+      doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.rect(0, 0, pageWidth, headerBarHeight + 6, 'F')
+
+      // Logo (if available)
+      let headerTextX = marginLeft
+      if (logoDataUrl) {
+        try {
+          const logoSize = 10
+          const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
+          doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, logoSize, logoSize)
+          headerTextX = marginLeft + logoSize + 4
+        } catch (imgErr) {
+          console.error('Failed to embed logo in PDF:', imgErr)
+        }
+      }
+
+      // Title text (white on branded header)
+      const headerTitle = branding?.org_name
+        ? `${branding.org_name.toUpperCase()} — PERFORMANCE REPORT`
+        : 'FORCE PLATE PERFORMANCE REPORT'
       doc.setFontSize(11)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
-      doc.text('FORCE PLATE PERFORMANCE REPORT', marginLeft, yPos)
+      doc.setTextColor(255, 255, 255)
+      doc.text(headerTitle, headerTextX, yPos + 2)
 
-      // Right-aligned meta info
-      doc.setFontSize(9)
+      // Right-aligned meta info (white on header)
+      doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
-      doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
-      doc.text(dateRange, pageWidth - marginRight, yPos - 2, { align: 'right' })
+      doc.setTextColor(220, 220, 220)
+      doc.text(dateRange, pageWidth - marginRight, yPos, { align: 'right' })
       doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, pageWidth - marginRight, yPos + 4, { align: 'right' })
 
-      // Athlete info
-      yPos += 8
+      // Athlete info below header bar
+      yPos = headerBarHeight + 10
       doc.setFontSize(9)
       doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
       doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, marginLeft, yPos)

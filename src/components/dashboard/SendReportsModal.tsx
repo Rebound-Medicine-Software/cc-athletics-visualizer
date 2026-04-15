@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -113,6 +114,7 @@ const PdfPreviewContent = ({ fileUrl }: { fileUrl: string }) => {
 };
 
 export const SendReportsModal = () => {
+  const { teamBranding } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
@@ -255,6 +257,13 @@ export const SendReportsModal = () => {
           athlete_name: selectedAthleteData.name,
           team_name: selectedAthleteData.team,
           test_data: selectedAthleteData.tests,
+          branding: teamBranding ? {
+            logo_url: teamBranding.logo_url,
+            primary_color: teamBranding.primary_color,
+            secondary_color: teamBranding.secondary_color,
+            accent_color: teamBranding.accent_color,
+            org_name: teamBranding.name,
+          } : null,
         },
       });
 
@@ -348,6 +357,13 @@ export const SendReportsModal = () => {
           athlete_name: selectedAthleteData.name,
           team_name: selectedAthleteData.team,
           test_data: selectedAthleteData.tests,
+          branding: teamBranding ? {
+            logo_url: teamBranding.logo_url,
+            primary_color: teamBranding.primary_color,
+            secondary_color: teamBranding.secondary_color,
+            accent_color: teamBranding.accent_color,
+            org_name: teamBranding.name,
+          } : null,
         },
       });
 
@@ -411,6 +427,13 @@ export const SendReportsModal = () => {
           athlete_name: selectedAthleteData.name,
           team_name: selectedAthleteData.team,
           test_data: selectedAthleteData.tests,
+          branding: teamBranding ? {
+            logo_url: teamBranding.logo_url,
+            primary_color: teamBranding.primary_color,
+            secondary_color: teamBranding.secondary_color,
+            accent_color: teamBranding.accent_color,
+            org_name: teamBranding.name,
+          } : null,
         },
       });
 
