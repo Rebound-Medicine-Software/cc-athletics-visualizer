@@ -132,6 +132,7 @@ serve(async (req) => {
             age: demographics.age,
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
+            leg_stance: isSingleLeg ? legStance : 'dual_leg',
             metrics: jump.metric_table,
           })
 
