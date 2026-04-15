@@ -74,9 +74,12 @@ export const metricCaseLogic = (
       if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
       break;
     case "Pogo Jump":
+    case "Left Side Pogo Jump":
+    case "Right Side Pogo Jump":
       if (metricType === "Jump Height (cm)" || metricType === "Jump Height (Pogo)") value = pick(["jump_height", "avg_jump_height"]);
       if (metricType === "Power" || metricType === "Peak Power") value = pick(["power", "avg_power", "peak_power"]);
       if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
+      if (metricType === "Contact Time") value = pick(["contact_time", "avg_contact_time"]);
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
       break;
     default:
