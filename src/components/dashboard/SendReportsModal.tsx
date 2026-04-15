@@ -235,36 +235,8 @@ export const SendReportsModal = () => {
 
     const filteredTestNames = allTestNames.filter((t) => !parentTestsWithOnlySideData.includes(t));
 
-    // Build a set of parent test names whose side variants are ALL excluded
-    // so we can also exclude the hidden parent record that the edge function would expand
-    const expandedExclusions = new Set(excludedTests);
-    const parentNames = new Set(
-      excludedTests
-        .filter((t) => t.startsWith("Left Side ") || t.startsWith("Right Side "))
-        .map((t) => t.replace(/^(Left Side |Right Side )/, "")),
-    );
-    for (const parent of parentNames) {
-      const leftExcluded = expandedExclusions.has(`Left Side ${parent}`);
-      const rightExcluded = expandedExclusions.has(`Right Side ${parent}`);
-      // If both sides are excluded (or only one side exists and it's excluded), exclude parent too
-      const leftExists = rawTestNames.includes(`Left Side ${parent}`);
-      const rightExists = rawTestNames.includes(`Right Side ${parent}`);
-      const allSidesExcluded =
-        (!leftExists || leftExcluded) && (!rightExists || rightExcluded);
-      if (allSidesExcluded) {
-        expandedExclusions.add(parent);
-      }
-    }
-    // Also: if a parent is excluded, exclude its side variants
-    for (const excluded of excludedTests) {
-      if (!excluded.startsWith("Left Side ") && !excluded.startsWith("Right Side ")) {
-        expandedExclusions.add(`Left Side ${excluded}`);
-        expandedExclusions.add(`Right Side ${excluded}`);
-      }
-    }
-
-    const includedTests = athleteTests.filter((test) => !expandedExclusions.has(test.test_name));
-    const includedTestNames = filteredTestNames.filter((testName) => !expandedExclusions.has(testName));
+    const includedTests = athleteTests.filter((test) => !excludedTests.includes(test.test_name));
+    const includedTestNames = filteredTestNames.filter((testName) => !excludedTests.includes(testName));
 
     return {
       name,
