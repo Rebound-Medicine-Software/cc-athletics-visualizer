@@ -114,6 +114,7 @@ const PdfPreviewContent = ({ fileUrl }: { fileUrl: string }) => {
 };
 
 export const SendReportsModal = () => {
+  const { teamBranding } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [selectedAthlete, setSelectedAthlete] = useState<string>("");
