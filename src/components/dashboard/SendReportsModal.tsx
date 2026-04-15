@@ -196,15 +196,53 @@ export const SendReportsModal = () => {
     const athleteTests = testData.filter(
       (test) => test.athlete_name === name && test.team_name === team,
     );
-    const allTestNames = Array.from(new Set(athleteTests.map((test) => test.test_name)));
+    const rawTestNames = Array.from(new Set(athleteTests.map((test) => test.test_name)));
+
+    // Filter out parent test names that have no dual-stance data
+    // e.g. remove "Countermovement Jump" when only "Left/Right Side Countermovement Jump" exist
+    const allTestNames = rawTestNames.filter((testName) => {
+      const hasSidePrefix = testName.startsWith("Left Side ") || testName.startsWith("Right Side ");
+      if (hasSidePrefix) return true; // always keep side-specific tests
+
+      // Check if side-specific variants exist for this parent
+      const hasLeftSide = rawTestNames.includes(`Left Side ${testName}`);
+      const hasRightSide = rawTestNames.includes(`Right Side ${testName}`);
+      if (!hasLeftSide && !hasRightSide) return true; // no side variants, keep parent
+
+      // Side variants exist — only keep parent if it has its own dual-stance records
+      const parentRecords = athleteTests.filter((t) => t.test_name === testName);
+      return parentRecords.length > 0;
+    });
+
+    // Remove parent tests that only have side-variant data (no dual-stance records of their own)
+    // This catches cases where the parent name appears in test_data only because
+    // CC Athletics sent side-specific recordings under the parent test_name
+    const parentTestsWithOnlySideData = allTestNames.filter((testName) => {
+      if (testName.startsWith("Left Side ") || testName.startsWith("Right Side ")) return false;
+      const hasLeftSide = allTestNames.includes(`Left Side ${testName}`);
+      const hasRightSide = allTestNames.includes(`Right Side ${testName}`);
+      if (!hasLeftSide && !hasRightSide) return false;
+
+      // Check if parent records are truly dual-stance or just placeholders
+      const parentRecords = athleteTests.filter((t) => t.test_name === testName);
+      // If parent has records with a side-specific stance, they're not true dual-stance
+      const dualStanceRecords = parentRecords.filter((r) => {
+        const stance = (r as any).leg_stance || (r as any).metrics?.stance || "";
+        return !stance || stance === "dual_leg" || stance === "dual";
+      });
+      return dualStanceRecords.length === 0;
+    });
+
+    const filteredTestNames = allTestNames.filter((t) => !parentTestsWithOnlySideData.includes(t));
+
     const includedTests = athleteTests.filter((test) => !excludedTests.includes(test.test_name));
-    const includedTestNames = allTestNames.filter((testName) => !excludedTests.includes(testName));
+    const includedTestNames = filteredTestNames.filter((testName) => !excludedTests.includes(testName));
 
     return {
       name,
       team,
       tests: includedTests,
-      allTestNames,
+      allTestNames: filteredTestNames,
       testNames: includedTestNames,
       testCount: includedTests.length,
     };

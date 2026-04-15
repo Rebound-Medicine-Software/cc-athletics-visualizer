@@ -785,7 +785,7 @@ serve(async (req) => {
       doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
       doc.rect(0, 0, pageWidth, headerBarHeight + 6, 'F')
 
-      // Logos: Org logo × NEXUS HUB logo
+      // Organisation logo
       let headerTextX = marginLeft
       const logoSize = 10
 
@@ -793,32 +793,11 @@ serve(async (req) => {
         try {
           const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
           doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, logoSize, logoSize)
-          headerTextX = marginLeft + logoSize + 2
+          headerTextX = marginLeft + logoSize + 4
         } catch (imgErr) {
           console.error('Failed to embed logo in PDF:', imgErr)
         }
       }
-
-      // "×" separator between logos
-      if (logoDataUrl) {
-        doc.setFontSize(10)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(200, 200, 200)
-        doc.text('×', headerTextX, 9.5)
-        headerTextX += 5
-      }
-
-      // NEXUS HUB emblem: draw a small navy circle with "NH" text
-      const nhX = headerTextX
-      const nhCenterX = nhX + logoSize / 2
-      const nhCenterY = 3 + logoSize / 2
-      doc.setFillColor(30, 58, 110) // #1e3a6e
-      doc.circle(nhCenterX, nhCenterY, logoSize / 2, 'F')
-      doc.setFontSize(5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(255, 255, 255)
-      doc.text('NH', nhCenterX, nhCenterY + 1.5, { align: 'center' })
-      headerTextX = nhX + logoSize + 4
 
       // Title text (white on branded header)
       const headerTitle = branding?.org_name
