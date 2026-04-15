@@ -766,7 +766,9 @@ serve(async (req) => {
         if (processedSidePairsCount.has(baseExercise)) continue
         processedSidePairsCount.add(baseExercise)
       }
-      totalPages++
+    totalPages++
+    }
+    totalPages++ // Summary overview page at the end
     }
 
     let pageNumber = 0
