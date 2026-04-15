@@ -779,23 +779,43 @@ serve(async (req) => {
       const contentWidth = pageWidth - marginLeft - marginRight
 
       // ===== HEADER =====
-      let yPos = 18
-      
-      // Title and meta on same line
+      // Branded header bar
+      const headerBarHeight = 14
+      let yPos = 10
+      doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.rect(0, 0, pageWidth, headerBarHeight + 6, 'F')
+
+      // Logo (if available)
+      let headerTextX = marginLeft
+      if (logoDataUrl) {
+        try {
+          const logoSize = 10
+          const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
+          doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, logoSize, logoSize)
+          headerTextX = marginLeft + logoSize + 4
+        } catch (imgErr) {
+          console.error('Failed to embed logo in PDF:', imgErr)
+        }
+      }
+
+      // Title text (white on branded header)
+      const headerTitle = branding?.org_name
+        ? `${branding.org_name.toUpperCase()} — PERFORMANCE REPORT`
+        : 'FORCE PLATE PERFORMANCE REPORT'
       doc.setFontSize(11)
       doc.setFont('helvetica', 'bold')
-      doc.setTextColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
-      doc.text('FORCE PLATE PERFORMANCE REPORT', marginLeft, yPos)
+      doc.setTextColor(255, 255, 255)
+      doc.text(headerTitle, headerTextX, yPos + 2)
 
-      // Right-aligned meta info
-      doc.setFontSize(9)
+      // Right-aligned meta info (white on header)
+      doc.setFontSize(8)
       doc.setFont('helvetica', 'normal')
-      doc.setTextColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
-      doc.text(dateRange, pageWidth - marginRight, yPos - 2, { align: 'right' })
+      doc.setTextColor(220, 220, 220)
+      doc.text(dateRange, pageWidth - marginRight, yPos, { align: 'right' })
       doc.text(`Latest Test: ${formatDate(new Date(group.latestDate))}`, pageWidth - marginRight, yPos + 4, { align: 'right' })
 
-      // Athlete info
-      yPos += 8
+      // Athlete info below header bar
+      yPos = headerBarHeight + 10
       doc.setFontSize(9)
       doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
       doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, marginLeft, yPos)
