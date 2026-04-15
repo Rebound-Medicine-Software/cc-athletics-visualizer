@@ -246,10 +246,34 @@ serve(async (req) => {
     )
 
     const body = await req.json()
-    let { athlete_id, athlete_name, team_name, test_data } = body
+    let { athlete_id, athlete_name, team_name, test_data, branding } = body
 
     if (!athlete_name || !test_data || test_data.length === 0) {
       throw new Error('athlete_name and test_data are required')
+    }
+
+    // Fetch and encode logo image if branding has a logo_url
+    let logoDataUrl: string | null = null
+    if (branding?.logo_url) {
+      try {
+        console.log('Fetching org logo from:', branding.logo_url)
+        const logoResponse = await fetch(branding.logo_url)
+        if (logoResponse.ok) {
+          const logoBuffer = await logoResponse.arrayBuffer()
+          const logoBytes = new Uint8Array(logoBuffer)
+          let binary = ''
+          for (let i = 0; i < logoBytes.length; i++) {
+            binary += String.fromCharCode(logoBytes[i])
+          }
+          const base64 = btoa(binary)
+          const contentType = logoResponse.headers.get('content-type') || 'image/png'
+          const format = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG'
+          logoDataUrl = `data:${contentType};base64,${base64}`
+          console.log(`Logo fetched successfully (${format}, ${logoBytes.length} bytes)`)
+        }
+      } catch (logoErr) {
+        console.error('Failed to fetch logo:', logoErr)
+      }
     }
 
     console.log(`Generating force plate PDF report for: ${athlete_name}`)
