@@ -223,14 +223,21 @@ export const SendReportsModal = () => {
       const hasRightSide = allTestNames.includes(`Right Side ${testName}`);
       if (!hasLeftSide && !hasRightSide) return false;
 
-      // Check if parent records are truly dual-stance or just placeholders
+      // When side variants exist, only keep the parent if it has records
+      // with an explicit dual-stance marker. Records without a stance field
+      // are NOT considered dual-stance — they are legacy/ambiguous entries.
       const parentRecords = athleteTests.filter((t) => t.test_name === testName);
-      // If parent has records with a side-specific stance, they're not true dual-stance
-      const dualStanceRecords = parentRecords.filter((r) => {
-        const stance = (r as any).leg_stance || (r as any).metrics?.stance || "";
-        return !stance || stance === "dual_leg" || stance === "dual";
+      const explicitDualRecords = parentRecords.filter((r) => {
+        const stance = (
+          (r as any).leg_stance ||
+          (r as any).metrics?.leg_stance ||
+          (r as any).metrics?.stance ||
+          (r as any).test_type ||
+          ""
+        ).toString().toLowerCase();
+        return stance === "dual_leg" || stance === "dual" || stance === "dual_stance";
       });
-      return dualStanceRecords.length === 0;
+      return explicitDualRecords.length === 0;
     });
 
     const filteredTestNames = allTestNames.filter((t) => !parentTestsWithOnlySideData.includes(t));
