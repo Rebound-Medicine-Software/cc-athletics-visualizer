@@ -1140,7 +1140,7 @@ serve(async (req) => {
         // Footer
         doc.setFontSize(8)
         doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-        doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, slPageHeight - 10, { align: 'right' })
+        doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, slPageHeight - 10, { align: 'right' })
 
         continue // Skip standard rendering below
       }
@@ -1597,7 +1597,7 @@ serve(async (req) => {
       // ===== PAGE FOOTER =====
       doc.setFontSize(8)
       doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-      doc.text(`Page ${pageNumber} of ${groupedTests.size}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
     }
 
     // Generate filename - remove all special characters including en-dash
