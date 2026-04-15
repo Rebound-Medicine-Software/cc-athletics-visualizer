@@ -722,10 +722,21 @@ serve(async (req) => {
       format: 'a4'
     })
 
-    // Colors matching the HTML template
+    // Helper: convert hex color string to RGB array
+    const hexToRgb = (hex: string): number[] => {
+      const h = hex.replace('#', '')
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
+    }
+
+    // Derive header/primary colors from branding if available
+    const brandPrimary = branding?.primary_color ? hexToRgb(branding.primary_color) : null
+    const brandSecondary = branding?.secondary_color ? hexToRgb(branding.secondary_color) : null
+    const brandAccent = branding?.accent_color ? hexToRgb(branding.accent_color) : null
+
+    // Colors matching the HTML template — overridden by org branding when available
     const colors = {
-      headerBg: [31, 41, 55],       // #1F2933
-      primary: [30, 78, 216],       // #1D4ED8
+      headerBg: brandPrimary || [31, 41, 55],       // org primary or #1F2933
+      primary: brandPrimary || [30, 78, 216],        // org primary or #1D4ED8
       dark: [17, 24, 39],           // #111827
       text: [75, 85, 99],           // #4B5563
       lightText: [107, 114, 128],   // #6B7280
@@ -736,7 +747,7 @@ serve(async (req) => {
       sectionBg: [248, 250, 253],   // #F8FAFD
       border: [229, 231, 235],      // #E5E7EB
       coachBg: [239, 246, 255],     // #EFF6FF
-      coachBorder: [191, 219, 254], // #BFDBFE
+      coachBorder: brandAccent || [191, 219, 254], // #BFDBFE
     }
 
     // Get date range
