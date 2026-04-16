@@ -4,6 +4,8 @@ import { BookingEvent } from "./types";
 import { cn } from "@/lib/utils";
 import { useDragBooking } from "./useDragBooking";
 import { GripHorizontal } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useBookingNotes } from "./useBookingNotes";
 
 interface EventType {
   id: number;
@@ -36,6 +38,7 @@ const statusColor: Record<string, string> = {
 };
 
 export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEventDrop, eventTypes = [], onEventResize }: DayViewProps) => {
+  const { getNote } = useBookingNotes();
   const dayBookings = useMemo(
     () => bookings.filter((b) => isSameDay(new Date(b.appointment_date), currentDate)),
     [bookings, currentDate]
@@ -104,6 +107,7 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
   const totalHeight = HOURS.length * HOUR_HEIGHT;
 
   return (
+    <TooltipProvider delayDuration={300}>
     <div className="border rounded-lg overflow-auto max-h-[650px]">
       <div className="relative select-none" style={{ height: totalHeight }}>
         {/* Hour grid lines */}
@@ -151,32 +155,50 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
                 style={{ top, height }}
               >
                 {/* Event body – drag to move */}
-                <div
-                  className={cn(
-                    "absolute inset-0 px-3 py-2 rounded-md border-l-[3px] cursor-grab active:cursor-grabbing overflow-hidden transition-shadow",
-                    statusColor[b.status || "scheduled"],
-                    isDragging && "ring-2 ring-primary shadow-lg opacity-90"
-                  )}
-                  onMouseDown={(e) => startDrag(e, b, "move")}
-                  onClick={(e) => { e.stopPropagation(); if (!wasDragging()) onEventClick(b); }}
-                >
-                  <div className="text-sm font-medium truncate">{b.title}</div>
-                  <div className="text-xs opacity-70">
-                    {isDragging && dragState?.type === "move" && previewLabel ? (
-                      <span className="font-semibold text-primary">{previewLabel}</span>
-                    ) : (
-                      <>
-                        {format(start, "h:mm a")} – {format(end, "h:mm a")}
-                      </>
-                    )}
-                    {isDragging && dragState?.type === "resize" && previewLabel && (
-                      <span className="ml-1 font-semibold text-primary">→ {previewLabel}</span>
-                    )}
-                  </div>
-                  {!isDragging && b.notes && b.notes !== b.title && (
-                    <div className="text-xs mt-1 opacity-60 truncate">{b.notes}</div>
-                  )}
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div
+                      className={cn(
+                        "absolute inset-0 px-3 py-2 rounded-md border-l-[3px] cursor-grab active:cursor-grabbing overflow-hidden transition-shadow",
+                        statusColor[b.status || "scheduled"],
+                        isDragging && "ring-2 ring-primary shadow-lg opacity-90"
+                      )}
+                      onMouseDown={(e) => startDrag(e, b, "move")}
+                      onClick={(e) => { e.stopPropagation(); if (!wasDragging()) onEventClick(b); }}
+                    >
+                      <div className="text-sm font-medium truncate">{b.title}</div>
+                      <div className="text-xs opacity-70">
+                        {isDragging && dragState?.type === "move" && previewLabel ? (
+                          <span className="font-semibold text-primary">{previewLabel}</span>
+                        ) : (
+                          <>
+                            {format(start, "h:mm a")} – {format(end, "h:mm a")}
+                          </>
+                        )}
+                        {isDragging && dragState?.type === "resize" && previewLabel && (
+                          <span className="ml-1 font-semibold text-primary">→ {previewLabel}</span>
+                        )}
+                      </div>
+                      {!isDragging && b.notes && b.notes !== b.title && (
+                        <div className="text-xs mt-1 opacity-60 truncate">{b.notes}</div>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  {(() => {
+                    const note = getNote(b.uid);
+                    const content = note?.notes || b.notes;
+                    if (!content) return null;
+                    return (
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="font-medium text-xs mb-1">{b.title}</p>
+                        <p className="text-xs whitespace-pre-wrap">{content}</p>
+                        {note?.last_edited_by_name && (
+                          <p className="text-[10px] opacity-70 mt-1">— {note.last_edited_by_name}</p>
+                        )}
+                      </TooltipContent>
+                    );
+                  })()}
+                </Tooltip>
 
                 {/* Resize handle */}
                 {canResize(b) && (
@@ -194,5 +216,6 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };

@@ -10,6 +10,7 @@ const CAL_API_BASE = "https://api.cal.com/v2";
 const CAL_API_VERSION_BOOKINGS = "2024-08-13";
 const CAL_API_VERSION_EVENT_TYPES = "2024-06-14";
 const CAL_API_VERSION_SCHEDULES = "2024-06-11";
+const CAL_API_VERSION_SLOTS = "2024-09-04";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -181,6 +182,34 @@ Deno.serve(async (req) => {
       });
     }
 
+    // GET available slots for an event type
+    if (action === "list-slots" && req.method === "GET") {
+      const eventTypeId = url.searchParams.get("eventTypeId");
+      const start = url.searchParams.get("start"); // ISO date e.g. 2026-04-16
+      const end = url.searchParams.get("end");
+      if (!eventTypeId || !start || !end) {
+        return new Response(JSON.stringify({ error: "eventTypeId, start, end required" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const slotsUrl = `${CAL_API_BASE}/slots?eventTypeId=${eventTypeId}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      const res = await fetch(slotsUrl, { headers: makeHeaders(CAL_API_VERSION_SLOTS) });
+      const data = await res.json();
+      // Normalize 4xx to 200 with empty slots so the UI doesn't crash
+      if (!res.ok) {
+        console.warn("Cal.com slots returned", res.status, data);
+        return new Response(JSON.stringify({ status: "success", data: {} }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // GET schedules
     if (action === "list-schedules" && req.method === "GET") {
       const res = await fetch(`${CAL_API_BASE}/schedules`, { headers: makeHeaders(CAL_API_VERSION_SCHEDULES) });
@@ -192,7 +221,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: "Unknown action", validActions: ["list-bookings", "get-booking", "create-booking", "reschedule-booking", "cancel-booking", "list-event-types", "list-schedules"] }),
+      JSON.stringify({ error: "Unknown action", validActions: ["list-bookings", "get-booking", "create-booking", "reschedule-booking", "cancel-booking", "list-event-types", "list-schedules", "list-slots"] }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
