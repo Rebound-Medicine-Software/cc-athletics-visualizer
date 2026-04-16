@@ -416,6 +416,8 @@ export const useBookings = () => {
     calConnected,
     callCalProxy,
     createBooking,
+    createCalBooking,
+    fetchSlots,
     updateBooking,
     deleteBooking,
     resizeBooking,
