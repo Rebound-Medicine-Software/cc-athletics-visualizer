@@ -225,6 +225,28 @@ export const BookingDialog = ({
               </Select>
             </div>
 
+            {selectedEventType?.lengthOptions && selectedEventType.lengthOptions.length > 1 && (
+              <div className="space-y-1.5">
+                <Label>Session Duration</Label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedEventType.lengthOptions.map((mins) => {
+                    const isPicked = selectedDuration === mins;
+                    return (
+                      <Button
+                        key={mins}
+                        type="button"
+                        size="sm"
+                        variant={isPicked ? "default" : "outline"}
+                        onClick={() => setSelectedDuration(mins)}
+                      >
+                        {mins} min
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label>Date</Label>
               <Popover>
