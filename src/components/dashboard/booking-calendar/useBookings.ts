@@ -209,6 +209,12 @@ export const useBookings = () => {
 
     // Cal.com booking — reschedule via API
     if (booking?.source === "cal" && updates.appointment_date) {
+      // Prevent rescheduling to a time in the past
+      if (new Date(updates.appointment_date) < new Date()) {
+        toast.error("Cannot reschedule a booking to a time in the past");
+        await fetchBookings();
+        return;
+      }
       try {
         await callCalProxy("reschedule-booking", "POST", {
           uid: booking.uid,
