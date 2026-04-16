@@ -216,5 +216,6 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 };
