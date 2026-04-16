@@ -91,6 +91,7 @@ export const BookingDialog = ({
     } else {
       // Reset create-mode state
       setSelectedEventTypeId("");
+      setSelectedDuration(null);
       setPickedDate(selectedDate || undefined);
       setAvailableSlots([]);
       setPickedSlot("");
@@ -106,7 +107,21 @@ export const BookingDialog = ({
     if (collaborativeNote) setCollabNotes(collaborativeNote.notes);
   }, [collaborativeNote?.notes]);
 
-  // Fetch available slots when event type or date changes (create mode, Cal.com)
+  // When event type changes, default the duration to its base length (or first option)
+  useEffect(() => {
+    if (!selectedEventType) {
+      setSelectedDuration(null);
+      return;
+    }
+    const opts = selectedEventType.lengthOptions;
+    if (opts && opts.length > 0) {
+      setSelectedDuration((prev) => (prev && opts.includes(prev) ? prev : opts[0]));
+    } else {
+      setSelectedDuration(selectedEventType.length);
+    }
+  }, [selectedEventType?.id]);
+
+  // Fetch available slots when event type, date, or duration changes (create mode, Cal.com)
   useEffect(() => {
     const load = async () => {
       if (isEditing || !selectedEventType || !pickedDate || !fetchSlots) {
@@ -117,12 +132,12 @@ export const BookingDialog = ({
       setPickedSlot("");
       const startISO = startOfDay(pickedDate).toISOString();
       const endISO = endOfDay(pickedDate).toISOString();
-      const slots = await fetchSlots(selectedEventType.id, startISO, endISO);
+      const slots = await fetchSlots(selectedEventType.id, startISO, endISO, selectedDuration || undefined);
       setAvailableSlots(slots);
       setLoadingSlots(false);
     };
     load();
-  }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots]);
+  }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots, selectedDuration]);
 
   const handleEditSave = () => {
     if (!booking) return;
@@ -151,6 +166,7 @@ export const BookingDialog = ({
         attendeeName: fullName,
         attendeeEmail,
         notes: createNotes || undefined,
+        ...(selectedEventType.lengthOptions && selectedDuration ? { lengthInMinutes: selectedDuration } : {}),
       });
       onClose();
     } catch {
