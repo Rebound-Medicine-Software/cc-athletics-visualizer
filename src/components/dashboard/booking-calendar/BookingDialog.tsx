@@ -19,6 +19,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
+  lengthOptions?: number[];
 }
 
 interface BookingDialogProps {
@@ -27,13 +28,14 @@ interface BookingDialogProps {
   booking?: BookingEvent | null;
   selectedDate?: Date | null;
   eventTypes?: EventType[];
-  fetchSlots?: (eventTypeId: number, startISO: string, endISO: string) => Promise<string[]>;
+  fetchSlots?: (eventTypeId: number, startISO: string, endISO: string, durationMinutes?: number) => Promise<string[]>;
   onCreateCal?: (params: {
     eventTypeId: number;
     start: string;
     attendeeName: string;
     attendeeEmail: string;
     notes?: string;
+    lengthInMinutes?: number;
   }) => Promise<any>;
   onSave: (date: Date, title: string, notes?: string) => void;
   onUpdate?: (id: string, updates: Partial<BookingEvent>) => void;
@@ -56,6 +58,7 @@ export const BookingDialog = ({
 
   // ---- Create-mode state (new Cal.com booking) ----
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>("");
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
