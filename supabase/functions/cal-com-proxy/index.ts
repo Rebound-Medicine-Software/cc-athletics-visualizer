@@ -187,13 +187,15 @@ Deno.serve(async (req) => {
       const eventTypeId = url.searchParams.get("eventTypeId");
       const start = url.searchParams.get("start"); // ISO date e.g. 2026-04-16
       const end = url.searchParams.get("end");
+      const duration = url.searchParams.get("duration"); // optional minutes
       if (!eventTypeId || !start || !end) {
         return new Response(JSON.stringify({ error: "eventTypeId, start, end required" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const slotsUrl = `${CAL_API_BASE}/slots?eventTypeId=${eventTypeId}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      let slotsUrl = `${CAL_API_BASE}/slots?eventTypeId=${eventTypeId}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+      if (duration) slotsUrl += `&duration=${encodeURIComponent(duration)}`;
       const res = await fetch(slotsUrl, { headers: makeHeaders(CAL_API_VERSION_SLOTS) });
       const data = await res.json();
       // Normalize 4xx to 200 with empty slots so the UI doesn't crash
