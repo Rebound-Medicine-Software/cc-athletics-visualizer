@@ -273,13 +273,15 @@ export const useBookings = () => {
 
   // Fetch slots for an event type within a date range
   const fetchSlots = useCallback(
-    async (eventTypeId: number, startISO: string, endISO: string): Promise<string[]> => {
+    async (eventTypeId: number, startISO: string, endISO: string, durationMinutes?: number): Promise<string[]> => {
       try {
-        const data = await callCalProxy("list-slots", "GET", undefined, {
+        const params: Record<string, string> = {
           eventTypeId: String(eventTypeId),
           start: startISO,
           end: endISO,
-        });
+        };
+        if (durationMinutes) params.duration = String(durationMinutes);
+        const data = await callCalProxy("list-slots", "GET", undefined, params);
         // Cal.com v2 returns { data: { "2026-04-16": [{ start: "..." }, ...] } }
         const slotsMap = data?.data || {};
         const all: string[] = [];
