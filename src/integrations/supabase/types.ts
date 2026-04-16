@@ -125,6 +125,54 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_notes: {
+        Row: {
+          cal_uid: string
+          created_at: string
+          id: string
+          last_edited_by: string | null
+          last_edited_by_name: string | null
+          notes: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          cal_uid: string
+          created_at?: string
+          id?: string
+          last_edited_by?: string | null
+          last_edited_by_name?: string | null
+          notes?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          cal_uid?: string
+          created_at?: string
+          id?: string
+          last_edited_by?: string | null
+          last_edited_by_name?: string | null
+          notes?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_notes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_notes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           appointment_date: string
