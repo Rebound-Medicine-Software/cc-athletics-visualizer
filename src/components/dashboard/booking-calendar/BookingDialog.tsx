@@ -19,6 +19,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
+  lengthOptions?: number[];
 }
 
 interface BookingDialogProps {
@@ -27,13 +28,14 @@ interface BookingDialogProps {
   booking?: BookingEvent | null;
   selectedDate?: Date | null;
   eventTypes?: EventType[];
-  fetchSlots?: (eventTypeId: number, startISO: string, endISO: string) => Promise<string[]>;
+  fetchSlots?: (eventTypeId: number, startISO: string, endISO: string, durationMinutes?: number) => Promise<string[]>;
   onCreateCal?: (params: {
     eventTypeId: number;
     start: string;
     attendeeName: string;
     attendeeEmail: string;
     notes?: string;
+    lengthInMinutes?: number;
   }) => Promise<any>;
   onSave: (date: Date, title: string, notes?: string) => void;
   onUpdate?: (id: string, updates: Partial<BookingEvent>) => void;
@@ -56,6 +58,7 @@ export const BookingDialog = ({
 
   // ---- Create-mode state (new Cal.com booking) ----
   const [selectedEventTypeId, setSelectedEventTypeId] = useState<string>("");
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [pickedDate, setPickedDate] = useState<Date | undefined>(undefined);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -88,6 +91,7 @@ export const BookingDialog = ({
     } else {
       // Reset create-mode state
       setSelectedEventTypeId("");
+      setSelectedDuration(null);
       setPickedDate(selectedDate || undefined);
       setAvailableSlots([]);
       setPickedSlot("");
@@ -103,7 +107,21 @@ export const BookingDialog = ({
     if (collaborativeNote) setCollabNotes(collaborativeNote.notes);
   }, [collaborativeNote?.notes]);
 
-  // Fetch available slots when event type or date changes (create mode, Cal.com)
+  // When event type changes, default the duration to its base length (or first option)
+  useEffect(() => {
+    if (!selectedEventType) {
+      setSelectedDuration(null);
+      return;
+    }
+    const opts = selectedEventType.lengthOptions;
+    if (opts && opts.length > 0) {
+      setSelectedDuration((prev) => (prev && opts.includes(prev) ? prev : opts[0]));
+    } else {
+      setSelectedDuration(selectedEventType.length);
+    }
+  }, [selectedEventType?.id]);
+
+  // Fetch available slots when event type, date, or duration changes (create mode, Cal.com)
   useEffect(() => {
     const load = async () => {
       if (isEditing || !selectedEventType || !pickedDate || !fetchSlots) {
@@ -114,12 +132,12 @@ export const BookingDialog = ({
       setPickedSlot("");
       const startISO = startOfDay(pickedDate).toISOString();
       const endISO = endOfDay(pickedDate).toISOString();
-      const slots = await fetchSlots(selectedEventType.id, startISO, endISO);
+      const slots = await fetchSlots(selectedEventType.id, startISO, endISO, selectedDuration || undefined);
       setAvailableSlots(slots);
       setLoadingSlots(false);
     };
     load();
-  }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots]);
+  }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots, selectedDuration]);
 
   const handleEditSave = () => {
     if (!booking) return;
@@ -148,6 +166,7 @@ export const BookingDialog = ({
         attendeeName: fullName,
         attendeeEmail,
         notes: createNotes || undefined,
+        ...(selectedEventType.lengthOptions && selectedDuration ? { lengthInMinutes: selectedDuration } : {}),
       });
       onClose();
     } catch {
@@ -205,6 +224,28 @@ export const BookingDialog = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {selectedEventType?.lengthOptions && selectedEventType.lengthOptions.length > 1 && (
+              <div className="space-y-1.5">
+                <Label>Session Duration</Label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedEventType.lengthOptions.map((mins) => {
+                    const isPicked = selectedDuration === mins;
+                    return (
+                      <Button
+                        key={mins}
+                        type="button"
+                        size="sm"
+                        variant={isPicked ? "default" : "outline"}
+                        onClick={() => setSelectedDuration(mins)}
+                      >
+                        {mins} min
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Date</Label>

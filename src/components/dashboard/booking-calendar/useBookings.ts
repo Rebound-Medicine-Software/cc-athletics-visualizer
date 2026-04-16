@@ -7,7 +7,7 @@ import { BookingEvent, CalComBooking } from "./types";
 export const useBookings = () => {
   const { profile } = useAuth();
   const [bookings, setBookings] = useState<BookingEvent[]>([]);
-  const [eventTypes, setEventTypes] = useState<Array<{ id: number; title: string; slug: string; length: number }>>([]);
+  const [eventTypes, setEventTypes] = useState<Array<{ id: number; title: string; slug: string; length: number; lengthOptions?: number[] }>>([]);
   const [schedules, setSchedules] = useState<Array<{ id: number; name: string; availability: Array<{ days: number[]; startTime: string; endTime: string }> }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [calConnected, setCalConnected] = useState(false);
@@ -156,12 +156,19 @@ export const useBookings = () => {
       }
       const mapped = collected
         .filter((et: any) => et && (et.id !== undefined))
-        .map((et: any) => ({
-          id: et.id,
-          title: et.title || et.name || et.slug || "Untitled",
-          slug: et.slug || "",
-          length: et.lengthInMinutes ?? et.length ?? 30,
-        }));
+        .map((et: any) => {
+          const baseLen = et.lengthInMinutes ?? et.length ?? 30;
+          const opts: number[] | undefined = Array.isArray(et.lengthInMinutesOptions) && et.lengthInMinutesOptions.length > 0
+            ? et.lengthInMinutesOptions.map((n: any) => Number(n)).filter((n: number) => !isNaN(n))
+            : undefined;
+          return {
+            id: et.id,
+            title: et.title || et.name || et.slug || "Untitled",
+            slug: et.slug || "",
+            length: baseLen,
+            lengthOptions: opts,
+          };
+        });
       console.log(`[Cal.com] Loaded ${mapped.length} event types`, mapped);
       setEventTypes(mapped);
     } catch (err) {
@@ -225,11 +232,13 @@ export const useBookings = () => {
     attendeeName: string;
     attendeeEmail: string;
     notes?: string;
+    lengthInMinutes?: number;
   }) => {
     try {
       const result = await callCalProxy("create-booking", "POST", {
         eventTypeId: params.eventTypeId,
         start: params.start,
+        ...(params.lengthInMinutes ? { lengthInMinutes: params.lengthInMinutes } : {}),
         attendee: {
           name: params.attendeeName,
           email: params.attendeeEmail,
@@ -264,13 +273,15 @@ export const useBookings = () => {
 
   // Fetch slots for an event type within a date range
   const fetchSlots = useCallback(
-    async (eventTypeId: number, startISO: string, endISO: string): Promise<string[]> => {
+    async (eventTypeId: number, startISO: string, endISO: string, durationMinutes?: number): Promise<string[]> => {
       try {
-        const data = await callCalProxy("list-slots", "GET", undefined, {
+        const params: Record<string, string> = {
           eventTypeId: String(eventTypeId),
           start: startISO,
           end: endISO,
-        });
+        };
+        if (durationMinutes) params.duration = String(durationMinutes);
+        const data = await callCalProxy("list-slots", "GET", undefined, params);
         // Cal.com v2 returns { data: { "2026-04-16": [{ start: "..." }, ...] } }
         const slotsMap = data?.data || {};
         const all: string[] = [];
