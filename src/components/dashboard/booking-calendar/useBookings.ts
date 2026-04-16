@@ -204,6 +204,81 @@ export const useBookings = () => {
     }
   };
 
+  // Create a real Cal.com booking via the proxy
+  const createCalBooking = async (params: {
+    eventTypeId: number;
+    start: string; // ISO
+    attendeeName: string;
+    attendeeEmail: string;
+    notes?: string;
+  }) => {
+    try {
+      const result = await callCalProxy("create-booking", "POST", {
+        eventTypeId: params.eventTypeId,
+        start: params.start,
+        attendee: {
+          name: params.attendeeName,
+          email: params.attendeeEmail,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        ...(params.notes ? { metadata: {}, bookingFieldsResponses: { notes: params.notes } } : {}),
+      });
+      const newUid = result?.data?.uid;
+      // If notes were provided, save them to the collaborative notes table
+      if (params.notes && newUid && profile?.team_id) {
+        await supabase.from("booking_notes" as any).insert({
+          cal_uid: newUid,
+          team_id: profile.team_id,
+          notes: params.notes,
+          last_edited_by: profile.user_id,
+          last_edited_by_name: profile.full_name || profile.email,
+        });
+      }
+      toast.success("Booking created in Cal.com");
+      await fetchBookings();
+      return result;
+    } catch (err: any) {
+      const msg = err.message || "Unknown error";
+      if (msg.toLowerCase().includes("not available") || msg.toLowerCase().includes("already")) {
+        toast.error("That time slot is no longer available. Please pick another.");
+      } else {
+        toast.error(`Failed to create booking: ${msg}`);
+      }
+      throw err;
+    }
+  };
+
+  // Fetch slots for an event type within a date range
+  const fetchSlots = useCallback(
+    async (eventTypeId: number, startISO: string, endISO: string): Promise<string[]> => {
+      try {
+        const data = await callCalProxy("list-slots", "GET", undefined, {
+          eventTypeId: String(eventTypeId),
+          start: startISO,
+          end: endISO,
+        });
+        // Cal.com v2 returns { data: { "2026-04-16": [{ start: "..." }, ...] } }
+        const slotsMap = data?.data || {};
+        const all: string[] = [];
+        for (const day of Object.keys(slotsMap)) {
+          const items = slotsMap[day];
+          if (Array.isArray(items)) {
+            items.forEach((s: any) => {
+              if (typeof s === "string") all.push(s);
+              else if (s?.start) all.push(s.start);
+              else if (s?.time) all.push(s.time);
+            });
+          }
+        }
+        return all;
+      } catch (err) {
+        console.error("Error fetching slots:", err);
+        return [];
+      }
+    },
+    [callCalProxy]
+  );
+
   const updateBooking = async (id: string, updates: Partial<BookingEvent>) => {
     const booking = bookings.find((b) => b.id === id);
 
