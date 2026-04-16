@@ -140,16 +140,30 @@ export const useBookings = () => {
     if (!calConnected) return;
     try {
       const data = await callCalProxy("list-event-types");
-      setEventTypes(
-        (data?.data?.eventTypeGroups || []).flatMap(
-          (g: any) => (g.eventTypes || []).map((et: any) => ({
-            id: et.id,
-            title: et.title,
-            slug: et.slug,
-            length: et.length,
-          }))
-        )
-      );
+      // Cal.com v2 may return either:
+      //  - { data: [ { id, title, slug, lengthInMinutes }, ... ] }     (flat, personal accounts)
+      //  - { data: { eventTypeGroups: [{ eventTypes: [...] }] } }      (grouped, team accounts)
+      const raw = data?.data;
+      const collected: any[] = [];
+      if (Array.isArray(raw)) {
+        collected.push(...raw);
+      } else if (raw?.eventTypeGroups && Array.isArray(raw.eventTypeGroups)) {
+        raw.eventTypeGroups.forEach((g: any) => {
+          if (Array.isArray(g.eventTypes)) collected.push(...g.eventTypes);
+        });
+      } else if (Array.isArray(raw?.eventTypes)) {
+        collected.push(...raw.eventTypes);
+      }
+      const mapped = collected
+        .filter((et: any) => et && (et.id !== undefined))
+        .map((et: any) => ({
+          id: et.id,
+          title: et.title || et.name || et.slug || "Untitled",
+          slug: et.slug || "",
+          length: et.lengthInMinutes ?? et.length ?? 30,
+        }));
+      console.log(`[Cal.com] Loaded ${mapped.length} event types`, mapped);
+      setEventTypes(mapped);
     } catch (err) {
       console.error("Error fetching event types:", err);
     }
