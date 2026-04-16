@@ -249,5 +249,6 @@ export const WeekView = ({ currentDate, bookings, onDateClick, onEventClick, onE
         })}
       </div>
     </div>
+    </TooltipProvider>
   );
 };
