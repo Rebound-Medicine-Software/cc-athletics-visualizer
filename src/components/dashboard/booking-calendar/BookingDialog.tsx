@@ -60,7 +60,8 @@ export const BookingDialog = ({
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [pickedSlot, setPickedSlot] = useState<string>("");
-  const [attendeeName, setAttendeeName] = useState("");
+  const [attendeeFirstName, setAttendeeFirstName] = useState("");
+  const [attendeeLastName, setAttendeeLastName] = useState("");
   const [attendeeEmail, setAttendeeEmail] = useState("");
   const [createNotes, setCreateNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -90,7 +91,8 @@ export const BookingDialog = ({
       setPickedDate(selectedDate || undefined);
       setAvailableSlots([]);
       setPickedSlot("");
-      setAttendeeName("");
+      setAttendeeFirstName("");
+      setAttendeeLastName("");
       setAttendeeEmail("");
       setCreateNotes("");
     }
@@ -136,13 +138,14 @@ export const BookingDialog = ({
   };
 
   const handleCreate = async () => {
-    if (!selectedEventType || !pickedSlot || !attendeeName || !attendeeEmail || !onCreateCal) return;
+    const fullName = `${attendeeFirstName.trim()} ${attendeeLastName.trim()}`.trim();
+    if (!selectedEventType || !pickedSlot || !fullName || !attendeeEmail || !onCreateCal) return;
     setSubmitting(true);
     try {
       await onCreateCal({
         eventTypeId: selectedEventType.id,
         start: pickedSlot,
-        attendeeName,
+        attendeeName: fullName,
         attendeeEmail,
         notes: createNotes || undefined,
       });
@@ -155,7 +158,11 @@ export const BookingDialog = ({
   };
 
   const canCreate =
-    !!selectedEventType && !!pickedSlot && !!attendeeName && /\S+@\S+\.\S+/.test(attendeeEmail);
+    !!selectedEventType &&
+    !!pickedSlot &&
+    !!attendeeFirstName.trim() &&
+    !!attendeeLastName.trim() &&
+    /\S+@\S+\.\S+/.test(attendeeEmail);
 
   const noEventTypes = !isEditing && eventTypes.length === 0;
 
@@ -262,18 +269,30 @@ export const BookingDialog = ({
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Attendee Name</Label>
-                <Input value={attendeeName} onChange={(e) => setAttendeeName(e.target.value)} placeholder="Jane Doe" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Attendee Email</Label>
+                <Label>First Name</Label>
                 <Input
-                  type="email"
-                  value={attendeeEmail}
-                  onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="jane@example.com"
+                  value={attendeeFirstName}
+                  onChange={(e) => setAttendeeFirstName(e.target.value)}
+                  placeholder="Jane"
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label>Last Name</Label>
+                <Input
+                  value={attendeeLastName}
+                  onChange={(e) => setAttendeeLastName(e.target.value)}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Attendee Email</Label>
+              <Input
+                type="email"
+                value={attendeeEmail}
+                onChange={(e) => setAttendeeEmail(e.target.value)}
+                placeholder="jane@example.com"
+              />
             </div>
 
             <div className="space-y-1.5">
