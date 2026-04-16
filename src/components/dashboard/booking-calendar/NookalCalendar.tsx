@@ -13,7 +13,7 @@ import { OutOfHoursConfirmDialog } from "./OutOfHoursConfirmDialog";
 import { RefreshCw } from "lucide-react";
 
 export const NookalCalendar = () => {
-  const { bookings, eventTypes, schedules, isLoading, createBooking, updateBooking, deleteBooking, resizeBooking } = useBookings();
+  const { bookings, eventTypes, schedules, isLoading, createBooking, createCalBooking, fetchSlots, updateBooking, deleteBooking, resizeBooking } = useBookings();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>("month");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -161,6 +161,9 @@ export const NookalCalendar = () => {
           onClose={() => setDialogOpen(false)}
           booking={selectedBooking}
           selectedDate={selectedDate}
+          eventTypes={eventTypes}
+          fetchSlots={fetchSlots}
+          onCreateCal={createCalBooking}
           onSave={createBooking}
           onUpdate={updateBooking}
           onDelete={deleteBooking}
