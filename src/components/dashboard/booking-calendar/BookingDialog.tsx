@@ -155,6 +155,20 @@ export const BookingDialog = ({
     onClose();
   };
 
+  const refreshSlots = async () => {
+    if (!selectedEventType || !pickedDate || !fetchSlots) return;
+    setLoadingSlots(true);
+    setPickedSlot("");
+    const slots = await fetchSlots(
+      selectedEventType.id,
+      startOfDay(pickedDate).toISOString(),
+      endOfDay(pickedDate).toISOString(),
+      selectedDuration || undefined,
+    );
+    setAvailableSlots(slots);
+    setLoadingSlots(false);
+  };
+
   const handleCreate = async () => {
     const fullName = `${attendeeFirstName.trim()} ${attendeeLastName.trim()}`.trim();
     if (!selectedEventType || !pickedSlot || !fullName || !attendeeEmail || !onCreateCal) return;
@@ -169,8 +183,12 @@ export const BookingDialog = ({
         ...(selectedEventType.lengthOptions && selectedDuration ? { lengthInMinutes: selectedDuration } : {}),
       });
       onClose();
-    } catch {
-      // Error toast is shown in the hook
+    } catch (err: any) {
+      // On conflict / unavailable, auto-refresh the slot list so stale options disappear
+      const msg = String(err?.message || "").toLowerCase();
+      if (msg.includes("not available") || msg.includes("already") || msg.includes("400")) {
+        await refreshSlots();
+      }
     } finally {
       setSubmitting(false);
     }
