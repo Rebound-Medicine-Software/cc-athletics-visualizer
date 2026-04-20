@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
     // POST create booking
     if (action === "create-booking" && req.method === "POST") {
       const body = await req.json();
+      // Cal.com v2 supports `noEmail` in the body to suppress attendee emails
       const res = await fetch(`${CAL_API_BASE}/bookings`, {
         method: "POST",
         headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
@@ -155,6 +156,7 @@ Deno.serve(async (req) => {
         headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify({
           cancellationReason: body.reason || "Cancelled via dashboard",
+          ...(body.noEmail === true ? { noEmail: true } : {}),
         }),
       });
       const data = await res.json();
