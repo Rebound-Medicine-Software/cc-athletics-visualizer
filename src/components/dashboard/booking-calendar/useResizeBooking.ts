@@ -6,7 +6,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
-  lengthInMinutesOptions?: number[];
+  lengthOptions?: number[];
 }
 
 interface UseResizeBookingProps {
@@ -24,8 +24,8 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
   const getDurationsForBooking = useCallback(
     (booking: BookingEvent): number[] => {
       const et = eventTypes.find((e) => e.id === (booking as any).eventTypeId);
-      if (et?.lengthInMinutesOptions?.length) {
-        return [...et.lengthInMinutesOptions].sort((a, b) => a - b);
+      if (et?.lengthOptions?.length) {
+        return [...et.lengthOptions].sort((a, b) => a - b);
       }
       if (et?.length) return [et.length];
       // Fallback: 15-min increments
@@ -34,7 +34,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
     [eventTypes]
   );
 
-  const availableDurations = eventTypes.flatMap((et) => et.lengthInMinutesOptions ?? [et.length]).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+  const availableDurations = eventTypes.flatMap((et) => et.lengthOptions ?? [et.length]).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
 
   const getSnappedDuration = useCallback(
     (booking: BookingEvent, currentDurationMin: number, deltaPixels: number): { duration: number; eventTypeId: number | null } => {
