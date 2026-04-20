@@ -437,13 +437,15 @@ export const useBookings = () => {
     }
 
     try {
-      // Step 1: Cancel the existing booking
+      // Step 1: Silently cancel the existing booking (no attendee email)
       await callCalProxy("cancel-booking", "POST", {
         uid: booking.uid,
         reason: "Duration changed via dashboard – rebooking",
+        noEmail: true,
       });
 
-      // Step 2: Create a new booking with the SAME event type and new duration
+      // Step 2: Silently create the new booking (no attendee email)
+      // — attendee will not be emailed twice for the same logical change
       await callCalProxy("create-booking", "POST", {
         eventTypeId: matchingEventTypeId,
         start: booking.appointment_date,
@@ -453,6 +455,7 @@ export const useBookings = () => {
           email: booking.attendeeEmail || "",
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         },
+        noEmail: true,
       });
 
       toast.success(`Booking updated to ${newDurationMinutes} minutes`);
