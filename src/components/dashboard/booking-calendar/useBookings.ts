@@ -401,6 +401,10 @@ export const useBookings = () => {
       return;
     }
 
+    // Only send lengthInMinutes if the event type actually supports multiple lengths
+    const et = eventTypes.find((e) => e.id === matchingEventTypeId);
+    const supportsMultipleLengths = !!(et?.lengthOptions && et.lengthOptions.length > 1);
+
     try {
       // Step 1: Cancel the existing booking
       await callCalProxy("cancel-booking", "POST", {
@@ -412,7 +416,7 @@ export const useBookings = () => {
       await callCalProxy("create-booking", "POST", {
         eventTypeId: matchingEventTypeId,
         start: booking.appointment_date,
-        lengthInMinutes: newDurationMinutes,
+        ...(supportsMultipleLengths ? { lengthInMinutes: newDurationMinutes } : {}),
         attendee: {
           name: booking.attendeeName || "Attendee",
           email: booking.attendeeEmail || "",
