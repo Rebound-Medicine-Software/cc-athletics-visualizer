@@ -158,6 +158,15 @@ Deno.serve(async (req) => {
         }),
       });
       const data = await res.json();
+      // Idempotent: treat "already cancelled" as success so retries / resize flows don't break
+      const errMsg = JSON.stringify(data?.error || data || "").toLowerCase();
+      if (!res.ok && errMsg.includes("cancelled already")) {
+        console.warn(`Cal.com cancel: booking ${bookingUid} already cancelled, returning success`);
+        return new Response(JSON.stringify({ status: "success", data: { uid: bookingUid, alreadyCancelled: true } }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(JSON.stringify(data), {
         status: res.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
