@@ -157,16 +157,26 @@ export const useBookings = () => {
       const mapped = collected
         .filter((et: any) => et && (et.id !== undefined))
         .map((et: any) => {
-          const baseLen = et.lengthInMinutes ?? et.length ?? 30;
-          const opts: number[] | undefined = Array.isArray(et.lengthInMinutesOptions) && et.lengthInMinutesOptions.length > 0
-            ? et.lengthInMinutesOptions.map((n: any) => Number(n)).filter((n: number) => !isNaN(n))
-            : undefined;
+          const baseLen = Number(et.lengthInMinutes ?? et.length ?? 30);
+          const rawOptions =
+            (Array.isArray(et.lengthInMinutesOptions) && et.lengthInMinutesOptions.length > 0
+              ? et.lengthInMinutesOptions
+              : Array.isArray(et.lengthOptions) && et.lengthOptions.length > 0
+                ? et.lengthOptions
+                : Array.isArray(et.multipleDuration) && et.multipleDuration.length > 0
+                  ? et.multipleDuration
+                  : Array.isArray(et.metadata?.multipleDuration) && et.metadata.multipleDuration.length > 0
+                    ? et.metadata.multipleDuration
+                    : undefined);
+          const opts: number[] | undefined = rawOptions
+            ?.map((n: any) => Number(n))
+            .filter((n: number) => !isNaN(n));
           return {
             id: et.id,
             title: et.title || et.name || et.slug || "Untitled",
             slug: et.slug || "",
             length: baseLen,
-            lengthOptions: opts,
+            lengthOptions: opts && opts.length > 0 ? Array.from(new Set(opts)).sort((a, b) => a - b) : undefined,
           };
         });
       console.log(`[Cal.com] Loaded ${mapped.length} event types`, mapped);
@@ -407,9 +417,9 @@ export const useBookings = () => {
 
     // Block resize when the event type has a fixed duration
     if (!supportsMultipleLengths) {
-      const fixedLen = et?.length ?? booking.end_date
-        ? Math.round((new Date(booking.end_date!).getTime() - new Date(booking.appointment_date).getTime()) / 60000)
-        : null;
+      const fixedLen = et?.length ?? (booking.end_date
+        ? Math.round((new Date(booking.end_date).getTime() - new Date(booking.appointment_date).getTime()) / 60000)
+        : null);
       toast.error(
         `You cannot assign this event due to "${et?.title || "this event type"}" having a fixed duration${fixedLen ? ` of ${fixedLen} minutes` : ""}. Multiple lengths are not enabled for it in Cal.com.`
       );
