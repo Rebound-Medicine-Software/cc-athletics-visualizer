@@ -156,6 +156,7 @@ Deno.serve(async (req) => {
         headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
         body: JSON.stringify({
           cancellationReason: body.reason || "Cancelled via dashboard",
+          ...(body.noEmail === true ? { noEmail: true } : {}),
         }),
       });
       const data = await res.json();
