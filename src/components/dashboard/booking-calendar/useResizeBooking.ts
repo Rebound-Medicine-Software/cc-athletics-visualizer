@@ -6,7 +6,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
-  lengthInMinutesOptions?: number[];
+  lengthOptions?: number[];
 }
 
 interface UseResizeBookingProps {
