@@ -12,6 +12,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
+  lengthOptions?: number[];
 }
 
 interface WeekViewProps {
