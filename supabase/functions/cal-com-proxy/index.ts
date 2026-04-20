@@ -98,10 +98,15 @@ Deno.serve(async (req) => {
     // POST create booking
     if (action === "create-booking" && req.method === "POST") {
       const body = await req.json();
+      const noEmail = body?.noEmail === true;
+      // Strip our internal flag before forwarding to Cal.com
+      const { noEmail: _ne, ...calBody } = body || {};
+      const headers = makeHeaders(CAL_API_VERSION_BOOKINGS);
+      if (noEmail) headers["x-cal-no-email"] = "true";
       const res = await fetch(`${CAL_API_BASE}/bookings`, {
         method: "POST",
-        headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
-        body: JSON.stringify(body),
+        headers,
+        body: JSON.stringify(calBody),
       });
       const data = await res.json();
       return new Response(JSON.stringify(data), {
