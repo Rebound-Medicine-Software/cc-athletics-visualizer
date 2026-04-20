@@ -405,6 +405,27 @@ export const useBookings = () => {
     const et = eventTypes.find((e) => e.id === matchingEventTypeId);
     const supportsMultipleLengths = !!(et?.lengthOptions && et.lengthOptions.length > 1);
 
+    // Block resize when the event type has a fixed duration
+    if (!supportsMultipleLengths) {
+      const fixedLen = et?.length ?? booking.end_date
+        ? Math.round((new Date(booking.end_date!).getTime() - new Date(booking.appointment_date).getTime()) / 60000)
+        : null;
+      toast.error(
+        `You cannot assign this event due to "${et?.title || "this event type"}" having a fixed duration${fixedLen ? ` of ${fixedLen} minutes` : ""}. Multiple lengths are not enabled for it in Cal.com.`
+      );
+      await fetchBookings();
+      return;
+    }
+
+    // Block if the requested duration isn't one of the allowed options
+    if (et?.lengthOptions && !et.lengthOptions.includes(newDurationMinutes)) {
+      toast.error(
+        `You cannot assign this event due to ${newDurationMinutes} minutes not being an allowed duration. Allowed: ${et.lengthOptions.join(", ")} min.`
+      );
+      await fetchBookings();
+      return;
+    }
+
     try {
       // Step 1: Cancel the existing booking
       await callCalProxy("cancel-booking", "POST", {
