@@ -142,6 +142,37 @@ export const BookingDialog = ({
     load();
   }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots, selectedDuration]);
 
+  // Fetch which DAYS in the visible month have any availability (so we can disable the rest)
+  useEffect(() => {
+    const load = async () => {
+      if (isEditing || !selectedEventType || !fetchSlots) {
+        setAvailableDays(new Set());
+        return;
+      }
+      setLoadingAvailableDays(true);
+      const rangeStart = startOfDay(startOfMonth(calendarMonth));
+      const rangeEnd = endOfDay(endOfMonth(calendarMonth));
+      // Don't probe past dates
+      const now = new Date();
+      const effectiveStart = rangeStart < now ? now : rangeStart;
+      const slots = await fetchSlots(
+        selectedEventType.id,
+        effectiveStart.toISOString(),
+        rangeEnd.toISOString(),
+        selectedDuration || undefined,
+      );
+      const days = new Set<string>();
+      slots.forEach((iso) => {
+        // Use local-day key (YYYY-MM-DD) so it matches the calendar's day cells
+        const d = new Date(iso);
+        days.add(format(d, "yyyy-MM-dd"));
+      });
+      setAvailableDays(days);
+      setLoadingAvailableDays(false);
+    };
+    load();
+  }, [selectedEventType?.id, calendarMonth, isEditing, fetchSlots, selectedDuration]);
+
   const handleEditSave = () => {
     if (!booking) return;
     const dateTime = new Date(`${date}T${time}`);
