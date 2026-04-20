@@ -24,8 +24,8 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
   const getDurationsForBooking = useCallback(
     (booking: BookingEvent): number[] => {
       const et = eventTypes.find((e) => e.id === (booking as any).eventTypeId);
-      if (et?.lengthInMinutesOptions?.length) {
-        return [...et.lengthInMinutesOptions].sort((a, b) => a - b);
+      if (et?.lengthOptions?.length) {
+        return [...et.lengthOptions].sort((a, b) => a - b);
       }
       if (et?.length) return [et.length];
       // Fallback: 15-min increments
