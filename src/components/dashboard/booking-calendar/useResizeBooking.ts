@@ -6,6 +6,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
+  lengthInMinutesOptions?: number[];
 }
 
 interface UseResizeBookingProps {
@@ -20,30 +21,43 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
   const startY = useRef(0);
   const bookingRef = useRef<BookingEvent | null>(null);
 
-  const availableDurations = eventTypes.map((et) => et.length).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+  const getDurationsForBooking = useCallback(
+    (booking: BookingEvent): number[] => {
+      const et = eventTypes.find((e) => e.id === (booking as any).eventTypeId);
+      if (et?.lengthInMinutesOptions?.length) {
+        return [...et.lengthInMinutesOptions].sort((a, b) => a - b);
+      }
+      if (et?.length) return [et.length];
+      // Fallback: 15-min increments
+      return [15, 30, 45, 60];
+    },
+    [eventTypes]
+  );
+
+  const availableDurations = eventTypes.flatMap((et) => et.lengthInMinutesOptions ?? [et.length]).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
 
   const getSnappedDuration = useCallback(
-    (currentDurationMin: number, deltaPixels: number): { duration: number; eventTypeId: number | null } => {
+    (booking: BookingEvent, currentDurationMin: number, deltaPixels: number): { duration: number; eventTypeId: number | null } => {
       const deltaMinutes = (deltaPixels / pixelsPerHour) * 60;
       const rawDuration = Math.max(15, currentDurationMin + deltaMinutes);
 
-      // Find closest available event type duration
-      let closest = availableDurations[0] || 30;
+      const durations = getDurationsForBooking(booking);
+      // Snap to closest allowed duration for THIS booking's event type
+      let closest = durations[0] || 30;
       let minDiff = Math.abs(rawDuration - closest);
-      let matchIdx = 0;
-      for (let i = 1; i < availableDurations.length; i++) {
-        const diff = Math.abs(rawDuration - availableDurations[i]);
+      for (let i = 1; i < durations.length; i++) {
+        const diff = Math.abs(rawDuration - durations[i]);
         if (diff < minDiff) {
           minDiff = diff;
-          closest = availableDurations[i];
-          matchIdx = i;
+          closest = durations[i];
         }
       }
 
-      const matchingET = eventTypes.find((et) => et.length === closest);
-      return { duration: closest, eventTypeId: matchingET?.id || null };
+      // Keep the SAME event type — don't swap to a different one
+      const bookingEventTypeId = (booking as any).eventTypeId ?? null;
+      return { duration: closest, eventTypeId: bookingEventTypeId };
     },
-    [availableDurations, eventTypes, pixelsPerHour]
+    [getDurationsForBooking, pixelsPerHour]
   );
 
   const handleResizeStart = useCallback(
@@ -70,7 +84,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
           const start = new Date(b.appointment_date);
           const end = new Date(b.end_date);
           const currentDuration = (end.getTime() - start.getTime()) / 60000;
-          const { duration, eventTypeId } = getSnappedDuration(currentDuration, delta);
+          const { duration, eventTypeId } = getSnappedDuration(b, currentDuration, delta);
 
           if (duration !== currentDuration && eventTypeId) {
             onResize(b.id, duration, eventTypeId);
@@ -94,7 +108,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
       const start = new Date(booking.appointment_date);
       const end = new Date(booking.end_date);
       const currentDuration = (end.getTime() - start.getTime()) / 60000;
-      const { duration } = getSnappedDuration(currentDuration, resizeDelta);
+      const { duration } = getSnappedDuration(booking, currentDuration, resizeDelta);
       const heightPx = (duration / 60) * pixelsPerHour;
       return { heightPx, label: `${duration} min` };
     },

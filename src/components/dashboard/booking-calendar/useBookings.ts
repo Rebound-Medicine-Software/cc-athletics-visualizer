@@ -408,10 +408,11 @@ export const useBookings = () => {
         reason: "Duration changed via dashboard – rebooking",
       });
 
-      // Step 2: Create a new booking with the matching event type
+      // Step 2: Create a new booking with the SAME event type and new duration
       await callCalProxy("create-booking", "POST", {
         eventTypeId: matchingEventTypeId,
         start: booking.appointment_date,
+        lengthInMinutes: newDurationMinutes,
         attendee: {
           name: booking.attendeeName || "Attendee",
           email: booking.attendeeEmail || "",
