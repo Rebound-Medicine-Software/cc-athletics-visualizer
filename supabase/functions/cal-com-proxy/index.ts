@@ -98,11 +98,12 @@ Deno.serve(async (req) => {
     // POST create booking
     if (action === "create-booking" && req.method === "POST") {
       const body = await req.json();
-      // Cal.com v2 supports `noEmail` in the body to suppress attendee emails
+      // Cal.com v2 create-booking does NOT accept `noEmail`; strip it before forwarding
+      const { noEmail: _noEmail, ...calBody } = body ?? {};
       const res = await fetch(`${CAL_API_BASE}/bookings`, {
         method: "POST",
         headers: makeHeaders(CAL_API_VERSION_BOOKINGS),
-        body: JSON.stringify(body),
+        body: JSON.stringify(calBody),
       });
       const data = await res.json();
       return new Response(JSON.stringify(data), {
