@@ -108,7 +108,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
       const start = new Date(booking.appointment_date);
       const end = new Date(booking.end_date);
       const currentDuration = (end.getTime() - start.getTime()) / 60000;
-      const { duration } = getSnappedDuration(currentDuration, resizeDelta);
+      const { duration } = getSnappedDuration(booking, currentDuration, resizeDelta);
       const heightPx = (duration / 60) * pixelsPerHour;
       return { heightPx, label: `${duration} min` };
     },
