@@ -34,7 +34,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
     [eventTypes]
   );
 
-  const availableDurations = eventTypes.flatMap((et) => et.lengthInMinutesOptions ?? [et.length]).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
+  const availableDurations = eventTypes.flatMap((et) => et.lengthOptions ?? [et.length]).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
 
   const getSnappedDuration = useCallback(
     (booking: BookingEvent, currentDurationMin: number, deltaPixels: number): { duration: number; eventTypeId: number | null } => {
