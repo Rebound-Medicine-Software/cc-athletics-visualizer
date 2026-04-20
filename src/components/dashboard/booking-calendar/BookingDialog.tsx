@@ -317,10 +317,25 @@ export const BookingDialog = ({
                     mode="single"
                     selected={pickedDate}
                     onSelect={setPickedDate}
-                    disabled={(d) => d < startOfDay(new Date())}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    disabled={(d) => {
+                      if (d < startOfDay(new Date())) return true;
+                      // If we have any availability data for this month, disable days not in the set
+                      if (availableDays.size > 0) {
+                        return !availableDays.has(format(d, "yyyy-MM-dd"));
+                      }
+                      // While loading the first time, allow selection (slots panel will show "no slots")
+                      return false;
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
+                  {loadingAvailableDays && (
+                    <div className="px-3 pb-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Checking availability…
+                    </div>
+                  )}
                 </PopoverContent>
               </Popover>
             </div>
