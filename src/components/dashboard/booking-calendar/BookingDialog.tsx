@@ -180,7 +180,7 @@ export const BookingDialog = ({
         attendeeName: fullName,
         attendeeEmail,
         notes: createNotes || undefined,
-        ...(selectedEventType.lengthOptions && selectedDuration ? { lengthInMinutes: selectedDuration } : {}),
+        ...(selectedEventType.lengthOptions && selectedEventType.lengthOptions.length > 1 && selectedDuration ? { lengthInMinutes: selectedDuration } : {}),
       });
       onClose();
     } catch (err: any) {
