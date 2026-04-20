@@ -84,7 +84,7 @@ export const useResizeBooking = ({ eventTypes, onResize, pixelsPerHour }: UseRes
           const start = new Date(b.appointment_date);
           const end = new Date(b.end_date);
           const currentDuration = (end.getTime() - start.getTime()) / 60000;
-          const { duration, eventTypeId } = getSnappedDuration(currentDuration, delta);
+          const { duration, eventTypeId } = getSnappedDuration(b, currentDuration, delta);
 
           if (duration !== currentDuration && eventTypeId) {
             onResize(b.id, duration, eventTypeId);
