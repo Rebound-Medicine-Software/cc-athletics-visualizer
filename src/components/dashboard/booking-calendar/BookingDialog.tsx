@@ -312,7 +312,7 @@ export const BookingDialog = ({
                     {pickedDate ? format(pickedDate, "PPP") : "Pick a date"}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[1600] bg-popover" align="start">
                   <Calendar
                     mode="single"
                     selected={pickedDate}
