@@ -12,6 +12,7 @@ interface EventType {
   title: string;
   slug: string;
   length: number;
+  lengthOptions?: number[];
 }
 
 interface DayViewProps {
@@ -51,12 +52,17 @@ export const DayView = ({ currentDate, bookings, onDateClick, onEventClick, onEv
   }, [onEventDrop]);
 
   const handleResizeEnd = useCallback((booking: BookingEvent, newDurationMinutes: number) => {
-    if (booking.source === "cal" && eventTypes.length > 0 && onEventResize) {
-      const closest = eventTypes.reduce((prev, curr) =>
-        Math.abs(curr.length - newDurationMinutes) < Math.abs(prev.length - newDurationMinutes) ? curr : prev
-      );
-      onEventResize(booking.id, closest.length, closest.id);
-    }
+    if (booking.source !== "cal" || !onEventResize) return;
+    // Always keep the booking's OWN event type — never swap to a different event type
+    const bookingEventTypeId = booking.eventTypeId;
+    if (!bookingEventTypeId) return;
+    const et = eventTypes.find((e) => e.id === bookingEventTypeId);
+    // Snap to one of the event type's allowed durations (or its single fixed length)
+    const allowed = et?.lengthOptions && et.lengthOptions.length > 0 ? et.lengthOptions : [et?.length ?? newDurationMinutes];
+    const snapped = allowed.reduce((prev, curr) =>
+      Math.abs(curr - newDurationMinutes) < Math.abs(prev - newDurationMinutes) ? curr : prev
+    );
+    onEventResize(booking.id, snapped, bookingEventTypeId);
   }, [eventTypes, onEventResize]);
 
   const { dragState, startDrag, wasDragging } = useDragBooking({
