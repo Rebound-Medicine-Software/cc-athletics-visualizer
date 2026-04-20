@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { BookingEvent } from "./types";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { Trash2, Calendar as CalendarIcon, Loader2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBookingNotes } from "./useBookingNotes";
@@ -63,6 +63,9 @@ export const BookingDialog = ({
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [pickedSlot, setPickedSlot] = useState<string>("");
+  const [calendarMonth, setCalendarMonth] = useState<Date>(selectedDate || new Date());
+  const [availableDays, setAvailableDays] = useState<Set<string>>(new Set());
+  const [loadingAvailableDays, setLoadingAvailableDays] = useState(false);
   const [attendeeFirstName, setAttendeeFirstName] = useState("");
   const [attendeeLastName, setAttendeeLastName] = useState("");
   const [attendeeEmail, setAttendeeEmail] = useState("");
@@ -138,6 +141,37 @@ export const BookingDialog = ({
     };
     load();
   }, [selectedEventType?.id, pickedDate, isEditing, fetchSlots, selectedDuration]);
+
+  // Fetch which DAYS in the visible month have any availability (so we can disable the rest)
+  useEffect(() => {
+    const load = async () => {
+      if (isEditing || !selectedEventType || !fetchSlots) {
+        setAvailableDays(new Set());
+        return;
+      }
+      setLoadingAvailableDays(true);
+      const rangeStart = startOfDay(startOfMonth(calendarMonth));
+      const rangeEnd = endOfDay(endOfMonth(calendarMonth));
+      // Don't probe past dates
+      const now = new Date();
+      const effectiveStart = rangeStart < now ? now : rangeStart;
+      const slots = await fetchSlots(
+        selectedEventType.id,
+        effectiveStart.toISOString(),
+        rangeEnd.toISOString(),
+        selectedDuration || undefined,
+      );
+      const days = new Set<string>();
+      slots.forEach((iso) => {
+        // Use local-day key (YYYY-MM-DD) so it matches the calendar's day cells
+        const d = new Date(iso);
+        days.add(format(d, "yyyy-MM-dd"));
+      });
+      setAvailableDays(days);
+      setLoadingAvailableDays(false);
+    };
+    load();
+  }, [selectedEventType?.id, calendarMonth, isEditing, fetchSlots, selectedDuration]);
 
   const handleEditSave = () => {
     if (!booking) return;
@@ -283,10 +317,25 @@ export const BookingDialog = ({
                     mode="single"
                     selected={pickedDate}
                     onSelect={setPickedDate}
-                    disabled={(d) => d < startOfDay(new Date())}
+                    month={calendarMonth}
+                    onMonthChange={setCalendarMonth}
+                    disabled={(d) => {
+                      if (d < startOfDay(new Date())) return true;
+                      // If we have any availability data for this month, disable days not in the set
+                      if (availableDays.size > 0) {
+                        return !availableDays.has(format(d, "yyyy-MM-dd"));
+                      }
+                      // While loading the first time, allow selection (slots panel will show "no slots")
+                      return false;
+                    }}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
+                  {loadingAvailableDays && (
+                    <div className="px-3 pb-2 text-xs text-muted-foreground flex items-center gap-1.5">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Checking availability…
+                    </div>
+                  )}
                 </PopoverContent>
               </Popover>
             </div>
