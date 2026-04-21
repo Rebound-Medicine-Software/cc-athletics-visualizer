@@ -1,13 +1,72 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Check } from 'lucide-react';
+import { CreditCard, Check, Link2, AlertTriangle, ExternalLink } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export const PaymentPackages = () => {
+  const { toast } = useToast();
+
+  const handleConnectStripe = () => {
+    toast({
+      title: "Stripe Connect — coming soon",
+      description:
+        "Live Stripe Connect onboarding has not been enabled by the developer yet. No payments will be taken. Contact reflexsportstherapyy@gmail.com to activate.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-3xl font-bold tracking-tight">Payment Packages</h2>
+
+      {/* Stripe Connect — Pay NEXUS HUB */}
+      <Card className="border-dashed border-primary/40 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="w-5 h-5 text-primary" />
+            Connect Your Stripe Account
+          </CardTitle>
+          <CardDescription>
+            Link your Stripe account so NEXUS HUB can automatically charge your subscription
+            once billing is activated by the platform developer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start gap-2 rounded-md border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+            <div>
+              <p className="font-medium text-amber-900 dark:text-amber-200">
+                No payments will be taken yet
+              </p>
+              <p className="text-amber-800/80 dark:text-amber-300/80">
+                Stripe billing has not been finalised by the developer
+                (<a
+                  href="mailto:reflexsportstherapyy@gmail.com"
+                  className="underline hover:no-underline"
+                >reflexsportstherapyy@gmail.com</a>).
+                Connecting now stores your account reference so charges can begin once enabled.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={handleConnectStripe} className="flex-1">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Connect Stripe Account
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.open('https://dashboard.stripe.com/register', '_blank')}
+              className="flex-1"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Create Stripe Account
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
