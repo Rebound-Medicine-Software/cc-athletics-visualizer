@@ -33,13 +33,13 @@ export const PaymentPackages = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-2 rounded-md border border-amber-300/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm">
-            <AlertTriangle className="w-4 h-4 mt-0.5 text-amber-600 shrink-0" />
+          <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
+            <AlertTriangle className="w-4 h-4 mt-0.5 text-warning shrink-0" />
             <div>
-              <p className="font-medium text-amber-900 dark:text-amber-200">
+              <p className="font-medium text-foreground">
                 No payments will be taken yet
               </p>
-              <p className="text-amber-800/80 dark:text-amber-300/80">
+              <p className="text-muted-foreground">
                 Stripe billing has not been finalised by the developer
                 (<a
                   href="mailto:reflexsportstherapyy@gmail.com"
