@@ -142,12 +142,15 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      <DashboardHeader
-        handleRefresh={handleRefresh}
-        handleResetFilters={handleResetFilters}
-        activeSection={activeSection}
-        navigationItems={navigationItems}
-      />
+      {/* Only show DashboardHeader when on the Analytics dashboard section */}
+      {activeSection === "dashboard" && (
+        <DashboardHeader
+          handleRefresh={handleRefresh}
+          handleResetFilters={handleResetFilters}
+          activeSection={activeSection}
+          navigationItems={navigationItems}
+        />
+      )}
       <div className="w-full max-w-7xl mx-auto">
         <div className="flex gap-6">
           <DashboardSidebar
