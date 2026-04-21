@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, TrendingUp } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HomeMetrics } from "@/hooks/useHomeMetrics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTeamCurrency } from "@/hooks/useTeamCurrency";
 
 interface Props {
   metrics?: HomeMetrics;
@@ -9,6 +11,8 @@ interface Props {
 }
 
 export const PaymentsOverviewCard = ({ metrics, isLoading }: Props) => {
+  const { profile } = useAuth();
+  const { symbol } = useTeamCurrency(profile?.team_id);
   const total = metrics?.payingCustomers ?? 0;
   const revenue = metrics?.totalRevenue ?? 0;
   const annual = revenue * 12;
@@ -39,8 +43,8 @@ export const PaymentsOverviewCard = ({ metrics, isLoading }: Props) => {
             <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Monthly Revenue (est.)</p>
-                <p className="text-2xl font-bold">${revenue.toFixed(0)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">${annual.toFixed(0)}/year projected</p>
+                <p className="text-2xl font-bold">{symbol}{revenue.toFixed(0)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{symbol}{annual.toFixed(0)}/year projected</p>
               </div>
               <TrendingUp className="h-8 w-8 text-emerald-500/40" />
             </div>
