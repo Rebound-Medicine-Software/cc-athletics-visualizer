@@ -487,6 +487,30 @@ export type Database = {
         }
         Relationships: []
       }
+      login_events: {
+        Row: {
+          created_at: string
+          id: string
+          role: string | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string | null
@@ -706,6 +730,42 @@ export type Database = {
           logo?: string | null
           region?: string | null
           "Team Name"?: string
+        }
+        Relationships: []
+      }
+      social_engagement_snapshots: {
+        Row: {
+          engagement: number | null
+          fetched_at: string
+          followers: number | null
+          id: string
+          impressions: number | null
+          platform: string
+          reach: number | null
+          recent_posts: Json | null
+          team_id: string | null
+        }
+        Insert: {
+          engagement?: number | null
+          fetched_at?: string
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          platform: string
+          reach?: number | null
+          recent_posts?: Json | null
+          team_id?: string | null
+        }
+        Update: {
+          engagement?: number | null
+          fetched_at?: string
+          followers?: number | null
+          id?: string
+          impressions?: number | null
+          platform?: string
+          reach?: number | null
+          recent_posts?: Json | null
+          team_id?: string | null
         }
         Relationships: []
       }

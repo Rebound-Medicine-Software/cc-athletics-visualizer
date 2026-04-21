@@ -216,6 +216,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session?.user) {
           setTimeout(() => fetchProfile(session.user.id), 0);
+          // Record login event (fire and forget, only on actual sign-in events)
+          if (event === 'SIGNED_IN') {
+            setTimeout(async () => {
+              try {
+                const { data: prof } = await supabase
+                  .from('profiles')
+                  .select('team_id, role')
+                  .eq('user_id', session.user.id)
+                  .maybeSingle();
+                await supabase.from('login_events').insert({
+                  user_id: session.user.id,
+                  team_id: prof?.team_id ?? null,
+                  role: prof?.role ?? null,
+                });
+              } catch (e) {
+                console.warn('Failed to record login event', e);
+              }
+            }, 100);
+          }
         } else {
           setProfile(null);
           setTeamBranding(null);
