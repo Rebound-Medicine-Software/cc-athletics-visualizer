@@ -10,6 +10,7 @@ import { EliteComparison } from "./EliteComparison";
 import { LiveDataSection } from "./LiveDataSection";
 import { BookingCalendar } from "./BookingCalendar";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
+import { HomeOverview } from "./home/HomeOverview";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -86,6 +87,8 @@ export const DashboardContent = ({
   // Render different sections based on activeSection
   const renderContent = () => {
     switch (activeSection) {
+      case "home":
+        return <HomeOverview />;
       case "live-data":
         return (
           <LiveDataSection
