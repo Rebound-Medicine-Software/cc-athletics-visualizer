@@ -217,7 +217,11 @@ const Auth = () => {
       if (error) { setError(error.message); return; }
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('*, created_by:created_by(*)').eq('user_id', user.id).single();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
         if (!profile) { await supabase.auth.signOut(); setError("Your account profile has been removed. Please contact your organization or sign up again."); return; }
         if ((profile.role === 'practitioner' || profile.role === 'client') && !profile.created_by) { await supabase.auth.signOut(); setError("Your Organization account has been removed. Please sign up again to continue."); return; }
         const isClinicianPortal = userRole === 'clinician';
