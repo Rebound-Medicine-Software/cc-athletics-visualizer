@@ -628,6 +628,7 @@ export const AthleteCredentialsTab = () => {
       const { data, error } = await supabase.functions.invoke('send-pingram-email', {
         body: {
           templateId: 'send_consent_email',
+          type: 'email_compose_preview',
           to: { email: athlete.email, id: athlete.email },
           parameters: {
             athlete_name: athlete.name,
