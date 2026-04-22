@@ -183,19 +183,11 @@ const handler = async (req: Request): Promise<Response> => {
         }
       });
 
-      console.log('NotificationAPI response:', JSON.stringify(notificationResponse, null, 2));
-      
-      if (notificationResponse && notificationResponse.data) {
-        console.log('Practitioner invite sent successfully via NotificationAPI');
-      } else {
-        console.warn('NotificationAPI response was empty or undefined');
-      }
+      // Avoid JSON.stringify on the SDK response (circular references in HttpsClientRequest)
+      console.log('NotificationAPI send completed (response received)');
     } catch (emailError: any) {
-      console.error('NotificationAPI error:', emailError);
-      console.error('NotificationAPI error details:', emailError.message);
-      if (emailError.stack) {
-        console.error('NotificationAPI error stack:', emailError.stack);
-      }
+      // Log only safe primitives to avoid circular structure crashes
+      console.error('NotificationAPI error message:', emailError?.message ?? String(emailError));
       // Don't fail the entire request if email fails - just log and continue
     }
 
