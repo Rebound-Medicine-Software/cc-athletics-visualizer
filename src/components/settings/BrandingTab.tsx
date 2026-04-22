@@ -216,6 +216,7 @@ export const BrandingTab = () => {
         <BrandingForm
           brandingForm={brandingForm}
           setBrandingForm={setBrandingForm}
+          onLogoUpload={setPendingLogoFile}
         />
 
         <div className="flex justify-end">
