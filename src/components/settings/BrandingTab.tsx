@@ -12,7 +12,8 @@ export const BrandingTab = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [teamBranding, setTeamBranding] = useState<any>(null);
-  
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+
   const [brandingForm, setBrandingForm] = useState({
     name: '',
     logo_url: '',
@@ -31,7 +32,7 @@ export const BrandingTab = () => {
       console.log('No team_id found for profile:', profile);
       return;
     }
-    
+
     try {
       console.log('Fetching team branding for team_id:', profile.team_id);
       const { data, error } = await supabase
@@ -48,6 +49,7 @@ export const BrandingTab = () => {
       if (data) {
         console.log('Found team branding data:', data);
         setTeamBranding(data);
+        setPendingLogoFile(null);
         setBrandingForm({
           name: data.name || '',
           logo_url: data.logo_url || '',
@@ -62,6 +64,49 @@ export const BrandingTab = () => {
     }
   };
 
+  const uploadBrandLogo = async (): Promise<string> => {
+    const needsUpload = Boolean(pendingLogoFile) || brandingForm.logo_url.startsWith('data:');
+
+    if (!needsUpload) {
+      return brandingForm.logo_url;
+    }
+
+    let uploadSource: Blob;
+    let contentType = pendingLogoFile?.type || 'image/png';
+    let extension = pendingLogoFile?.name.split('.').pop()?.toLowerCase() || 'png';
+
+    if (pendingLogoFile) {
+      uploadSource = pendingLogoFile;
+    } else {
+      const response = await fetch(brandingForm.logo_url);
+      uploadSource = await response.blob();
+      contentType = uploadSource.type || contentType;
+      extension = contentType.split('/')[1] || extension;
+    }
+
+    const safeTeamName = (brandingForm.name || 'team_logo')
+      .replace(/[^a-z0-9]+/gi, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase();
+
+    const fileName = `team_branding/${profile?.team_id}/${safeTeamName || 'team_logo'}_${Date.now()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('athlete-avatars')
+      .upload(fileName, uploadSource, {
+        contentType,
+        upsert: true,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from('athlete-avatars')
+      .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
+  };
+
   const handleSave = async () => {
     if (!profile?.team_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'No team associated with your account' });
@@ -70,11 +115,13 @@ export const BrandingTab = () => {
 
     setLoading(true);
     try {
+      const uploadedLogoUrl = await uploadBrandLogo();
+
       const { error } = await supabase
         .from('teams')
         .update({
           name: brandingForm.name,
-          logo_url: brandingForm.logo_url,
+          logo_url: uploadedLogoUrl,
           primary_color: brandingForm.primaryColor,
           secondary_color: brandingForm.secondaryColor,
           accent_color: brandingForm.accentColor,
@@ -83,6 +130,10 @@ export const BrandingTab = () => {
         .eq('id', profile.team_id);
 
       if (error) throw error;
+
+      setBrandingForm(prev => ({ ...prev, logo_url: uploadedLogoUrl }));
+      setPendingLogoFile(null);
+      setTeamBranding((prev: any) => prev ? { ...prev, logo_url: uploadedLogoUrl } : prev);
 
       // Apply new branding immediately using hex to HSL conversion
       const root = document.documentElement;
@@ -121,13 +172,13 @@ export const BrandingTab = () => {
         root.style.setProperty('--primary', hsl);
         root.style.setProperty('--team-primary', hsl);
       }
-      
+
       if (brandingForm.secondaryColor) {
         const hsl = hexToHsl(brandingForm.secondaryColor);
         root.style.setProperty('--secondary', hsl);
         root.style.setProperty('--team-secondary', hsl);
       }
-      
+
       if (brandingForm.accentColor) {
         const hsl = hexToHsl(brandingForm.accentColor);
         root.style.setProperty('--accent', hsl);
@@ -165,6 +216,7 @@ export const BrandingTab = () => {
         <BrandingForm
           brandingForm={brandingForm}
           setBrandingForm={setBrandingForm}
+          onLogoUpload={setPendingLogoFile}
         />
 
         <div className="flex justify-end">
