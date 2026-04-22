@@ -623,25 +623,25 @@ export const AthleteCredentialsTab = () => {
         .single();
 
       const siteUrl = window.location.origin;
+      const consentUrl = `${siteUrl}/consent?token=${athlete.consent_token}`;
 
-      const { data, error } = await supabase.functions.invoke('send-consent-email', {
+      const { data, error } = await supabase.functions.invoke('send-pingram-email', {
         body: {
-          athleteId: athlete.id,
-          athleteEmail: athlete.email,
-          athleteName: athlete.name,
-          organisationName: team?.name || 'Your Organisation',
-          organisationLogo: team?.logo_url || '',
-          consentToken: athlete.consent_token,
-          loginPassword: athlete.password_hash,
-          siteUrl,
+          templateId: 'send_consent_email',
+          to: { email: athlete.email, id: athlete.email },
+          parameters: {
+            athlete_name: athlete.name,
+            athlete_email: athlete.email,
+            organisation_name: team?.name || 'Your Organisation',
+            organisation_logo: team?.logo_url || '',
+            login_password: athlete.password_hash,
+            consent_url: consentUrl,
+          },
         },
       });
 
       if (error) throw error;
-      if (!data?.ok) {
-        const details = Array.isArray(data?.details) ? ` (${data.details.join(' | ')})` : '';
-        throw new Error((data?.error || 'Consent email was not sent') + details);
-      }
+      if (data?.error) throw new Error(data.error);
 
       toast.success(`Consent email sent to ${athlete.email}`);
     } catch (err: any) {
