@@ -634,7 +634,7 @@ export const AthleteCredentialsTab = () => {
             athlete_name: athlete.name,
             athlete_email: athlete.email,
             organisation_name: team?.name || 'Your Organisation',
-            organisation_logo: team?.logo_url || '',
+            organisation_logo: team?.logo_url || `${siteUrl}/nexushub-logo.svg`,
             login_password: athlete.password_hash,
             consent_url: consentUrl,
           },
