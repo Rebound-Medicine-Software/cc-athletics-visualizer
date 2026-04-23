@@ -9,23 +9,27 @@ interface Props {
   metrics?: HomeMetrics;
   isLoading: boolean;
   isSuperAdmin: boolean;
+  isPractitioner?: boolean;
 }
 
-export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin }: Props) => {
+export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner }: Props) => {
   const { profile } = useAuth();
   const { symbol } = useTeamCurrency(profile?.team_id);
-  const cards = [
+  const allCards = [
     ...(isSuperAdmin
-      ? [{ icon: Building2, label: "Active Organisations", value: metrics?.activeOrgLogins30d, sub: `${metrics?.totalOrganisations ?? 0} total`, color: "text-blue-600" }]
+      ? [{ id: "orgs", icon: Building2, label: "Active Organisations", value: metrics?.activeOrgLogins30d, sub: `${metrics?.totalOrganisations ?? 0} total`, color: "text-blue-600" }]
       : []),
-    { icon: Users, label: "Practitioners", value: metrics?.practitionerCount, sub: `${metrics?.practitionerLogins7d ?? 0} active this week`, color: "text-indigo-600" },
-    { icon: UserCheck, label: "Patients / Clients", value: metrics?.patientCount, sub: `${metrics?.patientLogins7d ?? 0} active this week`, color: "text-emerald-600" },
-    { icon: CreditCard, label: "Paying Customers", value: metrics?.payingCustomers, sub: `${symbol}${(metrics?.totalRevenue ?? 0).toFixed(0)}/mo`, color: "text-amber-600" },
-    { icon: Activity, label: "Tests This Week", value: metrics?.testsThisWeek, sub: `${metrics?.totalAthletes ?? 0} athletes total`, color: "text-purple-600" },
-    { icon: Calendar, label: "Upcoming Bookings", value: metrics?.upcomingBookings, sub: "Next 30 days", color: "text-rose-600" },
-    { icon: FileCheck, label: "Consents Signed", value: metrics?.consentSigned, sub: `${metrics?.consentPending ?? 0} pending`, color: "text-teal-600" },
-    { icon: TrendingUp, label: "Org Logins (7d)", value: metrics?.activeOrgLogins7d, sub: "Total session count", color: "text-cyan-600" },
+    { id: "practitioners", icon: Users, label: "Practitioners", value: metrics?.practitionerCount, sub: `${metrics?.practitionerLogins7d ?? 0} active this week`, color: "text-indigo-600" },
+    { id: "patients", icon: UserCheck, label: "Patients / Clients", value: metrics?.patientCount, sub: `${metrics?.patientLogins7d ?? 0} active this week`, color: "text-emerald-600" },
+    { id: "paying", icon: CreditCard, label: "Paying Customers", value: metrics?.payingCustomers, sub: `${symbol}${(metrics?.totalRevenue ?? 0).toFixed(0)}/mo`, color: "text-amber-600" },
+    { id: "tests", icon: Activity, label: "Tests This Week", value: metrics?.testsThisWeek, sub: `${metrics?.totalAthletes ?? 0} athletes total`, color: "text-purple-600" },
+    { id: "bookings", icon: Calendar, label: "Upcoming Bookings", value: metrics?.upcomingBookings, sub: "Next 30 days", color: "text-rose-600" },
+    { id: "consents", icon: FileCheck, label: "Consents Signed", value: metrics?.consentSigned, sub: `${metrics?.consentPending ?? 0} pending`, color: "text-teal-600" },
+    { id: "logins", icon: TrendingUp, label: "Org Logins (7d)", value: metrics?.activeOrgLogins7d, sub: "Total session count", color: "text-cyan-600" },
   ];
+
+  const practitionerAllowed = new Set(["patients", "tests", "bookings", "consents"]);
+  const cards = isPractitioner ? allCards.filter(c => practitionerAllowed.has(c.id)) : allCards;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
