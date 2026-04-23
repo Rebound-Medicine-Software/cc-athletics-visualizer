@@ -67,7 +67,7 @@ const AdminLogin = ({ onLoginSuccess }: AdminLoginProps) => {
     setError('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+      const { data, error } = await supabase.functions.invoke('send-password-reset-pingram', {
         body: { email }
       });
 
