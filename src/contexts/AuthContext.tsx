@@ -91,8 +91,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await supabase.auth.signOut();
           return;
         }
+
+        const normalizedProfile = {
+          ...profileData,
+          role: profileData.role === 'practitioner' ? 'clinician' : profileData.role,
+        } as UserProfile;
         
-        setProfile(profileData as UserProfile);
+        setProfile(normalizedProfile);
 
         // Fetch team branding if user has a team
         if (profileData.team_id) {
