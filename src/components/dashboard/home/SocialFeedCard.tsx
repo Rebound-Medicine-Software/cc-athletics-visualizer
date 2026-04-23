@@ -2,7 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Facebook, Instagram, Settings } from "lucide-react";
 
-export const SocialFeedCard = () => {
+interface SocialFeedCardProps {
+  viewOnly?: boolean;
+}
+
+export const SocialFeedCard = ({ viewOnly = false }: SocialFeedCardProps) => {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -25,13 +29,22 @@ export const SocialFeedCard = () => {
           <p className="text-xs text-muted-foreground mb-4 max-w-xs">
             See your latest Facebook & Instagram posts with reach, impressions, likes and comments.
           </p>
-          <Button variant="outline" size="sm" disabled>
-            <Settings className="h-3.5 w-3.5 mr-2" />
-            Setup pending
-          </Button>
-          <p className="text-[10px] text-muted-foreground mt-3 max-w-xs">
-            Add <code className="bg-muted px-1 rounded">META_PAGE_ACCESS_TOKEN</code>, <code className="bg-muted px-1 rounded">META_PAGE_ID</code> and <code className="bg-muted px-1 rounded">META_IG_BUSINESS_ID</code> in Supabase secrets to enable.
-          </p>
+          {!viewOnly && (
+            <>
+              <Button variant="outline" size="sm" disabled>
+                <Settings className="h-3.5 w-3.5 mr-2" />
+                Setup pending
+              </Button>
+              <p className="text-[10px] text-muted-foreground mt-3 max-w-xs">
+                Add <code className="bg-muted px-1 rounded">META_PAGE_ACCESS_TOKEN</code>, <code className="bg-muted px-1 rounded">META_PAGE_ID</code> and <code className="bg-muted px-1 rounded">META_IG_BUSINESS_ID</code> in Supabase secrets to enable.
+              </p>
+            </>
+          )}
+          {viewOnly && (
+            <p className="text-[11px] text-muted-foreground mt-2 max-w-xs">
+              View-only feed. Once connected, latest posts will appear here.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -11,6 +11,7 @@ export const HomeOverview = () => {
   const teamId = profile?.team_id ?? null;
   const role = profile?.role ?? null;
   const isSuperAdmin = role === "super_admin";
+  const isPractitioner = role === "practitioner";
 
   const { data: metrics, isLoading: metricsLoading } = useHomeMetrics(teamId, role);
   const { data: practitioners, isLoading: pracLoading } = usePractitionerEngagement(teamId, role);
@@ -31,19 +32,25 @@ export const HomeOverview = () => {
       </div>
 
       {/* KPI Cards */}
-      <HomeKPICards metrics={metrics} isLoading={metricsLoading} isSuperAdmin={isSuperAdmin} />
+      <HomeKPICards metrics={metrics} isLoading={metricsLoading} isSuperAdmin={isSuperAdmin} isPractitioner={isPractitioner} />
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 space-y-4">
-          <PractitionerEngagementCard data={practitioners} isLoading={pracLoading} />
-          <RecentActivityCard data={activity} isLoading={activityLoading} />
+      {isPractitioner ? (
+        <div className="grid grid-cols-1 gap-4">
+          <SocialFeedCard viewOnly />
         </div>
-        <div className="space-y-4">
-          <PaymentsOverviewCard metrics={metrics} isLoading={metricsLoading} />
-          <SocialFeedCard />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 space-y-4">
+            <PractitionerEngagementCard data={practitioners} isLoading={pracLoading} />
+            <RecentActivityCard data={activity} isLoading={activityLoading} />
+          </div>
+          <div className="space-y-4">
+            <PaymentsOverviewCard metrics={metrics} isLoading={metricsLoading} />
+            <SocialFeedCard />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
