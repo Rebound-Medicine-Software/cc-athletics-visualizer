@@ -11,7 +11,7 @@ export const HomeOverview = () => {
   const teamId = profile?.team_id ?? null;
   const role = profile?.role ?? null;
   const isSuperAdmin = role === "super_admin";
-  const isPractitioner = role === "clinician";
+  const isPractitioner = role === "practitioner" || role === "clinician";
 
   const { data: metrics, isLoading: metricsLoading } = useHomeMetrics(teamId, role);
   const { data: practitioners, isLoading: pracLoading } = usePractitionerEngagement(teamId, role);
