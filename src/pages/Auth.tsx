@@ -178,7 +178,7 @@ const Auth = () => {
     if (!resetEmail) { setError("Please enter your email address"); return; }
     setIsLoading(true); setError("");
     try {
-      const { error } = await supabase.functions.invoke('send-password-reset', { body: { email: resetEmail } });
+      const { error } = await supabase.functions.invoke('send-password-reset-pingram', { body: { email: resetEmail } });
       if (error) { setError(error.message); return; }
       setResetMessage("Password reset email sent! Check your inbox.");
       setResetEmail(""); setShowForgotModal(null);
