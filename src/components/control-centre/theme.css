@@ -1,0 +1,228 @@
+/* NEXUS HUB — Super Admin Control Centre scoped theme.
+   Applied via .control-centre wrapper so it does NOT leak into other pages. */
+
+.control-centre {
+  /* Charcoal base + NEXUS HUB navy/gold accents */
+  --cc-bg: 222 30% 6%;
+  --cc-bg-elev: 222 28% 9%;
+  --cc-surface: 222 25% 12%;
+  --cc-surface-2: 222 22% 16%;
+  --cc-border: 222 20% 20%;
+  --cc-border-strong: 222 20% 28%;
+  --cc-fg: 210 40% 96%;
+  --cc-fg-muted: 215 16% 65%;
+  --cc-fg-dim: 215 14% 45%;
+
+  --cc-navy: 217 60% 35%;        /* deep navy */
+  --cc-navy-glow: 215 75% 55%;   /* electric navy/blue */
+  --cc-gold: 43 89% 58%;         /* nexus gold */
+  --cc-gold-soft: 43 70% 70%;
+
+  --cc-success: 142 70% 48%;
+  --cc-warning: 38 92% 55%;
+  --cc-danger: 0 78% 60%;
+  --cc-info: 199 89% 60%;
+
+  --cc-grad-primary: linear-gradient(135deg, hsl(var(--cc-navy-glow)) 0%, hsl(var(--cc-navy)) 100%);
+  --cc-grad-gold: linear-gradient(135deg, hsl(var(--cc-gold)) 0%, hsl(43 89% 45%) 100%);
+  --cc-grad-bg: radial-gradient(at 0% 0%, hsl(217 60% 18% / 0.5) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, hsl(43 70% 22% / 0.18) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, hsl(217 60% 18% / 0.35) 0px, transparent 50%);
+
+  background-color: hsl(var(--cc-bg));
+  background-image: var(--cc-grad-bg);
+  color: hsl(var(--cc-fg));
+  font-family: 'Circular', 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Subtle grid overlay */
+.control-centre::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(hsl(var(--cc-border) / 0.25) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--cc-border) / 0.25) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+.control-centre > * { position: relative; z-index: 1; }
+
+/* Glassmorphism card */
+.cc-glass {
+  background: linear-gradient(180deg, hsl(var(--cc-surface) / 0.7) 0%, hsl(var(--cc-bg-elev) / 0.65) 100%);
+  border: 1px solid hsl(var(--cc-border) / 0.8);
+  border-radius: 14px;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.04) inset,
+    0 20px 40px -20px hsl(0 0% 0% / 0.5);
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.cc-glass:hover {
+  border-color: hsl(var(--cc-navy-glow) / 0.4);
+}
+
+.cc-glass-strong {
+  background: hsl(var(--cc-surface) / 0.92);
+  border: 1px solid hsl(var(--cc-border-strong));
+  border-radius: 14px;
+  backdrop-filter: blur(20px);
+}
+
+/* Sidebar */
+.cc-sidebar {
+  background: linear-gradient(180deg, hsl(222 35% 7%) 0%, hsl(222 32% 5%) 100%);
+  border-right: 1px solid hsl(var(--cc-border));
+}
+
+.cc-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: hsl(var(--cc-fg-muted));
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 180ms ease;
+  position: relative;
+}
+.cc-nav-item:hover {
+  background: hsl(var(--cc-surface) / 0.6);
+  color: hsl(var(--cc-fg));
+}
+.cc-nav-item.active {
+  background: linear-gradient(90deg, hsl(var(--cc-navy) / 0.35), hsl(var(--cc-navy) / 0.05));
+  color: hsl(var(--cc-gold));
+  border: 1px solid hsl(var(--cc-navy-glow) / 0.4);
+  box-shadow: 0 0 24px -8px hsl(var(--cc-navy-glow) / 0.5);
+}
+.cc-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -1px; top: 8px; bottom: 8px;
+  width: 3px;
+  background: hsl(var(--cc-gold));
+  border-radius: 2px;
+}
+
+/* Top bar */
+.cc-topbar {
+  background: hsl(var(--cc-bg-elev) / 0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid hsl(var(--cc-border));
+}
+
+/* Inputs */
+.cc-input {
+  background: hsl(var(--cc-surface) / 0.6);
+  border: 1px solid hsl(var(--cc-border));
+  color: hsl(var(--cc-fg));
+  border-radius: 10px;
+  padding: 9px 12px 9px 38px;
+  font-size: 13.5px;
+  width: 100%;
+  transition: all 180ms ease;
+}
+.cc-input:focus {
+  outline: none;
+  border-color: hsl(var(--cc-navy-glow) / 0.6);
+  box-shadow: 0 0 0 3px hsl(var(--cc-navy-glow) / 0.15);
+}
+.cc-input::placeholder { color: hsl(var(--cc-fg-dim)); }
+
+/* Badges */
+.cc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  letter-spacing: 0.02em;
+}
+.cc-badge-success { background: hsl(var(--cc-success) / 0.12); color: hsl(var(--cc-success)); border-color: hsl(var(--cc-success) / 0.3); }
+.cc-badge-warning { background: hsl(var(--cc-warning) / 0.12); color: hsl(var(--cc-warning)); border-color: hsl(var(--cc-warning) / 0.3); }
+.cc-badge-danger  { background: hsl(var(--cc-danger) / 0.12);  color: hsl(var(--cc-danger));  border-color: hsl(var(--cc-danger) / 0.3); }
+.cc-badge-info    { background: hsl(var(--cc-info) / 0.12);    color: hsl(var(--cc-info));    border-color: hsl(var(--cc-info) / 0.3); }
+.cc-badge-gold    { background: hsl(var(--cc-gold) / 0.12);    color: hsl(var(--cc-gold));    border-color: hsl(var(--cc-gold) / 0.3); }
+.cc-badge-muted   { background: hsl(var(--cc-surface-2));      color: hsl(var(--cc-fg-muted)); border-color: hsl(var(--cc-border)); }
+
+/* Button */
+.cc-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 8px;
+  font-size: 12.5px; font-weight: 600;
+  border: 1px solid hsl(var(--cc-border));
+  background: hsl(var(--cc-surface) / 0.7);
+  color: hsl(var(--cc-fg));
+  transition: all 160ms ease;
+  cursor: pointer;
+}
+.cc-btn:hover { background: hsl(var(--cc-surface-2)); border-color: hsl(var(--cc-navy-glow) / 0.4); }
+.cc-btn-primary { background: var(--cc-grad-primary); border-color: hsl(var(--cc-navy-glow) / 0.6); color: hsl(0 0% 100%); }
+.cc-btn-primary:hover { box-shadow: 0 0 24px -6px hsl(var(--cc-navy-glow) / 0.6); }
+.cc-btn-gold { background: var(--cc-grad-gold); border-color: hsl(var(--cc-gold) / 0.7); color: hsl(222 30% 8%); }
+.cc-btn-danger { background: hsl(var(--cc-danger) / 0.15); border-color: hsl(var(--cc-danger) / 0.4); color: hsl(var(--cc-danger)); }
+
+/* Table */
+.cc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cc-table thead th {
+  text-align: left;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: hsl(var(--cc-fg-dim));
+  padding: 12px 14px;
+  border-bottom: 1px solid hsl(var(--cc-border));
+  background: hsl(var(--cc-bg-elev) / 0.6);
+  position: sticky; top: 0; z-index: 1;
+}
+.cc-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid hsl(var(--cc-border) / 0.5);
+  color: hsl(var(--cc-fg));
+}
+.cc-table tbody tr:hover { background: hsl(var(--cc-surface) / 0.5); }
+
+/* Metric value */
+.cc-metric-value {
+  font-size: 26px; font-weight: 700;
+  background: linear-gradient(135deg, hsl(var(--cc-fg)) 0%, hsl(var(--cc-fg-muted)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* Pulse dot */
+.cc-pulse {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: hsl(var(--cc-success));
+  box-shadow: 0 0 0 0 hsl(var(--cc-success) / 0.7);
+  animation: cc-pulse 2s infinite;
+}
+@keyframes cc-pulse {
+  0% { box-shadow: 0 0 0 0 hsl(var(--cc-success) / 0.6); }
+  70% { box-shadow: 0 0 0 8px hsl(var(--cc-success) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--cc-success) / 0); }
+}
+
+/* Scrollbar */
+.control-centre ::-webkit-scrollbar { width: 8px; height: 8px; }
+.control-centre ::-webkit-scrollbar-track { background: transparent; }
+.control-centre ::-webkit-scrollbar-thumb { background: hsl(var(--cc-border-strong)); border-radius: 4px; }
+.control-centre ::-webkit-scrollbar-thumb:hover { background: hsl(var(--cc-navy-glow) / 0.5); }
+
+/* Section heading */
+.cc-h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: hsl(var(--cc-fg)); }
+.cc-h2 { font-size: 14px; font-weight: 600; color: hsl(var(--cc-fg)); }
+.cc-subtle { color: hsl(var(--cc-fg-muted)); font-size: 12.5px; }

@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import { SuperAdminDashboard } from "./components/admin/SuperAdminDashboard";
+import ControlCentre from "./components/control-centre/ControlCentre";
 
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -35,7 +36,9 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/Dashboard(Client)" element={<ClientDashboard />} />
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin(Dashboard)" element={<SuperAdminDashboard />} />
+            <Route path="/admin(Dashboard)" element={<ControlCentre />} />
+            <Route path="/control-centre" element={<ControlCentre />} />
+            <Route path="/admin(Dashboard)/legacy" element={<SuperAdminDashboard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings(Consumer1)" element={<Settings />} />
             <Route path="/consent" element={<AthleteConsent />} />
