@@ -125,6 +125,96 @@ export type Database = {
         }
         Relationships: []
       }
+      benchmark_data_warehouse: {
+        Row: {
+          age_group: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          is_elite: boolean | null
+          metric_name: string | null
+          metric_value: number | null
+          region: string | null
+          source_test_id: string | null
+          sport: string | null
+          team_id: string | null
+          test_type: string | null
+          weight_category: string | null
+        }
+        Insert: {
+          age_group?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_elite?: boolean | null
+          metric_name?: string | null
+          metric_value?: number | null
+          region?: string | null
+          source_test_id?: string | null
+          sport?: string | null
+          team_id?: string | null
+          test_type?: string | null
+          weight_category?: string | null
+        }
+        Update: {
+          age_group?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          is_elite?: boolean | null
+          metric_name?: string | null
+          metric_value?: number | null
+          region?: string | null
+          source_test_id?: string | null
+          sport?: string | null
+          team_id?: string | null
+          test_type?: string | null
+          weight_category?: string | null
+        }
+        Relationships: []
+      }
+      billing_subscriptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          monthly_value: number | null
+          payment_status: string | null
+          renewal_date: string | null
+          seat_count: number | null
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          team_id: string
+          tier_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          monthly_value?: number | null
+          payment_status?: string | null
+          renewal_date?: string | null
+          seat_count?: number | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          team_id: string
+          tier_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          monthly_value?: number | null
+          payment_status?: string | null
+          renewal_date?: string | null
+          seat_count?: number | null
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          team_id?: string
+          tier_name?: string | null
+        }
+        Relationships: []
+      }
       booking_notes: {
         Row: {
           cal_uid: string
@@ -487,6 +577,39 @@ export type Database = {
         }
         Relationships: []
       }
+      integration_health_logs: {
+        Row: {
+          failure_reason: string | null
+          id: string
+          integration_name: string
+          latency_ms: number | null
+          logged_at: string | null
+          payload: Json | null
+          status: string | null
+          team_id: string | null
+        }
+        Insert: {
+          failure_reason?: string | null
+          id?: string
+          integration_name: string
+          latency_ms?: number | null
+          logged_at?: string | null
+          payload?: Json | null
+          status?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          failure_reason?: string | null
+          id?: string
+          integration_name?: string
+          latency_ms?: number | null
+          logged_at?: string | null
+          payload?: Json | null
+          status?: string | null
+          team_id?: string | null
+        }
+        Relationships: []
+      }
       login_events: {
         Row: {
           created_at: string
@@ -561,6 +684,138 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organisation_health_metrics: {
+        Row: {
+          ai_requests: number | null
+          api_failure_count: number | null
+          athlete_count: number | null
+          bookings_count: number | null
+          churn_risk_score: number | null
+          consent_completion_rate: number | null
+          engagement_score: number | null
+          id: string
+          login_count: number | null
+          practitioner_count: number | null
+          reports_generated: number | null
+          revenue: number | null
+          snapshot_date: string
+          team_id: string
+          tests_logged: number | null
+        }
+        Insert: {
+          ai_requests?: number | null
+          api_failure_count?: number | null
+          athlete_count?: number | null
+          bookings_count?: number | null
+          churn_risk_score?: number | null
+          consent_completion_rate?: number | null
+          engagement_score?: number | null
+          id?: string
+          login_count?: number | null
+          practitioner_count?: number | null
+          reports_generated?: number | null
+          revenue?: number | null
+          snapshot_date: string
+          team_id: string
+          tests_logged?: number | null
+        }
+        Update: {
+          ai_requests?: number | null
+          api_failure_count?: number | null
+          athlete_count?: number | null
+          bookings_count?: number | null
+          churn_risk_score?: number | null
+          consent_completion_rate?: number | null
+          engagement_score?: number | null
+          id?: string
+          login_count?: number | null
+          practitioner_count?: number | null
+          reports_generated?: number | null
+          revenue?: number | null
+          snapshot_date?: string
+          team_id?: string
+          tests_logged?: number | null
+        }
+        Relationships: []
+      }
+      platform_activity_logs: {
+        Row: {
+          athlete_id: string | null
+          created_at: string | null
+          event_source: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          organisation_name: string | null
+          severity: string | null
+          team_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          athlete_id?: string | null
+          created_at?: string | null
+          event_source?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          organisation_name?: string | null
+          severity?: string | null
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          athlete_id?: string | null
+          created_at?: string | null
+          event_source?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          organisation_name?: string | null
+          severity?: string | null
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      platform_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_resolved: boolean | null
+          related_record_id: string | null
+          resolved_by: string | null
+          severity: string
+          team_id: string | null
+          title: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          related_record_id?: string | null
+          resolved_by?: string | null
+          severity: string
+          team_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          related_record_id?: string | null
+          resolved_by?: string | null
+          severity?: string
+          team_id?: string | null
+          title?: string | null
+        }
+        Relationships: []
       }
       platform_metrics: {
         Row: {
@@ -769,6 +1024,36 @@ export type Database = {
         }
         Relationships: []
       }
+      super_admin_impersonation_logs: {
+        Row: {
+          ended_at: string | null
+          id: string
+          impersonated_user_id: string | null
+          reason: string | null
+          started_at: string | null
+          super_admin_id: string
+          team_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id?: string | null
+          reason?: string | null
+          started_at?: string | null
+          super_admin_id: string
+          team_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id?: string | null
+          reason?: string | null
+          started_at?: string | null
+          super_admin_id?: string
+          team_id?: string
+        }
+        Relationships: []
+      }
       super_admin_users: {
         Row: {
           auth_user_id: string
@@ -802,6 +1087,45 @@ export type Database = {
           last_login?: string | null
           permissions?: Json | null
           role?: string
+        }
+        Relationships: []
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          conversation: Json | null
+          created_at: string | null
+          id: string
+          opened_by: string | null
+          priority: string | null
+          status: string | null
+          subject: string | null
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          conversation?: Json | null
+          created_at?: string | null
+          id?: string
+          opened_by?: string | null
+          priority?: string | null
+          status?: string | null
+          subject?: string | null
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          conversation?: Json | null
+          created_at?: string | null
+          id?: string
+          opened_by?: string | null
+          priority?: string | null
+          status?: string | null
+          subject?: string | null
+          team_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
