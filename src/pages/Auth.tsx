@@ -229,7 +229,7 @@ const Auth = () => {
         if (isClinicianPortal && !['organisation', 'practitioner', 'super_admin'].includes(profile.role)) { await supabase.auth.signOut(); setError("Access denied. Your account role does not have access to the Clinician Portal."); return; }
         if (isPatientPortal && !['client', 'super_admin'].includes(profile.role)) { await supabase.auth.signOut(); setError("Access denied. Your account role does not have access to the Athlete/Patient Portal."); return; }
         toast.success("Login successful!");
-        if (profile.role === 'super_admin') { navigate('/dashboard'); }
+        if (profile.role === 'super_admin') { navigate('/control-centre'); }
         else if (profile.role === 'organisation') { navigate(profile.setup_completed ? '/dashboard' : '/setup'); }
         else if (profile.role === 'practitioner') { navigate('/dashboard'); }
         else if (profile.role === 'client') { navigate('/Dashboard(Client)'); }
