@@ -51,7 +51,7 @@ export const Organisations: React.FC = () => {
         <KpiCard label="MRR" value="$61.2k" delta={10.5} icon={DollarSign} accent="gold" />
       </div>
 
-      <DataTable<any>
+      <DataTable
         rows={rows.map((r, i) => ({
           ...r,
           tier: tiers[i % 3],

@@ -43,7 +43,7 @@ export const Practitioners: React.FC = () => {
         <AlertPanel title="Low Engagement Watchlist" alerts={lowEng} />
       </div>
 
-      <DataTable<any>
+      <DataTable
         rows={rows.map((r, i) => ({
           ...r,
           last_login: ['2h', '4d', '11h', '21d', '3d'][i % 5],

@@ -39,7 +39,7 @@ export const Athletes: React.FC = () => {
         <TrendBars data={ageData} dataKey="value" highlightIndex={2} />
       </div>
 
-      <DataTable<any>
+      <DataTable
         rows={rows.map((r, i) => ({
           ...r,
           practitioner: ['Dr. Hayes', 'Dr. Lopez', 'M. Bauer', 'C. Patel', 'L. Yamada'][i % 5],
