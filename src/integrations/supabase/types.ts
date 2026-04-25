@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       athletes: {
         Row: {
+          activity_status: string | null
           age: number | null
           avatar_url: string | null
           cc_athlete_id: string
@@ -30,13 +31,16 @@ export type Database = {
           gender: string | null
           height_cm: number | null
           id: string
+          last_test_at: string | null
           name: string
           password_hash: string | null
+          reports_sent_count: number | null
           team_id: string | null
           updated_at: string | null
           weight_kg: number | null
         }
         Insert: {
+          activity_status?: string | null
           age?: number | null
           avatar_url?: string | null
           cc_athlete_id: string
@@ -51,13 +55,16 @@ export type Database = {
           gender?: string | null
           height_cm?: number | null
           id?: string
+          last_test_at?: string | null
           name: string
           password_hash?: string | null
+          reports_sent_count?: number | null
           team_id?: string | null
           updated_at?: string | null
           weight_kg?: number | null
         }
         Update: {
+          activity_status?: string | null
           age?: number | null
           avatar_url?: string | null
           cc_athlete_id?: string
@@ -72,8 +79,10 @@ export type Database = {
           gender?: string | null
           height_cm?: number | null
           id?: string
+          last_test_at?: string | null
           name?: string
           password_hash?: string | null
+          reports_sent_count?: number | null
           team_id?: string | null
           updated_at?: string | null
           weight_kg?: number | null
@@ -266,33 +275,42 @@ export type Database = {
       bookings: {
         Row: {
           appointment_date: string
+          booking_source: string | null
           client_id: string | null
           created_at: string | null
+          failure_reason: string | null
           id: string
           notes: string | null
           status: string | null
+          sync_status: string | null
           team_id: string | null
           therapist_id: string | null
           updated_at: string | null
         }
         Insert: {
           appointment_date: string
+          booking_source?: string | null
           client_id?: string | null
           created_at?: string | null
+          failure_reason?: string | null
           id?: string
           notes?: string | null
           status?: string | null
+          sync_status?: string | null
           team_id?: string | null
           therapist_id?: string | null
           updated_at?: string | null
         }
         Update: {
           appointment_date?: string
+          booking_source?: string | null
           client_id?: string | null
           created_at?: string | null
+          failure_reason?: string | null
           id?: string
           notes?: string | null
           status?: string | null
+          sync_status?: string | null
           team_id?: string | null
           therapist_id?: string | null
           updated_at?: string | null
@@ -1134,72 +1152,99 @@ export type Database = {
           accent_color: string | null
           admin_id: string | null
           api_key: string | null
+          calcom_connected: boolean | null
+          cc_athletics_connected: boolean | null
           cc_team_id: string
+          churn_risk_score: number | null
           city: string | null
           country: string | null
           created_at: string | null
           creation_date: string | null
           font_family: string | null
           id: string
+          last_activity_at: string | null
           latitude: number | null
           location: string | null
           logo_url: string | null
           longitude: number | null
           name: string
+          notificationapi_connected: boolean | null
+          organisation_status: string | null
+          owner_user_id: string | null
           practitioner_count: number | null
           primary_color: string | null
           region: string | null
           secondary_color: string | null
           setup_data: Json | null
           stripe_account_id: string | null
+          subscription_status: string | null
+          tier_id: string | null
           updated_at: string | null
         }
         Insert: {
           accent_color?: string | null
           admin_id?: string | null
           api_key?: string | null
+          calcom_connected?: boolean | null
+          cc_athletics_connected?: boolean | null
           cc_team_id: string
+          churn_risk_score?: number | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
           font_family?: string | null
           id?: string
+          last_activity_at?: string | null
           latitude?: number | null
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
           name: string
+          notificationapi_connected?: boolean | null
+          organisation_status?: string | null
+          owner_user_id?: string | null
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
           secondary_color?: string | null
           setup_data?: Json | null
           stripe_account_id?: string | null
+          subscription_status?: string | null
+          tier_id?: string | null
           updated_at?: string | null
         }
         Update: {
           accent_color?: string | null
           admin_id?: string | null
           api_key?: string | null
+          calcom_connected?: boolean | null
+          cc_athletics_connected?: boolean | null
           cc_team_id?: string
+          churn_risk_score?: number | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           creation_date?: string | null
           font_family?: string | null
           id?: string
+          last_activity_at?: string | null
           latitude?: number | null
           location?: string | null
           logo_url?: string | null
           longitude?: number | null
           name?: string
+          notificationapi_connected?: boolean | null
+          organisation_status?: string | null
+          owner_user_id?: string | null
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
           secondary_color?: string | null
           setup_data?: Json | null
           stripe_account_id?: string | null
+          subscription_status?: string | null
+          tier_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
