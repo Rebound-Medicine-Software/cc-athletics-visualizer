@@ -1570,8 +1570,51 @@ export type Database = {
     }
     Functions: {
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      get_global_activity_feed: {
+        Args: { limit_count?: number }
+        Returns: {
+          athlete_id: string | null
+          created_at: string | null
+          event_source: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          organisation_name: string | null
+          severity: string | null
+          team_id: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "platform_activity_logs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      get_platform_alerts: {
+        Args: never
+        Returns: {
+          alert_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_resolved: boolean | null
+          related_record_id: string | null
+          resolved_by: string | null
+          severity: string
+          team_id: string | null
+          title: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "platform_alerts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_platform_kpis: { Args: never; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
     }
