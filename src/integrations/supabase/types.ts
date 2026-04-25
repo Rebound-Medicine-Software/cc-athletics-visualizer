@@ -1593,6 +1593,21 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      get_organisation_health: {
+        Args: never
+        Returns: {
+          athlete_count: number
+          churn_risk: number
+          last_activity: string
+          monthly_revenue: number
+          organisation_name: string
+          organisation_status: string
+          practitioner_count: number
+          subscription_status: string
+          team_id: string
+          tests_logged: number
+        }[]
+      }
       get_platform_alerts: {
         Args: never
         Returns: {
