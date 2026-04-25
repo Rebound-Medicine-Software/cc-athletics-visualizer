@@ -1200,8 +1200,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
