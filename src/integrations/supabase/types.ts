@@ -769,6 +769,42 @@ export type Database = {
         }
         Relationships: []
       }
+      super_admin_users: {
+        Row: {
+          auth_user_id: string
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          last_login: string | null
+          permissions: Json | null
+          role: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          permissions?: Json | null
+          role?: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          permissions?: Json | null
+          role?: string
+        }
+        Relationships: []
+      }
       teams: {
         Row: {
           accent_color: string | null
@@ -1166,6 +1202,7 @@ export type Database = {
     Functions: {
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       test_name_enum: "cmj" | "squat_jump" | "drop_jump" | "pogo_jump"
