@@ -9,25 +9,43 @@ interface Athlete {
   testing_dates: string;
 }
 
+/**
+ * Returns athletes from the canonical `athletes` table.
+ * Shape is normalised so existing consumers expecting
+ * { id, name, team, email, testing_dates } keep working.
+ *
+ * - `team` is resolved via the joined `teams.name` (text).
+ * - `testing_dates` is derived from `last_test_at` (timestamptz) — formatted as YYYY-MM-DD.
+ */
 export const useAthletes = () => {
   return useQuery({
     queryKey: ['athletes'],
     queryFn: async (): Promise<Athlete[]> => {
       console.log('Fetching athletes...');
-      
+
       const { data, error } = await supabase
-        .from('athletes_new')
-        .select('*');
+        .from('athletes')
+        .select('id, name, email, last_test_at, teams ( name )');
 
       if (error) {
         console.error('Error fetching athletes:', error);
         throw error;
       }
 
-      console.log(`Fetched ${data?.length || 0} athletes`);
-      return data || [];
+      const normalized: Athlete[] = (data ?? []).map((row: any) => ({
+        id: row.id,
+        name: row.name ?? '',
+        team: row.teams?.name ?? '',
+        email: row.email ?? '',
+        testing_dates: row.last_test_at
+          ? new Date(row.last_test_at).toISOString().split('T')[0]
+          : '',
+      }));
+
+      console.log(`Fetched ${normalized.length} athletes`);
+      return normalized;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 3,
   });
 };
