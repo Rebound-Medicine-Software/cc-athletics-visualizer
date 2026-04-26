@@ -134,26 +134,28 @@ export const SendReportsModal = () => {
     const fetchAthleteIds = async () => {
       try {
         setMappingLoading(true);
+        // Pull athletes from canonical `athletes` table, joining team name from `teams`
         const { data, error } = await supabase
-          .from("athletes_new")
-          .select("id,name,team");
+          .from("athletes")
+          .select("id, name, teams ( name )");
 
         if (error) {
-          console.error("Error fetching athletes_new:", error);
+          console.error("Error fetching athletes:", error);
           return;
         }
 
         const byKey: Record<string, string> = {};
         (data || []).forEach((athlete: any) => {
-          if (athlete?.name && athlete?.team && athlete?.id) {
-            const key = `${athlete.name}|||${athlete.team}`;
+          const teamName = athlete?.teams?.name;
+          if (athlete?.name && teamName && athlete?.id) {
+            const key = `${athlete.name}|||${teamName}`;
             byKey[key] = athlete.id;
           }
         });
 
         setAthleteIdByKey(byKey);
       } catch (error) {
-        console.error("Unexpected error fetching athletes_new:", error);
+        console.error("Unexpected error fetching athletes:", error);
       } finally {
         setMappingLoading(false);
       }
