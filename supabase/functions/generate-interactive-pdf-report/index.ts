@@ -48,37 +48,41 @@ serve(async (req) => {
     };
     
     if (athleteId || athleteKey) {
+      // Helper: normalise an athletes-table row (with joined teams.name) to the local shape
+      const normalise = (row: any) => ({
+        name: row.name,
+        team: row.teams?.name ?? '',
+        email: row.email,
+        testingDates: row.last_test_at
+          ? new Date(row.last_test_at).toISOString().split('T')[0]
+          : '01/01/2025 - 01/09/2025',
+      });
+
       if (athleteId) {
         const { data } = await supabaseClient
-          .from('athletes_new')
-          .select('*')
+          .from('athletes')
+          .select('id, name, email, last_test_at, teams ( name )')
           .eq('id', athleteId)
           .single();
         if (data) {
-          athleteData = {
-            name: data.name,
-            team: data.team,
-            email: data.email,
-            testingDates: data.testing_dates || "01/01/2025 - 01/09/2025"
-          };
+          athleteData = normalise(data);
         }
       } else if (athleteKey) {
-        // Try to resolve from athlete_key format "name-team"
+        // Resolve from athlete_key format "name-team": find by name then prefer team-name match
         const [name, team] = athleteKey.split('-');
-        const { data } = await supabaseClient
-          .from('athletes_new')
-          .select('*')
-          .ilike('name', name)
-          .ilike('team', team)
-          .limit(1)
-          .single();
+        const { data: candidates } = await supabaseClient
+          .from('athletes')
+          .select('id, name, email, last_test_at, team_id, teams ( name )')
+          .ilike('name', `%${name}%`)
+          .limit(10);
+
+        const data = (candidates || []).find((row: any) => {
+          const tn = row.teams?.name?.toLowerCase() ?? '';
+          return team ? tn.includes(team.toLowerCase()) : true;
+        }) || (candidates || [])[0];
+
         if (data) {
-          athleteData = {
-            name: data.name,
-            team: data.team,
-            email: data.email,
-            testingDates: data.testing_dates || "01/01/2025 - 01/09/2025"
-          };
+          athleteData = normalise(data);
           athleteId = data.id;
         }
       }
