@@ -286,31 +286,49 @@ Deno.serve(async (req) => {
       const nTeam = norm(team)
       console.log(`Parsed name='${name}', team='${team || '(none)'}' from identifier`)
 
-      // 1) Try to find an existing athlete in athletes_new using tokenized AND matching
-      let existingAthlete: { id?: string; name?: string; team?: string; email?: string } | null = null
+      // 1) Try to find an existing athlete in `athletes` (canonical) using tokenized AND matching.
+      //    Team name lives on `teams.name`; we join via team_id.
+      let existingAthlete:
+        | { id?: string; name?: string; email?: string; team_id?: string; team_name?: string }
+        | null = null
+
       const nameTokens = name.split(/[^a-zA-Z0-9]+/).filter(Boolean)
       const teamTokens = team ? team.split(/[^a-zA-Z0-9]+/).filter(Boolean) : []
+
       if (nameTokens.length) {
         let q = supabaseClient
-          .from('athletes_new')
-          .select('id,name,team,email')
+          .from('athletes')
+          .select('id, name, email, team_id, teams ( name )')
         nameTokens.forEach((t) => {
           q = q.ilike('name', `%${t}%`)
         })
-        teamTokens.forEach((t) => {
-          q = q.ilike('team', `%${t}%`)
-        })
-        const { data } = await q.limit(1).maybeSingle()
-        existingAthlete = data ?? null
-      }
+        const { data } = await q.limit(20)
 
+        const candidates = (data ?? []).map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          team_id: row.team_id,
+          team_name: row.teams?.name ?? '',
+        }))
+
+        // If a team was provided, prefer rows whose team name matches every team token
+        if (teamTokens.length) {
+          const matched = candidates.find((c) =>
+            teamTokens.every((t) => (c.team_name || '').toLowerCase().includes(t.toLowerCase()))
+          )
+          existingAthlete = matched ?? candidates[0] ?? null
+        } else {
+          existingAthlete = candidates[0] ?? null
+        }
+      }
 
       if (existingAthlete?.id) {
         athleteIdToUse = existingAthlete.id as string
-        console.log(`Found existing athlete in athletes_new: ${athleteIdToUse}`)
+        console.log(`Found existing athlete in athletes: ${athleteIdToUse}`)
       } else {
-        // 2) Look for athlete in test_data and create if found
-        console.log('Athlete not found in athletes_new, checking test_data...')
+        // 2) Look for athlete in test_data and create a stub in `athletes` if found.
+        console.log('Athlete not found in athletes, checking test_data...')
 
         let testDataAthlete: { athlete_name: string; team_name?: string } | null = null
         if (nameTokens.length) {
@@ -327,24 +345,38 @@ Deno.serve(async (req) => {
           testDataAthlete = data ?? null
         }
 
-
         if (testDataAthlete) {
           console.log(
             `Creating new athlete record for: ${testDataAthlete.athlete_name} - ${testDataAthlete.team_name || '(team unknown)'}`
           )
 
-          // Generate a placeholder email
+          // Resolve team_id by team_name (best-effort fuzzy match).
+          let resolvedTeamId: string | null = null
+          if (testDataAthlete.team_name) {
+            const { data: teamRow } = await supabaseClient
+              .from('teams')
+              .select('id')
+              .ilike('name', `%${testDataAthlete.team_name}%`)
+              .limit(1)
+              .maybeSingle()
+            resolvedTeamId = teamRow?.id ?? null
+          }
+
           const emailName = testDataAthlete.athlete_name.toLowerCase().replace(/\s+/g, '.')
           const teamNamePart = (testDataAthlete.team_name || 'team').toLowerCase().replace(/\s+/g, '')
           const email = `${emailName}@${teamNamePart}.com`
 
+          // `athletes` requires cc_athlete_id (NOT NULL). Generate a deterministic placeholder.
+          const ccPlaceholder = `auto-${crypto.randomUUID()}`
+
           const { data: newAthlete, error: createError } = await supabaseClient
-            .from('athletes_new')
+            .from('athletes')
             .insert({
               name: testDataAthlete.athlete_name,
-              team: testDataAthlete.team_name || team || 'Unknown',
-              email: email,
-              testing_dates: new Date().toISOString().split('T')[0],
+              email,
+              team_id: resolvedTeamId,
+              cc_athlete_id: ccPlaceholder,
+              last_test_at: new Date().toISOString(),
             })
             .select('id')
             .single()
@@ -356,7 +388,7 @@ Deno.serve(async (req) => {
             console.log(`Created new athlete with ID: ${athleteIdToUse}`)
           }
         } else {
-          // 3) Try broader search in test_data (looser match, prefer team if provided)
+          // 3) Looser test_data search.
           console.log('Searching for similar athletes in test_data...')
           let q3 = supabaseClient
             .from('test_data')
@@ -377,7 +409,6 @@ Deno.serve(async (req) => {
               similarAthletes.map((a) => `${a.athlete_name} - ${a.team_name}`)
             )
 
-            // Prefer a match whose team includes the provided team (when available)
             let match = similarAthletes[0]
             if (team) {
               const teamMatched = similarAthletes.find(
@@ -386,17 +417,30 @@ Deno.serve(async (req) => {
               match = teamMatched ?? match
             }
 
+            let resolvedTeamId: string | null = null
+            if (match.team_name) {
+              const { data: teamRow } = await supabaseClient
+                .from('teams')
+                .select('id')
+                .ilike('name', `%${match.team_name}%`)
+                .limit(1)
+                .maybeSingle()
+              resolvedTeamId = teamRow?.id ?? null
+            }
+
             const emailName = match.athlete_name.toLowerCase().replace(/\s+/g, '.')
             const teamName = (match.team_name || team || 'team').toLowerCase().replace(/\s+/g, '')
             const email = `${emailName}@${teamName}.com`
+            const ccPlaceholder = `auto-${crypto.randomUUID()}`
 
             const { data: newAthlete, error: createError } = await supabaseClient
-              .from('athletes_new')
+              .from('athletes')
               .insert({
                 name: match.athlete_name,
-                team: match.team_name || team || 'Unknown',
-                email: email,
-                testing_dates: new Date().toISOString().split('T')[0],
+                email,
+                team_id: resolvedTeamId,
+                cc_athlete_id: ccPlaceholder,
+                last_test_at: new Date().toISOString(),
               })
               .select('id')
               .single()
@@ -423,14 +467,27 @@ Deno.serve(async (req) => {
         const emailName = name.toLowerCase().replace(/\s+/g, '.')
         const teamName = team.toLowerCase().replace(/\s+/g, '') || 'team'
         const email = `${emailName}@${teamName}.com`
+        const ccPlaceholder = `auto-${crypto.randomUUID()}`
+
+        let resolvedTeamId: string | null = null
+        if (team && team !== 'Unknown') {
+          const { data: teamRow } = await supabaseClient
+            .from('teams')
+            .select('id')
+            .ilike('name', `%${team}%`)
+            .limit(1)
+            .maybeSingle()
+          resolvedTeamId = teamRow?.id ?? null
+        }
 
         const { data: newAthlete, error: createError } = await supabaseClient
-          .from('athletes_new')
+          .from('athletes')
           .insert({
             name,
-            team,
             email,
-            testing_dates: new Date().toISOString().split('T')[0],
+            team_id: resolvedTeamId,
+            cc_athlete_id: ccPlaceholder,
+            last_test_at: new Date().toISOString(),
           })
           .select('id')
           .single()
@@ -454,14 +511,14 @@ Deno.serve(async (req) => {
 
     console.log(`Generating report for athlete_id: ${athleteIdToUse}`);
 
-    // Fetch athlete data
-    const { data: athlete, error: athleteError } = await supabaseClient
-      .from('athletes_new')
-      .select('*')
+    // Fetch athlete data (canonical `athletes` table joined to teams)
+    const { data: athleteRow, error: athleteError } = await supabaseClient
+      .from('athletes')
+      .select('id, name, email, last_test_at, teams ( name )')
       .eq('id', athleteIdToUse)
       .maybeSingle();
 
-    if (athleteError || !athlete) {
+    if (athleteError || !athleteRow) {
       console.error('Error fetching athlete:', athleteError);
       return new Response(
         JSON.stringify({ error: 'Athlete not found' }),
@@ -469,10 +526,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch test results
-    const { data: testResults, error: testError } = await supabaseClient
-      .from('test_results')
-      .select('*')
+    // Normalise to the legacy { name, team, email, testing_dates } shape used by the HTML generator.
+    const athlete: Athlete = {
+      id: athleteRow.id,
+      name: athleteRow.name ?? '',
+      team: (athleteRow as any).teams?.name ?? '',
+      email: athleteRow.email ?? '',
+      testing_dates: athleteRow.last_test_at
+        ? new Date(athleteRow.last_test_at).toISOString().split('T')[0]
+        : '',
+    };
+
+    // Fetch test results from `test_data` (canonical) and adapt rows into the
+    // TestResult shape expected by the HTML generator.
+    const { data: testRows, error: testError } = await supabaseClient
+      .from('test_data')
+      .select('id, athlete_id, test_name, metrics')
       .eq('athlete_id', athleteIdToUse);
 
     if (testError) {
@@ -482,6 +551,22 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Map free-text test_name from test_data to the enum-style key the recommender expects.
+    const slugifyTestName = (raw: string): TestResult['test_name'] => {
+      const s = (raw || '').toLowerCase();
+      if (s.includes('drop')) return 'drop_jump';
+      if (s.includes('squat')) return 'squat_jump';
+      if (s.includes('pogo')) return 'pogo_jump';
+      return 'cmj';
+    };
+
+    const testResults: TestResult[] = (testRows ?? []).map((row: any) => ({
+      id: row.id,
+      athlete_id: row.athlete_id,
+      test_name: slugifyTestName(row.test_name),
+      metrics: row.metrics ?? {},
+    }));
 
     // Generate interactive HTML report
     const htmlContent = await generateInteractiveHtmlReport(athlete, testResults || [], supabaseClient);
