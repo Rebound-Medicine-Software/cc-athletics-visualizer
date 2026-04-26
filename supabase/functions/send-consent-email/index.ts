@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
-import notificationapi from 'npm:notificationapi-node-server-sdk@1.1.0'
 import { z } from 'https://esm.sh/zod@3.23.8'
 
 const corsHeaders = {
@@ -29,6 +28,9 @@ const BodySchema = z.object({
   siteUrl: z.string().url(),
 })
 
+const NOTIFICATION_API_BASE = 'https://api.eu.notificationapi.com'
+const CLIENT_ID = 'n3g0q177rbzrr6riq8re90n1yc'
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -55,48 +57,56 @@ serve(async (req) => {
     } = parsed.data
     const consentUrl = `${siteUrl}/consent?token=${consentToken}`
 
-    console.log('Sending consent email via NotificationAPI to:', athleteEmail)
-
-    try {
-      notificationapi.init(
-        'n3g0q177rbzrr6riq8re90n1yc',
-        'imcbx9veiw5sc3cx48du58gnlyopxbu88p46legnkfik7ksoigxz70i1sa',
-        {
-          baseURL: 'https://api.eu.notificationapi.com'
-        }
-      )
-
-      const result = await notificationapi.send({
-        type: 'send_consent_email',
-        to: {
-          id: athleteEmail,
-          email: athleteEmail,
-        },
-        parameters: {
-          athlete_name: athleteName,
-          organisation_name: organisationName,
-          organisation_logo: organisationLogo,
-          athlete_email: athleteEmail,
-          login_password: loginPassword,
-          consent_url: consentUrl,
-        },
-      })
-
-      console.log('NotificationAPI send completed successfully:', JSON.stringify(result))
-      return respond(true, {
-        message: 'Consent email sent successfully.',
-      })
-    } catch (sendError: any) {
-      const errorMessage = sendError?.message || 'Unknown NotificationAPI error'
-      console.error('NotificationAPI send error:', errorMessage, sendError)
-      return respond(false, {
-        error: errorMessage,
-      })
+    const apiKey = Deno.env.get('NOTIFICATIONS_API_KEY')
+    if (!apiKey) {
+      console.error('NOTIFICATIONS_API_KEY missing')
+      return respond(false, { error: 'Email service not configured' }, 500)
     }
+
+    console.log('Sending consent email via NotificationAPI REST to:', athleteEmail)
+
+    const authToken = btoa(`${CLIENT_ID}:${apiKey}`)
+    const payload = {
+      notificationId: 'send_consent_email',
+      user: {
+        id: athleteEmail,
+        email: athleteEmail,
+      },
+      mergeTags: {
+        athlete_name: athleteName,
+        organisation_name: organisationName,
+        organisation_logo: organisationLogo,
+        athlete_email: athleteEmail,
+        login_password: loginPassword,
+        consent_url: consentUrl,
+      },
+    }
+
+    const apiResponse = await fetch(`${NOTIFICATION_API_BASE}/${CLIENT_ID}/sender`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!apiResponse.ok) {
+      const text = await apiResponse.text().catch(() => '')
+      console.error(`NotificationAPI failed [${apiResponse.status}]:`, text)
+      return respond(false, {
+        error: 'Failed to send consent email',
+        status: apiResponse.status,
+        details: text,
+      }, 500)
+    }
+
+    console.log('Consent email sent successfully via NotificationAPI')
+    return respond(true, { message: 'Consent email sent successfully.' })
   } catch (error: any) {
     console.error('Edge function error:', error)
     return respond(false, {
       error: error?.message || 'Unexpected edge function error',
-    })
+    }, 500)
   }
 })
