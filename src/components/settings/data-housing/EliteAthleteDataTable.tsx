@@ -216,7 +216,7 @@ export const EliteAthleteDataTable = () => {
 
     try {
       const { error } = await supabase
-        .from('Elite Athlete Data')
+        .from('elite_athlete_data')
         .delete()
         .eq('id', id);
 
