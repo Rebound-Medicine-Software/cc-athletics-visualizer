@@ -94,12 +94,31 @@ export const EliteAthleteDataTable = () => {
   const fetchEliteData = async () => {
     try {
       const { data, error } = await supabase
-        .from('Elite Athlete Data')
+        .from('elite_athlete_data')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEliteData(data || []);
+
+      // Map canonical snake_case → legacy quoted-key shape used by this UI.
+      const mapped: EliteAthleteData[] = (data ?? []).map((row: any) => ({
+        id: row.id,
+        "Team Name": row.team_name ?? '',
+        "Athlete Name": row.athlete_name ?? '',
+        "Sex": row.sex ?? '',
+        "Sport": row.sport ?? '',
+        "Age Group": row.age_group ?? 0,
+        "Weight Category (kg)": row.weight_category ?? '',
+        "CMJ Jump Height (cm)": row.cmj_jump_height_cm,
+        "CMJ Peak Power (W)": row.cmj_peak_power_w,
+        "CMJ Relative Peak Power (W/kg)": row.cmj_relative_peak_power_w_per_kg,
+        "CMJ Reactive Strength Index": row.cmj_reactive_strength_index,
+        "IMTP Peak Force (N)": row.imtp_peak_force_n,
+        "IMTP Relative Peak Force (N/kg)": row.imtp_relative_peak_force_n_per_kg,
+        dynamic_metrics: row.dynamic_metrics ?? {},
+        created_at: row.created_at,
+      }));
+      setEliteData(mapped);
     } catch (error) {
       console.error('Error fetching elite athlete data:', error);
       toast.error("Failed to load elite athlete data");
@@ -136,46 +155,46 @@ export const EliteAthleteDataTable = () => {
 
     try {
       if (editingId) {
-        // Update existing
+        // Update existing — write snake_case to canonical table
         const { error } = await supabase
-          .from('Elite Athlete Data')
+          .from('elite_athlete_data')
           .update({
-            "Team Name": editForm["Team Name"],
-            "Athlete Name": editForm["Athlete Name"],
-            "Sex": editForm["Sex"],
-            "Sport": editForm["Sport"],
-            "Age Group": editForm["Age Group"] ? Number(editForm["Age Group"]) : null,
-            "Weight Category (kg)": editForm["Weight Category (kg)"],
-            "CMJ Jump Height (cm)": editForm["CMJ Jump Height (cm)"] ? Number(editForm["CMJ Jump Height (cm)"]) : null,
-            "CMJ Peak Power (W)": editForm["CMJ Peak Power (W)"] ? Number(editForm["CMJ Peak Power (W)"]) : null,
-            "CMJ Relative Peak Power (W/kg)": editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
-            "CMJ Reactive Strength Index": editForm["CMJ Reactive Strength Index"],
-            "IMTP Peak Force (N)": editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
-            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
-            "dynamic_metrics": editForm.dynamic_metrics || {}
+            team_name: editForm["Team Name"],
+            athlete_name: editForm["Athlete Name"],
+            sex: editForm["Sex"],
+            sport: editForm["Sport"],
+            age_group: editForm["Age Group"] ? Number(editForm["Age Group"]) : null,
+            weight_category: editForm["Weight Category (kg)"],
+            cmj_jump_height_cm: editForm["CMJ Jump Height (cm)"] ? Number(editForm["CMJ Jump Height (cm)"]) : null,
+            cmj_peak_power_w: editForm["CMJ Peak Power (W)"] ? Number(editForm["CMJ Peak Power (W)"]) : null,
+            cmj_relative_peak_power_w_per_kg: editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
+            cmj_reactive_strength_index: editForm["CMJ Reactive Strength Index"],
+            imtp_peak_force_n: editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
+            imtp_relative_peak_force_n_per_kg: editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
+            dynamic_metrics: editForm.dynamic_metrics || {},
           })
           .eq('id', editingId);
 
         if (error) throw error;
         toast.success("Elite athlete data updated successfully");
       } else {
-        // Add new
+        // Add new — write snake_case to canonical table
         const { error } = await supabase
-          .from('Elite Athlete Data')
+          .from('elite_athlete_data')
           .insert({
-            "Team Name": editForm["Team Name"],
-            "Athlete Name": editForm["Athlete Name"],
-            "Sex": editForm["Sex"] || '',
-            "Sport": editForm["Sport"] || '',
-            "Age Group": editForm["Age Group"] ? Number(editForm["Age Group"]) : 0,
-            "Weight Category (kg)": editForm["Weight Category (kg)"] || '',
-            "CMJ Jump Height (cm)": editForm["CMJ Jump Height (cm)"] ? Number(editForm["CMJ Jump Height (cm)"]) : null,
-            "CMJ Peak Power (W)": editForm["CMJ Peak Power (W)"] ? Number(editForm["CMJ Peak Power (W)"]) : null,
-            "CMJ Relative Peak Power (W/kg)": editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
-            "CMJ Reactive Strength Index": editForm["CMJ Reactive Strength Index"],
-            "IMTP Peak Force (N)": editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
-            "IMTP Relative Peak Force (N/kg)": editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
-            "dynamic_metrics": editForm.dynamic_metrics || {}
+            team_name: editForm["Team Name"]!,
+            athlete_name: editForm["Athlete Name"]!,
+            sex: editForm["Sex"] || '',
+            sport: editForm["Sport"] || '',
+            age_group: editForm["Age Group"] ? Number(editForm["Age Group"]) : 0,
+            weight_category: editForm["Weight Category (kg)"] || '',
+            cmj_jump_height_cm: editForm["CMJ Jump Height (cm)"] ? Number(editForm["CMJ Jump Height (cm)"]) : null,
+            cmj_peak_power_w: editForm["CMJ Peak Power (W)"] ? Number(editForm["CMJ Peak Power (W)"]) : null,
+            cmj_relative_peak_power_w_per_kg: editForm["CMJ Relative Peak Power (W/kg)"] ? Number(editForm["CMJ Relative Peak Power (W/kg)"]) : null,
+            cmj_reactive_strength_index: editForm["CMJ Reactive Strength Index"],
+            imtp_peak_force_n: editForm["IMTP Peak Force (N)"] ? Number(editForm["IMTP Peak Force (N)"]) : null,
+            imtp_relative_peak_force_n_per_kg: editForm["IMTP Relative Peak Force (N/kg)"] ? Number(editForm["IMTP Relative Peak Force (N/kg)"]) : null,
+            dynamic_metrics: editForm.dynamic_metrics || {},
           });
 
         if (error) throw error;
@@ -197,7 +216,7 @@ export const EliteAthleteDataTable = () => {
 
     try {
       const { error } = await supabase
-        .from('Elite Athlete Data')
+        .from('elite_athlete_data')
         .delete()
         .eq('id', id);
 

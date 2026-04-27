@@ -61,9 +61,9 @@ function generate_recommendation(test_name: string, metrics: any): string {
 async function generateInteractiveHtmlReport(athlete: Athlete, testResults: TestResult[], supabaseClient: any): Promise<string> {
   const currentDate = new Date().toLocaleDateString('en-GB');
   
-  // Fetch peer comparison data
+  // Fetch peer comparison data from canonical elite benchmark table
   const { data: eliteData } = await supabaseClient
-    .from('Elite Athlete Data')
+    .from('elite_athlete_data')
     .select('*')
     .limit(100);
 
