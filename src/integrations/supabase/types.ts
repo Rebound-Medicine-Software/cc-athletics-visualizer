@@ -496,6 +496,66 @@ export type Database = {
         }
         Relationships: []
       }
+      elite_athlete_data: {
+        Row: {
+          age_group: number | null
+          athlete_name: string
+          cmj_jump_height_cm: number | null
+          cmj_peak_power_w: number | null
+          cmj_reactive_strength_index: string | null
+          cmj_relative_peak_power_w_per_kg: number | null
+          created_at: string
+          dynamic_metrics: Json | null
+          id: string
+          imtp_peak_force_n: number | null
+          imtp_relative_peak_force_n_per_kg: number | null
+          sex: string | null
+          sport: string | null
+          team_name: string
+          test_date: string | null
+          updated_at: string
+          weight_category: string | null
+        }
+        Insert: {
+          age_group?: number | null
+          athlete_name: string
+          cmj_jump_height_cm?: number | null
+          cmj_peak_power_w?: number | null
+          cmj_reactive_strength_index?: string | null
+          cmj_relative_peak_power_w_per_kg?: number | null
+          created_at?: string
+          dynamic_metrics?: Json | null
+          id?: string
+          imtp_peak_force_n?: number | null
+          imtp_relative_peak_force_n_per_kg?: number | null
+          sex?: string | null
+          sport?: string | null
+          team_name: string
+          test_date?: string | null
+          updated_at?: string
+          weight_category?: string | null
+        }
+        Update: {
+          age_group?: number | null
+          athlete_name?: string
+          cmj_jump_height_cm?: number | null
+          cmj_peak_power_w?: number | null
+          cmj_reactive_strength_index?: string | null
+          cmj_relative_peak_power_w_per_kg?: number | null
+          created_at?: string
+          dynamic_metrics?: Json | null
+          id?: string
+          imtp_peak_force_n?: number | null
+          imtp_relative_peak_force_n_per_kg?: number | null
+          sex?: string | null
+          sport?: string | null
+          team_name?: string
+          test_date?: string | null
+          updated_at?: string
+          weight_category?: string | null
+        }
+        Relationships: []
+      }
       elite_athlete_metrics: {
         Row: {
           age_group: string | null
