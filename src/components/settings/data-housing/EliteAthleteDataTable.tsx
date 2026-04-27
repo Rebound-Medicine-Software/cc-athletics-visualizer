@@ -94,12 +94,31 @@ export const EliteAthleteDataTable = () => {
   const fetchEliteData = async () => {
     try {
       const { data, error } = await supabase
-        .from('Elite Athlete Data')
+        .from('elite_athlete_data')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setEliteData(data || []);
+
+      // Map canonical snake_case → legacy quoted-key shape used by this UI.
+      const mapped: EliteAthleteData[] = (data ?? []).map((row: any) => ({
+        id: row.id,
+        "Team Name": row.team_name ?? '',
+        "Athlete Name": row.athlete_name ?? '',
+        "Sex": row.sex ?? '',
+        "Sport": row.sport ?? '',
+        "Age Group": row.age_group ?? 0,
+        "Weight Category (kg)": row.weight_category ?? '',
+        "CMJ Jump Height (cm)": row.cmj_jump_height_cm,
+        "CMJ Peak Power (W)": row.cmj_peak_power_w,
+        "CMJ Relative Peak Power (W/kg)": row.cmj_relative_peak_power_w_per_kg,
+        "CMJ Reactive Strength Index": row.cmj_reactive_strength_index,
+        "IMTP Peak Force (N)": row.imtp_peak_force_n,
+        "IMTP Relative Peak Force (N/kg)": row.imtp_relative_peak_force_n_per_kg,
+        dynamic_metrics: row.dynamic_metrics ?? {},
+        created_at: row.created_at,
+      }));
+      setEliteData(mapped);
     } catch (error) {
       console.error('Error fetching elite athlete data:', error);
       toast.error("Failed to load elite athlete data");
