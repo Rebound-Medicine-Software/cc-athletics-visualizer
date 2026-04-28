@@ -1,0 +1,204 @@
+import React, { useEffect, useState } from 'react';
+import { X, AlertTriangle, Activity, Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { StatusBadge } from './StatusBadge';
+import { toast } from 'sonner';
+
+interface Props {
+  integrationName: string | null;
+  displayName?: string;
+  onClose: () => void;
+}
+
+interface RecentLog {
+  id: string;
+  status: string | null;
+  latency_ms: number | null;
+  failure_reason: string | null;
+  logged_at: string;
+  team_id: string | null;
+  organisation_name: string | null;
+  payload: any;
+}
+
+interface FailureReason {
+  failure_reason: string;
+  occurrences: number;
+  last_seen: string;
+}
+
+interface AffectedOrg {
+  team_id: string | null;
+  organisation_name: string | null;
+  failure_count: number;
+  last_failure_at: string;
+  last_failure_reason: string | null;
+}
+
+interface Detail {
+  integration_name: string;
+  recent_logs: RecentLog[];
+  failure_reasons: FailureReason[];
+  affected_organisations: AffectedOrg[];
+  summary_24h: {
+    success: number;
+    failed: number;
+    avg_latency_ms: number | null;
+    p95_latency_ms: number | null;
+  };
+}
+
+const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString() : '—');
+
+const statusVariant = (s: string | null) =>
+  s === 'success' ? 'success' : s === 'failed' ? 'danger' : 'muted';
+
+export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, displayName, onClose }) => {
+  const [detail, setDetail] = useState<Detail | null>(null);
+  const [loading, setLoading] = useState(false);
+  const open = !!integrationName;
+
+  useEffect(() => {
+    if (!integrationName) { setDetail(null); return; }
+    setLoading(true);
+    supabase
+      .rpc('get_integration_detail', { integration_name_in: integrationName })
+      .then(({ data, error }) => {
+        setLoading(false);
+        if (error) { toast.error(error.message); return; }
+        setDetail(data as unknown as Detail);
+      });
+  }, [integrationName]);
+
+  if (!open) return null;
+
+  const summary = detail?.summary_24h;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        style={{ zIndex: 1400 }}
+        onClick={onClose}
+      />
+      <div
+        className="fixed top-0 right-0 h-full w-full max-w-3xl overflow-y-auto cc-glass-strong"
+        style={{ zIndex: 1500, background: 'hsl(var(--cc-bg))' }}
+      >
+        <div className="sticky top-0 flex items-center justify-between p-5 border-b" style={{ background: 'hsl(var(--cc-bg))', borderColor: 'hsl(var(--cc-border))' }}>
+          <div>
+            <div className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Integration</div>
+            <div className="text-[18px] font-semibold">{displayName || integrationName}</div>
+          </div>
+          <button onClick={onClose} className="cc-btn"><X className="w-4 h-4" /></button>
+        </div>
+
+        {loading && <div className="p-6 text-sm" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Loading…</div>}
+
+        {detail && (
+          <div className="p-5 space-y-5">
+            {/* 24h summary */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="cc-glass p-3">
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Success 24h</div>
+                <div className="text-[18px] font-bold mt-1" style={{ color: 'hsl(var(--cc-success))' }}>{summary?.success ?? 0}</div>
+              </div>
+              <div className="cc-glass p-3">
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Failed 24h</div>
+                <div className="text-[18px] font-bold mt-1" style={{ color: 'hsl(var(--cc-danger))' }}>{summary?.failed ?? 0}</div>
+              </div>
+              <div className="cc-glass p-3">
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Avg latency</div>
+                <div className="text-[18px] font-bold mt-1">{summary?.avg_latency_ms ?? 0}<span className="text-[11px] ml-1" style={{ color: 'hsl(var(--cc-fg-dim))' }}>ms</span></div>
+              </div>
+              <div className="cc-glass p-3">
+                <div className="text-[10px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>p95 latency</div>
+                <div className="text-[18px] font-bold mt-1">{summary?.p95_latency_ms ?? 0}<span className="text-[11px] ml-1" style={{ color: 'hsl(var(--cc-fg-dim))' }}>ms</span></div>
+              </div>
+            </div>
+
+            {/* Failure reasons */}
+            <div className="cc-glass p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4" style={{ color: 'hsl(var(--cc-warning))' }} />
+                <div className="text-[13px] font-semibold">Top failure reasons (7d)</div>
+              </div>
+              {detail.failure_reasons.length === 0 ? (
+                <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-dim))' }}>No failures in the last 7 days.</div>
+              ) : (
+                <div className="space-y-2">
+                  {detail.failure_reasons.map((r, idx) => (
+                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px]">
+                      <div className="flex-1 break-words">{r.failure_reason}</div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-mono">{r.occurrences}×</span>
+                        <span style={{ color: 'hsl(var(--cc-fg-dim))' }}>{fmtDate(r.last_seen)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Affected organisations */}
+            <div className="cc-glass p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Building2 className="w-4 h-4" style={{ color: 'hsl(var(--cc-navy-glow))' }} />
+                <div className="text-[13px] font-semibold">Affected organisations (24h)</div>
+              </div>
+              {detail.affected_organisations.length === 0 ? (
+                <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-dim))' }}>No affected organisations in the last 24 hours.</div>
+              ) : (
+                <div className="space-y-2">
+                  {detail.affected_organisations.map((o, idx) => (
+                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px] py-1 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
+                      <div className="flex-1">
+                        <div className="font-semibold">{o.organisation_name || o.team_id || '—'}</div>
+                        <div style={{ color: 'hsl(var(--cc-fg-dim))' }}>{o.last_failure_reason || '—'}</div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="font-mono">{o.failure_count} fails</span>
+                        <span style={{ color: 'hsl(var(--cc-fg-dim))' }}>{fmtDate(o.last_failure_at)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent logs */}
+            <div className="cc-glass p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4" style={{ color: 'hsl(var(--cc-navy-glow))' }} />
+                <div className="text-[13px] font-semibold">Recent log entries</div>
+              </div>
+              {detail.recent_logs.length === 0 ? (
+                <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-dim))' }}>No log entries yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {detail.recent_logs.map((l) => (
+                    <div key={l.id} className="text-[12px] py-2 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <StatusBadge variant={statusVariant(l.status) as any} dot>{l.status || '—'}</StatusBadge>
+                          <span className="font-semibold">{l.organisation_name || '—'}</span>
+                        </div>
+                        <div className="flex items-center gap-3" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
+                          {l.latency_ms != null && <span className="font-mono">{l.latency_ms}ms</span>}
+                          <span>{fmtDate(l.logged_at)}</span>
+                        </div>
+                      </div>
+                      {l.failure_reason && (
+                        <div className="mt-1" style={{ color: 'hsl(var(--cc-danger))' }}>{l.failure_reason}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
