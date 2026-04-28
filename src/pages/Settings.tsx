@@ -5,6 +5,7 @@ import { ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { ApiKeysTab } from "@/components/settings/ApiKeysTab";
 import { DemonstrationsTab } from "@/components/settings/DemonstrationsTab";
 
@@ -18,7 +19,8 @@ const Settings = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "api-keys";
   const { profile } = useAuth();
-  const { branding } = useBranding(profile?.team_id, profile?.role);
+  const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+  const { branding } = useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
 
   // Auth gating now handled centrally by <ProtectedRoute> in App.tsx.
 
