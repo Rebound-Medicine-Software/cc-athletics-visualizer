@@ -755,6 +755,42 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_settings: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           api_key: string | null
@@ -1451,6 +1487,19 @@ export type Database = {
         }
       }
       get_platform_kpis: { Args: never; Returns: Json }
+      get_platform_settings: {
+        Args: { p_category?: string }
+        Returns: {
+          category: string
+          description: string
+          id: string
+          is_enabled: boolean
+          key: string
+          updated_at: string
+          updated_by: string
+          value: Json
+        }[]
+      }
       get_practitioner_engagement_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1585,6 +1634,16 @@ export type Database = {
           occurred_at: string
           organisation_name: string
           source: string
+        }[]
+      }
+      list_feature_flags: {
+        Args: never
+        Returns: {
+          description: string
+          id: string
+          is_enabled: boolean
+          key: string
+          updated_at: string
         }[]
       }
       list_notification_campaigns: {
@@ -1751,6 +1810,26 @@ export type Database = {
         Args: { campaign_uuid: string }
         Returns: Json
       }
+      set_feature_flag: {
+        Args: { p_enabled: boolean; p_key: string }
+        Returns: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_support_ticket: {
         Args: {
           append_entry_body?: string
@@ -1762,6 +1841,31 @@ export type Database = {
           ticket_uuid: string
         }
         Returns: Json
+      }
+      upsert_platform_setting: {
+        Args: {
+          p_category?: string
+          p_description?: string
+          p_key: string
+          p_value: Json
+        }
+        Returns: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
