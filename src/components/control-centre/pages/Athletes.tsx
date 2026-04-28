@@ -101,7 +101,7 @@ export const Athletes: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <KpiCard label="Total Athletes" value={overview?.total_athletes ?? '—'} icon={Users} accent="navy" />
         <KpiCard label="Active 30d" value={overview?.active_30d ?? '—'} icon={Activity} accent="info" />
-        <KpiCard label="Inactive" value={overview?.inactive_athletes ?? '—'} icon={Users} accent="muted" />
+        <KpiCard label="Inactive" value={overview?.inactive_athletes ?? '—'} icon={Users} accent="danger" />
         <KpiCard label="Consent %" value={overview ? `${overview.consent_completion_rate}%` : '—'} icon={CheckCircle2} accent="success" />
         <KpiCard label="Reports Sent" value={overview?.reports_sent_total ?? '—'} icon={FileText} accent="navy" />
         <KpiCard label="Tested MTD" value={overview?.tested_this_month ?? '—'} icon={CalendarCheck} accent="warning" />
