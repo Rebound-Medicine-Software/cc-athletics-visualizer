@@ -698,6 +698,63 @@ export type Database = {
           },
         ]
       }
+      platform_notification_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delivered_count: number
+          delivery_channel: string
+          error_summary: string | null
+          failed_count: number
+          id: string
+          message: string
+          metadata: Json
+          queued_at: string | null
+          recipient_count: number
+          sent_at: string | null
+          status: string
+          target_type: string
+          target_value: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          delivery_channel?: string
+          error_summary?: string | null
+          failed_count?: number
+          id?: string
+          message: string
+          metadata?: Json
+          queued_at?: string | null
+          recipient_count?: number
+          sent_at?: string | null
+          status?: string
+          target_type?: string
+          target_value?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          delivery_channel?: string
+          error_summary?: string | null
+          failed_count?: number
+          id?: string
+          message?: string
+          metadata?: Json
+          queued_at?: string | null
+          recipient_count?: number
+          sent_at?: string | null
+          status?: string
+          target_type?: string
+          target_value?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           api_key: string | null
@@ -1262,6 +1319,17 @@ export type Database = {
     }
     Functions: {
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      create_notification_campaign: {
+        Args: {
+          p_delivery_channel?: string
+          p_message: string
+          p_metadata?: Json
+          p_target_type?: string
+          p_target_value?: string
+          p_title: string
+        }
+        Returns: string
+      }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
       get_billing_overview: { Args: never; Returns: Json }
@@ -1314,6 +1382,10 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      get_notification_campaign_detail: {
+        Args: { campaign_uuid: string }
+        Returns: Json
+      }
       get_organisation_detail: { Args: { team_uuid: string }; Returns: Json }
       get_organisation_health: {
         Args: never
@@ -1411,6 +1483,26 @@ export type Database = {
           tier_name: string
         }[]
       }
+      list_notification_campaigns: {
+        Args: never
+        Returns: {
+          created_at: string
+          created_by: string
+          created_by_email: string
+          delivered_count: number
+          delivery_channel: string
+          failed_count: number
+          id: string
+          message: string
+          queued_at: string
+          recipient_count: number
+          sent_at: string
+          status: string
+          target_type: string
+          target_value: string
+          title: string
+        }[]
+      }
       list_organisations_overview: {
         Args: never
         Returns: {
@@ -1480,6 +1572,21 @@ export type Database = {
           team_id: string
           updated_at: string
         }[]
+      }
+      preview_notification_audience: {
+        Args: { p_target_type: string; p_target_value?: string }
+        Returns: {
+          churn_risk_score: number
+          organisation_name: string
+          owner_email: string
+          subscription_status: string
+          team_id: string
+          tier_name: string
+        }[]
+      }
+      queue_notification_campaign: {
+        Args: { campaign_uuid: string }
+        Returns: Json
       }
       update_support_ticket: {
         Args: {
