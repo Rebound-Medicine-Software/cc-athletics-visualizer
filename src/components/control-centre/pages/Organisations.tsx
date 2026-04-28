@@ -3,6 +3,7 @@ import { PageHeader } from '../primitives/PageHeader';
 import { KpiCard } from '../primitives/KpiCard';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { OrganisationDetailDrawer } from '../primitives/OrganisationDetailDrawer';
 import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,13 +23,14 @@ const churnLabel = (i: number) => (i % 7 === 0 ? 'high' : i % 4 === 0 ? 'med' : 
 
 export const Organisations: React.FC = () => {
   const [rows, setRows] = useState<OrgRow[]>([]);
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('teams').select('id,name,cc_team_id,country,practitioner_count,created_at,primary_color').limit(200)
       .then(({ data }) => setRows(data || []));
   }, []);
 
-  const action = (label: string, name: string) => () => toast(`${label} → ${name}`, { description: 'Visual-only in this build.' });
+  const action = (label: string, name: string) => () => toast(`${label} → ${name}`, { description: 'Coming next — not yet wired.' });
 
   return (
     <>
