@@ -4,6 +4,7 @@ import { KpiCard } from '../primitives/KpiCard';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { OrganisationDetailDrawer } from '../primitives/OrganisationDetailDrawer';
+import { ImpersonationModal } from '../primitives/ImpersonationModal';
 import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -69,6 +70,7 @@ export const Organisations: React.FC = () => {
   const [kpis, setKpis] = useState<OrgKpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
