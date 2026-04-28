@@ -1262,6 +1262,14 @@ export type Database = {
     }
     Functions: {
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      get_churn_risk_trend: {
+        Args: { days_back?: number }
+        Returns: {
+          avg_churn_risk: number
+          day: string
+          high_risk_org_count: number
+        }[]
+      }
       get_global_activity_feed: {
         Args: { limit_count?: number }
         Returns: {
@@ -1322,6 +1330,29 @@ export type Database = {
         }
       }
       get_platform_kpis: { Args: never; Returns: Json }
+      get_practitioner_engagement_trend: {
+        Args: { days_back?: number }
+        Returns: {
+          active_practitioner_count: number
+          avg_engagement_score: number
+          day: string
+        }[]
+      }
+      get_revenue_trend: {
+        Args: { days_back?: number }
+        Returns: {
+          active_subscriptions: number
+          day: string
+          total_revenue: number
+        }[]
+      }
+      get_tests_logged_trend: {
+        Args: { days_back?: number }
+        Returns: {
+          day: string
+          tests_logged_count: number
+        }[]
+      }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
     }

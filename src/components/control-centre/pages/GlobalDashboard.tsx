@@ -6,23 +6,15 @@ import { AlertPanel, AlertItem } from '../primitives/AlertPanel';
 import { usePlatformKpis } from '../hooks/usePlatformKpis';
 import { useGlobalActivityFeed } from '../hooks/useGlobalActivityFeed';
 import { usePlatformAlerts } from '../hooks/usePlatformAlerts';
+import { useRevenueTrend } from '../hooks/useRevenueTrend';
+import { useTestsTrend } from '../hooks/useTestsTrend';
+import { usePractitionerEngagementTrend } from '../hooks/usePractitionerEngagementTrend';
+import { useChurnRiskTrend } from '../hooks/useChurnRiskTrend';
 import {
   Building2, Users, UserCircle, Activity, Sparkles, FileText, DollarSign,
   AlertTriangle, CalendarRange, ArrowRight, UserPlus, CheckCircle2,
-  ClipboardList, Send, Zap,
+  ClipboardList, Send, Zap, TrendingUp, TrendingDown,
 } from 'lucide-react';
-
-// Trend series remain visual placeholders in this phase. Real time-series wiring
-// will land in a later phase once organisation_health_metrics has accumulated history.
-const monthlyRevenue = [
-  { name: 'May', value: 18400 }, { name: 'Jun', value: 21200 }, { name: 'Jul', value: 24800 },
-  { name: 'Aug', value: 27300 }, { name: 'Sep', value: 31100 }, { name: 'Oct', value: 35600 },
-  { name: 'Nov', value: 38900 }, { name: 'Dec', value: 42100 }, { name: 'Jan', value: 46800 },
-  { name: 'Feb', value: 51200 }, { name: 'Mar', value: 55400 }, { name: 'Apr', value: 61200 },
-];
-const testsLogged = monthlyRevenue.map((m, i) => ({ name: m.name, value: 320 + i * 65 + Math.round(Math.sin(i) * 40) }));
-const engagement = monthlyRevenue.map((m, i) => ({ name: m.name, active: 60 + i * 2.5, target: 80 }));
-const churnRisk = monthlyRevenue.map((m, i) => ({ name: m.name, value: Math.max(2, 12 - i * 0.6 + Math.sin(i) * 2) }));
 
 // ---- helpers ----------------------------------------------------------------
 
@@ -40,7 +32,30 @@ const fmtCurrency = (n: number | undefined): string => {
   return `$${Math.round(n)}`;
 };
 
-// Map an event_type / severity to an icon + colour for the activity feed.
+// Lightweight delta pill rendered next to chart titles. Positive = up arrow.
+// `inverted` flips the colour semantic — used for churn risk where down is good.
+const DeltaPill: React.FC<{ delta: number | null; inverted?: boolean }> = ({ delta, inverted }) => {
+  if (delta === null || delta === undefined) return null;
+  const isUp = delta > 0;
+  const isFlat = delta === 0;
+  const positive = inverted ? !isUp : isUp;
+  const color = isFlat
+    ? 'hsl(var(--cc-fg-dim))'
+    : positive
+      ? 'hsl(var(--cc-success))'
+      : 'hsl(var(--cc-danger))';
+  const Icon = isUp ? TrendingUp : TrendingDown;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded"
+      style={{ background: `${color.replace(')', ' / 0.12)')}`, color, border: `1px solid ${color.replace(')', ' / 0.3)')}` }}
+    >
+      {!isFlat && <Icon className="w-3 h-3" />}
+      {delta > 0 ? '+' : ''}{delta}%
+    </span>
+  );
+};
+
 const iconForEvent = (eventType: string, severity: string | null) => {
   if (eventType.startsWith('organisation_signup')) return { Icon: UserPlus, color: 'hsl(var(--cc-success))' };
   if (eventType.startsWith('practitioner_invite')) return { Icon: Users, color: 'hsl(var(--cc-navy-glow))' };
@@ -98,6 +113,13 @@ export const GlobalDashboard: React.FC = () => {
   const { rows: activityRows, loading: activityLoading } = useGlobalActivityFeed(8);
   const { alerts: alertRows, loading: alertsLoading } = usePlatformAlerts();
 
+  // Trend windows (default 90 days). Range buttons could later wire into these.
+  const [revenueDays, setRevenueDays] = React.useState(90);
+  const { data: revenueData, delta: revenueDelta, loading: revenueLoading } = useRevenueTrend(revenueDays);
+  const { data: testsData, delta: testsDelta, loading: testsLoading } = useTestsTrend(90);
+  const { data: engagementData, delta: engagementDelta, loading: engagementLoading } = usePractitionerEngagementTrend(90);
+  const { data: churnData, delta: churnDelta, loading: churnLoading } = useChurnRiskTrend(90);
+
   const alerts: AlertItem[] = alertRows.map((a) => ({
     id: a.id,
     title: a.title ?? a.alert_type,
@@ -107,6 +129,13 @@ export const GlobalDashboard: React.FC = () => {
     icon: iconForAlert(a.alert_type, a.severity),
     time: relTime(a.created_at),
   }));
+
+  const ranges: Array<{ label: string; days: number }> = [
+    { label: '1M', days: 30 },
+    { label: '3M', days: 90 },
+    { label: '6M', days: 180 },
+    { label: '12M', days: 365 },
+  ];
 
   return (
     <>
@@ -138,18 +167,30 @@ export const GlobalDashboard: React.FC = () => {
         <div className="cc-glass p-4 xl:col-span-2">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="cc-h2">Monthly Revenue Growth</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="cc-h2">Monthly Revenue Growth</h3>
+                <DeltaPill delta={revenueDelta} />
+              </div>
               <p className="cc-subtle">Recurring + one-off across all tenants</p>
             </div>
             <div className="flex gap-1">
-              {['1M', '3M', '12M', 'YTD'].map((t, i) => (
-                <button key={t} className="cc-btn" style={i === 2 ? { background: 'hsl(var(--cc-navy) / 0.4)', color: 'hsl(var(--cc-gold))' } : {}}>
-                  {t}
+              {ranges.map((r) => (
+                <button
+                  key={r.label}
+                  className="cc-btn"
+                  onClick={() => setRevenueDays(r.days)}
+                  style={revenueDays === r.days
+                    ? { background: 'hsl(var(--cc-navy) / 0.4)', color: 'hsl(var(--cc-gold))' }
+                    : {}}
+                >
+                  {r.label}
                 </button>
               ))}
             </div>
           </div>
-          <TrendArea data={monthlyRevenue} dataKey="value" color="hsl(var(--cc-gold))" height={260} />
+          {revenueLoading
+            ? <p className="cc-subtle">Loading revenue trend…</p>
+            : <TrendArea data={revenueData} dataKey="value" color="hsl(var(--cc-gold))" height={260} />}
         </div>
 
         <AlertPanel
@@ -160,19 +201,34 @@ export const GlobalDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
         <div className="cc-glass p-4">
-          <h3 className="cc-h2 mb-1">Tests Logged / Month</h3>
-          <p className="cc-subtle mb-2">All organisations combined</p>
-          <TrendBars data={testsLogged} dataKey="value" highlightIndex={11} />
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="cc-h2">Tests Logged / Day</h3>
+            <DeltaPill delta={testsDelta} />
+          </div>
+          <p className="cc-subtle mb-2">All organisations combined (90d)</p>
+          {testsLoading
+            ? <p className="cc-subtle">Loading…</p>
+            : <TrendBars data={testsData} dataKey="value" highlightIndex={Math.max(0, testsData.length - 1)} />}
         </div>
         <div className="cc-glass p-4">
-          <h3 className="cc-h2 mb-1">Practitioner Engagement</h3>
-          <p className="cc-subtle mb-2">Active vs target threshold</p>
-          <TrendLine data={engagement} dataKey="active" dataKey2="target" />
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="cc-h2">Practitioner Engagement</h3>
+            <DeltaPill delta={engagementDelta} />
+          </div>
+          <p className="cc-subtle mb-2">Avg score vs target threshold (90d)</p>
+          {engagementLoading
+            ? <p className="cc-subtle">Loading…</p>
+            : <TrendLine data={engagementData} dataKey="active" dataKey2="target" />}
         </div>
         <div className="cc-glass p-4">
-          <h3 className="cc-h2 mb-1">Org Churn Risk</h3>
-          <p className="cc-subtle mb-2">% of orgs flagged at risk</p>
-          <TrendArea data={churnRisk} dataKey="value" color="hsl(var(--cc-danger))" />
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="cc-h2">Org Churn Risk</h3>
+            <DeltaPill delta={churnDelta} inverted />
+          </div>
+          <p className="cc-subtle mb-2">Avg churn risk score across all orgs (90d)</p>
+          {churnLoading
+            ? <p className="cc-subtle">Loading…</p>
+            : <TrendArea data={churnData} dataKey="value" color="hsl(var(--cc-danger))" />}
         </div>
       </div>
 
