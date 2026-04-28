@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { ImpersonationAuditPanel } from '../primitives/ImpersonationAuditPanel';
 import { Search, Filter, Calendar } from 'lucide-react';
 
 const events = Array.from({ length: 20 }, (_, i) => {
@@ -29,6 +30,8 @@ export const Compliance: React.FC = () => {
   return (
     <>
       <PageHeader title="Compliance / Audit Logs" subtitle="Tamper-evident log of every privileged platform action." />
+
+      <ImpersonationAuditPanel />
 
       <div className="cc-glass p-3 mb-4 flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[240px]">

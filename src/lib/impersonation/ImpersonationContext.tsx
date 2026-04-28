@@ -49,6 +49,14 @@ export const ImpersonationProvider: React.FC<{ children: React.ReactNode }> = ({
   const startImpersonation: ImpersonationContextValue['startImpersonation'] = useCallback(
     async ({ teamId, teamName, reason, superAdminId }) => {
       try {
+        // Close any previously-open impersonation logs for this super admin
+        // to prevent overlapping/dangling sessions.
+        await supabase
+          .from('super_admin_impersonation_logs')
+          .update({ ended_at: new Date().toISOString() })
+          .eq('super_admin_id', superAdminId)
+          .is('ended_at', null);
+
         const { data, error } = await supabase
           .from('super_admin_impersonation_logs')
           .insert({
