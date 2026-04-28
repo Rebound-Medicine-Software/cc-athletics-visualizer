@@ -30,6 +30,8 @@ export const Compliance: React.FC = () => {
     <>
       <PageHeader title="Compliance / Audit Logs" subtitle="Tamper-evident log of every privileged platform action." />
 
+      <ImpersonationAuditPanel />
+
       <div className="cc-glass p-3 mb-4 flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--cc-fg-dim))' }} />
