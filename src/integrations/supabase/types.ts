@@ -1333,6 +1333,16 @@ export type Database = {
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
       get_billing_overview: { Args: never; Returns: Json }
+      get_bookings_overview: { Args: never; Returns: Json }
+      get_bookings_trends: {
+        Args: { days_back?: number }
+        Returns: {
+          cancelled_count: number
+          created_count: number
+          day: string
+          sync_failure_count: number
+        }[]
+      }
       get_churn_risk_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1492,6 +1502,17 @@ export type Database = {
           stripe_subscription_id: string
           team_id: string
           tier_name: string
+        }[]
+      }
+      list_booking_failures: {
+        Args: { row_limit?: number }
+        Returns: {
+          booking_id: string
+          failure_reason: string
+          id: string
+          occurred_at: string
+          organisation_name: string
+          source: string
         }[]
       }
       list_notification_campaigns: {
