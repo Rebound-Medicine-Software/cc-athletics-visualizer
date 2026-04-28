@@ -77,9 +77,9 @@ export const Billing: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <KpiCard label="Trial Accounts" value={Number(overview?.trial_accounts ?? 0)} accent="info" />
-        <KpiCard label="Total Seats" value={Number(overview?.total_seats ?? 0)} accent="muted" />
+        <KpiCard label="Total Seats" value={Number(overview?.total_seats ?? 0)} accent="navy" />
         <KpiCard label="Avg Revenue / Org" value={fmtMoney(Number(overview?.avg_revenue_per_org ?? 0))} accent="success" />
-        <KpiCard label="Organisations" value={Number(overview?.organisation_count ?? 0)} accent="muted" />
+        <KpiCard label="Organisations" value={Number(overview?.organisation_count ?? 0)} accent="navy" />
       </div>
 
       <div className="cc-glass p-4 mb-5">
