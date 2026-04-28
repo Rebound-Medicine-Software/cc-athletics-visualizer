@@ -1433,6 +1433,17 @@ export type Database = {
           day: string
         }[]
       }
+      get_reports_ai_overview: { Args: never; Returns: Json }
+      get_reports_ai_trends: {
+        Args: { days_back?: number }
+        Returns: {
+          ai_insights: number
+          day: string
+          failures: number
+          reports_generated: number
+          reports_sent: number
+        }[]
+      }
       get_revenue_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1552,6 +1563,21 @@ export type Database = {
           source: string
           target_label: string
           team_id: string
+        }[]
+      }
+      list_reports_ai_activity: {
+        Args: { row_limit?: number }
+        Returns: {
+          athlete_id: string
+          created_at: string
+          event_source: string
+          event_type: string
+          id: string
+          metadata: Json
+          organisation_name: string
+          severity: string
+          team_id: string
+          user_id: string
         }[]
       }
       list_support_tickets: {
