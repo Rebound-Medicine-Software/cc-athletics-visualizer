@@ -1330,6 +1330,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_athletes_overview: { Args: never; Returns: Json }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
       get_billing_overview: { Args: never; Returns: Json }
@@ -1494,6 +1495,33 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
+      list_athletes_global: {
+        Args: {
+          filter_activity?: string
+          filter_consent?: string
+          filter_team_id?: string
+          row_limit?: number
+          search_text?: string
+          tested_this_month?: boolean
+        }
+        Returns: {
+          activity_status: string
+          age: number
+          consent_status: string
+          created_at: string
+          email: string
+          gender: string
+          id: string
+          last_test_at: string
+          name: string
+          organisation_name: string
+          practitioner_email: string
+          practitioner_name: string
+          reports_sent: number
+          team_id: string
+          tests_logged: number
+        }[]
+      }
       list_billing_subscriptions: {
         Args: never
         Returns: {
