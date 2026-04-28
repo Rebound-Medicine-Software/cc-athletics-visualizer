@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 import { toast } from "sonner";
 import { BookingEvent, CalComBooking } from "./types";
 
 export const useBookings = () => {
   const { profile } = useAuth();
+  const { teamId: effectiveTeamId } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
   const [bookings, setBookings] = useState<BookingEvent[]>([]);
   const [eventTypes, setEventTypes] = useState<Array<{ id: number; title: string; slug: string; length: number; lengthOptions?: number[] }>>([]);
   const [schedules, setSchedules] = useState<Array<{ id: number; name: string; availability: Array<{ days: number[]; startTime: string; endTime: string }> }>>([]);
@@ -15,11 +19,11 @@ export const useBookings = () => {
   // Check if Cal.com is connected
   useEffect(() => {
     const checkCal = async () => {
-      if (!profile?.team_id) return;
+      if (!effectiveTeamId) return;
       const { data: team } = await supabase
         .from("teams")
         .select("setup_data")
-        .eq("id", profile.team_id)
+        .eq("id", effectiveTeamId)
         .single();
 
       if (team?.setup_data && typeof team.setup_data === "object") {
@@ -28,7 +32,7 @@ export const useBookings = () => {
       }
     };
     checkCal();
-  }, [profile?.team_id]);
+  }, [effectiveTeamId]);
 
   const callCalProxy = useCallback(
     async (action: string, method: string = "GET", body?: any, extraParams?: Record<string, string>) => {
@@ -61,7 +65,7 @@ export const useBookings = () => {
   );
 
   const fetchBookings = useCallback(async () => {
-    if (!profile?.team_id) return;
+    if (!effectiveTeamId) return;
     setIsLoading(true);
 
     try {
@@ -81,7 +85,7 @@ export const useBookings = () => {
             title: b.title || "Cal.com Booking",
             client_id: null,
             therapist_id: null,
-            team_id: profile.team_id,
+            team_id: effectiveTeamId,
             appointment_date: b.start,
             end_date: b.end,
             status: b.status,
@@ -105,7 +109,7 @@ export const useBookings = () => {
       const { data: localData, error } = await supabase
         .from("bookings")
         .select("*")
-        .eq("team_id", profile.team_id)
+        .eq("team_id", effectiveTeamId)
         .order("appointment_date", { ascending: true });
 
       if (!error && localData) {
@@ -133,7 +137,7 @@ export const useBookings = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [profile?.team_id, calConnected, callCalProxy]);
+  }, [effectiveTeamId, calConnected, callCalProxy]);
 
   // Fetch event types from Cal.com
   const fetchEventTypes = useCallback(async () => {
@@ -214,6 +218,7 @@ export const useBookings = () => {
   }, [fetchBookings, fetchEventTypes, fetchSchedules]);
 
   const createBooking = async (date: Date, title: string, notes?: string) => {
+    if (guardWrite('Creating a booking')) return;
     if (!profile?.team_id) {
       toast.error("No team found");
       return;
@@ -244,6 +249,7 @@ export const useBookings = () => {
     notes?: string;
     lengthInMinutes?: number;
   }) => {
+    if (guardWrite('Creating a Cal.com booking')) return;
     try {
       const result = await callCalProxy("create-booking", "POST", {
         eventTypeId: params.eventTypeId,
@@ -315,6 +321,7 @@ export const useBookings = () => {
   );
 
   const updateBooking = async (id: string, updates: Partial<BookingEvent>) => {
+    if (guardWrite('Updating a booking')) return;
     const booking = bookings.find((b) => b.id === id);
 
     // Cal.com booking — reschedule via API
@@ -364,6 +371,7 @@ export const useBookings = () => {
   };
 
   const deleteBooking = async (id: string) => {
+    if (guardWrite('Deleting a booking')) return;
     const booking = bookings.find((b) => b.id === id);
 
     // Cal.com booking — cancel via API
@@ -399,6 +407,7 @@ export const useBookings = () => {
   };
 
   const resizeBooking = async (bookingId: string, newDurationMinutes: number, matchingEventTypeId: number) => {
+    if (guardWrite('Resizing a booking')) return;
     const booking = bookings.find((b) => b.id === bookingId);
     if (!booking || booking.source !== "cal") {
       toast.error("Duration resize is only supported for Cal.com bookings");

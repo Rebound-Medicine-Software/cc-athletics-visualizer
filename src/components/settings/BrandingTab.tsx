@@ -3,12 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Palette, Save } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
+import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BrandingForm } from '@/components/shared/BrandingForm';
 
 export const BrandingTab = () => {
   const { profile, refreshProfile } = useAuth();
+  const { teamId: effectiveTeamId } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [teamBranding, setTeamBranding] = useState<any>(null);
@@ -25,20 +29,20 @@ export const BrandingTab = () => {
 
   useEffect(() => {
     fetchTeamBranding();
-  }, [profile?.team_id]);
+  }, [effectiveTeamId]);
 
   const fetchTeamBranding = async () => {
-    if (!profile?.team_id) {
-      console.log('No team_id found for profile:', profile);
+    if (!effectiveTeamId) {
+      console.log('No effective team_id found for profile:', profile);
       return;
     }
 
     try {
-      console.log('Fetching team branding for team_id:', profile.team_id);
+      console.log('Fetching team branding for team_id:', effectiveTeamId);
       const { data, error } = await supabase
         .from('teams')
         .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
-        .eq('id', profile.team_id)
+        .eq('id', effectiveTeamId)
         .single();
 
       if (error) {
@@ -108,6 +112,7 @@ export const BrandingTab = () => {
   };
 
   const handleSave = async () => {
+    if (guardWrite('Saving branding')) return;
     if (!profile?.team_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'No team associated with your account' });
       return;

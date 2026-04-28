@@ -4,6 +4,7 @@ import type { HomeMetrics } from "@/hooks/useHomeMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeamCurrency } from "@/hooks/useTeamCurrency";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 
 interface Props {
   metrics?: HomeMetrics;
@@ -14,7 +15,7 @@ interface Props {
 
 export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner }: Props) => {
   const { profile } = useAuth();
-  const { symbol } = useTeamCurrency(profile?.team_id);
+  const { symbol } = useTeamCurrency(useEffectiveTeamId().teamId);
   const allCards = [
     ...(isSuperAdmin
       ? [{ id: "orgs", icon: Building2, label: "Active Organisations", value: metrics?.activeOrgLogins30d, sub: `${metrics?.totalOrganisations ?? 0} total`, color: "text-blue-600" }]

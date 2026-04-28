@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 import { toast } from "sonner";
 import Cal, { getCalApi } from "@calcom/embed-react";
 import {
@@ -19,6 +21,8 @@ import { NookalCalendar } from "./booking-calendar/NookalCalendar";
 
 export const BookingCalendar = () => {
   const { profile } = useAuth();
+  const { teamId: effectiveTeamId } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
   const [calUsername, setCalUsername] = useState("");
   const [calLink, setCalLink] = useState("");
   const [isConnected, setIsConnected] = useState(false);
@@ -30,7 +34,7 @@ export const BookingCalendar = () => {
   // Load Cal.com settings from team setup_data
   useEffect(() => {
     const loadCalSettings = async () => {
-      if (!profile?.team_id) {
+      if (!effectiveTeamId) {
         setIsLoading(false);
         return;
       }
@@ -39,7 +43,7 @@ export const BookingCalendar = () => {
         const { data: team } = await supabase
           .from("teams")
           .select("setup_data")
-          .eq("id", profile.team_id)
+          .eq("id", effectiveTeamId)
           .single();
 
         if (team?.setup_data && typeof team.setup_data === 'object') {
@@ -58,7 +62,7 @@ export const BookingCalendar = () => {
     };
 
     loadCalSettings();
-  }, [profile?.team_id]);
+  }, [effectiveTeamId]);
 
   // Initialize Cal.com embed API and hide promotions
   useEffect(() => {
@@ -106,6 +110,7 @@ export const BookingCalendar = () => {
   }, [isConnected, calUsername]);
 
   const handleConnect = async () => {
+    if (guardWrite('Connecting Cal.com')) return;
     if (!inputUsername.trim()) {
       toast.error("Please enter your Cal.com username");
       return;
@@ -155,6 +160,7 @@ export const BookingCalendar = () => {
   };
 
   const handleDisconnect = async () => {
+    if (guardWrite('Disconnecting Cal.com')) return;
     if (!profile?.team_id) return;
 
     try {
