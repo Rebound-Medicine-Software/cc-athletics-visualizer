@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { ImpersonationAuditPanel } from '../primitives/ImpersonationAuditPanel';
 import { Search, Filter, Calendar } from 'lucide-react';
 
 const events = Array.from({ length: 20 }, (_, i) => {
