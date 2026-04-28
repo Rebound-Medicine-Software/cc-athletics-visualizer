@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logActivity } from '../_shared/logActivity.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,6 +70,14 @@ serve(async (req) => {
     }
 
     console.log('User created successfully:', user.user?.id);
+    await logActivity({
+      eventType: 'organisation_signup',
+      eventSource: 'signup-organisation',
+      severity: 'success',
+      userId: user.user?.id ?? null,
+      organisationName: `${firstName} ${lastName}`,
+      metadata: { email },
+    });
 
     // Send NotificationAPI email
     console.log('Sending NotificationAPI email...');
@@ -100,6 +109,12 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Error in signup-organisation function:', error);
+    await logActivity({
+      eventType: 'organisation_signup_failed',
+      eventSource: 'signup-organisation',
+      severity: 'critical',
+      metadata: { error: error?.message ?? String(error) },
+    });
     return new Response(JSON.stringify({
       error: error.message
     }), {
