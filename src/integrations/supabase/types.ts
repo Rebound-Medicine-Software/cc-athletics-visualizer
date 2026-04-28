@@ -1293,6 +1293,7 @@ export type Database = {
       }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      get_organisation_detail: { Args: { team_uuid: string }; Returns: Json }
       get_organisation_health: {
         Args: never
         Returns: {

@@ -3,6 +3,7 @@ import { PageHeader } from '../primitives/PageHeader';
 import { KpiCard } from '../primitives/KpiCard';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { OrganisationDetailDrawer } from '../primitives/OrganisationDetailDrawer';
 import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,13 +23,14 @@ const churnLabel = (i: number) => (i % 7 === 0 ? 'high' : i % 4 === 0 ? 'med' : 
 
 export const Organisations: React.FC = () => {
   const [rows, setRows] = useState<OrgRow[]>([]);
+  const [openTeamId, setOpenTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('teams').select('id,name,cc_team_id,country,practitioner_count,created_at,primary_color').limit(200)
       .then(({ data }) => setRows(data || []));
   }, []);
 
-  const action = (label: string, name: string) => () => toast(`${label} → ${name}`, { description: 'Visual-only in this build.' });
+  const action = (label: string, name: string) => () => toast(`${label} → ${name}`, { description: 'Coming next — not yet wired.' });
 
   return (
     <>
@@ -98,14 +100,14 @@ export const Organisations: React.FC = () => {
             render: (r) => (
               <div className="flex items-center gap-1 justify-end">
                 {[
-                  { Icon: Eye, label: 'View' },
-                  { Icon: UserCog, label: 'Impersonate' },
-                  { Icon: ArrowUpCircle, label: 'Upgrade' },
-                  { Icon: Pause, label: 'Suspend' },
-                  { Icon: MessageSquare, label: 'Message' },
-                  { Icon: History, label: 'Audit' },
-                ].map(({ Icon, label }) => (
-                  <button key={label} title={label} className="cc-btn p-1.5" onClick={action(label, r.name)}>
+                  { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
+                  { Icon: UserCog, label: 'Impersonate', onClick: action('Impersonate', r.name) },
+                  { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
+                  { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
+                  { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
+                  { Icon: History, label: 'Audit', onClick: action('Audit', r.name) },
+                ].map(({ Icon, label, onClick }) => (
+                  <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
                     <Icon className="w-3 h-3" />
                   </button>
                 ))}
@@ -116,6 +118,8 @@ export const Organisations: React.FC = () => {
         empty="No organisations yet"
         maxHeight={620}
       />
+
+      <OrganisationDetailDrawer teamId={openTeamId} onClose={() => setOpenTeamId(null)} />
     </>
   );
 };
