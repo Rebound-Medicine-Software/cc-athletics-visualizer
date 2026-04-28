@@ -1330,6 +1330,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_analytics_warehouse_overview: { Args: never; Returns: Json }
       get_athletes_overview: { Args: never; Returns: Json }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
@@ -1350,6 +1351,19 @@ export type Database = {
           avg_churn_risk: number
           day: string
           high_risk_org_count: number
+        }[]
+      }
+      get_elite_benchmark_summary: {
+        Args: never
+        Returns: {
+          age_group: number
+          athlete_count: number
+          avg_cmj_height: number
+          avg_cmj_peak_power: number
+          avg_imtp_peak: number
+          avg_imtp_relative: number
+          sport: string
+          weight_category: string
         }[]
       }
       get_global_activity_feed: {
@@ -1453,6 +1467,16 @@ export type Database = {
         }[]
       }
       get_practitioners_overview: { Args: never; Returns: Json }
+      get_regional_testing_distribution: {
+        Args: never
+        Returns: {
+          athlete_count: number
+          country: string
+          organisation_count: number
+          region: string
+          test_count: number
+        }[]
+      }
       get_reports_ai_overview: { Args: never; Returns: Json }
       get_reports_ai_trends: {
         Args: { days_back?: number }
@@ -1470,6 +1494,16 @@ export type Database = {
           active_subscriptions: number
           day: string
           total_revenue: number
+        }[]
+      }
+      get_sport_benchmark_distribution: {
+        Args: never
+        Returns: {
+          athlete_count: number
+          avg_cmj_height: number
+          avg_imtp_peak: number
+          sport: string
+          test_count: number
         }[]
       }
       get_support_ticket_detail: {
