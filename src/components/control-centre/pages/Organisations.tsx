@@ -100,14 +100,14 @@ export const Organisations: React.FC = () => {
             render: (r) => (
               <div className="flex items-center gap-1 justify-end">
                 {[
-                  { Icon: Eye, label: 'View' },
-                  { Icon: UserCog, label: 'Impersonate' },
-                  { Icon: ArrowUpCircle, label: 'Upgrade' },
-                  { Icon: Pause, label: 'Suspend' },
-                  { Icon: MessageSquare, label: 'Message' },
-                  { Icon: History, label: 'Audit' },
-                ].map(({ Icon, label }) => (
-                  <button key={label} title={label} className="cc-btn p-1.5" onClick={action(label, r.name)}>
+                  { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
+                  { Icon: UserCog, label: 'Impersonate', onClick: action('Impersonate', r.name) },
+                  { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
+                  { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
+                  { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
+                  { Icon: History, label: 'Audit', onClick: action('Audit', r.name) },
+                ].map(({ Icon, label, onClick }) => (
+                  <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
                     <Icon className="w-3 h-3" />
                   </button>
                 ))}
@@ -118,6 +118,8 @@ export const Organisations: React.FC = () => {
         empty="No organisations yet"
         maxHeight={620}
       />
+
+      <OrganisationDetailDrawer teamId={openTeamId} onClose={() => setOpenTeamId(null)} />
     </>
   );
 };
