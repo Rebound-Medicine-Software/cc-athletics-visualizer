@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logActivity, logIntegrationHealth } from '../_shared/logActivity.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -120,6 +121,18 @@ Deno.serve(async (req) => {
     if (!apiResponse.ok) {
       const text = await apiResponse.text().catch(() => '')
       console.error(`NotificationAPI failed [${apiResponse.status}]:`, text)
+      await logIntegrationHealth('notificationapi', 'failed', {
+        failureReason: `report email ${apiResponse.status}: ${text.slice(0, 500)}`,
+        payload: { notificationId: 'athlete_report_email', email: recipientEmail },
+      })
+      await logActivity({
+        eventType: 'report_email_failed',
+        eventSource: 'send-report-via-notifications-api',
+        severity: 'critical',
+        athleteId: athlete.id,
+        organisationName: athlete.team,
+        metadata: { email: recipientEmail, status: apiResponse.status },
+      })
       return new Response(
         JSON.stringify({
           error: 'Failed to send email via NotificationAPI',
@@ -131,6 +144,17 @@ Deno.serve(async (req) => {
     }
 
     console.log('Report sent successfully via NotificationAPI')
+    await logIntegrationHealth('notificationapi', 'success', {
+      payload: { notificationId: 'athlete_report_email' },
+    })
+    await logActivity({
+      eventType: 'report_email_sent',
+      eventSource: 'send-report-via-notifications-api',
+      severity: 'info',
+      athleteId: athlete.id,
+      organisationName: athlete.team,
+      metadata: { athlete_name: athlete.name, email: recipientEmail },
+    })
 
     return new Response(
       JSON.stringify({

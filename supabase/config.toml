@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.send-consent-email]
 verify_jwt = false
+
+[functions.compute-org-health-snapshots]
+verify_jwt = false
+
+[functions.generate-platform-alerts]
+verify_jwt = false
