@@ -1443,6 +1443,15 @@ export type Database = {
           day: string
         }[]
       }
+      get_practitioner_engagement_trends: {
+        Args: { days_back?: number }
+        Returns: {
+          active_count: number
+          avg_engagement: number
+          day: string
+        }[]
+      }
+      get_practitioners_overview: { Args: never; Returns: Json }
       get_reports_ai_overview: { Args: never; Returns: Json }
       get_reports_ai_trends: {
         Args: { days_back?: number }
@@ -1584,6 +1593,23 @@ export type Database = {
           source: string
           target_label: string
           team_id: string
+        }[]
+      }
+      list_practitioners_overview: {
+        Args: never
+        Returns: {
+          caseload: number
+          created_at: string
+          email: string
+          engagement: string
+          full_name: string
+          last_login_at: string
+          organisation_name: string
+          reports_sent: number
+          role: string
+          setup_completed: boolean
+          team_id: string
+          user_id: string
         }[]
       }
       list_reports_ai_activity: {
