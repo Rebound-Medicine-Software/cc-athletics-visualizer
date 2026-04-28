@@ -172,7 +172,7 @@ export const Organisations: React.FC = () => {
               <div className="flex items-center gap-1 justify-end">
                 {[
                   { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
-                  { Icon: UserCog, label: 'Impersonate', onClick: action('Impersonate', r.name) },
+                  { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
                   { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
                   { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
                   { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
@@ -191,6 +191,12 @@ export const Organisations: React.FC = () => {
       />
 
       <OrganisationDetailDrawer teamId={openTeamId} onClose={() => setOpenTeamId(null)} />
+      <ImpersonationModal
+        open={!!impersonateTarget}
+        onClose={() => setImpersonateTarget(null)}
+        teamId={impersonateTarget?.id ?? null}
+        teamName={impersonateTarget?.name ?? null}
+      />
     </>
   );
 };
