@@ -134,11 +134,28 @@ Provide a short explanation of what this test measures and why it matters, follo
       };
     }
 
+    await logActivity({
+      eventType: 'ai_coach_insight_generated',
+      eventSource: 'generate-ai-coach-insight',
+      severity: 'info',
+      metadata: { test_name: testMetrics.testName, test_date: testMetrics.testDate },
+    });
+    await logIntegrationHealth('lovable_ai_gateway', 'success', { payload: { route: 'ai_coach_insight' } });
+
     return new Response(JSON.stringify({ success: true, insight }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("AI Coach Insight error:", error);
+    await logIntegrationHealth('lovable_ai_gateway', 'failed', {
+      failureReason: `ai coach: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500),
+    });
+    await logActivity({
+      eventType: 'ai_coach_insight_failed',
+      eventSource: 'generate-ai-coach-insight',
+      severity: 'warning',
+      metadata: { error: error instanceof Error ? error.message : String(error) },
+    });
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Unknown error",

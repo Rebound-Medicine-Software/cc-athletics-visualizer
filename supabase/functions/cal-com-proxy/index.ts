@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { logIntegrationHealth } from "../_shared/logActivity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -239,6 +240,9 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("Cal.com proxy error:", err);
+    await logIntegrationHealth('cal_com', 'failed', {
+      failureReason: `cal.com proxy: ${err instanceof Error ? err.message : String(err)}`.slice(0, 500),
+    });
     return new Response(
       JSON.stringify({ error: "Internal server error", details: String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
