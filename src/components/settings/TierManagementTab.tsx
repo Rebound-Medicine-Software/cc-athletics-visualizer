@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Edit, Plus, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 import { useToast } from "@/hooks/use-toast";
 
 interface Tier {
@@ -24,6 +25,7 @@ interface Tier {
 
 export const TierManagementTab = () => {
   const { profile, isRole } = useAuth();
+  const guardWrite = useViewAsWriteGuard();
   const { toast } = useToast();
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,6 +81,7 @@ export const TierManagementTab = () => {
   };
 
   const handleSave = async () => {
+    if (guardWrite('Saving tier')) return;
     if (!editingTier) return;
 
     try {
