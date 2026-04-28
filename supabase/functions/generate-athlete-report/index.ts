@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts'
+import { logActivity } from '../_shared/logActivity.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -602,6 +603,14 @@ Deno.serve(async (req) => {
     console.log(`Generated interactive report for athlete ${athlete.name}`);
     console.log(`Report URL: ${publicUrl}`);
 
+    await logActivity({
+      eventType: 'report_generated',
+      eventSource: 'generate-athlete-report',
+      severity: 'info',
+      athleteId: athleteIdToUse,
+      metadata: { athlete_name: athlete.name, report_url: publicUrl },
+    });
+
     return new Response(
       JSON.stringify({ 
         filePath: publicUrl,
@@ -618,6 +627,12 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-athlete-report function:', error);
+    await logActivity({
+      eventType: 'report_generation_failed',
+      eventSource: 'generate-athlete-report',
+      severity: 'critical',
+      metadata: { error: error instanceof Error ? error.message : String(error) },
+    });
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
