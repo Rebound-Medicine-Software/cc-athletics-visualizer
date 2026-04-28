@@ -1291,6 +1291,24 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_integration_detail: {
+        Args: { integration_name_in: string }
+        Returns: Json
+      }
+      get_integration_overview: {
+        Args: never
+        Returns: {
+          affected_team_count: number
+          avg_latency_ms_24h: number
+          failure_count_24h: number
+          integration_name: string
+          last_failure_at: string
+          last_success_at: string
+          status: string
+          success_count_24h: number
+          team_connected_count: number
+        }[]
+      }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
       get_organisation_detail: { Args: { team_uuid: string }; Returns: Json }
