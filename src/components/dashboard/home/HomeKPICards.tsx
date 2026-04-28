@@ -4,6 +4,7 @@ import type { HomeMetrics } from "@/hooks/useHomeMetrics";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeamCurrency } from "@/hooks/useTeamCurrency";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 
 interface Props {
   metrics?: HomeMetrics;
