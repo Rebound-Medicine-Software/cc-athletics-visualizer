@@ -1264,6 +1264,7 @@ export type Database = {
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
+      get_billing_overview: { Args: never; Returns: Json }
       get_churn_risk_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1379,8 +1380,37 @@ export type Database = {
           tests_logged_count: number
         }[]
       }
+      get_tier_distribution: {
+        Args: never
+        Returns: {
+          avg_seats: number
+          monthly_revenue: number
+          organisation_count: number
+          percentage_of_total: number
+          tier_name: string
+        }[]
+      }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
+      list_billing_subscriptions: {
+        Args: never
+        Returns: {
+          churn_risk_score: number
+          created_at: string
+          id: string
+          last_activity_at: string
+          monthly_value: number
+          organisation_name: string
+          payment_status: string
+          renewal_date: string
+          seat_count: number
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          team_id: string
+          tier_name: string
+        }[]
+      }
       list_organisations_overview: {
         Args: never
         Returns: {
