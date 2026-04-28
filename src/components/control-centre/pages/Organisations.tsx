@@ -4,6 +4,7 @@ import { KpiCard } from '../primitives/KpiCard';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { OrganisationDetailDrawer } from '../primitives/OrganisationDetailDrawer';
+import { ImpersonationModal } from '../primitives/ImpersonationModal';
 import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -69,6 +70,7 @@ export const Organisations: React.FC = () => {
   const [kpis, setKpis] = useState<OrgKpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -170,7 +172,7 @@ export const Organisations: React.FC = () => {
               <div className="flex items-center gap-1 justify-end">
                 {[
                   { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
-                  { Icon: UserCog, label: 'Impersonate', onClick: action('Impersonate', r.name) },
+                  { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
                   { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
                   { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
                   { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
@@ -189,6 +191,12 @@ export const Organisations: React.FC = () => {
       />
 
       <OrganisationDetailDrawer teamId={openTeamId} onClose={() => setOpenTeamId(null)} />
+      <ImpersonationModal
+        open={!!impersonateTarget}
+        onClose={() => setImpersonateTarget(null)}
+        teamId={impersonateTarget?.id ?? null}
+        teamName={impersonateTarget?.name ?? null}
+      />
     </>
   );
 };

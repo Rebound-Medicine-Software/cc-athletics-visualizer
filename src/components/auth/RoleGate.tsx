@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth, type UserRole } from '@/contexts/AuthContext';
+import { useImpersonation } from '@/lib/impersonation/ImpersonationContext';
 import { resolveRoleHome } from '@/lib/auth/resolveRoleHome';
 import AuthLoading from './AuthLoading';
 
@@ -39,6 +40,7 @@ const RoleGate: React.FC<RoleGateProps> = ({
   fallbackRoute,
 }) => {
   const { profile, loading } = useAuth();
+  const { impersonation } = useImpersonation();
 
   if (loading) {
     return <AuthLoading label="Verifying access…" />;
@@ -52,7 +54,16 @@ const RoleGate: React.FC<RoleGateProps> = ({
   const role = profile.role as AllowedRole;
   const isAllowed = allowedRoles.includes(role);
 
-  if (isAllowed) {
+  // While a super admin is impersonating an organisation, allow them to
+  // traverse organisation/practitioner gates as a read-only "view-as".
+  const isSuperAdminImpersonating =
+    role === 'super_admin' &&
+    !!impersonation &&
+    (allowedRoles.includes('organisation' as AllowedRole) ||
+      allowedRoles.includes('practitioner' as AllowedRole) ||
+      allowedRoles.includes('clinician' as AllowedRole));
+
+  if (isAllowed || isSuperAdminImpersonating) {
     return <>{children}</>;
   }
 

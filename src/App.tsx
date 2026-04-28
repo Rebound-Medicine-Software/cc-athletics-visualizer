@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ImpersonationProvider } from "@/lib/impersonation/ImpersonationContext";
+import { ImpersonationBanner } from "@/components/control-centre/primitives/ImpersonationBanner";
 import { ProtectedRoute, RoleGate, SuperAdminGate } from "@/components/auth";
 import AdminRedirect from "@/components/auth/AdminRedirect";
 import Index from "./pages/Index";
@@ -28,6 +30,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ImpersonationProvider>
+            <ImpersonationBanner />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Index />} />
@@ -108,6 +112,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ImpersonationProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
