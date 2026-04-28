@@ -104,36 +104,6 @@ export type Database = {
           },
         ]
       }
-      athletes_new: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          name: string
-          team: string
-          testing_dates: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          name: string
-          team: string
-          testing_dates: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          name?: string
-          team?: string
-          testing_dates?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       benchmark_data_warehouse: {
         Row: {
           age_group: string | null
@@ -317,13 +287,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "bookings_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "bookings_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -338,163 +301,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      clients: {
-        Row: {
-          assigned_therapist_id: string | null
-          created_at: string | null
-          id: string
-          status: string | null
-          stripe_status: string | null
-          team_id: string | null
-          tier_id: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          assigned_therapist_id?: string | null
-          created_at?: string | null
-          id?: string
-          status?: string | null
-          stripe_status?: string | null
-          team_id?: string | null
-          tier_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          assigned_therapist_id?: string | null
-          created_at?: string | null
-          id?: string
-          status?: string | null
-          stripe_status?: string | null
-          team_id?: string | null
-          tier_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "clients_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "clients_tier_id_fkey"
-            columns: ["tier_id"]
-            isOneToOne: false
-            referencedRelation: "tiers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      "Elite Athlete Data": {
-        Row: {
-          "Age Group": number
-          "Athlete Name": string
-          "CMJ Jump Height (cm)": number | null
-          "CMJ Peak Power (W)": number | null
-          "CMJ Reactive Strength Index": string | null
-          "CMJ Relative Peak Power (W/kg)": number | null
-          created_at: string
-          dynamic_metrics: Json | null
-          id: string
-          "IMTP Peak Force (N)": number | null
-          "IMTP Relative Peak Force (N/kg)": number | null
-          Sex: string
-          Sport: string
-          "Team Name": string
-          "Weight Category (kg)": string
-        }
-        Insert: {
-          "Age Group": number
-          "Athlete Name": string
-          "CMJ Jump Height (cm)"?: number | null
-          "CMJ Peak Power (W)"?: number | null
-          "CMJ Reactive Strength Index"?: string | null
-          "CMJ Relative Peak Power (W/kg)"?: number | null
-          created_at?: string
-          dynamic_metrics?: Json | null
-          id?: string
-          "IMTP Peak Force (N)"?: number | null
-          "IMTP Relative Peak Force (N/kg)"?: number | null
-          Sex: string
-          Sport: string
-          "Team Name": string
-          "Weight Category (kg)": string
-        }
-        Update: {
-          "Age Group"?: number
-          "Athlete Name"?: string
-          "CMJ Jump Height (cm)"?: number | null
-          "CMJ Peak Power (W)"?: number | null
-          "CMJ Reactive Strength Index"?: string | null
-          "CMJ Relative Peak Power (W/kg)"?: number | null
-          created_at?: string
-          dynamic_metrics?: Json | null
-          id?: string
-          "IMTP Peak Force (N)"?: number | null
-          "IMTP Relative Peak Force (N/kg)"?: number | null
-          Sex?: string
-          Sport?: string
-          "Team Name"?: string
-          "Weight Category (kg)"?: string
-        }
-        Relationships: []
-      }
-      "Elite Athletes New": {
-        Row: {
-          "Age Group": number | null
-          "Athlete Name": string | null
-          "CMJ Jump Height (cm)": number | null
-          "CMJ Peak Power (W)": number | null
-          "CMJ Reactive Strength Index": string | null
-          "CMJ Relative Peak Power (W/kg)": number | null
-          "IMTP Peak Force (N)": number | null
-          "IMTP Relative Peak Force (N/kg)": number | null
-          Sex: string | null
-          Sport: string | null
-          "Team Name": string
-          "Weight Category (kg)": string | null
-        }
-        Insert: {
-          "Age Group"?: number | null
-          "Athlete Name"?: string | null
-          "CMJ Jump Height (cm)"?: number | null
-          "CMJ Peak Power (W)"?: number | null
-          "CMJ Reactive Strength Index"?: string | null
-          "CMJ Relative Peak Power (W/kg)"?: number | null
-          "IMTP Peak Force (N)"?: number | null
-          "IMTP Relative Peak Force (N/kg)"?: number | null
-          Sex?: string | null
-          Sport?: string | null
-          "Team Name": string
-          "Weight Category (kg)"?: string | null
-        }
-        Update: {
-          "Age Group"?: number | null
-          "Athlete Name"?: string | null
-          "CMJ Jump Height (cm)"?: number | null
-          "CMJ Peak Power (W)"?: number | null
-          "CMJ Reactive Strength Index"?: string | null
-          "CMJ Relative Peak Power (W/kg)"?: number | null
-          "IMTP Peak Force (N)"?: number | null
-          "IMTP Relative Peak Force (N/kg)"?: number | null
-          Sex?: string | null
-          Sport?: string | null
-          "Team Name"?: string
-          "Weight Category (kg)"?: string | null
-        }
-        Relationships: []
       }
       elite_athlete_data: {
         Row: {
@@ -553,51 +359,6 @@ export type Database = {
           test_date?: string | null
           updated_at?: string
           weight_category?: string | null
-        }
-        Relationships: []
-      }
-      elite_athlete_metrics: {
-        Row: {
-          age_group: string | null
-          athlete_name: string
-          created_at: string | null
-          exercise: string
-          id: string
-          metric_type: string
-          metric_value: number
-          sex: string | null
-          sport: string | null
-          team_name: string
-          test_date: string | null
-          weight_category_kg: number | null
-        }
-        Insert: {
-          age_group?: string | null
-          athlete_name: string
-          created_at?: string | null
-          exercise: string
-          id?: string
-          metric_type: string
-          metric_value: number
-          sex?: string | null
-          sport?: string | null
-          team_name: string
-          test_date?: string | null
-          weight_category_kg?: number | null
-        }
-        Update: {
-          age_group?: string | null
-          athlete_name?: string
-          created_at?: string | null
-          exercise?: string
-          id?: string
-          metric_type?: string
-          metric_value?: number
-          sex?: string | null
-          sport?: string | null
-          team_name?: string
-          test_date?: string | null
-          weight_category_kg?: number | null
         }
         Relationships: []
       }
@@ -1010,13 +771,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "profiles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "profiles_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -1371,41 +1125,6 @@ export type Database = {
           },
         ]
       }
-      test_results: {
-        Row: {
-          athlete_id: string
-          created_at: string
-          id: string
-          metrics: Json
-          test_name: Database["public"]["Enums"]["test_name_enum"]
-          updated_at: string
-        }
-        Insert: {
-          athlete_id: string
-          created_at?: string
-          id?: string
-          metrics: Json
-          test_name: Database["public"]["Enums"]["test_name_enum"]
-          updated_at?: string
-        }
-        Update: {
-          athlete_id?: string
-          created_at?: string
-          id?: string
-          metrics?: Json
-          test_name?: Database["public"]["Enums"]["test_name_enum"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_results_athlete_id_fkey"
-            columns: ["athlete_id"]
-            isOneToOne: false
-            referencedRelation: "athletes_new"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       test_videos: {
         Row: {
           created_at: string | null
@@ -1539,93 +1258,6 @@ export type Database = {
           secondary_color?: string | null
         }
         Relationships: []
-      }
-      user_profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string | null
-          created_by: string | null
-          email: string | null
-          full_name: string | null
-          id: string | null
-          role: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          subscription_status: string | null
-          team_id: string | null
-          tier_id: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          role?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_status?: string | null
-          team_id?: string | null
-          tier_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          role?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_status?: string | null
-          team_id?: string | null
-          tier_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams_public"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profiles_tier_id_fkey"
-            columns: ["tier_id"]
-            isOneToOne: false
-            referencedRelation: "tiers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Functions: {
