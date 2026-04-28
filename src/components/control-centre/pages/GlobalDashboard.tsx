@@ -160,7 +160,23 @@ export const GlobalDashboard: React.FC = () => {
         <KpiCard label="Reports Generated"   value={kpisLoading ? '—' : fmt(reportsTotal)} icon={FileText} accent="navy" hint="all-time" />
         <KpiCard label="Monthly Revenue"     value={kpisLoading ? '—' : fmtCurrency(kpis?.monthly_revenue)} icon={DollarSign} accent="success" />
         <KpiCard label="Failed Integrations" value={kpisLoading ? '—' : fmt(kpis?.failed_integrations)} icon={AlertTriangle} accent="danger" hint="last 24h" />
-        <KpiCard label="Booking Utilisation" value="—"    icon={CalendarRange} accent="info" hint="not yet wired" />
+        <KpiCard
+          label="Booking Utilisation"
+          value={
+            kpisLoading
+              ? '—'
+              : kpis?.booking_utilisation_percent != null
+                ? `${kpis.booking_utilisation_percent}%`
+                : fmt(kpis?.monthly_bookings_count)
+          }
+          icon={CalendarRange}
+          accent="info"
+          hint={
+            kpis?.booking_utilisation_percent != null
+              ? `${fmt(kpis?.monthly_bookings_count)} bookings MTD`
+              : 'bookings MTD'
+          }
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">

@@ -11,6 +11,8 @@ export interface PlatformKpis {
   monthly_ai_requests: number;
   monthly_revenue: number;
   failed_integrations: number;
+  monthly_bookings_count: number;
+  booking_utilisation_percent: number | null;
 }
 
 const ZERO: PlatformKpis = {
@@ -23,6 +25,8 @@ const ZERO: PlatformKpis = {
   monthly_ai_requests: 0,
   monthly_revenue: 0,
   failed_integrations: 0,
+  monthly_bookings_count: 0,
+  booking_utilisation_percent: null,
 };
 
 export const usePlatformKpis = () => {
