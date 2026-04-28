@@ -127,7 +127,7 @@ export const Settings: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--cc-navy) / 0.25)', border: '1px solid hsl(var(--cc-navy-glow) / 0.4)' }}>
                   <Icon className="w-5 h-5" style={{ color: 'hsl(var(--cc-navy-glow))' }} />
                 </div>
-                <StatusBadge variant={s.live ? 'gold' : 'neutral'}>{s.live ? 'Manage' : 'Placeholder'}</StatusBadge>
+                <StatusBadge variant={s.live ? 'gold' : 'muted'}>{s.live ? 'Manage' : 'Placeholder'}</StatusBadge>
               </div>
               <div className="text-[14px] font-semibold mb-1">{s.title}</div>
               <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-muted))' }}>{s.desc}</div>
