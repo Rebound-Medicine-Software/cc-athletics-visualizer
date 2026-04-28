@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,22 +36,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
 
-  useEffect(() => {
-    // Check authentication using Supabase auth instead of localStorage
-    if (!loading && !user) {
-      navigate("/auth");
-      return;
-    }
-
-    // Role-based access control: clients should not access this clinician dashboard
-    if (!loading && user && profile) {
-      if (profile.role === 'client') {
-        toast.error("Access denied. This area is for clinicians only.");
-        navigate("/auth");
-        return;
-      }
-    }
-  }, [user, loading, navigate, profile]);
+  // Auth/role gating now handled centrally by <ProtectedRoute> + <RoleGate> in App.tsx.
 
   const handleLogout = async () => {
     try {

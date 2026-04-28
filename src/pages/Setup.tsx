@@ -32,26 +32,21 @@ const Setup = () => {
   ]);
 
   useEffect(() => {
-    // Check if user is authenticated and setup completion status
-    const checkAuth = async () => {
+    // Auth gating handled centrally by <ProtectedRoute> + <RoleGate allowedRoles={['organisation']}> in App.tsx.
+    // Business-specific check preserved: skip setup if already completed.
+    const checkSetupStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-      
-      // Check if setup has already been completed from database
+      if (!session) return; // ProtectedRoute will handle this
       const { data: profile } = await supabase
         .from('profiles')
         .select('setup_completed')
         .eq('user_id', session.user.id)
         .single();
-      
       if (profile?.setup_completed) {
         navigate('/dashboard');
       }
     };
-    checkAuth();
+    checkSetupStatus();
   }, [navigate]);
 
   const handleSoftwareSelection = () => {

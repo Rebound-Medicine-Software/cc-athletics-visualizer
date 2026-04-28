@@ -1,9 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
 import { ApiKeysTab } from "@/components/settings/ApiKeysTab";
@@ -21,17 +20,7 @@ const Settings = () => {
   const { profile } = useAuth();
   const { branding } = useBranding(profile?.team_id, profile?.role);
 
-  useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-    };
-    checkAuth();
-  }, [navigate]);
+  // Auth gating now handled centrally by <ProtectedRoute> in App.tsx.
 
   return (
     <div 
