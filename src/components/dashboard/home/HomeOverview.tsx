@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { useHomeMetrics, usePractitionerEngagement, useRecentActivity } from "@/hooks/useHomeMetrics";
 import { HomeKPICards } from "./HomeKPICards";
 import { PractitionerEngagementCard } from "./PractitionerEngagementCard";
@@ -8,8 +9,9 @@ import { PaymentsOverviewCard } from "./PaymentsOverviewCard";
 
 export const HomeOverview = () => {
   const { profile } = useAuth();
-  const teamId = profile?.team_id ?? null;
-  const role = profile?.role ?? null;
+  const { teamId, isImpersonating } = useEffectiveTeamId();
+  // While impersonating, render the dashboard as if the impersonated org is logged in.
+  const role = isImpersonating ? 'organisation' : (profile?.role ?? null);
   const isSuperAdmin = role === "super_admin";
   const isPractitioner = role === "clinician" || (role as string) === "practitioner";
 

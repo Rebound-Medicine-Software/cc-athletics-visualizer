@@ -14,7 +14,7 @@ interface Props {
 
 export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner }: Props) => {
   const { profile } = useAuth();
-  const { symbol } = useTeamCurrency(profile?.team_id);
+  const { symbol } = useTeamCurrency(useEffectiveTeamId().teamId);
   const allCards = [
     ...(isSuperAdmin
       ? [{ id: "orgs", icon: Building2, label: "Active Organisations", value: metrics?.activeOrgLogins30d, sub: `${metrics?.totalOrganisations ?? 0} total`, color: "text-blue-600" }]
