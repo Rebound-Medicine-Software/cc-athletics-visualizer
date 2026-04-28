@@ -1,110 +1,296 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
-import { Megaphone, Send, Wrench, CreditCard, Sparkles, Heart } from 'lucide-react';
+import { NotificationCampaignDrawer } from '../primitives/NotificationCampaignDrawer';
+import { Megaphone, Send, Users, RefreshCw } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const templates = [
-  { id: 'maint',     icon: Wrench,    label: 'Maintenance Alert',     desc: 'Scheduled downtime or platform updates' },
-  { id: 'pay',       icon: CreditCard,label: 'Payment Reminder',      desc: 'Overdue invoices or failed charges' },
-  { id: 'feature',   icon: Sparkles,  label: 'Feature Announcement',  desc: 'New capability rollout' },
-  { id: 'engage',    icon: Heart,     label: 'Engagement Nudge',      desc: 'Re-engage low-activity tenants' },
+type TargetType = 'all' | 'tier' | 'organisation' | 'status' | 'churn_risk';
+type Channel = 'email' | 'in_app' | 'webhook';
+
+interface Campaign {
+  id: string;
+  title: string;
+  message: string;
+  target_type: string;
+  target_value: string | null;
+  delivery_channel: string;
+  status: string;
+  recipient_count: number;
+  delivered_count: number;
+  failed_count: number;
+  created_by_email: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+
+interface Org { id: string; name: string }
+
+const channelOptions: { value: Channel; label: string }[] = [
+  { value: 'email', label: 'Email (NotificationAPI)' },
+  { value: 'in_app', label: 'In-App (record-only)' },
+  { value: 'webhook', label: 'Webhook (record-only)' },
 ];
 
-const sent = Array.from({ length: 8 }, (_, i) => ({
-  id: `cmp_${100 + i}`,
-  campaign: ['April Maintenance', 'Q2 Pricing Update', 'AI Coach Launch', 'Engagement Nudge — Velocity'][i % 4],
-  audience: ['All orgs', 'Premium tier', 'Trial accounts', 'Inactive 30d'][i % 4],
-  recipients: 18 + i * 7,
-  open_rate: `${42 + (i * 5) % 40}%`,
-  sent: `${i + 1}d ago`,
-}));
+const statusVariant = (s: string) =>
+  s === 'sent' ? 'success' : s === 'failed' ? 'danger' :
+  s === 'sending' || s === 'queued' ? 'warning' : 'muted';
+
+const fmt = (iso?: string | null) => iso ? new Date(iso).toLocaleString() : '—';
 
 export const Notifications: React.FC = () => {
-  const [tpl, setTpl] = useState('maint');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  const send = () => toast.success('Campaign queued', { description: `${subject || 'Untitled'} — visual-only in this build.` });
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [targetType, setTargetType] = useState<TargetType>('all');
+  const [targetValue, setTargetValue] = useState<string>('');
+  const [channel, setChannel] = useState<Channel>('email');
+  const [previewCount, setPreviewCount] = useState<number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [tiers, setTiers] = useState<string[]>([]);
+  const [orgs, setOrgs] = useState<Org[]>([]);
+
+  const loadCampaigns = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.rpc('list_notification_campaigns');
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setCampaigns((data as Campaign[]) ?? []);
+  };
+
+  const loadFilterOptions = async () => {
+    const [{ data: t }, { data: o }] = await Promise.all([
+      supabase.from('tiers').select('name'),
+      supabase.from('teams').select('id,name').order('name'),
+    ]);
+    setTiers(Array.from(new Set(((t ?? []) as any[]).map((r) => r.name).filter(Boolean))));
+    setOrgs(((o ?? []) as Org[]));
+  };
+
+  useEffect(() => { loadCampaigns(); loadFilterOptions(); }, []);
+
+  const refreshPreview = async () => {
+    setPreviewLoading(true);
+    const { data, error } = await supabase.rpc('preview_notification_audience', {
+      p_target_type: targetType,
+      p_target_value: targetValue || null,
+    });
+    setPreviewLoading(false);
+    if (error) { toast.error(error.message); setPreviewCount(null); return; }
+    setPreviewCount((data as any[])?.length ?? 0);
+  };
+
+  // Auto-refresh preview when target changes
+  useEffect(() => { setPreviewCount(null); }, [targetType, targetValue]);
+
+  const handleCreateDraft = async () => {
+    if (!title.trim() || !message.trim()) { toast.error('Title and message are required'); return; }
+    setSubmitting(true);
+    const { data, error } = await supabase.rpc('create_notification_campaign', {
+      p_title: title.trim(),
+      p_message: message.trim(),
+      p_target_type: targetType,
+      p_target_value: targetValue || null,
+      p_delivery_channel: channel,
+      p_metadata: {},
+    });
+    setSubmitting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Draft saved');
+    setTitle(''); setMessage(''); setTargetValue('');
+    await loadCampaigns();
+    if (data) setOpenId(data as unknown as string);
+  };
+
+  const handleSendNow = async () => {
+    if (!title.trim() || !message.trim()) { toast.error('Title and message are required'); return; }
+    setSubmitting(true);
+    try {
+      const { data: id, error } = await supabase.rpc('create_notification_campaign', {
+        p_title: title.trim(),
+        p_message: message.trim(),
+        p_target_type: targetType,
+        p_target_value: targetValue || null,
+        p_delivery_channel: channel,
+        p_metadata: {},
+      });
+      if (error) throw error;
+      const campaignId = id as unknown as string;
+
+      const { error: qErr } = await supabase.rpc('queue_notification_campaign', { campaign_uuid: campaignId });
+      if (qErr) throw qErr;
+
+      const { data: dispatchRes, error: dErr } = await supabase.functions.invoke('dispatch-notification-campaign', {
+        body: { campaign_id: campaignId },
+      });
+      if (dErr) throw dErr;
+
+      toast.success(`Sent: ${dispatchRes?.delivered ?? 0} delivered, ${dispatchRes?.failed ?? 0} failed`);
+      setTitle(''); setMessage(''); setTargetValue('');
+      await loadCampaigns();
+      setOpenId(campaignId);
+    } catch (e: any) {
+      toast.error(e.message ?? 'Send failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const targetValueInput = useMemo(() => {
+    if (targetType === 'all') return null;
+    if (targetType === 'tier') {
+      return (
+        <select className="cc-input mt-1" style={{ paddingLeft: 12 }} value={targetValue} onChange={(e) => setTargetValue(e.target.value)}>
+          <option value="">— Select tier —</option>
+          {tiers.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      );
+    }
+    if (targetType === 'organisation') {
+      return (
+        <select className="cc-input mt-1" style={{ paddingLeft: 12 }} value={targetValue} onChange={(e) => setTargetValue(e.target.value)}>
+          <option value="">— Select organisation —</option>
+          {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+        </select>
+      );
+    }
+    if (targetType === 'status') {
+      return (
+        <select className="cc-input mt-1" style={{ paddingLeft: 12 }} value={targetValue} onChange={(e) => setTargetValue(e.target.value)}>
+          <option value="">— Select status —</option>
+          {['trial','active','past_due','suspended','cancelled'].map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      );
+    }
+    // churn_risk
+    return (
+      <input
+        type="number" min={0} max={100}
+        className="cc-input mt-1" style={{ paddingLeft: 12 }}
+        placeholder="Churn risk threshold (e.g. 60)"
+        value={targetValue}
+        onChange={(e) => setTargetValue(e.target.value)}
+      />
+    );
+  }, [targetType, targetValue, tiers, orgs]);
 
   return (
     <>
-      <PageHeader title="Notifications Centre" subtitle="Send platform-wide communications and announcements." />
+      <PageHeader
+        title="Notifications Centre"
+        subtitle="Send platform-wide communications and announcements."
+        actions={
+          <button className="cc-btn" onClick={loadCampaigns}><RefreshCw className="w-3.5 h-3.5" /> Refresh</button>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
         <div className="cc-glass p-4 lg:col-span-2">
           <h3 className="cc-h2 mb-3 flex items-center gap-2"><Megaphone className="w-4 h-4" /> Compose Campaign</h3>
 
-          <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Template</label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2 mb-4">
-            {templates.map((t) => {
-              const Icon = t.icon;
-              const active = tpl === t.id;
-              return (
-                <button key={t.id} onClick={() => setTpl(t.id)}
-                  className="text-left p-3 rounded-lg transition-all"
-                  style={{
-                    background: active ? 'hsl(var(--cc-navy) / 0.4)' : 'hsl(var(--cc-surface) / 0.5)',
-                    border: `1px solid ${active ? 'hsl(var(--cc-gold) / 0.5)' : 'hsl(var(--cc-border))'}`,
-                  }}>
-                  <Icon className="w-4 h-4 mb-1.5" style={{ color: active ? 'hsl(var(--cc-gold))' : 'hsl(var(--cc-navy-glow))' }} />
-                  <div className="text-[12px] font-semibold">{t.label}</div>
-                  <div className="text-[10.5px] mt-0.5" style={{ color: 'hsl(var(--cc-fg-dim))' }}>{t.desc}</div>
-                </button>
-              );
-            })}
-          </div>
-
-          <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Subject</label>
-          <input className="cc-input mt-1 mb-3" style={{ paddingLeft: 12 }} placeholder="Subject line…" value={subject} onChange={(e) => setSubject(e.target.value)} />
+          <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Subject / Title</label>
+          <input className="cc-input mt-1 mb-3" style={{ paddingLeft: 12 }} placeholder="Campaign title…" value={title} onChange={(e) => setTitle(e.target.value)} />
 
           <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Message</label>
           <textarea
             rows={6}
-            className="w-full mt-1 p-3 rounded-lg text-[13px] resize-none"
+            className="w-full mt-1 mb-3 p-3 rounded-lg text-[13px] resize-none"
             style={{ background: 'hsl(var(--cc-surface) / 0.6)', border: '1px solid hsl(var(--cc-border))', color: 'hsl(var(--cc-fg))' }}
             placeholder="Write your message…"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
           />
 
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Delivery Channel</label>
+              <select className="cc-input mt-1" style={{ paddingLeft: 12 }} value={channel} onChange={(e) => setChannel(e.target.value as Channel)}>
+                {channelOptions.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Recipient Preview</label>
+              <div className="mt-1 flex items-center gap-2">
+                <button className="cc-btn" disabled={previewLoading} onClick={refreshPreview}>
+                  <Users className="w-3.5 h-3.5" /> {previewLoading ? '…' : 'Preview'}
+                </button>
+                {previewCount !== null && (
+                  <StatusBadge variant="info">{previewCount} recipients</StatusBadge>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 mt-3">
-            <button className="cc-btn">Save Draft</button>
-            <button className="cc-btn cc-btn-primary" onClick={send}><Send className="w-3.5 h-3.5" /> Send Campaign</button>
+            <button className="cc-btn" disabled={submitting} onClick={handleCreateDraft}>Save Draft</button>
+            <button className="cc-btn cc-btn-primary" disabled={submitting} onClick={handleSendNow}>
+              <Send className="w-3.5 h-3.5" /> {submitting ? 'Sending…' : 'Send Campaign'}
+            </button>
           </div>
         </div>
 
         <div className="cc-glass p-4">
-          <h3 className="cc-h2 mb-3">Audience</h3>
-          {[
-            { label: 'All organisations', count: 31 },
-            { label: 'Trial accounts', count: 6 },
-            { label: 'Premium tier', count: 9 },
-            { label: 'Elite tier', count: 4 },
-            { label: 'Inactive 30d', count: 5 },
-          ].map((a) => (
-            <label key={a.label} className="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-white/5">
-              <div className="flex items-center gap-2">
-                <input type="checkbox" defaultChecked={a.label === 'All organisations'} />
-                <span className="text-[12.5px]">{a.label}</span>
-              </div>
-              <span className="cc-badge cc-badge-muted">{a.count}</span>
-            </label>
-          ))}
+          <h3 className="cc-h2 mb-3">Audience Targeting</h3>
+
+          <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Target Type</label>
+          <select
+            className="cc-input mt-1 mb-3" style={{ paddingLeft: 12 }}
+            value={targetType}
+            onChange={(e) => { setTargetType(e.target.value as TargetType); setTargetValue(''); }}
+          >
+            <option value="all">All organisations</option>
+            <option value="tier">By tier</option>
+            <option value="organisation">Specific organisation</option>
+            <option value="status">By subscription status</option>
+            <option value="churn_risk">By churn risk threshold</option>
+          </select>
+
+          {targetValueInput && (
+            <>
+              <label className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Target Value</label>
+              {targetValueInput}
+            </>
+          )}
+
+          <div className="text-[11px] mt-4 leading-relaxed" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
+            Email campaigns are dispatched via NotificationAPI to each organisation's owner email.
+            In-app and webhook channels are recorded but not yet delivered.
+          </div>
         </div>
       </div>
 
       <DataTable
-        rows={sent}
+        rows={loading ? [] : campaigns}
+        empty={loading ? 'Loading campaigns…' : 'No campaigns yet'}
+        onRowClick={(r: any) => setOpenId(r.id)}
         columns={[
-          { key: 'id', label: 'ID', render: (r: any) => <code className="text-[11.5px]" style={{ color: 'hsl(var(--cc-fg-muted))' }}>{r.id}</code> },
-          { key: 'campaign', label: 'Campaign' },
-          { key: 'audience', label: 'Audience' },
-          { key: 'recipients', label: 'Recipients', align: 'right' },
-          { key: 'open_rate', label: 'Open Rate', align: 'right', render: (r: any) => <StatusBadge variant="gold">{r.open_rate}</StatusBadge> },
-          { key: 'sent', label: 'Sent', align: 'right' },
+          { key: 'title', label: 'Title', render: (r: Campaign) => <span className="font-medium">{r.title}</span> },
+          { key: 'target', label: 'Audience', render: (r: Campaign) => (
+            <StatusBadge variant="muted">{r.target_type}{r.target_value ? `: ${r.target_value}` : ''}</StatusBadge>
+          ) },
+          { key: 'delivery_channel', label: 'Channel' },
+          { key: 'status', label: 'Status', render: (r: Campaign) => (
+            <StatusBadge variant={statusVariant(r.status) as any} dot>{r.status}</StatusBadge>
+          ) },
+          { key: 'recipient_count', label: 'Recipients', align: 'right' },
+          { key: 'delivered_count', label: 'Delivered', align: 'right' },
+          { key: 'failed_count', label: 'Failed', align: 'right' },
+          { key: 'created_at', label: 'Created', align: 'right', render: (r: Campaign) => fmt(r.created_at) },
+          { key: 'sent_at', label: 'Sent', align: 'right', render: (r: Campaign) => fmt(r.sent_at) },
         ]}
+      />
+
+      <NotificationCampaignDrawer
+        campaignId={openId}
+        onClose={() => setOpenId(null)}
+        onChanged={loadCampaigns}
       />
     </>
   );
