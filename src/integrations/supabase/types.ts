@@ -1262,6 +1262,8 @@ export type Database = {
     }
     Functions: {
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
+      get_audit_overview: { Args: never; Returns: Json }
       get_churn_risk_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1402,6 +1404,32 @@ export type Database = {
           subscription_status: string
           tests_this_month: number
           tier_name: string
+        }[]
+      }
+      list_platform_audit_events: {
+        Args: {
+          end_date?: string
+          filter_actor?: string
+          filter_event_type?: string
+          filter_severity?: string
+          filter_source?: string
+          filter_team_id?: string
+          row_limit?: number
+          search_text?: string
+          start_date?: string
+        }
+        Returns: {
+          actor_id: string
+          actor_label: string
+          event_id: string
+          event_type: string
+          metadata: Json
+          occurred_at: string
+          organisation_name: string
+          severity: string
+          source: string
+          target_label: string
+          team_id: string
         }[]
       }
       list_support_tickets: {

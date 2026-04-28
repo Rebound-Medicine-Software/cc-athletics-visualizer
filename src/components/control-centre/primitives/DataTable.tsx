@@ -13,9 +13,10 @@ interface DataTableProps<T> {
   rows: T[];
   empty?: string;
   maxHeight?: number | string;
+  onRowClick?: (row: T) => void;
 }
 
-export function DataTable<T extends Record<string, any>>({ columns, rows, empty = 'No records', maxHeight = 540 }: DataTableProps<T>) {
+export function DataTable<T extends Record<string, any>>({ columns, rows, empty = 'No records', maxHeight = 540, onRowClick }: DataTableProps<T>) {
   return (
     <div className="cc-glass overflow-hidden">
       <div style={{ maxHeight, overflow: 'auto' }}>
@@ -32,7 +33,7 @@ export function DataTable<T extends Record<string, any>>({ columns, rows, empty 
               <tr><td colSpan={columns.length} style={{ textAlign: 'center', padding: 36, color: 'hsl(var(--cc-fg-dim))' }}>{empty}</td></tr>
             )}
             {rows.map((row, i) => (
-              <tr key={row.id ?? i}>
+              <tr key={row.id ?? i} onClick={onRowClick ? () => onRowClick(row) : undefined} style={onRowClick ? { cursor: 'pointer' } : undefined}>
                 {columns.map((c) => (
                   <td key={c.key} style={{ textAlign: c.align ?? 'left' }}>
                     {c.render ? c.render(row) : (row as any)[c.key] ?? '—'}
