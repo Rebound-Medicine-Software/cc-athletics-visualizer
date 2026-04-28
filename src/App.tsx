@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,12 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute, RoleGate, SuperAdminGate } from "@/components/auth";
+import AdminRedirect from "@/components/auth/AdminRedirect";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientDashboard from "./pages/ClientDashboard";
-import AdminDashboard from "./pages/AdminDashboard";
-import { SuperAdminDashboard } from "./components/admin/SuperAdminDashboard";
 import ControlCentre from "./components/control-centre/ControlCentre";
 
 import NotFound from "./pages/NotFound";
@@ -30,18 +29,82 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/setup" element={<Setup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/Dashboard(Client)" element={<ClientDashboard />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin(Dashboard)" element={<ControlCentre />} />
-            <Route path="/control-centre" element={<ControlCentre />} />
-            <Route path="/admin(Dashboard)/legacy" element={<SuperAdminDashboard />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/settings(Consumer1)" element={<Settings />} />
             <Route path="/consent" element={<AthleteConsent />} />
+
+            {/* Smart redirect for legacy /admin entry point */}
+            <Route path="/admin" element={<AdminRedirect />} />
+
+            {/* Canonical super_admin route */}
+            <Route
+              path="/control-centre"
+              element={
+                <ProtectedRoute>
+                  <SuperAdminGate>
+                    <ControlCentre />
+                  </SuperAdminGate>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Organisation onboarding */}
+            <Route
+              path="/setup"
+              element={
+                <ProtectedRoute>
+                  <RoleGate allowedRoles={['organisation']}>
+                    <Setup />
+                  </RoleGate>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Practitioner / Organisation dashboard */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <RoleGate
+                    allowedRoles={['organisation', 'practitioner', 'clinician']}
+                  >
+                    <Dashboard />
+                  </RoleGate>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Client portal */}
+            <Route
+              path="/Dashboard(Client)"
+              element={
+                <ProtectedRoute>
+                  <RoleGate allowedRoles={['client']}>
+                    <ClientDashboard />
+                  </RoleGate>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Settings — any authenticated user */}
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings(Consumer1)"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
