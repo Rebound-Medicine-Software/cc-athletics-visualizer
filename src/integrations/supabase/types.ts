@@ -1309,6 +1309,7 @@ export type Database = {
           tests_logged: number
         }[]
       }
+      get_organisations_kpis: { Args: never; Returns: Json }
       get_platform_alerts: {
         Args: never
         Returns: {
@@ -1356,6 +1357,31 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
+      list_organisations_overview: {
+        Args: never
+        Returns: {
+          athlete_count: number
+          calcom_status: string
+          cc_athletics_status: string
+          cc_team_id: string
+          churn_risk_score: number
+          country: string
+          created_at: string
+          id: string
+          last_activity_at: string
+          monthly_revenue: number
+          name: string
+          notificationapi_status: string
+          organisation_status: string
+          owner_email: string
+          owner_full_name: string
+          practitioner_count: number
+          primary_color: string
+          subscription_status: string
+          tests_this_month: number
+          tier_name: string
+        }[]
+      }
     }
     Enums: {
       test_name_enum: "cmj" | "squat_jump" | "drop_jump" | "pogo_jump"
