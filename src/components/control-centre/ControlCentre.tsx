@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { ControlCentreLayout } from './ControlCentreLayout';
 import './theme.css';
 
@@ -37,19 +35,9 @@ const PAGES: Record<string, React.ComponentType> = {
 };
 
 export const ControlCentre: React.FC = () => {
-  const { profile, loading } = useAuth();
+  // Auth + super_admin role gating handled centrally by
+  // <ProtectedRoute><SuperAdminGate>...</SuperAdminGate></ProtectedRoute> in App.tsx.
   const [active, setActive] = useState('dashboard');
-
-  if (loading) {
-    return (
-      <div className="control-centre min-h-screen flex items-center justify-center">
-        <div className="cc-pulse" />
-      </div>
-    );
-  }
-
-  if (!profile) return <Navigate to="/admin" replace />;
-  if (profile.role !== 'super_admin') return <Navigate to="/auth" replace />;
 
   const Page = PAGES[active] || GlobalDashboard;
 
