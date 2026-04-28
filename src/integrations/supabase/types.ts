@@ -1405,6 +1405,7 @@ export type Database = {
           team_connected_count: number
         }[]
       }
+      get_live_testing_overview: { Args: never; Returns: Json }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
       get_notification_campaign_detail: {
@@ -1674,6 +1675,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_recent_tests_global: {
+        Args: { row_limit?: number }
+        Returns: {
+          athlete_id: string
+          athlete_name: string
+          created_at: string
+          id: string
+          key_metric_label: string
+          key_metric_value: number
+          team_name: string
+          test_name: string
+          test_type: string
+        }[]
+      }
       list_reports_ai_activity: {
         Args: { row_limit?: number }
         Returns: {
@@ -1706,6 +1721,19 @@ export type Database = {
           subject: string
           team_id: string
           updated_at: string
+        }[]
+      }
+      list_testing_anomalies: {
+        Args: { row_limit?: number }
+        Returns: {
+          anomaly_type: string
+          athlete_name: string
+          created_at: string
+          detail: string
+          id: string
+          severity: string
+          team_name: string
+          test_name: string
         }[]
       }
       preview_notification_audience: {
