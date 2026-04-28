@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -28,7 +29,8 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading, signOut, profile } = useAuth();
-  const { branding } = useBranding(profile?.team_id, profile?.role);
+  const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+  const { branding } = useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
