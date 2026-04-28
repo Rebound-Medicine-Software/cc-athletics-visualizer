@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 
 interface Athlete {
   id: string;
@@ -16,16 +17,30 @@ interface Athlete {
  *
  * - `team` is resolved via the joined `teams.name` (text).
  * - `testing_dates` is derived from `last_test_at` (timestamptz) — formatted as YYYY-MM-DD.
+ *
+ * Scoping:
+ * - When a super admin is actively impersonating, results are explicitly
+ *   filtered to the impersonated team_id (defense-in-depth on top of RLS).
+ * - When a normal user, RLS already restricts to their team; we still
+ *   apply the explicit filter when teamId is available for clarity.
  */
 export const useAthletes = () => {
-  return useQuery({
-    queryKey: ['athletes'],
-    queryFn: async (): Promise<Athlete[]> => {
-      console.log('Fetching athletes...');
+  const { teamId, isImpersonating } = useEffectiveTeamId();
 
-      const { data, error } = await supabase
+  return useQuery({
+    queryKey: ['athletes', teamId ?? 'all', isImpersonating],
+    queryFn: async (): Promise<Athlete[]> => {
+      console.log('Fetching athletes...', { teamId, isImpersonating });
+
+      let query = supabase
         .from('athletes')
-        .select('id, name, email, last_test_at, teams ( name )');
+        .select('id, name, email, last_test_at, team_id, teams ( name )');
+
+      if (teamId) {
+        query = query.eq('team_id', teamId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching athletes:', error);
