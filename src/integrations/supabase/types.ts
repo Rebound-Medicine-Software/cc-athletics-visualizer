@@ -1348,6 +1348,10 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_support_ticket_detail: {
+        Args: { ticket_uuid: string }
+        Returns: Json
+      }
       get_tests_logged_trend: {
         Args: { days_back?: number }
         Returns: {
@@ -1381,6 +1385,37 @@ export type Database = {
           tests_this_month: number
           tier_name: string
         }[]
+      }
+      list_support_tickets: {
+        Args: never
+        Returns: {
+          assigned_to: string
+          assigned_to_name: string
+          conversation_count: number
+          created_at: string
+          id: string
+          last_message_preview: string
+          opened_by: string
+          opened_by_name: string
+          organisation_name: string
+          priority: string
+          status: string
+          subject: string
+          team_id: string
+          updated_at: string
+        }[]
+      }
+      update_support_ticket: {
+        Args: {
+          append_entry_body?: string
+          append_entry_kind?: string
+          clear_assigned?: boolean
+          new_assigned_to?: string
+          new_priority?: string
+          new_status?: string
+          ticket_uuid: string
+        }
+        Returns: Json
       }
     }
     Enums: {
