@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import notificationapi from "npm:notificationapi-node-server-sdk@1.1.0";
+import { logActivity, logIntegrationHealth } from "../_shared/logActivity.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -185,11 +186,26 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Avoid JSON.stringify on the SDK response (circular references in HttpsClientRequest)
       console.log('NotificationAPI send completed (response received)');
+      await logIntegrationHealth('notificationapi', 'success', {
+        payload: { notificationId: 'send_email_to_practitioners' },
+      });
     } catch (emailError: any) {
       // Log only safe primitives to avoid circular structure crashes
       console.error('NotificationAPI error message:', emailError?.message ?? String(emailError));
+      await logIntegrationHealth('notificationapi', 'failed', {
+        failureReason: `practitioner invite: ${emailError?.message ?? String(emailError)}`.slice(0, 500),
+      });
       // Don't fail the entire request if email fails - just log and continue
     }
+
+    await logActivity({
+      eventType: existingUser ? 'practitioner_invite_resent' : 'practitioner_invite_sent',
+      eventSource: 'send-practitioner-invite',
+      severity: 'info',
+      userId: userResult?.id ?? null,
+      organisationName: team_name,
+      metadata: { email, full_name, role_title: role_title ?? null },
+    });
 
     console.log('Practitioner invite function completed successfully');
     return new Response(
