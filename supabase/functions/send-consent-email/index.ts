@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.190.0/http/server.ts'
 import { z } from 'https://esm.sh/zod@3.23.8'
+import { logActivity, logIntegrationHealth } from '../_shared/logActivity.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -94,6 +95,18 @@ serve(async (req) => {
     if (!apiResponse.ok) {
       const text = await apiResponse.text().catch(() => '')
       console.error(`NotificationAPI failed [${apiResponse.status}]:`, text)
+      await logIntegrationHealth('notificationapi', 'failed', {
+        failureReason: `consent email ${apiResponse.status}: ${text.slice(0, 500)}`,
+        payload: { notificationId: 'send_consent_email', email: athleteEmail },
+      })
+      await logActivity({
+        eventType: 'consent_email_failed',
+        eventSource: 'send-consent-email',
+        severity: 'critical',
+        athleteId,
+        organisationName,
+        metadata: { email: athleteEmail, status: apiResponse.status },
+      })
       return respond(false, {
         error: 'Failed to send consent email',
         status: apiResponse.status,
@@ -102,6 +115,17 @@ serve(async (req) => {
     }
 
     console.log('Consent email sent successfully via NotificationAPI')
+    await logIntegrationHealth('notificationapi', 'success', {
+      payload: { notificationId: 'send_consent_email' },
+    })
+    await logActivity({
+      eventType: 'consent_email_sent',
+      eventSource: 'send-consent-email',
+      severity: 'info',
+      athleteId,
+      organisationName,
+      metadata: { athleteName, email: athleteEmail },
+    })
     return respond(true, { message: 'Consent email sent successfully.' })
   } catch (error: any) {
     console.error('Edge function error:', error)
