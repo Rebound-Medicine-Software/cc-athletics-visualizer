@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 
 interface StaffUser {
   id: string;
@@ -29,7 +30,8 @@ interface StaffUser {
 
 export const StaffCredentialsTab = () => {
   const { profile } = useAuth();
-  const { branding } = useBranding(profile?.team_id, profile?.role);
+  const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+  const { branding } = useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
