@@ -13,9 +13,10 @@ interface DataTableProps<T> {
   rows: T[];
   empty?: string;
   maxHeight?: number | string;
+  onRowClick?: (row: T) => void;
 }
 
-export function DataTable<T extends Record<string, any>>({ columns, rows, empty = 'No records', maxHeight = 540 }: DataTableProps<T>) {
+export function DataTable<T extends Record<string, any>>({ columns, rows, empty = 'No records', maxHeight = 540, onRowClick }: DataTableProps<T>) {
   return (
     <div className="cc-glass overflow-hidden">
       <div style={{ maxHeight, overflow: 'auto' }}>
