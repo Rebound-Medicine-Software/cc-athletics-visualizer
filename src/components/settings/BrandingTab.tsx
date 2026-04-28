@@ -112,6 +112,7 @@ export const BrandingTab = () => {
   };
 
   const handleSave = async () => {
+    if (guardWrite('Saving branding')) return;
     if (!profile?.team_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'No team associated with your account' });
       return;
