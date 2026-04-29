@@ -362,16 +362,33 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in CC Athletics sync:', error)
-    
+
     // Provide more specific error messages
     let errorMessage = error.message
+    let upstreamStatus: number | undefined
     if (error.message.includes('CC Athletics API')) {
-      // API-specific errors are already formatted
+      const m = error.message.match(/status (\d+)/)
+      if (m) upstreamStatus = parseInt(m[1], 10)
     } else if (error.message.includes('fetch')) {
       errorMessage = 'Network error: Unable to connect to CC Athletics API. Please check your internet connection.'
     } else {
       errorMessage = `Sync error: ${error.message}`
     }
+
+    await logActivity({
+      eventType: 'test_ingest_failed',
+      eventSource: 'sync-cc-athletics',
+      severity: 'critical',
+      metadata: {
+        failure_reason: errorMessage,
+        upstream_status: upstreamStatus ?? null,
+        stage: 'sync',
+      },
+    })
+    await logIntegrationHealth('cc_athletics', 'failed', {
+      failureReason: errorMessage,
+      payload: { upstream_status: upstreamStatus ?? null },
+    })
 
     return new Response(
       JSON.stringify({
