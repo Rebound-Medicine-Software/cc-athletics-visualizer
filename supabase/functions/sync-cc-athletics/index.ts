@@ -368,11 +368,14 @@ serve(async (req) => {
           eventType: 'test_upload_failed',
           eventSource: 'sync-cc-athletics',
           severity: 'warning',
+          teamId: scopedTeamId,
           metadata: {
             failure_reason: upsertErr.message,
             stage: 'test_data_upsert',
             batch_size: batch.length,
             batch_offset: i,
+            manual_retry: manualRetry,
+            target_team_id: scopedTeamId,
           },
         })
       }
@@ -384,23 +387,32 @@ serve(async (req) => {
       eventType: 'test_ingest_success',
       eventSource: 'sync-cc-athletics',
       severity: 'info',
+      teamId: scopedTeamId,
       metadata: {
         record_count: allTestData.length,
         athlete_count: allAthletes.size,
         team_count: teamsData.teams.length,
         upsert_failures: upsertFailures,
         source: 'cc_athletics',
+        manual_retry: manualRetry,
+        target_team_id: scopedTeamId,
+        scoped: !!scopedTeamId,
       },
     })
     await logIntegrationHealth('cc_athletics', 'success', {
+      teamId: scopedTeamId,
       latencyMs: Date.now() - startedAt,
-      payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length },
+      payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length, manual_retry: manualRetry, scoped: !!scopedTeamId },
     })
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Data sync completed',
+        scoped: !!scopedTeamId,
+        target_team_id: scopedTeamId,
+        manual_retry: manualRetry,
+        record_count: allTestData.length,
         stats: {
           teams: teamsData.teams.length,
           athletes: allAthletes.size,
