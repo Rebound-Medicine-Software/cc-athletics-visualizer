@@ -269,6 +269,28 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
           </div>
         )}
       </div>
+
+      <IntegrationActionModal
+        open={!!pending}
+        busy={busy}
+        title={
+          pending?.kind === 'recheck_global' ? 'Recheck integration health (global)' :
+          pending?.kind === 'recheck_team' ? `Recheck health for ${pending?.teamName || 'organisation'}` :
+          pending?.kind === 'retry_cc' ? `Retry CC Athletics sync for ${pending?.teamName || 'organisation'}` :
+          pending?.kind === 'ack_team' ? `Acknowledge issue for ${pending?.teamName || 'organisation'}` : ''
+        }
+        description={
+          pending?.kind === 'recheck_global' ? 'Records a manual health check entry. No credentials are touched.' :
+          pending?.kind === 'recheck_team' ? 'Records a manual health check entry for this organisation.' :
+          pending?.kind === 'retry_cc' ? 'Triggers a one-off CC Athletics sync for this organisation. Outcome will be logged.' :
+          'Marks unresolved alerts for this integration / organisation as acknowledged.'
+        }
+        confirmLabel={pending?.kind === 'retry_cc' ? 'Run retry' : 'Confirm'}
+        requireReason={pending?.kind === 'retry_cc' || pending?.kind === 'ack_team'}
+        destructive={pending?.kind === 'retry_cc'}
+        onCancel={() => { if (!busy) setPending(null); }}
+        onConfirm={runAction}
+      />
     </>
   );
 };
