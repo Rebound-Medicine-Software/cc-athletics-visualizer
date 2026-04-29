@@ -22,6 +22,13 @@ serve(async (req) => {
     const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY')
     if (!ccApiKey) {
       console.error('CC_ATHLETICS_API_KEY not configured in Supabase secrets')
+      await logActivity({
+        eventType: 'test_ingest_failed',
+        eventSource: 'sync-cc-athletics',
+        severity: 'critical',
+        metadata: { failure_reason: 'missing_api_key', stage: 'startup' },
+      })
+      await logIntegrationHealth('cc_athletics', 'failed', { failureReason: 'missing_api_key' })
       return new Response(
         JSON.stringify({
           success: false,
@@ -33,6 +40,8 @@ serve(async (req) => {
         }
       )
     }
+
+    const startedAt = Date.now()
 
     console.log('Starting CC Athletics data sync...')
 
