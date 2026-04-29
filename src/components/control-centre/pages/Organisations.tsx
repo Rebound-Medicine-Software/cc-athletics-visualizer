@@ -213,22 +213,27 @@ export const Organisations: React.FC = () => {
           },
           {
             key: 'actions', label: '', align: 'right',
-            render: (r) => (
-              <div className="flex items-center gap-1 justify-end">
-                {[
-                  { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
-                  { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
-                  { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
-                  { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
-                  { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
-                  { Icon: History, label: 'Audit', onClick: action('Audit', r.name) },
-                ].map(({ Icon, label, onClick }) => (
-                  <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
-                    <Icon className="w-3 h-3" />
-                  </button>
-                ))}
-              </div>
-            ),
+            render: (r) => {
+              const isSuspended = r.organisation_status === 'suspended' || r.subscription_status === 'suspended';
+              return (
+                <div className="flex items-center gap-1 justify-end">
+                  {[
+                    { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
+                    { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
+                    { Icon: ArrowUpCircle, label: 'Change tier', onClick: () => setActionTarget({ kind: 'upgrade', row: r }) },
+                    isSuspended
+                      ? { Icon: Play, label: 'Reactivate', onClick: () => setActionTarget({ kind: 'reactivate', row: r }) }
+                      : { Icon: Pause, label: 'Suspend', onClick: () => setActionTarget({ kind: 'suspend', row: r }) },
+                    { Icon: MessageSquare, label: 'Message owner', onClick: () => setActionTarget({ kind: 'message', row: r }) },
+                    { Icon: History, label: 'Audit trail', onClick: () => setAuditTarget({ id: r.id, name: r.name }) },
+                  ].map(({ Icon, label, onClick }) => (
+                    <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
+                      <Icon className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
+              );
+            },
           },
         ]}
         empty={loading ? 'Loading organisations…' : 'No organisations yet'}
@@ -241,6 +246,20 @@ export const Organisations: React.FC = () => {
         onClose={() => setImpersonateTarget(null)}
         teamId={impersonateTarget?.id ?? null}
         teamName={impersonateTarget?.name ?? null}
+      />
+      <OrgActionModal
+        open={!!actionTarget}
+        kind={actionTarget?.kind ?? null}
+        organisationName={actionTarget?.row.name ?? ''}
+        currentTier={actionTarget?.row.tier_name ?? null}
+        submitting={submitting}
+        onCancel={() => setActionTarget(null)}
+        onConfirm={handleConfirmAction}
+      />
+      <OrgAuditDrawer
+        teamId={auditTarget?.id ?? null}
+        organisationName={auditTarget?.name ?? null}
+        onClose={() => setAuditTarget(null)}
       />
     </>
   );
