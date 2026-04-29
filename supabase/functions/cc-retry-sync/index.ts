@@ -34,6 +34,17 @@ Deno.serve(async (req) => {
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Verify the target team exists before invoking sync
+    const { data: teamRow, error: teamErr } = await adminClient
+      .from('teams')
+      .select('id')
+      .eq('id', team_uuid)
+      .maybeSingle();
+    if (teamErr || !teamRow) {
+      return new Response(JSON.stringify({ error: 'team not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const start = Date.now();
     let status: 'success' | 'failed' = 'success';
     let failureReason: string | null = null;
