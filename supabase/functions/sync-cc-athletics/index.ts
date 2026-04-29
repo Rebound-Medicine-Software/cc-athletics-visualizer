@@ -13,6 +13,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let scopedTeamId: string | null = null
+  let manualRetry = false
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
