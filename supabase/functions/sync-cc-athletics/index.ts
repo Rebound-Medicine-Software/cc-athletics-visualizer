@@ -441,19 +441,26 @@ serve(async (req) => {
       errorMessage = `Sync error: ${error.message}`
     }
 
+    const tgtTeam = (typeof scopedTeamId !== 'undefined') ? scopedTeamId : null
+    const isRetry = (typeof manualRetry !== 'undefined') ? manualRetry : false
+
     await logActivity({
       eventType: 'test_ingest_failed',
       eventSource: 'sync-cc-athletics',
       severity: 'critical',
+      teamId: tgtTeam,
       metadata: {
         failure_reason: errorMessage,
         upstream_status: upstreamStatus ?? null,
         stage: 'sync',
+        manual_retry: isRetry,
+        target_team_id: tgtTeam,
       },
     })
     await logIntegrationHealth('cc_athletics', 'failed', {
+      teamId: tgtTeam,
       failureReason: errorMessage,
-      payload: { upstream_status: upstreamStatus ?? null },
+      payload: { upstream_status: upstreamStatus ?? null, manual_retry: isRetry, target_team_id: tgtTeam },
     })
 
     return new Response(
