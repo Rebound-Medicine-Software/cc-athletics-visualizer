@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { X, AlertTriangle, Activity, Building2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { X, AlertTriangle, Activity, Building2, RefreshCw, ShieldCheck, Stethoscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatusBadge } from './StatusBadge';
+import { IntegrationActionModal } from './IntegrationActionModal';
 import { toast } from 'sonner';
+
+type ActionKind = 'recheck_global' | 'recheck_team' | 'retry_cc' | 'ack_team';
+interface PendingAction { kind: ActionKind; teamId?: string | null; teamName?: string | null; }
 
 interface Props {
   integrationName: string | null;
