@@ -442,8 +442,8 @@ serve(async (req) => {
       errorMessage = `Sync error: ${error.message}`
     }
 
-    const tgtTeam = (typeof scopedTeamId !== 'undefined') ? scopedTeamId : null
-    const isRetry = (typeof manualRetry !== 'undefined') ? manualRetry : false
+    const tgtTeam = scopedTeamId
+    const isRetry = manualRetry
 
     await logActivity({
       eventType: 'test_ingest_failed',
