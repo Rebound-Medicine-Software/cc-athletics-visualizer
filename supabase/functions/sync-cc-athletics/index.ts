@@ -124,6 +124,21 @@ serve(async (req) => {
       handleApiResponse(pogoResponse, 'get_athletes?analysis_type=Pogo'),
     ])
 
+
+    // If scoped, filter API payloads BEFORE any DB write so other orgs are never touched.
+    if (scopedCcTeamId) {
+      teamsData.teams = (teamsData.teams || []).filter((t: any) => t.id === scopedCcTeamId)
+      jumpData.athletes = (jumpData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      isometricData.athletes = (isometricData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      pogoData.athletes = (pogoData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      console.log('Scoped sync filter applied', {
+        teams: teamsData.teams.length,
+        jump_athletes: jumpData.athletes.length,
+        iso_athletes: isometricData.athletes.length,
+        pogo_athletes: pogoData.athletes.length,
+      })
+    }
+
     // Store teams in database
     console.log('Storing teams...')
     for (const team of teamsData.teams) {
