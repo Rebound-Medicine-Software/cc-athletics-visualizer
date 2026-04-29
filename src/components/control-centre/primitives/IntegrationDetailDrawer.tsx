@@ -202,20 +202,39 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
               ) : (
                 <div className="space-y-2">
                   {detail.affected_organisations.map((o, idx) => (
-                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px] py-1 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
-                      <div className="flex-1">
-                        <div className="font-semibold">{o.organisation_name || o.team_id || '—'}</div>
-                        <div style={{ color: 'hsl(var(--cc-fg-dim))' }}>{o.last_failure_reason || '—'}</div>
+                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px] py-2 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold truncate">{o.organisation_name || o.team_id || '—'}</div>
+                        <div className="truncate" style={{ color: 'hsl(var(--cc-fg-dim))' }}>{o.last_failure_reason || '—'}</div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <span className="font-mono">{o.failure_count} fails</span>
                         <span style={{ color: 'hsl(var(--cc-fg-dim))' }}>{fmtDate(o.last_failure_at)}</span>
+                        {o.team_id && (
+                          <>
+                            {isCcAthletics && (
+                              <button className="cc-btn" title="Retry CC Athletics sync"
+                                onClick={() => setPending({ kind: 'retry_cc', teamId: o.team_id, teamName: o.organisation_name })}>
+                                <RefreshCw className="w-3.5 h-3.5" /> Retry
+                              </button>
+                            )}
+                            <button className="cc-btn" title="Recheck health for this org"
+                              onClick={() => setPending({ kind: 'recheck_team', teamId: o.team_id, teamName: o.organisation_name })}>
+                              <Stethoscope className="w-3.5 h-3.5" />
+                            </button>
+                            <button className="cc-btn" title="Acknowledge issue"
+                              onClick={() => setPending({ kind: 'ack_team', teamId: o.team_id, teamName: o.organisation_name })}>
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
 
             {/* Recent logs */}
             <div className="cc-glass p-4">
