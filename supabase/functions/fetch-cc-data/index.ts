@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { logActivity, logIntegrationHealth } from '../_shared/logActivity.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,13 @@ serve(async (req) => {
   try {
     const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY')
     if (!ccApiKey) {
+      await logActivity({
+        eventType: 'test_ingest_failed',
+        eventSource: 'fetch-cc-data',
+        severity: 'critical',
+        metadata: { failure_reason: 'missing_api_key', stage: 'startup' },
+      })
+      await logIntegrationHealth('cc_athletics', 'failed', { failureReason: 'missing_api_key' })
       return new Response(
         JSON.stringify({
           success: false,
@@ -25,6 +33,8 @@ serve(async (req) => {
         }
       )
     }
+
+    const startedAt = Date.now()
 
     console.log('Fetching data directly from CC Athletics API...')
 
@@ -333,6 +343,23 @@ serve(async (req) => {
 
     console.log(`Processed ${allTestData.length} test records directly from CC Athletics API`)
 
+    await logActivity({
+      eventType: 'test_ingest_success',
+      eventSource: 'fetch-cc-data',
+      severity: 'info',
+      metadata: {
+        record_count: allTestData.length,
+        team_count: teamsData.teams.length,
+        athlete_count: (jumpData.athletes?.length || 0) + (isometricData.athletes?.length || 0) + (pogoData.athletes?.length || 0),
+        source: 'cc_athletics',
+        mode: 'fetch_only',
+      },
+    })
+    await logIntegrationHealth('cc_athletics', 'success', {
+      latencyMs: Date.now() - startedAt,
+      payload: { records: allTestData.length, mode: 'fetch_only' },
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -351,7 +378,26 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error fetching CC Athletics data:', error)
-    
+
+    const msg = (error as Error).message || 'unknown'
+    const m = msg.match(/status (\d+)/)
+    const upstreamStatus = m ? parseInt(m[1], 10) : null
+
+    await logActivity({
+      eventType: 'test_ingest_failed',
+      eventSource: 'fetch-cc-data',
+      severity: 'critical',
+      metadata: {
+        failure_reason: msg,
+        upstream_status: upstreamStatus,
+        stage: 'fetch',
+      },
+    })
+    await logIntegrationHealth('cc_athletics', 'failed', {
+      failureReason: msg,
+      payload: { upstream_status: upstreamStatus },
+    })
+
     return new Response(
       JSON.stringify({
         success: false,
