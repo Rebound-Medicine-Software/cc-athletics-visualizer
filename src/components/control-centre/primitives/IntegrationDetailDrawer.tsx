@@ -60,10 +60,12 @@ const statusVariant = (s: string | null) =>
 export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, displayName, onClose }) => {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [busy, setBusy] = useState(false);
   const open = !!integrationName;
 
-  useEffect(() => {
-    if (!integrationName) { setDetail(null); return; }
+  const reload = useCallback(() => {
+    if (!integrationName) return;
     setLoading(true);
     supabase
       .rpc('get_integration_detail', { integration_name_in: integrationName })
@@ -74,9 +76,47 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
       });
   }, [integrationName]);
 
+  useEffect(() => {
+    if (!integrationName) { setDetail(null); return; }
+    reload();
+  }, [integrationName, reload]);
+
   if (!open) return null;
 
   const summary = detail?.summary_24h;
+  const isCcAthletics = integrationName === 'cc_athletics';
+
+  const runAction = async (reason: string) => {
+    if (!pending || !integrationName) return;
+    setBusy(true);
+    try {
+      if (pending.kind === 'recheck_global') {
+        const { error } = await supabase.rpc('run_integration_health_check', { p_integration_name: integrationName, p_team_uuid: null });
+        if (error) throw error;
+        toast.success('Global health check recorded');
+      } else if (pending.kind === 'recheck_team') {
+        const { error } = await supabase.rpc('run_integration_health_check', { p_integration_name: integrationName, p_team_uuid: pending.teamId });
+        if (error) throw error;
+        toast.success('Team health check recorded');
+      } else if (pending.kind === 'ack_team') {
+        const { error } = await supabase.rpc('acknowledge_integration_issue', { p_integration_name: integrationName, p_team_uuid: pending.teamId, p_reason: reason });
+        if (error) throw error;
+        toast.success('Issue acknowledged');
+      } else if (pending.kind === 'retry_cc') {
+        const { data, error } = await supabase.functions.invoke('cc-retry-sync', { body: { team_uuid: pending.teamId, reason } });
+        if (error) throw error;
+        if ((data as any)?.status === 'success') toast.success(`Retry succeeded (${(data as any).latency_ms}ms)`);
+        else toast.error(`Retry failed: ${(data as any)?.failure_reason || 'unknown'}`);
+      }
+      setPending(null);
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message || 'Action failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   return (
     <>
