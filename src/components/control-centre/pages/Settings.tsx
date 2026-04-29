@@ -112,8 +112,13 @@ export const Settings: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {sections.map((s) => {
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-5">
+        <TierTemplatesEditor />
+        <DefaultBrandingEditor />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {placeholderSections.map((s) => {
           const Icon = s.icon;
           return (
             <button
@@ -125,7 +130,7 @@ export const Settings: React.FC = () => {
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--cc-navy) / 0.25)', border: '1px solid hsl(var(--cc-navy-glow) / 0.4)' }}>
                   <Icon className="w-5 h-5" style={{ color: 'hsl(var(--cc-navy-glow))' }} />
                 </div>
-                <StatusBadge variant={s.live ? 'gold' : 'muted'}>{s.live ? 'Manage' : 'Placeholder'}</StatusBadge>
+                <StatusBadge variant="muted">Placeholder</StatusBadge>
               </div>
               <div className="text-[14px] font-semibold mb-1">{s.title}</div>
               <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-muted))' }}>{s.desc}</div>
