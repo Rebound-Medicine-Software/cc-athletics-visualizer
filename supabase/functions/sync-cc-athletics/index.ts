@@ -43,7 +43,46 @@ serve(async (req) => {
 
     const startedAt = Date.now()
 
-    console.log('Starting CC Athletics data sync...')
+    // Parse optional scoping body. Safe for empty/GET invocations.
+    let scopedTeamId: string | null = null
+    let manualRetry = false
+    try {
+      if (req.method === 'POST') {
+        const body = await req.json().catch(() => ({}))
+        if (body && typeof body === 'object') {
+          if (typeof body.team_id === 'string' && body.team_id.length > 0) scopedTeamId = body.team_id
+          if (body.manual_retry === true) manualRetry = true
+        }
+      }
+    } catch (_) { /* no body — full sync */ }
+
+    // Resolve scoped team (must exist) and get its cc_team_id + name for filtering.
+    let scopedCcTeamId: string | null = null
+    let scopedTeamName: string | null = null
+    if (scopedTeamId) {
+      const { data: teamRow, error: teamErr } = await supabaseClient
+        .from('teams')
+        .select('id, cc_team_id, name')
+        .eq('id', scopedTeamId)
+        .maybeSingle()
+      if (teamErr || !teamRow) {
+        await logActivity({
+          eventType: 'test_ingest_failed',
+          eventSource: 'sync-cc-athletics',
+          severity: 'warning',
+          teamId: scopedTeamId,
+          metadata: { failure_reason: 'team_not_found', manual_retry: manualRetry, target_team_id: scopedTeamId },
+        })
+        return new Response(
+          JSON.stringify({ success: false, error: 'team_id not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 },
+        )
+      }
+      scopedCcTeamId = teamRow.cc_team_id
+      scopedTeamName = teamRow.name
+    }
+
+    console.log('Starting CC Athletics data sync...', { scopedTeamId, scopedCcTeamId, manualRetry })
 
     // Fetch data from CC Athletics API
     const baseUrl = 'https://europe-west1-forcemate-desktop.cloudfunctions.net'
