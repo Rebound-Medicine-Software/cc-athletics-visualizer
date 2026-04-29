@@ -47,8 +47,6 @@ serve(async (req) => {
     const startedAt = Date.now()
 
     // Parse optional scoping body. Safe for empty/GET invocations.
-    let scopedTeamId: string | null = null
-    let manualRetry = false
     try {
       if (req.method === 'POST') {
         const body = await req.json().catch(() => ({}))
