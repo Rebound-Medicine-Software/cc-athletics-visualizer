@@ -134,8 +134,15 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
             <div className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Integration</div>
             <div className="text-[18px] font-semibold">{displayName || integrationName}</div>
           </div>
-          <button onClick={onClose} className="cc-btn"><X className="w-4 h-4" /></button>
+          <div className="flex items-center gap-2">
+            <button className="cc-btn" onClick={() => setPending({ kind: 'recheck_global' })} title="Record a manual global health check">
+              <Stethoscope className="w-4 h-4" /> Recheck health
+            </button>
+            <button className="cc-btn" onClick={reload} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={onClose} className="cc-btn"><X className="w-4 h-4" /></button>
+          </div>
         </div>
+
 
         {loading && <div className="p-6 text-sm" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Loading…</div>}
 
