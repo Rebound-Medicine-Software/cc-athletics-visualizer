@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
-import { Flag, Layers, Sparkles, ShieldCheck, Database, Palette, FileText, Loader2 } from 'lucide-react';
+import { Flag, Sparkles, ShieldCheck, Database, FileText, Loader2 } from 'lucide-react';
 import { StatusBadge } from '../primitives/StatusBadge';
+import { TierTemplatesEditor } from '../primitives/TierTemplatesEditor';
+import { DefaultBrandingEditor } from '../primitives/DefaultBrandingEditor';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,19 +20,15 @@ type FeatureFlag = {
   updated_at: string;
 };
 
-const sections = [
-  { icon: Layers,     title: 'Tier Templates',          desc: 'Default Basic / Premium / Elite pricing & permissions',
-    note: 'Per-organisation tiers live in `tiers`. Global templates require a dedicated schema.', live: false },
+const placeholderSections = [
   { icon: Sparkles,   title: 'AI Prompt Controls',      desc: 'System prompts for AI Coach insight generation',
-    note: 'No canonical prompt store yet. Stored as platform_settings (category: ai_prompt) when enabled.', live: false },
+    note: 'No canonical prompt store yet. Reserved for a future phase.' },
   { icon: ShieldCheck,title: 'Global Permissions',      desc: 'Role-based access matrix',
-    note: 'Permissions are enforced via RLS + Super Admin gate. No matrix editor yet.', live: false },
+    note: 'Permissions are enforced via RLS + Super Admin gate. No matrix editor yet.' },
   { icon: Database,   title: 'Benchmark Data Controls', desc: 'Manage Elite Athlete dataset & filters',
-    note: 'Dataset managed in Settings > Data Housing. This panel reserved for global toggles.', live: false },
-  { icon: Palette,    title: 'Default Branding',        desc: 'Fallback colours, logo placeholder, font stack',
-    note: 'Per-team branding lives on `teams`. Global defaults need a dedicated schema.', live: false },
+    note: 'Dataset managed in Settings > Data Housing. This panel reserved for global toggles.' },
   { icon: FileText,   title: 'Legal Documents',         desc: 'Terms, Privacy, Athlete Consent template',
-    note: 'No canonical legal-doc table yet. Track via platform_settings (category: legal).', live: false },
+    note: 'No canonical legal-doc table yet. Reserved for a future phase.' },
 ];
 
 export const Settings: React.FC = () => {
