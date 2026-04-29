@@ -15,6 +15,13 @@ serve(async (req) => {
   try {
     const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY')
     if (!ccApiKey) {
+      await logActivity({
+        eventType: 'test_ingest_failed',
+        eventSource: 'fetch-cc-data',
+        severity: 'critical',
+        metadata: { failure_reason: 'missing_api_key', stage: 'startup' },
+      })
+      await logIntegrationHealth('cc_athletics', 'failed', { failureReason: 'missing_api_key' })
       return new Response(
         JSON.stringify({
           success: false,
@@ -26,6 +33,8 @@ serve(async (req) => {
         }
       )
     }
+
+    const startedAt = Date.now()
 
     console.log('Fetching data directly from CC Athletics API...')
 
