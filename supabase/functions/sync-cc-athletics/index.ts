@@ -13,6 +13,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let scopedTeamId: string | null = null
+  let manualRetry = false
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -43,7 +46,44 @@ serve(async (req) => {
 
     const startedAt = Date.now()
 
-    console.log('Starting CC Athletics data sync...')
+    // Parse optional scoping body. Safe for empty/GET invocations.
+    try {
+      if (req.method === 'POST') {
+        const body = await req.json().catch(() => ({}))
+        if (body && typeof body === 'object') {
+          if (typeof body.team_id === 'string' && body.team_id.length > 0) scopedTeamId = body.team_id
+          if (body.manual_retry === true) manualRetry = true
+        }
+      }
+    } catch (_) { /* no body — full sync */ }
+
+    // Resolve scoped team (must exist) and get its cc_team_id + name for filtering.
+    let scopedCcTeamId: string | null = null
+    let scopedTeamName: string | null = null
+    if (scopedTeamId) {
+      const { data: teamRow, error: teamErr } = await supabaseClient
+        .from('teams')
+        .select('id, cc_team_id, name')
+        .eq('id', scopedTeamId)
+        .maybeSingle()
+      if (teamErr || !teamRow) {
+        await logActivity({
+          eventType: 'test_ingest_failed',
+          eventSource: 'sync-cc-athletics',
+          severity: 'warning',
+          teamId: scopedTeamId,
+          metadata: { failure_reason: 'team_not_found', manual_retry: manualRetry, target_team_id: scopedTeamId },
+        })
+        return new Response(
+          JSON.stringify({ success: false, error: 'team_id not found' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 },
+        )
+      }
+      scopedCcTeamId = teamRow.cc_team_id
+      scopedTeamName = teamRow.name
+    }
+
+    console.log('Starting CC Athletics data sync...', { scopedTeamId, scopedCcTeamId, manualRetry })
 
     // Fetch data from CC Athletics API
     const baseUrl = 'https://europe-west1-forcemate-desktop.cloudfunctions.net'
@@ -84,6 +124,21 @@ serve(async (req) => {
       handleApiResponse(isometricResponse, 'get_athletes?analysis_type=Isometric'),
       handleApiResponse(pogoResponse, 'get_athletes?analysis_type=Pogo'),
     ])
+
+
+    // If scoped, filter API payloads BEFORE any DB write so other orgs are never touched.
+    if (scopedCcTeamId) {
+      teamsData.teams = (teamsData.teams || []).filter((t: any) => t.id === scopedCcTeamId)
+      jumpData.athletes = (jumpData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      isometricData.athletes = (isometricData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      pogoData.athletes = (pogoData.athletes || []).filter((a: any) => a.team_id === scopedCcTeamId)
+      console.log('Scoped sync filter applied', {
+        teams: teamsData.teams.length,
+        jump_athletes: jumpData.athletes.length,
+        iso_athletes: isometricData.athletes.length,
+        pogo_athletes: pogoData.athletes.length,
+      })
+    }
 
     // Store teams in database
     console.log('Storing teams...')
@@ -314,11 +369,14 @@ serve(async (req) => {
           eventType: 'test_upload_failed',
           eventSource: 'sync-cc-athletics',
           severity: 'warning',
+          teamId: scopedTeamId,
           metadata: {
             failure_reason: upsertErr.message,
             stage: 'test_data_upsert',
             batch_size: batch.length,
             batch_offset: i,
+            manual_retry: manualRetry,
+            target_team_id: scopedTeamId,
           },
         })
       }
@@ -330,23 +388,32 @@ serve(async (req) => {
       eventType: 'test_ingest_success',
       eventSource: 'sync-cc-athletics',
       severity: 'info',
+      teamId: scopedTeamId,
       metadata: {
         record_count: allTestData.length,
         athlete_count: allAthletes.size,
         team_count: teamsData.teams.length,
         upsert_failures: upsertFailures,
         source: 'cc_athletics',
+        manual_retry: manualRetry,
+        target_team_id: scopedTeamId,
+        scoped: !!scopedTeamId,
       },
     })
     await logIntegrationHealth('cc_athletics', 'success', {
+      teamId: scopedTeamId,
       latencyMs: Date.now() - startedAt,
-      payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length },
+      payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length, manual_retry: manualRetry, scoped: !!scopedTeamId },
     })
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Data sync completed',
+        scoped: !!scopedTeamId,
+        target_team_id: scopedTeamId,
+        manual_retry: manualRetry,
+        record_count: allTestData.length,
         stats: {
           teams: teamsData.teams.length,
           athletes: allAthletes.size,
@@ -375,19 +442,26 @@ serve(async (req) => {
       errorMessage = `Sync error: ${error.message}`
     }
 
+    const tgtTeam = scopedTeamId
+    const isRetry = manualRetry
+
     await logActivity({
       eventType: 'test_ingest_failed',
       eventSource: 'sync-cc-athletics',
       severity: 'critical',
+      teamId: tgtTeam,
       metadata: {
         failure_reason: errorMessage,
         upstream_status: upstreamStatus ?? null,
         stage: 'sync',
+        manual_retry: isRetry,
+        target_team_id: tgtTeam,
       },
     })
     await logIntegrationHealth('cc_athletics', 'failed', {
+      teamId: tgtTeam,
       failureReason: errorMessage,
-      payload: { upstream_status: upstreamStatus ?? null },
+      payload: { upstream_status: upstreamStatus ?? null, manual_retry: isRetry, target_team_id: tgtTeam },
     })
 
     return new Response(
