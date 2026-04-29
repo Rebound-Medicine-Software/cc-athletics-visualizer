@@ -300,16 +300,48 @@ serve(async (req) => {
     // Store test data in batches
     console.log(`Storing ${allTestData.length} test records...`)
     const batchSize = 100
+    let upsertFailures = 0
     for (let i = 0; i < allTestData.length; i += batchSize) {
       const batch = allTestData.slice(i, i + batchSize)
-      await supabaseClient
+      const { error: upsertErr } = await supabaseClient
         .from('test_data')
         .upsert(batch, {
           onConflict: 'cc_athlete_id,test_date,test_name,repetition_number'
         })
+      if (upsertErr) {
+        upsertFailures += batch.length
+        await logActivity({
+          eventType: 'test_upload_failed',
+          eventSource: 'sync-cc-athletics',
+          severity: 'warning',
+          metadata: {
+            failure_reason: upsertErr.message,
+            stage: 'test_data_upsert',
+            batch_size: batch.length,
+            batch_offset: i,
+          },
+        })
+      }
     }
 
     console.log('CC Athletics data sync completed successfully!')
+
+    await logActivity({
+      eventType: 'test_ingest_success',
+      eventSource: 'sync-cc-athletics',
+      severity: 'info',
+      metadata: {
+        record_count: allTestData.length,
+        athlete_count: allAthletes.size,
+        team_count: teamsData.teams.length,
+        upsert_failures: upsertFailures,
+        source: 'cc_athletics',
+      },
+    })
+    await logIntegrationHealth('cc_athletics', 'success', {
+      latencyMs: Date.now() - startedAt,
+      payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length },
+    })
 
     return new Response(
       JSON.stringify({
@@ -319,6 +351,7 @@ serve(async (req) => {
           teams: teamsData.teams.length,
           athletes: allAthletes.size,
           testRecords: allTestData.length,
+          upsertFailures,
         },
       }),
       {
