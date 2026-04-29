@@ -791,6 +791,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_tier_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_bookings_per_month: number
+          monthly_price: number
+          name: string
+          permissions: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_bookings_per_month?: number
+          monthly_price?: number
+          name: string
+          permissions?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          max_bookings_per_month?: number
+          monthly_price?: number
+          name?: string
+          permissions?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           api_key: string | null
@@ -1366,6 +1405,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_platform_tier_template: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
       get_analytics_warehouse_overview: { Args: never; Returns: Json }
       get_athletes_overview: { Args: never; Returns: Json }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
@@ -1389,6 +1432,7 @@ export type Database = {
           high_risk_org_count: number
         }[]
       }
+      get_default_branding_settings: { Args: never; Returns: Json }
       get_elite_benchmark_summary: {
         Args: never
         Returns: {
@@ -1730,6 +1774,27 @@ export type Database = {
           team_id: string
         }[]
       }
+      list_platform_tier_templates: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_bookings_per_month: number
+          monthly_price: number
+          name: string
+          permissions: Json
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "platform_tier_templates"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       list_practitioners_overview: {
         Args: never
         Returns: {
@@ -1855,6 +1920,31 @@ export type Database = {
         Args: { reason: string; team_uuid: string }
         Returns: Json
       }
+      toggle_platform_tier_template: {
+        Args: { p_id: string; p_is_active: boolean }
+        Returns: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_bookings_per_month: number
+          monthly_price: number
+          name: string
+          permissions: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_tier_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_default_branding_settings: {
+        Args: { p_value: Json }
+        Returns: Json
+      }
       update_organisation_tier: {
         Args: { new_tier_name: string; reason: string; team_uuid: string }
         Returns: Json
@@ -1892,6 +1982,35 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "platform_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_platform_tier_template: {
+        Args: {
+          p_description: string
+          p_id: string
+          p_is_active: boolean
+          p_max_bookings_per_month: number
+          p_monthly_price: number
+          p_name: string
+          p_permissions: Json
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          max_bookings_per_month: number
+          monthly_price: number
+          name: string
+          permissions: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_tier_templates"
           isOneToOne: true
           isSetofReturn: false
         }
