@@ -1666,6 +1666,19 @@ export type Database = {
           title: string
         }[]
       }
+      list_organisation_audit_events: {
+        Args: { row_limit?: number; team_uuid: string }
+        Returns: {
+          created_at: string
+          event_source: string
+          event_type: string
+          id: string
+          metadata: Json
+          severity: string
+          user_id: string
+          user_label: string
+        }[]
+      }
       list_organisations_overview: {
         Args: never
         Returns: {
@@ -1810,6 +1823,14 @@ export type Database = {
         Args: { campaign_uuid: string }
         Returns: Json
       }
+      reactivate_organisation: {
+        Args: { reason: string; team_uuid: string }
+        Returns: Json
+      }
+      send_organisation_message: {
+        Args: { message: string; subject: string; team_uuid: string }
+        Returns: Json
+      }
       set_feature_flag: {
         Args: { p_enabled: boolean; p_key: string }
         Returns: {
@@ -1829,6 +1850,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      suspend_organisation: {
+        Args: { reason: string; team_uuid: string }
+        Returns: Json
+      }
+      update_organisation_tier: {
+        Args: { new_tier_name: string; reason: string; team_uuid: string }
+        Returns: Json
       }
       update_support_ticket: {
         Args: {

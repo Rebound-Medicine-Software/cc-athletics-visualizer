@@ -5,7 +5,9 @@ import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { OrganisationDetailDrawer } from '../primitives/OrganisationDetailDrawer';
 import { ImpersonationModal } from '../primitives/ImpersonationModal';
-import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, MessageSquare, History } from 'lucide-react';
+import { OrgActionModal, OrgActionKind } from '../primitives/OrgActionModal';
+import { OrgAuditDrawer } from '../primitives/OrgAuditDrawer';
+import { Building2, DollarSign, Users, AlertTriangle, Eye, UserCog, ArrowUpCircle, Pause, Play, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -71,29 +73,72 @@ export const Organisations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [openTeamId, setOpenTeamId] = useState<string | null>(null);
   const [impersonateTarget, setImpersonateTarget] = useState<{ id: string; name: string } | null>(null);
+  const [actionTarget, setActionTarget] = useState<{ kind: OrgActionKind; row: OrgRow } | null>(null);
+  const [auditTarget, setAuditTarget] = useState<{ id: string; name: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [listRes, kpiRes] = await Promise.all([
+        (supabase as any).rpc('list_organisations_overview'),
+        (supabase as any).rpc('get_organisations_kpis'),
+      ]);
+      if (listRes.error) console.error('list_organisations_overview failed', listRes.error);
+      if (kpiRes.error) console.error('get_organisations_kpis failed', kpiRes.error);
+      setRows((listRes.data as OrgRow[]) || []);
+      setKpis((kpiRes.data as OrgKpis) || null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      try {
-        const [listRes, kpiRes] = await Promise.all([
-          (supabase as any).rpc('list_organisations_overview'),
-          (supabase as any).rpc('get_organisations_kpis'),
-        ]);
-        if (!alive) return;
-        if (listRes.error) console.error('list_organisations_overview failed', listRes.error);
-        if (kpiRes.error) console.error('get_organisations_kpis failed', kpiRes.error);
-        setRows((listRes.data as OrgRow[]) || []);
-        setKpis((kpiRes.data as OrgKpis) || null);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
+    (async () => { if (alive) await load(); })();
     return () => { alive = false; };
   }, []);
 
-  const action = (label: string, name: string) =>
-    () => toast(`${label} → ${name}`, { description: 'Coming next — not yet wired.' });
+  const handleConfirmAction = async (payload: { reason?: string; tier?: string; subject?: string; message?: string }) => {
+    if (!actionTarget) return;
+    const { kind, row } = actionTarget;
+    setSubmitting(true);
+    try {
+      if (kind === 'suspend') {
+        const { error } = await supabase.rpc('suspend_organisation', { team_uuid: row.id, reason: payload.reason! });
+        if (error) throw error;
+        toast.success(`${row.name} suspended`);
+      } else if (kind === 'reactivate') {
+        const { error } = await supabase.rpc('reactivate_organisation', { team_uuid: row.id, reason: payload.reason! });
+        if (error) throw error;
+        toast.success(`${row.name} reactivated`);
+      } else if (kind === 'upgrade') {
+        const { data, error } = await supabase.rpc('update_organisation_tier', {
+          team_uuid: row.id, new_tier_name: payload.tier!, reason: payload.reason!,
+        });
+        if (error) throw error;
+        const stripeReq = (data as any)?.stripe_sync_required;
+        toast.success(`${row.name} → ${payload.tier}`, {
+          description: stripeReq
+            ? 'Local tier updated. Stripe sync required — perform plan migration in Stripe.'
+            : 'Local tier updated. Stripe not connected.',
+        });
+      } else if (kind === 'message') {
+        const { data, error } = await supabase.rpc('send_organisation_message', {
+          team_uuid: row.id, subject: payload.subject!, message: payload.message!,
+        });
+        if (error) throw error;
+        const recip = (data as any)?.recipient_count ?? 0;
+        toast.success(recip > 0 ? `Message sent to ${row.name}` : 'Audit logged (no owner on file)');
+      }
+      setActionTarget(null);
+      await load();
+    } catch (e: any) {
+      toast.error(e?.message || 'Action failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <>
@@ -168,22 +213,27 @@ export const Organisations: React.FC = () => {
           },
           {
             key: 'actions', label: '', align: 'right',
-            render: (r) => (
-              <div className="flex items-center gap-1 justify-end">
-                {[
-                  { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
-                  { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
-                  { Icon: ArrowUpCircle, label: 'Upgrade', onClick: action('Upgrade', r.name) },
-                  { Icon: Pause, label: 'Suspend', onClick: action('Suspend', r.name) },
-                  { Icon: MessageSquare, label: 'Message', onClick: action('Message', r.name) },
-                  { Icon: History, label: 'Audit', onClick: action('Audit', r.name) },
-                ].map(({ Icon, label, onClick }) => (
-                  <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
-                    <Icon className="w-3 h-3" />
-                  </button>
-                ))}
-              </div>
-            ),
+            render: (r) => {
+              const isSuspended = r.organisation_status === 'suspended' || r.subscription_status === 'suspended';
+              return (
+                <div className="flex items-center gap-1 justify-end">
+                  {[
+                    { Icon: Eye, label: 'View', onClick: () => setOpenTeamId(r.id) },
+                    { Icon: UserCog, label: 'Impersonate', onClick: () => setImpersonateTarget({ id: r.id, name: r.name }) },
+                    { Icon: ArrowUpCircle, label: 'Change tier', onClick: () => setActionTarget({ kind: 'upgrade', row: r }) },
+                    isSuspended
+                      ? { Icon: Play, label: 'Reactivate', onClick: () => setActionTarget({ kind: 'reactivate', row: r }) }
+                      : { Icon: Pause, label: 'Suspend', onClick: () => setActionTarget({ kind: 'suspend', row: r }) },
+                    { Icon: MessageSquare, label: 'Message owner', onClick: () => setActionTarget({ kind: 'message', row: r }) },
+                    { Icon: History, label: 'Audit trail', onClick: () => setAuditTarget({ id: r.id, name: r.name }) },
+                  ].map(({ Icon, label, onClick }) => (
+                    <button key={label} title={label} className="cc-btn p-1.5" onClick={onClick}>
+                      <Icon className="w-3 h-3" />
+                    </button>
+                  ))}
+                </div>
+              );
+            },
           },
         ]}
         empty={loading ? 'Loading organisations…' : 'No organisations yet'}
@@ -196,6 +246,20 @@ export const Organisations: React.FC = () => {
         onClose={() => setImpersonateTarget(null)}
         teamId={impersonateTarget?.id ?? null}
         teamName={impersonateTarget?.name ?? null}
+      />
+      <OrgActionModal
+        open={!!actionTarget}
+        kind={actionTarget?.kind ?? null}
+        organisationName={actionTarget?.row.name ?? ''}
+        currentTier={actionTarget?.row.tier_name ?? null}
+        submitting={submitting}
+        onCancel={() => setActionTarget(null)}
+        onConfirm={handleConfirmAction}
+      />
+      <OrgAuditDrawer
+        teamId={auditTarget?.id ?? null}
+        organisationName={auditTarget?.name ?? null}
+        onClose={() => setAuditTarget(null)}
       />
     </>
   );
