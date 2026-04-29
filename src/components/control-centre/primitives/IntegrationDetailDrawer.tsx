@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { X, AlertTriangle, Activity, Building2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { X, AlertTriangle, Activity, Building2, RefreshCw, ShieldCheck, Stethoscope } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { StatusBadge } from './StatusBadge';
+import { IntegrationActionModal } from './IntegrationActionModal';
 import { toast } from 'sonner';
+
+type ActionKind = 'recheck_global' | 'recheck_team' | 'retry_cc' | 'ack_team';
+interface PendingAction { kind: ActionKind; teamId?: string | null; teamName?: string | null; }
 
 interface Props {
   integrationName: string | null;
@@ -56,10 +60,12 @@ const statusVariant = (s: string | null) =>
 export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, displayName, onClose }) => {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [busy, setBusy] = useState(false);
   const open = !!integrationName;
 
-  useEffect(() => {
-    if (!integrationName) { setDetail(null); return; }
+  const reload = useCallback(() => {
+    if (!integrationName) return;
     setLoading(true);
     supabase
       .rpc('get_integration_detail', { integration_name_in: integrationName })
@@ -70,9 +76,47 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
       });
   }, [integrationName]);
 
+  useEffect(() => {
+    if (!integrationName) { setDetail(null); return; }
+    reload();
+  }, [integrationName, reload]);
+
   if (!open) return null;
 
   const summary = detail?.summary_24h;
+  const isCcAthletics = integrationName === 'cc_athletics';
+
+  const runAction = async (reason: string) => {
+    if (!pending || !integrationName) return;
+    setBusy(true);
+    try {
+      if (pending.kind === 'recheck_global') {
+        const { error } = await supabase.rpc('run_integration_health_check', { p_integration_name: integrationName, p_team_uuid: null });
+        if (error) throw error;
+        toast.success('Global health check recorded');
+      } else if (pending.kind === 'recheck_team') {
+        const { error } = await supabase.rpc('run_integration_health_check', { p_integration_name: integrationName, p_team_uuid: pending.teamId });
+        if (error) throw error;
+        toast.success('Team health check recorded');
+      } else if (pending.kind === 'ack_team') {
+        const { error } = await supabase.rpc('acknowledge_integration_issue', { p_integration_name: integrationName, p_team_uuid: pending.teamId, p_reason: reason });
+        if (error) throw error;
+        toast.success('Issue acknowledged');
+      } else if (pending.kind === 'retry_cc') {
+        const { data, error } = await supabase.functions.invoke('cc-retry-sync', { body: { team_uuid: pending.teamId, reason } });
+        if (error) throw error;
+        if ((data as any)?.status === 'success') toast.success(`Retry succeeded (${(data as any).latency_ms}ms)`);
+        else toast.error(`Retry failed: ${(data as any)?.failure_reason || 'unknown'}`);
+      }
+      setPending(null);
+      reload();
+    } catch (e: any) {
+      toast.error(e?.message || 'Action failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   return (
     <>
@@ -90,8 +134,15 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
             <div className="text-[11px] uppercase tracking-wider" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Integration</div>
             <div className="text-[18px] font-semibold">{displayName || integrationName}</div>
           </div>
-          <button onClick={onClose} className="cc-btn"><X className="w-4 h-4" /></button>
+          <div className="flex items-center gap-2">
+            <button className="cc-btn" onClick={() => setPending({ kind: 'recheck_global' })} title="Record a manual global health check">
+              <Stethoscope className="w-4 h-4" /> Recheck health
+            </button>
+            <button className="cc-btn" onClick={reload} title="Refresh"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={onClose} className="cc-btn"><X className="w-4 h-4" /></button>
+          </div>
         </div>
+
 
         {loading && <div className="p-6 text-sm" style={{ color: 'hsl(var(--cc-fg-dim))' }}>Loading…</div>}
 
@@ -151,20 +202,39 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
               ) : (
                 <div className="space-y-2">
                   {detail.affected_organisations.map((o, idx) => (
-                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px] py-1 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
-                      <div className="flex-1">
-                        <div className="font-semibold">{o.organisation_name || o.team_id || '—'}</div>
-                        <div style={{ color: 'hsl(var(--cc-fg-dim))' }}>{o.last_failure_reason || '—'}</div>
+                    <div key={idx} className="flex items-start justify-between gap-3 text-[12px] py-2 border-b" style={{ borderColor: 'hsl(var(--cc-border) / 0.4)' }}>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold truncate">{o.organisation_name || o.team_id || '—'}</div>
+                        <div className="truncate" style={{ color: 'hsl(var(--cc-fg-dim))' }}>{o.last_failure_reason || '—'}</div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <span className="font-mono">{o.failure_count} fails</span>
                         <span style={{ color: 'hsl(var(--cc-fg-dim))' }}>{fmtDate(o.last_failure_at)}</span>
+                        {o.team_id && (
+                          <>
+                            {isCcAthletics && (
+                              <button className="cc-btn" title="Retry CC Athletics sync"
+                                onClick={() => setPending({ kind: 'retry_cc', teamId: o.team_id, teamName: o.organisation_name })}>
+                                <RefreshCw className="w-3.5 h-3.5" /> Retry
+                              </button>
+                            )}
+                            <button className="cc-btn" title="Recheck health for this org"
+                              onClick={() => setPending({ kind: 'recheck_team', teamId: o.team_id, teamName: o.organisation_name })}>
+                              <Stethoscope className="w-3.5 h-3.5" />
+                            </button>
+                            <button className="cc-btn" title="Acknowledge issue"
+                              onClick={() => setPending({ kind: 'ack_team', teamId: o.team_id, teamName: o.organisation_name })}>
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+
 
             {/* Recent logs */}
             <div className="cc-glass p-4">
@@ -199,6 +269,28 @@ export const IntegrationDetailDrawer: React.FC<Props> = ({ integrationName, disp
           </div>
         )}
       </div>
+
+      <IntegrationActionModal
+        open={!!pending}
+        busy={busy}
+        title={
+          pending?.kind === 'recheck_global' ? 'Recheck integration health (global)' :
+          pending?.kind === 'recheck_team' ? `Recheck health for ${pending?.teamName || 'organisation'}` :
+          pending?.kind === 'retry_cc' ? `Retry CC Athletics sync for ${pending?.teamName || 'organisation'}` :
+          pending?.kind === 'ack_team' ? `Acknowledge issue for ${pending?.teamName || 'organisation'}` : ''
+        }
+        description={
+          pending?.kind === 'recheck_global' ? 'Records a manual health check entry. No credentials are touched.' :
+          pending?.kind === 'recheck_team' ? 'Records a manual health check entry for this organisation.' :
+          pending?.kind === 'retry_cc' ? 'Triggers a one-off CC Athletics sync for this organisation. Outcome will be logged.' :
+          'Marks unresolved alerts for this integration / organisation as acknowledged.'
+        }
+        confirmLabel={pending?.kind === 'retry_cc' ? 'Run retry' : 'Confirm'}
+        requireReason={pending?.kind === 'retry_cc' || pending?.kind === 'ack_team'}
+        destructive={pending?.kind === 'retry_cc'}
+        onCancel={() => { if (!busy) setPending(null); }}
+        onConfirm={runAction}
+      />
     </>
   );
 };
