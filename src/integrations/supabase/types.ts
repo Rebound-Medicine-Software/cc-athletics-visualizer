@@ -1393,6 +1393,14 @@ export type Database = {
       }
     }
     Functions: {
+      acknowledge_integration_issue: {
+        Args: {
+          p_integration_name: string
+          p_reason: string
+          p_team_uuid: string
+        }
+        Returns: Json
+      }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       create_notification_campaign: {
         Args: {
@@ -1890,6 +1898,21 @@ export type Database = {
       }
       reactivate_organisation: {
         Args: { reason: string; team_uuid: string }
+        Returns: Json
+      }
+      record_cc_athletics_retry: {
+        Args: {
+          p_failure_reason?: string
+          p_latency_ms?: number
+          p_reason: string
+          p_record_count?: number
+          p_status: string
+          p_team_uuid: string
+        }
+        Returns: Json
+      }
+      run_integration_health_check: {
+        Args: { p_integration_name: string; p_team_uuid?: string }
         Returns: Json
       }
       send_organisation_message: {
