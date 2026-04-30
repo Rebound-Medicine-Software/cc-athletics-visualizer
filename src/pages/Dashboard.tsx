@@ -35,7 +35,10 @@ const Dashboard = () => {
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(window.innerWidth < 1200);
+  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1200 : true
+  );
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
   const [searchParams, setSearchParams] = useSearchParams();
