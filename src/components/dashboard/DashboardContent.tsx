@@ -28,6 +28,7 @@ export interface DashboardContentProps {
   branding?: any;
   navigationItems: any[];
   activeSection: string;
+  setActiveSection?: (section: string) => void;
   resetFiltersKey: number;
 }
 
@@ -37,7 +38,7 @@ const DATA_DEPENDENT_SECTIONS = new Set(["dashboard", "live-data"]);
 export const DashboardContent = ({
   data, isLoading, error, errorMessage, hasNoData,
   selectedTeams, setSelectedTeams, handleRefresh, orgData,
-  branding, navigationItems, activeSection, resetFiltersKey
+  branding, navigationItems, activeSection, setActiveSection, resetFiltersKey
 }: DashboardContentProps) => {
   // State for remaining section
   const [selectedTest2, setSelectedTest2] = useState<string>("");
@@ -88,7 +89,7 @@ export const DashboardContent = ({
   const renderContent = () => {
     switch (activeSection) {
       case "home":
-        return <HomeOverview />;
+        return <HomeOverview setActiveSection={setActiveSection} />;
       case "live-data":
         return (
           <div className="space-y-4">

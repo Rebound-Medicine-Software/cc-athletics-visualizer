@@ -196,6 +196,7 @@ const Dashboard = () => {
               branding={branding}
               navigationItems={navigationItems}
               activeSection={activeSection}
+              setActiveSection={setActiveSection}
               resetFiltersKey={resetFiltersKey}
             />
           </div>
