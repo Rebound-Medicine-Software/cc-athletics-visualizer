@@ -130,11 +130,11 @@ const PdfPreview = ({ fileUrl }: { fileUrl: string }) => {
 const RecentReportsCard = ({
   reports,
   onPreview,
-  onClear,
+  onRefresh,
 }: {
   reports: RecentReport[];
   onPreview: (r: RecentReport) => void;
-  onClear: () => void;
+  onRefresh: () => void;
 }) => (
   <Card>
     <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
@@ -143,14 +143,12 @@ const RecentReportsCard = ({
           <Clock className="h-4 w-4" /> Recent reports
         </CardTitle>
         <CardDescription className="text-xs">
-          Reports generated from this device. Stored locally for your reference.
+          Recent report activity for your organisation, scoped by tenant.
         </CardDescription>
       </div>
-      {reports.length > 0 && (
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-muted-foreground">
-          <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear
-        </Button>
-      )}
+      <Button variant="ghost" size="sm" onClick={onRefresh} className="text-muted-foreground">
+        <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+      </Button>
     </CardHeader>
     <CardContent className="pt-0">
       {reports.length === 0 ? (
