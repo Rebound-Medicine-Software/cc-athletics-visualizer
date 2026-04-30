@@ -17,6 +17,7 @@ import {
   LogIn, UserPlus, ArrowRight, RefreshCw, Unlink, LayoutGrid
 } from "lucide-react";
 import { NookalCalendar } from "./booking-calendar/NookalCalendar";
+import { KpiGridSkeleton, ChartSkeleton } from "@/components/dashboard/skeletons";
 
 
 export const BookingCalendar = () => {
@@ -195,8 +196,9 @@ export const BookingCalendar = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div className="space-y-4 animate-fade-in">
+        <KpiGridSkeleton count={4} />
+        <ChartSkeleton height={320} bars={7} />
       </div>
     );
   }

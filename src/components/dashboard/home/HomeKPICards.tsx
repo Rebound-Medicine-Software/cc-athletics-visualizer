@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Users, UserCheck, CreditCard, Activity, Calendar, FileCheck, TrendingUp } from "lucide-react";
 import type { HomeMetrics } from "@/hooks/useHomeMetrics";
-import { Skeleton } from "@/components/ui/skeleton";
+import { KpiCardSkeleton } from "@/components/dashboard/skeletons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeamCurrency } from "@/hooks/useTeamCurrency";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
@@ -32,6 +32,16 @@ export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner 
   const practitionerAllowed = new Set(["patients", "tests", "bookings", "consents"]);
   const cards = isPractitioner ? allCards.filter(c => practitionerAllowed.has(c.id)) : allCards;
 
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        {Array.from({ length: cards.length }).map((_, i) => (
+          <KpiCardSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
       {cards.map((c, i) => (
@@ -41,11 +51,7 @@ export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner 
               <c.icon className={`h-5 w-5 ${c.color}`} />
             </div>
             <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">{c.label}</div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <div className="text-2xl font-bold text-foreground">{c.value ?? 0}</div>
-            )}
+            <div className="text-2xl font-bold text-foreground">{c.value ?? 0}</div>
             <div className="text-xs text-muted-foreground mt-1">{c.sub}</div>
           </CardContent>
         </Card>

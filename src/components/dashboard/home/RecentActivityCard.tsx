@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ListSkeleton } from "@/components/dashboard/skeletons";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 import { Activity, LogIn } from "lucide-react";
 import type { RecentActivity } from "@/hooks/useHomeMetrics";
 import { formatDistanceToNow } from "date-fns";
@@ -20,11 +21,15 @@ export const RecentActivityCard = ({ data, isLoading }: Props) => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
+          <ListSkeleton rows={5} />
         ) : !data || data.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No recent activity.</p>
+          <EmptyState
+            inline
+            compact
+            icon={Activity}
+            title="No recent activity"
+            description="Logins, uploads, and bookings will appear here as your team uses the platform."
+          />
         ) : (
           <div className="space-y-2 max-h-80 overflow-y-auto">
             {data.map((a) => (

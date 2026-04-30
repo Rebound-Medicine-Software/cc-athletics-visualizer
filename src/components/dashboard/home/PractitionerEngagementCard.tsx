@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Users } from "lucide-react";
+import { ListSkeleton } from "@/components/dashboard/skeletons";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { Users, UserPlus } from "lucide-react";
 import type { PractitionerEngagement } from "@/hooks/useHomeMetrics";
 import { formatDistanceToNow } from "date-fns";
 
@@ -24,11 +25,20 @@ export const PractitionerEngagementCard = ({ data, isLoading }: Props) => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-          </div>
+          <ListSkeleton rows={4} />
         ) : sorted.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">No practitioners yet.</p>
+          <EmptyState
+            inline
+            compact
+            icon={Users}
+            title="No practitioners yet"
+            description="Invite practitioners to start tracking engagement and activity."
+            primaryAction={{
+              label: "Invite practitioners",
+              icon: UserPlus,
+              onClick: () => window.location.assign("/settings"),
+            }}
+          />
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto">
             {sorted.map((p) => (

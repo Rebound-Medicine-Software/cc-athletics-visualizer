@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { HighlightsSection } from "./HighlightsSection";
 import { ReportFilters } from "./ReportFilters";
 import { RegionComparison } from "./RegionComparison";
@@ -13,7 +11,9 @@ import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { HomeOverview } from "./home/HomeOverview";
 import { ComingSoonSection } from "./ComingSoonSection";
 import { SectionHeader } from "./SectionHeader";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { EmptyState } from "./EmptyState";
+import { ErrorState } from "./ErrorState";
+import { BarChart3, Activity } from "lucide-react";
 
 export interface DashboardContentProps {
   data: any[];
@@ -31,6 +31,9 @@ export interface DashboardContentProps {
   resetFiltersKey: number;
 }
 
+// Sections that depend on force-plate test data
+const DATA_DEPENDENT_SECTIONS = new Set(["dashboard", "live-data"]);
+
 export const DashboardContent = ({
   data, isLoading, error, errorMessage, hasNoData,
   selectedTeams, setSelectedTeams, handleRefresh, orgData,
@@ -40,48 +43,36 @@ export const DashboardContent = ({
   const [selectedTest2, setSelectedTest2] = useState<string>("");
   const [resetKey2, setResetKey2] = useState<number>(0);
 
-  // Error state
-  if (error) {
+  const dataDependent = DATA_DEPENDENT_SECTIONS.has(activeSection);
+
+  // Error state — only blocks data-dependent sections
+  if (error && dataDependent) {
     return (
-      <Card className="bg-red-50 border-red-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center justify-center text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Data</h3>
-            <p className="text-red-600 mb-4">{errorMessage}</p>
-            <Button onClick={handleRefresh} variant="outline" className="bg-white">
-              <RefreshCw className="mr-2 h-4 w-4" /> Try Again
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <ErrorState
+        variant="load-failed"
+        description={errorMessage || "We couldn't load your testing data. Please try again."}
+        onRetry={handleRefresh}
+      />
     );
   }
 
-  // No data state
-  if (hasNoData) {
+  // No data state — only blocks data-dependent sections
+  if (hasNoData && dataDependent) {
     return (
-      <Card className="bg-amber-50 border-amber-200 border-2 border-dashed animate-fade-in">
-        <CardContent className="p-10">
-          <div className="flex flex-col items-center justify-center text-center max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
-              <AlertCircle className="h-8 w-8 text-amber-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-amber-900 mb-2">
-              No test results yet
-            </h3>
-            <p className="text-sm text-amber-700 mb-5">
-              Once your team uploads or syncs force-plate testing data, your
-              dashboards, charts, and comparisons will populate here automatically.
-            </p>
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              <Button onClick={handleRefresh} variant="outline" className="bg-white">
-                <RefreshCw className="mr-2 h-4 w-4" /> Refresh data
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={activeSection === "live-data" ? Activity : BarChart3}
+        title="No test results yet"
+        description="Once your team uploads or syncs force-plate testing data, your dashboards, charts, and comparisons will populate here automatically."
+        primaryAction={{
+          label: "Refresh data",
+          onClick: handleRefresh,
+        }}
+        secondaryAction={{
+          label: "Connect an integration",
+          href: "/settings",
+          variant: "outline",
+        }}
+      />
     );
   }
 

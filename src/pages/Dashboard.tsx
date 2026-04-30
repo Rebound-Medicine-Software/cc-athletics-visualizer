@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
+import { DashboardSkeleton } from "@/components/dashboard/skeletons";
 import {
   Activity,
   LogOut,
@@ -147,10 +148,9 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard data...</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+        <div className="w-full max-w-7xl mx-auto px-6 pt-10 pb-12">
+          <DashboardSkeleton />
         </div>
       </div>
     );
