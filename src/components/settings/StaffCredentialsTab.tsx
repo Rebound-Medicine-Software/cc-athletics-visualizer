@@ -223,23 +223,17 @@ export const StaffCredentialsTab = () => {
       } else {
         // Create new user via edge function - existing logic remains the same
         const password = editForm.password || generateSafePassword();
-        
+
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('No active session');
 
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('team_id')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (!currentProfile?.team_id) throw new Error('No team associated with account');
+        if (!effectiveTeamId) throw new Error('No team associated with account');
 
         const { data: teamData } = await supabase
           .from('teams')
           .select('name')
-          .eq('id', currentProfile.team_id)
-          .single();
+          .eq('id', effectiveTeamId)
+          .maybeSingle();
 
         const { data: credentialsData, error: credentialsError } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
@@ -249,7 +243,7 @@ export const StaffCredentialsTab = () => {
             qualifications: editForm.qualifications,
             password: password,
             team_name: branding?.name || teamData?.name || 'Your Organization',
-            team_id: currentProfile.team_id,
+            team_id: effectiveTeamId,
             password_hash: password  // Store password for future reference
           }
         });
