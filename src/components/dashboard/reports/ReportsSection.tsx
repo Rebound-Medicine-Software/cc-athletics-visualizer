@@ -379,6 +379,42 @@ export const ReportsSection = () => {
 
     setBusyKind(mode);
     try {
+      // Optionally generate or reuse an AI Coach insight to embed.
+      // Falls back gracefully (continues without AI) on failure.
+      let aiInsightForReport:
+        | { testName: string; explanation: string; recommendations: string[]; keyCues: string[] }
+        | null = null;
+      if (includeAiInReport) {
+        try {
+          // Reuse the on-screen insight if it matches the chosen test focus
+          const focusName = aiTestName || uniqueTestNames[0];
+          if (aiInsight && focusName) {
+            aiInsightForReport = {
+              testName: focusName,
+              explanation: aiInsight.explanation,
+              recommendations: aiInsight.recommendations,
+              keyCues: aiInsight.keyCues,
+            };
+          } else {
+            aiInsightForReport = await buildAiInsightForReport();
+          }
+          if (aiInsightForReport) {
+            // Mirror into on-screen panel for transparency
+            setAiInsight({
+              explanation: aiInsightForReport.explanation,
+              recommendations: aiInsightForReport.recommendations,
+              keyCues: aiInsightForReport.keyCues,
+            });
+          }
+        } catch (aiErr: any) {
+          toast({
+            title: "AI Coach insight unavailable",
+            description: `Continuing without AI section. ${aiErr?.message ?? ""}`.trim(),
+            variant: "destructive",
+          });
+        }
+      }
+
       const res = await supabase.functions.invoke("generate-force-plate-report", {
         body: {
           athlete_id: selectedAthlete.id,
@@ -394,6 +430,7 @@ export const ReportsSection = () => {
                 org_name: teamBranding.name,
               }
             : null,
+          ai_insight: aiInsightForReport,
         },
       });
       if (res.error) throw new Error(res.error.message || "Generation failed");
