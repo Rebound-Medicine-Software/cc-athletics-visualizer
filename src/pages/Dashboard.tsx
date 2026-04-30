@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
@@ -38,6 +38,26 @@ const Dashboard = () => {
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(window.innerWidth < 1200);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Allow deep-linking to a specific section via ?section=...
+  useEffect(() => {
+    const s = searchParams.get("section");
+    if (s && s !== activeSection) {
+      if (s === "settings") {
+        navigate("/settings");
+      } else if (s === "admin") {
+        navigate("/admin");
+      } else {
+        setActiveSection(s);
+      }
+      // Clean up the param after applying so back/forward doesn't re-trigger oddly.
+      const next = new URLSearchParams(searchParams);
+      next.delete("section");
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Auth/role gating now handled centrally by <ProtectedRoute> + <RoleGate> in App.tsx.
 

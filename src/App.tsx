@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ImpersonationProvider } from "@/lib/impersonation/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/control-centre/primitives/ImpersonationBanner";
+import { GlobalCommandPalette } from "@/components/command-palette/CommandPalette";
 import { ProtectedRoute, RoleGate, SuperAdminGate } from "@/components/auth";
 import AdminRedirect from "@/components/auth/AdminRedirect";
 import Landing from "./pages/Landing";
@@ -32,6 +33,7 @@ const App = () => (
         <BrowserRouter>
           <ImpersonationProvider>
             <ImpersonationBanner />
+            <GlobalCommandPalette />
           <Routes>
             {/* Public */}
             <Route path="/" element={<Landing />} />

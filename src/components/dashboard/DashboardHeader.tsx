@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Activity, RefreshCw, RotateCw, ChevronRight } from "lucide-react";
+import { Activity, RefreshCw, RotateCw, ChevronRight, Search } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SendReportsModal } from "./SendReportsModal";
 import { InAppInbox } from "@/components/notifications/InAppInbox";
@@ -99,6 +99,19 @@ export const DashboardHeader = ({
                 Reset Filters
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.dispatchEvent(new Event("nh:open-command-palette"))}
+              className="border-muted-foreground/30 text-muted-foreground hover:bg-muted/40 hidden md:inline-flex"
+              aria-label="Open command palette"
+            >
+              <Search className="w-4 h-4 mr-2" />
+              <span className="text-xs">Search</span>
+              <kbd className="ml-2 hidden lg:inline-flex items-center rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                ⌘K
+              </kbd>
+            </Button>
             <Button
               variant="outline"
               onClick={handleRefresh}
