@@ -31,6 +31,8 @@ type AnomalyRow = {
 };
 
 export const LiveMonitor: React.FC = () => {
+  const qc = useQueryClient();
+
   const { data: overview } = useQuery({
     queryKey: ['cc-live-overview'],
     queryFn: async () => {
@@ -38,7 +40,7 @@ export const LiveMonitor: React.FC = () => {
       if (error) throw error;
       return data as unknown as Overview;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 60_000, // realtime drives updates; polling is fallback
   });
 
   const { data: recent = [] } = useQuery({
@@ -48,7 +50,7 @@ export const LiveMonitor: React.FC = () => {
       if (error) throw error;
       return (data || []) as RecentRow[];
     },
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 
   const { data: anomalies = [] } = useQuery({
@@ -58,8 +60,32 @@ export const LiveMonitor: React.FC = () => {
       if (error) throw error;
       return (data || []) as AnomalyRow[];
     },
-    refetchInterval: 60_000,
+    refetchInterval: 120_000,
   });
+
+  // Realtime: refresh feed + overview when new test rows arrive
+  const onTestInsert = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['cc-live-recent'] });
+    qc.invalidateQueries({ queryKey: ['cc-live-overview'] });
+  }, [qc]);
+  useTestDataRealtime(onTestInsert);
+
+  // Realtime: refresh failed-upload count when integration failures arrive
+  const onIntegrationInsert = useCallback((row: any) => {
+    if (row?.status === 'failed') {
+      qc.invalidateQueries({ queryKey: ['cc-live-overview'] });
+    }
+  }, [qc]);
+  useIntegrationHealthRealtime(onIntegrationInsert);
+
+  // Realtime: refresh overview when test-failure activity events arrive
+  const onActivityInsert = useCallback((row: any) => {
+    const t = String(row?.event_type ?? '');
+    if (t.includes('test_upload_failed') || t.includes('cc_athletics_retry_failed')) {
+      qc.invalidateQueries({ queryKey: ['cc-live-overview'] });
+    }
+  }, [qc]);
+  usePlatformActivityRealtime(onActivityInsert);
 
   const typeCounts = overview?.counts_by_test_type ?? [];
   const topTypes = typeCounts.slice(0, 5);
@@ -71,7 +97,7 @@ export const LiveMonitor: React.FC = () => {
         subtitle="Real-time force plate intake across all organisations."
         actions={<div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'hsl(var(--cc-success) / 0.1)', border: '1px solid hsl(var(--cc-success) / 0.3)' }}>
           <span className="cc-pulse" />
-          <span className="text-[12px] font-semibold" style={{ color: 'hsl(var(--cc-success))' }}>Live • polling 30s</span>
+          <span className="text-[12px] font-semibold" style={{ color: 'hsl(var(--cc-success))' }}>Live • realtime</span>
         </div>}
       />
 
