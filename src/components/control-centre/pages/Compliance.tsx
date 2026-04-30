@@ -7,6 +7,12 @@ import { AuditEventDetailDrawer } from '../primitives/AuditEventDetailDrawer';
 import { Search, RefreshCw, AlertTriangle, ShieldAlert, UserCheck, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  usePlatformActivityRealtime,
+  useIntegrationHealthRealtime,
+  useImpersonationRealtime,
+} from '../hooks/useRealtimeChannel';
+import { useCallback, useRef } from 'react';
 
 interface AuditRow {
   event_id: string;
