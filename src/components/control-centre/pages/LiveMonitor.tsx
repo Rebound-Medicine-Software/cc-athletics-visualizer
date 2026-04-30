@@ -1,6 +1,11 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '../primitives/PageHeader';
+import {
+  useTestDataRealtime,
+  useIntegrationHealthRealtime,
+  usePlatformActivityRealtime,
+} from '../hooks/useRealtimeChannel';
 import { KpiCard } from '../primitives/KpiCard';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { Activity, Zap, AlertTriangle, Users, Building2, FlaskConical } from 'lucide-react';
