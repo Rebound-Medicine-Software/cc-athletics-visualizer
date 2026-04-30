@@ -211,7 +211,7 @@ const Dashboard = () => {
             <DashboardSidebar
               orgData={orgData}
               branding={branding}
-              isNavigationCollapsed={isNavigationCollapsed}
+              isNavigationCollapsed={mobileNavOpen ? false : isNavigationCollapsed}
               setIsNavigationCollapsed={setIsNavigationCollapsed}
               activeSection={activeSection}
               setActiveSection={(s) => {
