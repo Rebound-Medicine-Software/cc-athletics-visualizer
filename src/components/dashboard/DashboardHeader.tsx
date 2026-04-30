@@ -22,6 +22,8 @@ interface DashboardHeaderProps {
   showResetFilters?: boolean;
   /** Show the "Send Reports" CTA. Default false; only Analytics needs it. */
   showSendReports?: boolean;
+  /** Optional handler to open the mobile slide-in nav. */
+  onOpenMobileNav?: () => void;
 }
 
 export const DashboardHeader = ({
@@ -32,6 +34,7 @@ export const DashboardHeader = ({
   sectionGroupLabel,
   showResetFilters = false,
   showSendReports = false,
+  onOpenMobileNav,
 }: DashboardHeaderProps) => {
   const { teamBranding } = useAuth();
 
