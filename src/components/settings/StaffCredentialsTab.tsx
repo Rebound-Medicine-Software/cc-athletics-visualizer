@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 
 interface StaffUser {
   id: string;
@@ -31,6 +32,7 @@ interface StaffUser {
 export const StaffCredentialsTab = () => {
   const { profile } = useAuth();
   const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
   const { branding } = useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,30 +60,15 @@ export const StaffCredentialsTab = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTeamId]);
 
   const fetchUsers = async () => {
     try {
-      // Get current user's session to filter by team
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Get current user's profile to find team_id
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (!currentProfile) {
-        console.log('No profile found for current user');
-        setUsers([]);
-        return;
-      }
-
-      // If no team_id, show empty list (new accounts might not have team setup yet)
-      if (!currentProfile.team_id) {
-        console.log('User has no team_id set');
+      // Source the team_id from the effective team context so View-As shows the
+      // impersonated organisation's staff (not the Super Admin's own team).
+      if (!effectiveTeamId) {
+        console.log('No effective team_id; skipping staff fetch');
         setUsers([]);
         return;
       }
@@ -90,7 +77,7 @@ export const StaffCredentialsTab = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('team_id', currentProfile.team_id)
+        .eq('team_id', effectiveTeamId)
         .in('role', ['practitioner', 'staff', 'clinician'])
         .order('created_at', { ascending: false });
 
@@ -129,6 +116,7 @@ export const StaffCredentialsTab = () => {
   };
 
   const handleSave = async () => {
+    if (guardWrite('Saving staff member')) return;
     if (!editForm.email.trim()) {
       toast.error("Email is required");
       return;
@@ -235,23 +223,17 @@ export const StaffCredentialsTab = () => {
       } else {
         // Create new user via edge function - existing logic remains the same
         const password = editForm.password || generateSafePassword();
-        
+
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) throw new Error('No active session');
 
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('team_id')
-          .eq('user_id', session.user.id)
-          .single();
-
-        if (!currentProfile?.team_id) throw new Error('No team associated with account');
+        if (!effectiveTeamId) throw new Error('No team associated with account');
 
         const { data: teamData } = await supabase
           .from('teams')
           .select('name')
-          .eq('id', currentProfile.team_id)
-          .single();
+          .eq('id', effectiveTeamId)
+          .maybeSingle();
 
         const { data: credentialsData, error: credentialsError } = await supabase.functions.invoke('send-clinician-credentials', {
           body: {
@@ -261,7 +243,7 @@ export const StaffCredentialsTab = () => {
             qualifications: editForm.qualifications,
             password: password,
             team_name: branding?.name || teamData?.name || 'Your Organization',
-            team_id: currentProfile.team_id,
+            team_id: effectiveTeamId,
             password_hash: password  // Store password for future reference
           }
         });

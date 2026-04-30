@@ -46,13 +46,13 @@ export const useBookingNotes = () => {
   const upsertNote = useCallback(
     async (calUid: string, notes: string) => {
       if (guardWrite('Saving booking notes')) return;
-      if (!profile?.team_id || !profile.user_id) {
+      if (!effectiveTeamId || !profile?.user_id) {
         toast.error("Cannot save notes – not signed in");
         return;
       }
       const payload = {
         cal_uid: calUid,
-        team_id: profile.team_id,
+        team_id: effectiveTeamId,
         notes,
         last_edited_by: profile.user_id,
         last_edited_by_name: profile.full_name || profile.email || "Practitioner",
@@ -67,7 +67,7 @@ export const useBookingNotes = () => {
       toast.success("Notes saved");
       await fetchAll();
     },
-    [profile, fetchAll]
+    [profile, effectiveTeamId, guardWrite, fetchAll]
   );
 
   const getNote = useCallback(

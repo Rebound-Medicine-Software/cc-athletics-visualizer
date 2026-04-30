@@ -10,6 +10,7 @@ import { Edit, Plus, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { useToast } from "@/hooks/use-toast";
 
 interface Tier {
@@ -25,6 +26,7 @@ interface Tier {
 
 export const TierManagementTab = () => {
   const { profile, isRole } = useAuth();
+  const { teamId: effectiveTeamId } = useEffectiveTeamId();
   const guardWrite = useViewAsWriteGuard();
   const { toast } = useToast();
   const [tiers, setTiers] = useState<Tier[]>([]);
@@ -43,17 +45,18 @@ export const TierManagementTab = () => {
   });
 
   useEffect(() => {
-    if (profile && (isRole('organisation') || isRole('clinician') || isRole('super_admin'))) {
+    if (effectiveTeamId && profile && (isRole('organisation') || isRole('clinician') || isRole('super_admin'))) {
       fetchTiers();
     }
-  }, [profile]);
+  }, [profile, effectiveTeamId]);
 
   const fetchTiers = async () => {
+    if (!effectiveTeamId) return;
     try {
       const { data, error } = await supabase
         .from('tiers')
         .select('*')
-        .eq('team_id', profile?.team_id)
+        .eq('team_id', effectiveTeamId)
         .order('price_monthly', { ascending: true });
 
       if (error) throw error;

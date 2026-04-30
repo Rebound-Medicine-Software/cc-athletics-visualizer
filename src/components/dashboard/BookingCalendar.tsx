@@ -118,7 +118,7 @@ export const BookingCalendar = () => {
 
     const username = inputUsername.trim().replace(/^@/, "").replace(/^https?:\/\/cal\.com\//, "");
 
-    if (!profile?.team_id) {
+    if (!effectiveTeamId) {
       toast.error("No team found. Please contact support.");
       return;
     }
@@ -128,7 +128,7 @@ export const BookingCalendar = () => {
       const { data: team } = await supabase
         .from("teams")
         .select("setup_data")
-        .eq("id", profile.team_id)
+        .eq("id", effectiveTeamId)
         .single();
 
       const existingData = (team?.setup_data && typeof team.setup_data === 'object')
@@ -144,7 +144,7 @@ export const BookingCalendar = () => {
             cal_link: `https://cal.com/${username}`,
           },
         })
-        .eq("id", profile.team_id);
+        .eq("id", effectiveTeamId);
 
       if (error) throw error;
 
@@ -161,13 +161,13 @@ export const BookingCalendar = () => {
 
   const handleDisconnect = async () => {
     if (guardWrite('Disconnecting Cal.com')) return;
-    if (!profile?.team_id) return;
+    if (!effectiveTeamId) return;
 
     try {
       const { data: team } = await supabase
         .from("teams")
         .select("setup_data")
-        .eq("id", profile.team_id)
+        .eq("id", effectiveTeamId)
         .single();
 
       const existingData = (team?.setup_data && typeof team.setup_data === 'object')
@@ -179,7 +179,7 @@ export const BookingCalendar = () => {
       const { error } = await supabase
         .from("teams")
         .update({ setup_data: rest })
-        .eq("id", profile.team_id);
+        .eq("id", effectiveTeamId);
 
       if (error) throw error;
 
