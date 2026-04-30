@@ -656,6 +656,56 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_in_app_notifications: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          message: string
+          metadata: Json
+          read_at: string | null
+          recipient_user_id: string
+          severity: string
+          team_id: string | null
+          title: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json
+          read_at?: string | null
+          recipient_user_id: string
+          severity?: string
+          team_id?: string | null
+          title: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json
+          read_at?: string | null
+          recipient_user_id?: string
+          severity?: string
+          team_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_in_app_notifications_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "platform_notification_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_metrics: {
         Row: {
           created_at: string | null
@@ -827,6 +877,51 @@ export type Database = {
           permissions?: Json
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      platform_webhook_endpoints: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          failure_reason: string | null
+          id: string
+          is_active: boolean
+          label: string
+          last_failure_at: string | null
+          last_success_at: string | null
+          secret: string | null
+          team_id: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          secret?: string | null
+          team_id?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          failure_reason?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          last_failure_at?: string | null
+          last_success_at?: string | null
+          secret?: string | null
+          team_id?: string | null
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
@@ -1402,6 +1497,7 @@ export type Database = {
         Returns: Json
       }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      count_active_webhook_endpoints: { Args: never; Returns: number }
       create_notification_campaign: {
         Args: {
           p_delivery_channel?: string
