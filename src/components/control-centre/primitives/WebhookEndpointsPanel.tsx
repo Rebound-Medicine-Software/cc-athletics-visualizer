@@ -54,6 +54,17 @@ export const WebhookEndpointsPanel: React.FC = () => {
     setLabel(''); setUrl(''); setSecret(''); setTeamId(''); setIsActive(true); setShowForm(false);
   };
 
+  const REASON_MSG: Record<string, string> = {
+    invalid_url: 'URL is not valid.',
+    https_required: 'Only HTTPS URLs are allowed.',
+    invalid_host: 'URL hostname is missing or invalid.',
+    blocked_loopback: 'Loopback addresses (localhost / 127.x) are not allowed.',
+    blocked_internal_hostname: 'Internal hostnames (.local, .internal, single-label) are not allowed.',
+    blocked_private_ip: 'Private IP ranges (10/8, 172.16/12, 192.168/16, etc.) are not allowed.',
+    blocked_link_local: 'Link-local / cloud metadata IPs (169.254.x) are not allowed.',
+  };
+  const friendly = (code?: string | null) => (code && REASON_MSG[code]) || code || 'unknown';
+
   const handleCreate = async () => {
     if (!label.trim() || !url.trim()) { toast.error('Label and URL are required'); return; }
     setCreating(true);
@@ -65,7 +76,7 @@ export const WebhookEndpointsPanel: React.FC = () => {
       p_is_active: isActive,
     });
     setCreating(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error(`Endpoint blocked: ${friendly(error.message)}`); return; }
     toast.success('Webhook endpoint created');
     resetForm();
     load();
@@ -87,8 +98,9 @@ export const WebhookEndpointsPanel: React.FC = () => {
     });
     setTesting(null);
     if (error) { toast.error(`Test failed: ${error.message}`); load(); return; }
+    if (data?.blocked) { toast.error(`Test blocked: ${friendly(data.reason)}`); load(); return; }
     if (data?.success) toast.success(`Test event delivered (HTTP ${data.status_code ?? 200})`);
-    else toast.error(`Test failed: ${data?.reason ?? 'unknown'}`);
+    else toast.error(`Test failed: ${friendly(data?.reason)}`);
     load();
   };
 

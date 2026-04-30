@@ -2029,6 +2029,10 @@ export type Database = {
           url: string
         }[]
       }
+      log_webhook_test_blocked: {
+        Args: { p_endpoint_id: string; p_reason: string; p_url?: string }
+        Returns: undefined
+      }
       log_webhook_test_fired: {
         Args: {
           p_endpoint_id: string
@@ -2207,6 +2211,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      validate_webhook_url: { Args: { p_url: string }; Returns: string }
     }
     Enums: {
       test_name_enum: "cmj" | "squat_jump" | "drop_jump" | "pogo_jump"
