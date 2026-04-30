@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth, UserTier } from '@/contexts/AuthContext';
+import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
 import { 
   Home, 
   BarChart3, 
