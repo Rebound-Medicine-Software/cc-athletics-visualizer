@@ -62,6 +62,17 @@ Deno.serve(async (req) => {
     if (epErr || !ep) return json({ error: "endpoint_not_found" }, 404);
     if (!ep.is_active) return json({ error: "endpoint_disabled" }, 409);
 
+    // SSRF guard: re-validate URL before sending (defence-in-depth)
+    const ssrfReason = checkSsrf(ep.url);
+    if (ssrfReason) {
+      await callerClient.rpc("log_webhook_test_blocked", {
+        p_endpoint_id: ep.id,
+        p_reason: ssrfReason,
+        p_url: ep.url,
+      });
+      return json({ success: false, blocked: true, reason: ssrfReason }, 400);
+    }
+
     const payload = {
       type: "test_event",
       source: "nexushub.control_centre",
