@@ -32,6 +32,7 @@ interface StaffUser {
 export const StaffCredentialsTab = () => {
   const { profile } = useAuth();
   const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
   const { branding } = useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
