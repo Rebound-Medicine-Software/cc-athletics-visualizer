@@ -262,9 +262,13 @@ export const Notifications: React.FC = () => {
             </>
           )}
 
-          <div className="text-[11px] mt-4 leading-relaxed" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
-            Email campaigns are dispatched via NotificationAPI to each organisation's owner email.
-            In-app and webhook channels are recorded but not yet delivered.
+          <div className="text-[11px] mt-4 leading-relaxed space-y-1" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
+            <div>• <strong>Email</strong> dispatched via NotificationAPI to each organisation's owner email.</div>
+            <div>• <strong>In-App</strong> creates a notification in the target organisation owner's inbox.</div>
+            <div>• <strong>Webhook</strong> {webhookCount > 0
+              ? <>POSTs to <StatusBadge variant="success">{webhookCount} active endpoint(s)</StatusBadge></>
+              : <StatusBadge variant="warning">no endpoints configured — sends will fail</StatusBadge>}
+            </div>
           </div>
         </div>
       </div>
