@@ -9,7 +9,7 @@ import { ImpersonationProvider } from "@/lib/impersonation/ImpersonationContext"
 import { ImpersonationBanner } from "@/components/control-centre/primitives/ImpersonationBanner";
 import { ProtectedRoute, RoleGate, SuperAdminGate } from "@/components/auth";
 import AdminRedirect from "@/components/auth/AdminRedirect";
-import Index from "./pages/Index";
+import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -34,7 +34,7 @@ const App = () => (
             <ImpersonationBanner />
           <Routes>
             {/* Public */}
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/consent" element={<AthleteConsent />} />
 
