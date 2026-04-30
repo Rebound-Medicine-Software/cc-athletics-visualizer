@@ -786,6 +786,144 @@ export const ReportsSection = () => {
         />
       </div>
 
+      {/* AI Coach Insight */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Sparkles className="h-4 w-4" /> AI Coach Insight
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Generate a quick coaching summary for the selected athlete's most recent test in the
+            chosen range. Preview here, copy to share, then export from the report flow above.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {!selectedAthlete ? (
+            <EmptyState
+              inline
+              compact
+              icon={User}
+              title="Select an athlete"
+              description="Pick an athlete in the generator above to enable AI Coach insights."
+            />
+          ) : uniqueTestNames.length === 0 ? (
+            <EmptyState
+              inline
+              compact
+              icon={Activity}
+              title="No tests in range"
+              description="Adjust the date range to include test data for this athlete."
+            />
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-end">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">Test focus</label>
+                  <Select
+                    value={aiTestName || uniqueTestNames[0]}
+                    onValueChange={setAiTestName}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniqueTestNames.map((n: any) => (
+                        <SelectItem key={n} value={n}>
+                          {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={generateAiInsight}
+                  disabled={aiBusy || isImpersonating || !canExport}
+                  title={!canExport ? "AI insights use report export permission" : undefined}
+                >
+                  {aiBusy ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 mr-1.5" />
+                  )}
+                  Generate insight
+                </Button>
+              </div>
+
+              {!canExport && (
+                <p className="text-[11px] text-muted-foreground">
+                  AI Coach insights require a tier with report export. (No dedicated AI permission
+                  exists yet — falls back to <code>can_export_reports</code>.)
+                </p>
+              )}
+
+              {aiBusy && (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                </div>
+              )}
+
+              {aiError && !aiBusy && (
+                <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{aiError}</span>
+                </div>
+              )}
+
+              {aiInsight && !aiBusy && (
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-amber-600" />
+                      Insight for {selectedAthlete.name}
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={copyInsight}>
+                      Copy
+                    </Button>
+                  </div>
+                  <p className="text-foreground/90 leading-relaxed">{aiInsight.explanation}</p>
+                  {aiInsight.recommendations?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                        Recommendations
+                      </div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {aiInsight.recommendations.map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {aiInsight.keyCues?.length > 0 && (
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                        Key cues
+                      </div>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {aiInsight.keyCues.map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!aiInsight && !aiBusy && !aiError && (
+                <EmptyState
+                  inline
+                  compact
+                  icon={Sparkles}
+                  title="No insight yet"
+                  description="Click Generate insight to produce a coaching summary."
+                />
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Preview dialog */}
       <Dialog open={!!previewUrl} onOpenChange={(o) => !o && setPreviewUrl(null)}>
         <DialogContent className="flex h-[90vh] max-w-5xl flex-col">
