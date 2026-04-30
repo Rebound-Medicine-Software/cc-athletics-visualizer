@@ -17,9 +17,8 @@ export const HomeOverview = ({ setActiveSection }: HomeOverviewProps) => {
   const role = isImpersonating ? "organisation" : (profile?.role ?? null);
 
   const isPractitioner =
-    role === "clinician" ||
-    (role as string) === "practitioner";
-  const isAthlete = role === "client" || role === "athlete";
+    role === "clinician" || (role as string) === "practitioner";
+  const isAthlete = (role as string) === "client" || (role as string) === "athlete";
 
   // Welcome banner is shared
   const firstName = profile?.full_name ? profile.full_name.split(" ")[0] : "";
