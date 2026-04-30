@@ -56,6 +56,7 @@ export const Notifications: React.FC = () => {
 
   const [tiers, setTiers] = useState<string[]>([]);
   const [orgs, setOrgs] = useState<Org[]>([]);
+  const [webhookCount, setWebhookCount] = useState<number>(0);
 
   const loadCampaigns = async () => {
     setLoading(true);
