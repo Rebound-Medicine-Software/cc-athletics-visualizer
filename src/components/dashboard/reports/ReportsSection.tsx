@@ -427,6 +427,110 @@ export const ReportsSection = () => {
     }
   };
 
+  /* ----- AI Coach insight ----- */
+  const generateAiInsight = async () => {
+    if (!selectedAthlete) return;
+    if (guardWrite("Generating AI insight")) return;
+    if (!canExport) {
+      toast({
+        title: "Upgrade required",
+        description:
+          "AI Coach insights use the same access as report export. Your current tier doesn't include export.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const targetTestName = aiTestName || uniqueTestNames[0];
+    if (!targetTestName) {
+      toast({
+        title: "No test data",
+        description: "Select an athlete with at least one test in range.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Pick the most recent record for the chosen test
+    const records = (athleteTests as any[])
+      .filter((t) => t.test_name === targetTestName)
+      .sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
+    const latest = records[0];
+    if (!latest) {
+      toast({ title: "No records found", variant: "destructive" });
+      return;
+    }
+
+    const m = latest.metrics ?? {};
+    // Pick a representative numeric metric (peak power, rsi, jump_height_ft, etc.)
+    const numericKey =
+      ["peak_power", "rsi", "jump_height_ft", "force_peak", "avg_power"].find(
+        (k) => typeof m[k] === "number",
+      ) ?? Object.keys(m).find((k) => typeof m[k] === "number");
+    const currentValue = numericKey ? Number(m[numericKey]) : undefined;
+
+    const previousValues = records
+      .slice(1, 6)
+      .map((r: any) => (numericKey ? r.metrics?.[numericKey] : undefined))
+      .filter((v: any) => typeof v === "number");
+
+    setAiBusy(true);
+    setAiError(null);
+    setAiInsight(null);
+    try {
+      const res = await supabase.functions.invoke("generate-ai-coach-insight", {
+        body: {
+          team_id: teamId,
+          athlete_id: selectedAthlete.id,
+          testMetrics: {
+            testName: targetTestName,
+            testDate: latest.test_date,
+            currentValue,
+            previousValues,
+            metricUnit: "",
+            metricType: numericKey ?? undefined,
+          },
+        },
+      });
+      if (res.error) throw new Error(res.error.message || "AI insight failed");
+      const insight = (res.data as any)?.insight;
+      if (!insight) throw new Error("Empty AI response");
+      setAiInsight(insight);
+      recent.add({
+        kind: "athlete-summary",
+        athlete_name: selectedAthlete.name,
+        team_name: selectedAthlete.team,
+        status: "success",
+      });
+    } catch (e: any) {
+      const msg = e?.message ?? "Failed to generate insight";
+      setAiError(msg);
+      toast({ title: "AI Coach failed", description: msg, variant: "destructive" });
+    } finally {
+      setAiBusy(false);
+    }
+  };
+
+  const copyInsight = async () => {
+    if (!aiInsight) return;
+    const text = [
+      `AI Coach Insight — ${selectedAthlete?.name ?? ""} · ${aiTestName || uniqueTestNames[0] || ""}`,
+      "",
+      aiInsight.explanation,
+      "",
+      "Recommendations:",
+      ...aiInsight.recommendations.map((r) => `• ${r}`),
+      "",
+      "Key cues:",
+      ...aiInsight.keyCues.map((r) => `• ${r}`),
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied to clipboard" });
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
   const handlePreviewExisting = async (r: RecentReport) => {
     if (!r.url) return;
     setPreviewUrl(r.url);
