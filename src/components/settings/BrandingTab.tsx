@@ -93,7 +93,7 @@ export const BrandingTab = () => {
       .replace(/^_+|_+$/g, '')
       .toLowerCase();
 
-    const fileName = `team_branding/${profile?.team_id}/${safeTeamName || 'team_logo'}_${Date.now()}.${extension}`;
+    const fileName = `team_branding/${effectiveTeamId}/${safeTeamName || 'team_logo'}_${Date.now()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from('athlete-avatars')
