@@ -252,9 +252,11 @@ serve(async (req) => {
     )
 
     const body = await req.json()
-    let { athlete_id, athlete_name, team_name, test_data, branding } = body
+    let { athlete_id, athlete_name, team_name, test_data, branding, ai_insight } = body
     athleteIdForLog = athlete_id ?? null
     athleteNameForLog = athlete_name ?? null
+    // ai_insight (optional): { testName?: string, explanation: string, recommendations: string[], keyCues: string[] }
+    const includedAiInsight = !!(ai_insight && typeof ai_insight === 'object' && typeof ai_insight.explanation === 'string')
 
     if (!athlete_name || !test_data || test_data.length === 0) {
       throw new Error('athlete_name and test_data are required')
