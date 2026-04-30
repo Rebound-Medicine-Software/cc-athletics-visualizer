@@ -10,6 +10,7 @@ import { Edit, Plus, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { useToast } from "@/hooks/use-toast";
 
 interface Tier {
