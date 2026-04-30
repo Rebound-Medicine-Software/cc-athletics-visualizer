@@ -67,12 +67,14 @@ export const Notifications: React.FC = () => {
   };
 
   const loadFilterOptions = async () => {
-    const [{ data: t }, { data: o }] = await Promise.all([
+    const [{ data: t }, { data: o }, { data: wc }] = await Promise.all([
       supabase.from('tiers').select('name'),
       supabase.from('teams').select('id,name').order('name'),
+      supabase.rpc('count_active_webhook_endpoints'),
     ]);
     setTiers(Array.from(new Set(((t ?? []) as any[]).map((r) => r.name).filter(Boolean))));
     setOrgs(((o ?? []) as Org[]));
+    setWebhookCount((wc as unknown as number) ?? 0);
   };
 
   useEffect(() => { loadCampaigns(); loadFilterOptions(); }, []);
