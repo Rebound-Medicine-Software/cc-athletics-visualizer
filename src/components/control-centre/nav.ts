@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Building2, Users, UserCircle, Activity, BarChart3,
   CalendarRange, FileText, CreditCard, Plug, ShieldCheck, Bell,
-  LifeBuoy, Settings, LucideIcon,
+  LifeBuoy, Settings, HeartPulse, LucideIcon,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -13,6 +13,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard',     label: 'Global Dashboard',          icon: LayoutDashboard, group: 'Overview' },
+  { id: 'health',        label: 'Platform Health',           icon: HeartPulse,      group: 'Overview' },
   { id: 'organisations', label: 'Organisations',             icon: Building2,       group: 'Tenants' },
   { id: 'practitioners', label: 'Users & Practitioners',     icon: Users,           group: 'Tenants' },
   { id: 'athletes',      label: 'Athletes Global Registry',  icon: UserCircle,      group: 'Tenants' },

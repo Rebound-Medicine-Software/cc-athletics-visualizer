@@ -1723,6 +1723,7 @@ export type Database = {
           test_count: number
         }[]
       }
+      get_super_admin_health_snapshot: { Args: never; Returns: Json }
       get_support_ticket_detail: {
         Args: { ticket_uuid: string }
         Returns: Json
@@ -2028,9 +2029,22 @@ export type Database = {
           url: string
         }[]
       }
+      log_webhook_test_fired: {
+        Args: {
+          p_endpoint_id: string
+          p_reason?: string
+          p_status_code?: number
+          p_success: boolean
+        }
+        Returns: undefined
+      }
       mark_notification_read: {
         Args: { p_notification_id: string }
         Returns: boolean
+      }
+      mark_webhook_endpoint_result: {
+        Args: { p_endpoint_id: string; p_reason?: string; p_success: boolean }
+        Returns: undefined
       }
       preview_notification_audience: {
         Args: { p_target_type: string; p_target_value?: string }

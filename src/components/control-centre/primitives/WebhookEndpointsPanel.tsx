@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Power, Trash2, RefreshCw, Webhook, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Power, Trash2, RefreshCw, Webhook, AlertTriangle, CheckCircle2, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { StatusBadge } from './StatusBadge';
@@ -77,6 +77,19 @@ export const WebhookEndpointsPanel: React.FC = () => {
     });
     if (error) { toast.error(error.message); return; }
     setItems(prev => prev.map(e => e.id === ep.id ? { ...e, is_active: !ep.is_active } : e));
+  };
+
+  const [testing, setTesting] = useState<string | null>(null);
+  const handleTestFire = async (ep: Endpoint) => {
+    setTesting(ep.id);
+    const { data, error } = await supabase.functions.invoke('webhook-test-fire', {
+      body: { endpoint_id: ep.id },
+    });
+    setTesting(null);
+    if (error) { toast.error(`Test failed: ${error.message}`); load(); return; }
+    if (data?.success) toast.success(`Test event delivered (HTTP ${data.status_code ?? 200})`);
+    else toast.error(`Test failed: ${data?.reason ?? 'unknown'}`);
+    load();
   };
 
   const handleDelete = async (ep: Endpoint) => {
@@ -158,6 +171,9 @@ export const WebhookEndpointsPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">
+                <button className="cc-btn" onClick={() => handleTestFire(ep)} disabled={!ep.is_active || testing === ep.id} title="Send test event">
+                  <Send className="w-3.5 h-3.5" /> {testing === ep.id ? 'Testing…' : 'Test'}
+                </button>
                 <button className="cc-btn" onClick={() => handleToggle(ep)} title={ep.is_active ? 'Disable' : 'Enable'}>
                   <Power className="w-3.5 h-3.5" /> {ep.is_active ? 'Disable' : 'Enable'}
                 </button>

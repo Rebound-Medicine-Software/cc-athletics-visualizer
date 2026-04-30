@@ -3,6 +3,7 @@ import { ControlCentreLayout } from './ControlCentreLayout';
 import './theme.css';
 
 import { GlobalDashboard } from './pages/GlobalDashboard';
+import { Health } from './pages/Health';
 import { Organisations } from './pages/Organisations';
 import { Practitioners } from './pages/Practitioners';
 import { Athletes } from './pages/Athletes';
@@ -19,6 +20,7 @@ import { Settings as PlatformSettings } from './pages/Settings';
 
 const PAGES: Record<string, React.ComponentType> = {
   dashboard: GlobalDashboard,
+  health: Health,
   organisations: Organisations,
   practitioners: Practitioners,
   athletes: Athletes,
