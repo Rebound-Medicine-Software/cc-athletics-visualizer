@@ -25,10 +25,24 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTs = Date.now();
+  let teamIdForLog: string | null = null;
+  let athleteIdForLog: string | null = null;
+  let testNameForLog: string | null = null;
+
   try {
-    const { testMetrics } = await req.json() as { testMetrics: TestMetrics };
+    const body = await req.json() as {
+      testMetrics: TestMetrics;
+      team_id?: string | null;
+      athlete_id?: string | null;
+    };
+    const testMetrics = body.testMetrics;
+    teamIdForLog = body.team_id ?? null;
+    athleteIdForLog = body.athlete_id ?? null;
+    testNameForLog = testMetrics?.testName ?? null;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
