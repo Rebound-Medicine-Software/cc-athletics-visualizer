@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Activity, RefreshCw, RotateCw, ChevronRight, Search } from "lucide-react";
+import { Activity, RefreshCw, RotateCw, ChevronRight, Search, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SendReportsModal } from "./SendReportsModal";
 import { InAppInbox } from "@/components/notifications/InAppInbox";
