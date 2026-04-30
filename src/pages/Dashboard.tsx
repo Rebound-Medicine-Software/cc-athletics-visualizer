@@ -35,7 +35,10 @@ const Dashboard = () => {
   const { data, isLoading, error, refetch } = useSupabaseData();
   // Only Team Name is global
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]); // CHANGED: now array
-  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(window.innerWidth < 1200);
+  const [isNavigationCollapsed, setIsNavigationCollapsed] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 1200 : true
+  );
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [resetFiltersKey, setResetFiltersKey] = useState<number>(0);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -187,30 +190,52 @@ const Dashboard = () => {
         sectionGroupLabel={sectionGroupLabel}
         showResetFilters={activeSection === "dashboard"}
         showSendReports={activeSection === "dashboard"}
+        onOpenMobileNav={() => setMobileNavOpen(true)}
       />
       <div className="w-full max-w-7xl mx-auto">
-        <div className="flex gap-6">
-          <DashboardSidebar
-            orgData={orgData}
-            branding={branding}
-            isNavigationCollapsed={isNavigationCollapsed}
-            setIsNavigationCollapsed={setIsNavigationCollapsed}
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-            navigationGroups={navigationGroups}
-            navigationItems={navigationItems}
-            handleLogout={handleLogout}
-            onNavigate={handleNavigation}
-          />
-          <div className="flex-1 min-w-0 px-4 xl:px-8 2xl:px-12 pt-6 pb-12">
+        <div className="flex gap-3 md:gap-6">
+          {/* Mobile overlay */}
+          {mobileNavOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+              onClick={() => setMobileNavOpen(false)}
+              aria-hidden="true"
+            />
+          )}
+          <div
+            className={`
+              ${mobileNavOpen ? "fixed left-0 top-0 h-full z-50 pt-4 px-2" : "hidden"}
+              md:block md:static md:p-0
+            `}
+          >
+            <DashboardSidebar
+              orgData={orgData}
+              branding={branding}
+              isNavigationCollapsed={mobileNavOpen ? false : isNavigationCollapsed}
+              setIsNavigationCollapsed={setIsNavigationCollapsed}
+              activeSection={activeSection}
+              setActiveSection={(s) => {
+                setActiveSection(s);
+                setMobileNavOpen(false);
+              }}
+              navigationGroups={navigationGroups}
+              navigationItems={navigationItems}
+              handleLogout={handleLogout}
+              onNavigate={(s) => {
+                handleNavigation(s);
+                setMobileNavOpen(false);
+              }}
+            />
+          </div>
+          <div className="flex-1 min-w-0 px-3 sm:px-4 xl:px-8 2xl:px-12 pt-4 md:pt-6 pb-12">
             <DashboardContent
               data={data || []}
               isLoading={isLoading}
               error={error}
               errorMessage={errorMessage}
               hasNoData={hasNoData}
-              selectedTeams={selectedTeams} // CHANGED: pass array
-              setSelectedTeams={setSelectedTeams} // CHANGED: pass setter
+              selectedTeams={selectedTeams}
+              setSelectedTeams={setSelectedTeams}
               handleRefresh={handleRefresh}
               orgData={orgData}
               branding={branding}

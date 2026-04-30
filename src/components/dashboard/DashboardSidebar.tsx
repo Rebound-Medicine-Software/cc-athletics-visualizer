@@ -63,7 +63,7 @@ export const DashboardSidebar = ({
       className={`
         transition-all duration-300
         ${isNavigationCollapsed ? "w-16" : "w-64"}
-        sticky top-32 self-start z-40 mt-10
+        md:sticky md:top-32 md:self-start md:z-40 md:mt-10
       `}
       aria-label="Dashboard navigation"
     >
