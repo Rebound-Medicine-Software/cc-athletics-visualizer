@@ -158,15 +158,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      {/* Only show DashboardHeader when on the Analytics dashboard section */}
-      {activeSection === "dashboard" && (
-        <DashboardHeader
-          handleRefresh={handleRefresh}
-          handleResetFilters={handleResetFilters}
-          activeSection={activeSection}
-          navigationItems={navigationItems}
-        />
-      )}
+      {/* Persistent dashboard header across all sections */}
+      <DashboardHeader
+        handleRefresh={handleRefresh}
+        handleResetFilters={handleResetFilters}
+        activeSection={activeSection}
+        navigationItems={navigationItems}
+        sectionGroupLabel={sectionGroupLabel}
+        showResetFilters={activeSection === "dashboard"}
+        showSendReports={activeSection === "dashboard"}
+      />
       <div className="w-full max-w-7xl mx-auto">
         <div className="flex gap-6">
           <DashboardSidebar
@@ -176,6 +177,7 @@ const Dashboard = () => {
             setIsNavigationCollapsed={setIsNavigationCollapsed}
             activeSection={activeSection}
             setActiveSection={setActiveSection}
+            navigationGroups={navigationGroups}
             navigationItems={navigationItems}
             handleLogout={handleLogout}
             onNavigate={handleNavigation}
