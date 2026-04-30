@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 
 interface StaffUser {
   id: string;
