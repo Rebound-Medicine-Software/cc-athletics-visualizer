@@ -3,6 +3,18 @@ import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Menu, X } from "lucide-react";
 import { TeamBranding } from "@/contexts/AuthContext";
 
+export interface NavItem {
+  id: string;
+  label: string;
+  icon: any;
+  description: string;
+}
+
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
 interface DashboardSidebarProps {
   orgData: { name: string; logo: string | null };
   branding?: TeamBranding | null;
@@ -10,7 +22,10 @@ interface DashboardSidebarProps {
   setIsNavigationCollapsed: (collapsed: boolean) => void;
   activeSection: string;
   setActiveSection: (section: string) => void;
-  navigationItems: Array<{ id: string; label: string; icon: any; description: string }>;
+  /** Legacy flat list (kept for backwards compatibility) */
+  navigationItems?: NavItem[];
+  /** Preferred: grouped navigation */
+  navigationGroups?: NavGroup[];
   handleLogout: () => void;
   onNavigate?: (section: string) => void;
 }
@@ -23,44 +38,54 @@ export const DashboardSidebar = ({
   activeSection,
   setActiveSection,
   navigationItems,
+  navigationGroups,
   handleLogout,
   onNavigate,
 }: DashboardSidebarProps) => {
   const handleItemClick = (itemId: string) => {
-    if (itemId === "settings" || itemId === "profiles") {
+    if (itemId === "settings" || itemId === "profiles" || itemId === "admin") {
       onNavigate?.(itemId);
     } else {
       setActiveSection(itemId);
     }
   };
+
+  // Build groups: prefer explicit groups, otherwise treat flat list as one group
+  const groups: NavGroup[] =
+    navigationGroups && navigationGroups.length > 0
+      ? navigationGroups
+      : [{ label: "", items: navigationItems ?? [] }];
+
   return (
     <div
       className={`
         transition-all duration-300
         ${isNavigationCollapsed ? "w-16" : "w-64"}
         sticky top-32 self-start z-40 mt-10
-      `}>
+      `}
+      aria-label="Dashboard navigation"
+    >
       <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             {!isNavigationCollapsed && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 {(branding?.logo_url || orgData.logo) ? (
                   <img
                     src={branding?.logo_url || orgData.logo || ''}
                     alt="Organization Logo"
-                    className="w-10 h-10 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary shrink-0">
                     <Activity className="w-6 h-6 text-primary-foreground" />
                   </div>
                 )}
-                <div>
-                  <h3 className="font-semibold text-sm text-primary">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm text-primary truncate">
                     {branding?.name || orgData.name}
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground truncate">
                     Performance Analytics
                   </p>
                 </div>
@@ -71,30 +96,45 @@ export const DashboardSidebar = ({
               size="icon"
               onClick={() => setIsNavigationCollapsed(!isNavigationCollapsed)}
               className="h-8 w-8 shrink-0"
+              aria-label={isNavigationCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isNavigationCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
             </Button>
           </div>
-          
-          {/* Navigation Menu */}
-          <div className="space-y-2 mb-6">
-            {navigationItems.map((item) => (
-              <Button
-                key={item.id}
-                variant={activeSection === item.id ? "default" : "ghost"}
-                className={`w-full justify-start text-left overflow-hidden ${isNavigationCollapsed ? "px-2" : ""}`}
-                onClick={() => handleItemClick(item.id)}
-              >
-                <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
-                {!isNavigationCollapsed && (
-                  <div className="flex flex-col items-start min-w-0 overflow-hidden">
-                    <span className="font-medium truncate w-full">{item.label}</span>
-                    <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
+
+          {/* Grouped Navigation Menu */}
+          <nav className="mb-6 space-y-4">
+            {groups.map((group, gi) => (
+              <div key={`${group.label || 'group'}-${gi}`} className="space-y-1">
+                {!isNavigationCollapsed && group.label && (
+                  <div className="px-2 pt-1 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                    {group.label}
                   </div>
                 )}
-              </Button>
+                {isNavigationCollapsed && gi > 0 && (
+                  <div className="mx-2 my-2 border-t border-border" aria-hidden="true" />
+                )}
+                {group.items.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant={activeSection === item.id ? "default" : "ghost"}
+                    className={`w-full justify-start text-left overflow-hidden ${isNavigationCollapsed ? "px-2" : ""}`}
+                    onClick={() => handleItemClick(item.id)}
+                    aria-current={activeSection === item.id ? "page" : undefined}
+                    title={isNavigationCollapsed ? item.label : undefined}
+                  >
+                    <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
+                    {!isNavigationCollapsed && (
+                      <div className="flex flex-col items-start min-w-0 overflow-hidden">
+                        <span className="font-medium truncate w-full">{item.label}</span>
+                        <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
+                      </div>
+                    )}
+                  </Button>
+                ))}
+              </div>
             ))}
-          </div>
+          </nav>
 
           {/* Sign Out - Footer */}
           <div className="border-t pt-4">
@@ -104,6 +144,7 @@ export const DashboardSidebar = ({
               className={`w-full justify-start text-red-600 border-red-200 hover:bg-red-50 ${
                 isNavigationCollapsed ? "px-2" : ""
               }`}
+              aria-label="Sign out"
             >
               <LogOut className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
               {!isNavigationCollapsed && <span>Sign Out</span>}

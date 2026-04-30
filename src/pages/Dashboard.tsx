@@ -99,19 +99,48 @@ const Dashboard = () => {
 
   const orgData = getOrganizationData();
 
-  const navigationItems = [
-    { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
-    { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
-    { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
-    { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
-    { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
-    { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
-    { id: "programming", label: "Programming", icon: Dumbbell, description: "Exercise programs & templates" },
-    { id: "settings", label: "Settings", icon: Settings, description: "Account & preferences" },
-    { id: "payment", label: "Payment Packages", icon: CreditCard, description: "Billing & subscriptions" },
-    // Add Super Admin link for super_admin users
-    ...(profile?.role === 'super_admin' ? [{ id: "admin", label: "Super Admin", icon: Shield, description: "Platform administration" }] : []),
+  const navigationGroups = [
+    {
+      label: "Insights",
+      items: [
+        { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
+        { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
+        { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { id: "bookings", label: "Bookings", icon: Calendar, description: "Calendar & scheduling" },
+        { id: "reports", label: "Reports", icon: FileText, description: "Custom reports & templates" },
+        { id: "programming", label: "Programming", icon: Dumbbell, description: "Exercise programs & templates" },
+      ],
+    },
+    {
+      label: "Management",
+      items: [
+        { id: "profiles", label: "Profiles", icon: Users, description: "Practitioner management" },
+        { id: "payment", label: "Payment Packages", icon: CreditCard, description: "Billing & subscriptions" },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { id: "settings", label: "Settings", icon: Settings, description: "Account & preferences" },
+        ...(profile?.role === 'super_admin'
+          ? [{ id: "admin", label: "Super Admin", icon: Shield, description: "Platform administration" }]
+          : []),
+      ],
+    },
   ];
+
+  // Flat list kept for header lookup + content compatibility
+  const navigationItems = navigationGroups.flatMap((g) => g.items);
+
+  // Map active section id -> group label for breadcrumb
+  const sectionGroupLabel = navigationGroups.find((g) =>
+    g.items.some((i) => i.id === activeSection)
+  )?.label;
 
   const errorMessage = error?.message || "";
   const hasNoData = !error && (!data || data.length === 0);
@@ -129,15 +158,16 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
-      {/* Only show DashboardHeader when on the Analytics dashboard section */}
-      {activeSection === "dashboard" && (
-        <DashboardHeader
-          handleRefresh={handleRefresh}
-          handleResetFilters={handleResetFilters}
-          activeSection={activeSection}
-          navigationItems={navigationItems}
-        />
-      )}
+      {/* Persistent dashboard header across all sections */}
+      <DashboardHeader
+        handleRefresh={handleRefresh}
+        handleResetFilters={handleResetFilters}
+        activeSection={activeSection}
+        navigationItems={navigationItems}
+        sectionGroupLabel={sectionGroupLabel}
+        showResetFilters={activeSection === "dashboard"}
+        showSendReports={activeSection === "dashboard"}
+      />
       <div className="w-full max-w-7xl mx-auto">
         <div className="flex gap-6">
           <DashboardSidebar
@@ -147,6 +177,7 @@ const Dashboard = () => {
             setIsNavigationCollapsed={setIsNavigationCollapsed}
             activeSection={activeSection}
             setActiveSection={setActiveSection}
+            navigationGroups={navigationGroups}
             navigationItems={navigationItems}
             handleLogout={handleLogout}
             onNavigate={handleNavigation}
