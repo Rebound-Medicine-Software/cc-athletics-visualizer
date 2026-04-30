@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
@@ -7,6 +7,12 @@ import { AuditEventDetailDrawer } from '../primitives/AuditEventDetailDrawer';
 import { Search, RefreshCw, AlertTriangle, ShieldAlert, UserCheck, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  usePlatformActivityRealtime,
+  useIntegrationHealthRealtime,
+  useImpersonationRealtime,
+} from '../hooks/useRealtimeChannel';
+
 
 interface AuditRow {
   event_id: string;
@@ -87,6 +93,23 @@ export const Compliance: React.FC = () => {
 
   useEffect(() => { loadOverview(); }, []);
   useEffect(() => { loadRows(); }, [range, severity, source]);
+
+  // Realtime: debounced refresh when audit-relevant inserts arrive
+  const loadRowsRef = useRef(loadRows);
+  const loadOverviewRef = useRef(loadOverview);
+  loadRowsRef.current = loadRows;
+  loadOverviewRef.current = loadOverview;
+  const debounceRef = useRef<number | null>(null);
+  const scheduleRefresh = useCallback(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      loadRowsRef.current();
+      loadOverviewRef.current();
+    }, 750);
+  }, []);
+  usePlatformActivityRealtime(scheduleRefresh);
+  useIntegrationHealthRealtime(scheduleRefresh);
+  useImpersonationRealtime(scheduleRefresh);
 
   const handleSearchKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') loadRows();
