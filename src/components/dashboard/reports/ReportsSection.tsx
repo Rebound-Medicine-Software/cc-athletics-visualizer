@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
 import { SectionHeader } from "../SectionHeader";
@@ -239,6 +240,9 @@ export const ReportsSection = () => {
     keyCues: string[];
   } | null>(null);
 
+  // Whether to embed an AI Coach Insight section into the generated PDF
+  const [includeAiInReport, setIncludeAiInReport] = useState(false);
+
   // Cleanup blob urls on unmount
   useEffect(() => {
     return () => {
@@ -296,6 +300,63 @@ export const ReportsSection = () => {
     document.body.removeChild(a);
   };
 
+  /** Build & call the AI Coach insight edge function for the current selection.
+   *  Returns the insight payload (with testName) or null if no eligible test data.
+   *  Throws on edge-function error so callers can decide how to handle. */
+  const buildAiInsightForReport = async (): Promise<{
+    testName: string;
+    explanation: string;
+    recommendations: string[];
+    keyCues: string[];
+  } | null> => {
+    if (!selectedAthlete) return null;
+    const targetTestName = aiTestName || uniqueTestNames[0];
+    if (!targetTestName) return null;
+
+    const records = (athleteTests as any[])
+      .filter((t) => t.test_name === targetTestName)
+      .sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
+    const latest = records[0];
+    if (!latest) return null;
+
+    const m = latest.metrics ?? {};
+    const numericKey =
+      ["peak_power", "rsi", "jump_height_ft", "force_peak", "avg_power"].find(
+        (k) => typeof m[k] === "number",
+      ) ?? Object.keys(m).find((k) => typeof m[k] === "number");
+    const currentValue = numericKey ? Number(m[numericKey]) : undefined;
+    const previousValues = records
+      .slice(1, 6)
+      .map((r: any) => (numericKey ? r.metrics?.[numericKey] : undefined))
+      .filter((v: any) => typeof v === "number");
+
+    const res = await supabase.functions.invoke("generate-ai-coach-insight", {
+      body: {
+        team_id: teamId,
+        athlete_id: selectedAthlete.id,
+        testMetrics: {
+          testName: targetTestName,
+          testDate: latest.test_date,
+          currentValue,
+          previousValues,
+          metricUnit: "",
+          metricType: numericKey ?? undefined,
+        },
+      },
+    });
+    if (res.error) throw new Error(res.error.message || "AI insight failed");
+    const insight = (res.data as any)?.insight;
+    if (!insight || typeof insight.explanation !== "string") {
+      throw new Error("Empty AI response");
+    }
+    return {
+      testName: targetTestName,
+      explanation: insight.explanation,
+      recommendations: Array.isArray(insight.recommendations) ? insight.recommendations : [],
+      keyCues: Array.isArray(insight.keyCues) ? insight.keyCues : [],
+    };
+  };
+
   const generateForcePlate = async (mode: "preview" | "download" | "email") => {
     if (!selectedAthlete) return;
     if (mode !== "preview" && guardWrite("Generating reports")) return;
@@ -318,6 +379,42 @@ export const ReportsSection = () => {
 
     setBusyKind(mode);
     try {
+      // Optionally generate or reuse an AI Coach insight to embed.
+      // Falls back gracefully (continues without AI) on failure.
+      let aiInsightForReport:
+        | { testName: string; explanation: string; recommendations: string[]; keyCues: string[] }
+        | null = null;
+      if (includeAiInReport) {
+        try {
+          // Reuse the on-screen insight if it matches the chosen test focus
+          const focusName = aiTestName || uniqueTestNames[0];
+          if (aiInsight && focusName) {
+            aiInsightForReport = {
+              testName: focusName,
+              explanation: aiInsight.explanation,
+              recommendations: aiInsight.recommendations,
+              keyCues: aiInsight.keyCues,
+            };
+          } else {
+            aiInsightForReport = await buildAiInsightForReport();
+          }
+          if (aiInsightForReport) {
+            // Mirror into on-screen panel for transparency
+            setAiInsight({
+              explanation: aiInsightForReport.explanation,
+              recommendations: aiInsightForReport.recommendations,
+              keyCues: aiInsightForReport.keyCues,
+            });
+          }
+        } catch (aiErr: any) {
+          toast({
+            title: "AI Coach insight unavailable",
+            description: `Continuing without AI section. ${aiErr?.message ?? ""}`.trim(),
+            variant: "destructive",
+          });
+        }
+      }
+
       const res = await supabase.functions.invoke("generate-force-plate-report", {
         body: {
           athlete_id: selectedAthlete.id,
@@ -333,6 +430,7 @@ export const ReportsSection = () => {
                 org_name: teamBranding.name,
               }
             : null,
+          ai_insight: aiInsightForReport,
         },
       });
       if (res.error) throw new Error(res.error.message || "Generation failed");
@@ -710,6 +808,36 @@ export const ReportsSection = () => {
                       )}
                     </div>
                   </div>
+                )}
+
+                {reportKind === "force-plate" && selectedAthlete && (
+                  <label
+                    className={`flex items-start gap-2 rounded-md border p-2.5 text-xs ${
+                      !canExport ? "opacity-60" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={includeAiInReport}
+                      onCheckedChange={(v) => setIncludeAiInReport(v === true)}
+                      disabled={!canExport || isImpersonating || uniqueTestNames.length === 0}
+                      className="mt-0.5"
+                    />
+                    <span className="space-y-0.5">
+                      <span className="font-medium flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                        Include AI Coach Insight in PDF
+                      </span>
+                      <span className="block text-muted-foreground">
+                        {uniqueTestNames.length === 0
+                          ? "No tests in range to analyse."
+                          : !canExport
+                            ? "Requires a tier with report export."
+                            : isImpersonating
+                              ? "Disabled in View-As mode."
+                              : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
+                      </span>
+                    </span>
+                  </label>
                 )}
 
                 {reportKind === "force-plate" ? (
