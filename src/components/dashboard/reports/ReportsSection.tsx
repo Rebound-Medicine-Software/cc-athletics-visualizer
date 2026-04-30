@@ -668,7 +668,7 @@ export const ReportsSection = () => {
         <RecentReportsCard
           reports={recent.items}
           onPreview={handlePreviewExisting}
-          onClear={recent.clear}
+          onRefresh={recent.refresh}
         />
       </div>
 
