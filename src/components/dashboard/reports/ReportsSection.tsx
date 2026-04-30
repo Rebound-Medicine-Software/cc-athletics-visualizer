@@ -240,6 +240,9 @@ export const ReportsSection = () => {
     keyCues: string[];
   } | null>(null);
 
+  // Whether to embed an AI Coach Insight section into the generated PDF
+  const [includeAiInReport, setIncludeAiInReport] = useState(false);
+
   // Cleanup blob urls on unmount
   useEffect(() => {
     return () => {
