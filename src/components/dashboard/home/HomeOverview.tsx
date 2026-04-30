@@ -1,57 +1,52 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
-import { useHomeMetrics, usePractitionerEngagement, useRecentActivity } from "@/hooks/useHomeMetrics";
-import { HomeKPICards } from "./HomeKPICards";
-import { PractitionerEngagementCard } from "./PractitionerEngagementCard";
-import { RecentActivityCard } from "./RecentActivityCard";
-import { SocialFeedCard } from "./SocialFeedCard";
-import { PaymentsOverviewCard } from "./PaymentsOverviewCard";
+import { AdminHome } from "./AdminHome";
+import { PractitionerHome } from "./PractitionerHome";
+import { AthleteHome } from "./AthleteHome";
 
-export const HomeOverview = () => {
+interface HomeOverviewProps {
+  /** Bubbles a section change up to the parent dashboard */
+  setActiveSection?: (section: string) => void;
+}
+
+export const HomeOverview = ({ setActiveSection }: HomeOverviewProps) => {
   const { profile } = useAuth();
-  const { teamId, isImpersonating } = useEffectiveTeamId();
-  // While impersonating, render the dashboard as if the impersonated org is logged in.
-  const role = isImpersonating ? 'organisation' : (profile?.role ?? null);
-  const isSuperAdmin = role === "super_admin";
-  const isPractitioner = role === "clinician" || (role as string) === "practitioner";
+  const { isImpersonating } = useEffectiveTeamId();
 
-  const { data: metrics, isLoading: metricsLoading } = useHomeMetrics(teamId, role);
-  const { data: practitioners, isLoading: pracLoading } = usePractitionerEngagement(teamId, role);
-  const { data: activity, isLoading: activityLoading } = useRecentActivity(teamId, role);
+  // While impersonating, render as if the impersonated org is logged in.
+  const role = isImpersonating ? "organisation" : (profile?.role ?? null);
+
+  const isPractitioner =
+    role === "clinician" ||
+    (role as string) === "practitioner";
+  const isAthlete = role === "client" || role === "athlete";
+
+  // Welcome banner is shared
+  const firstName = profile?.full_name ? profile.full_name.split(" ")[0] : "";
+  const subtitle =
+    role === "super_admin"
+      ? "Platform-wide overview across all organisations."
+      : isPractitioner
+      ? "Here's what's on your plate today."
+      : isAthlete
+      ? "Track your progress and upcoming sessions."
+      : "Overview of your team's activity, engagement, and growth.";
 
   return (
     <div className="space-y-6">
-      {/* Welcome */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+          Welcome back{firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {isSuperAdmin
-            ? "Platform-wide overview across all organisations."
-            : "Overview of your team's activity, engagement, and growth."}
-        </p>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
 
-      {/* KPI Cards */}
-      <HomeKPICards metrics={metrics} isLoading={metricsLoading} isSuperAdmin={isSuperAdmin} isPractitioner={isPractitioner} />
-
-      {/* Main grid */}
       {isPractitioner ? (
-        <div className="grid grid-cols-1 gap-4">
-          <SocialFeedCard viewOnly />
-        </div>
+        <PractitionerHome role={role} setActiveSection={setActiveSection} />
+      ) : isAthlete ? (
+        <AthleteHome setActiveSection={setActiveSection} />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 space-y-4">
-            <PractitionerEngagementCard data={practitioners} isLoading={pracLoading} />
-            <RecentActivityCard data={activity} isLoading={activityLoading} />
-          </div>
-          <div className="space-y-4">
-            <PaymentsOverviewCard metrics={metrics} isLoading={metricsLoading} />
-            <SocialFeedCard />
-          </div>
-        </div>
+        <AdminHome role={role} setActiveSection={setActiveSection} />
       )}
     </div>
   );
