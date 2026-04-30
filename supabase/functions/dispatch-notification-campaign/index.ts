@@ -1,5 +1,7 @@
-// Dispatches a queued platform notification campaign via NotificationAPI (email channel).
-// Other channels (in_app, webhook) are currently logged-only.
+// Dispatches a queued platform notification campaign across email, in_app, and webhook channels.
+// - email   → NotificationAPI to each org owner email
+// - in_app  → inserts into platform_in_app_notifications for each recipient owner_user_id
+// - webhook → POSTs payload to all active platform_webhook_endpoints (filtered by team if scoped)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -50,6 +52,27 @@ async function sendOneEmail(to: string, subject: string, body: string, campaignI
   }
 }
 
+async function postWebhook(url: string, secret: string | null, payload: Record<string, unknown>) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (secret) headers["X-Webhook-Secret"] = secret;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10_000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Webhook ${res.status}: ${text.slice(0, 200)}`);
+    }
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -87,6 +110,7 @@ Deno.serve(async (req) => {
     let delivered = 0;
     let failed = 0;
     const errors: string[] = [];
+    let auditEvent = "notification_campaign_sent";
 
     if (campaign.delivery_channel === "email") {
       for (const r of rows) {
@@ -99,9 +123,106 @@ Deno.serve(async (req) => {
           errors.push(`${r.owner_email}: ${(e as Error).message}`);
         }
       }
+    } else if (campaign.delivery_channel === "in_app") {
+      auditEvent = "notification_campaign_in_app_sent";
+      // Resolve owner_user_id for each team in audience
+      const teamIds = rows.map((r) => r.team_id).filter(Boolean);
+      const { data: teams } = await supabase
+        .from("teams")
+        .select("id, owner_user_id, name")
+        .in("id", teamIds);
+      const ownerByTeam = new Map<string, { user: string | null; name: string | null }>();
+      (teams ?? []).forEach((t: any) => ownerByTeam.set(t.id, { user: t.owner_user_id, name: t.name }));
+
+      const inserts: any[] = [];
+      for (const r of rows) {
+        const owner = ownerByTeam.get(r.team_id);
+        if (!owner?.user) { failed++; errors.push(`${r.organisation_name ?? r.team_id}: no owner_user_id`); continue; }
+        inserts.push({
+          campaign_id,
+          team_id: r.team_id,
+          recipient_user_id: owner.user,
+          title: campaign.title,
+          message: campaign.message,
+          severity: "info",
+          metadata: { delivery_channel: "in_app", organisation_name: r.organisation_name },
+        });
+      }
+      if (inserts.length > 0) {
+        const { error: insErr, count } = await supabase
+          .from("platform_in_app_notifications")
+          .insert(inserts, { count: "exact" });
+        if (insErr) {
+          failed += inserts.length;
+          errors.push(`in_app insert failed: ${insErr.message}`);
+        } else {
+          delivered += count ?? inserts.length;
+        }
+      }
+    } else if (campaign.delivery_channel === "webhook") {
+      // Determine which webhook endpoints apply
+      const teamIds = rows.map((r) => r.team_id).filter(Boolean);
+      const { data: endpoints } = await supabase
+        .from("platform_webhook_endpoints")
+        .select("id, team_id, url, secret, is_active")
+        .eq("is_active", true);
+
+      const applicable = (endpoints ?? []).filter((ep: any) =>
+        ep.team_id == null || teamIds.includes(ep.team_id)
+      );
+
+      if (applicable.length === 0) {
+        // No configured endpoints — fail clearly, do not fake delivery
+        await supabase.from("platform_notification_campaigns").update({
+          status: "failed",
+          delivered_count: 0,
+          failed_count: rows.length,
+          sent_at: new Date().toISOString(),
+          error_summary: "webhook_not_configured",
+        }).eq("id", campaign_id);
+
+        await supabase.from("platform_activity_logs").insert({
+          event_type: "notification_campaign_webhook_failed",
+          event_source: "notifications_centre",
+          severity: "warning",
+          metadata: { campaign_id, reason: "webhook_not_configured", recipient_count: rows.length },
+        });
+        return new Response(
+          JSON.stringify({ campaign_id, status: "failed", delivered: 0, failed: rows.length, error: "webhook_not_configured" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      auditEvent = "notification_campaign_webhook_sent";
+      const payload = {
+        type: "platform_announcement",
+        campaign_id,
+        title: campaign.title,
+        message: campaign.message,
+        target_type: campaign.target_type,
+        target_value: campaign.target_value,
+        recipients: rows.map((r) => ({ team_id: r.team_id, organisation_name: r.organisation_name })),
+        sent_at: new Date().toISOString(),
+      };
+
+      for (const ep of applicable) {
+        try {
+          await postWebhook(ep.url, ep.secret, payload);
+          delivered++;
+          await supabase.from("platform_webhook_endpoints")
+            .update({ last_success_at: new Date().toISOString(), failure_reason: null })
+            .eq("id", ep.id);
+        } catch (e) {
+          failed++;
+          const msg = (e as Error).message;
+          errors.push(`webhook ${ep.id}: ${msg}`);
+          await supabase.from("platform_webhook_endpoints")
+            .update({ last_failure_at: new Date().toISOString(), failure_reason: msg.slice(0, 500) })
+            .eq("id", ep.id);
+        }
+      }
     } else {
-      // in_app / webhook — record-only for now
-      delivered = rows.length;
+      throw new Error(`Unsupported delivery_channel: ${campaign.delivery_channel}`);
     }
 
     const finalStatus = failed > 0 && delivered === 0 ? "failed" : "sent";
@@ -115,7 +236,7 @@ Deno.serve(async (req) => {
     }).eq("id", campaign_id);
 
     await supabase.from("platform_activity_logs").insert({
-      event_type: finalStatus === "sent" ? "notification_campaign_sent" : "notification_campaign_failed",
+      event_type: finalStatus === "sent" ? auditEvent : `${auditEvent.replace("_sent", "")}_failed`,
       event_source: "notifications_centre",
       severity: finalStatus === "sent" ? "info" : "critical",
       metadata: {

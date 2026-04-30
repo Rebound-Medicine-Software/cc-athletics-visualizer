@@ -30,8 +30,8 @@ interface Org { id: string; name: string }
 
 const channelOptions: { value: Channel; label: string }[] = [
   { value: 'email', label: 'Email (NotificationAPI)' },
-  { value: 'in_app', label: 'In-App (record-only)' },
-  { value: 'webhook', label: 'Webhook (record-only)' },
+  { value: 'in_app', label: 'In-App (delivers to org owner inbox)' },
+  { value: 'webhook', label: 'Webhook (requires configured endpoint)' },
 ];
 
 const statusVariant = (s: string) =>
@@ -56,6 +56,7 @@ export const Notifications: React.FC = () => {
 
   const [tiers, setTiers] = useState<string[]>([]);
   const [orgs, setOrgs] = useState<Org[]>([]);
+  const [webhookCount, setWebhookCount] = useState<number>(0);
 
   const loadCampaigns = async () => {
     setLoading(true);
@@ -66,12 +67,14 @@ export const Notifications: React.FC = () => {
   };
 
   const loadFilterOptions = async () => {
-    const [{ data: t }, { data: o }] = await Promise.all([
+    const [{ data: t }, { data: o }, { data: wc }] = await Promise.all([
       supabase.from('tiers').select('name'),
       supabase.from('teams').select('id,name').order('name'),
+      supabase.rpc('count_active_webhook_endpoints'),
     ]);
     setTiers(Array.from(new Set(((t ?? []) as any[]).map((r) => r.name).filter(Boolean))));
     setOrgs(((o ?? []) as Org[]));
+    setWebhookCount((wc as unknown as number) ?? 0);
   };
 
   useEffect(() => { loadCampaigns(); loadFilterOptions(); }, []);
@@ -259,9 +262,13 @@ export const Notifications: React.FC = () => {
             </>
           )}
 
-          <div className="text-[11px] mt-4 leading-relaxed" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
-            Email campaigns are dispatched via NotificationAPI to each organisation's owner email.
-            In-app and webhook channels are recorded but not yet delivered.
+          <div className="text-[11px] mt-4 leading-relaxed space-y-1" style={{ color: 'hsl(var(--cc-fg-dim))' }}>
+            <div>• <strong>Email</strong> dispatched via NotificationAPI to each organisation's owner email.</div>
+            <div>• <strong>In-App</strong> creates a notification in the target organisation owner's inbox.</div>
+            <div>• <strong>Webhook</strong> {webhookCount > 0
+              ? <>POSTs to <StatusBadge variant="success">{webhookCount} active endpoint(s)</StatusBadge></>
+              : <StatusBadge variant="warning">no endpoints configured — sends will fail</StatusBadge>}
+            </div>
           </div>
         </div>
       </div>
