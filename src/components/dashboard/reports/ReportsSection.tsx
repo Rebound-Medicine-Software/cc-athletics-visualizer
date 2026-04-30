@@ -215,11 +215,13 @@ export const ReportsSection = () => {
   const { teamBranding } = useAuth();
   const { teamId, isImpersonating, impersonatedTeamName } = useEffectiveTeamId();
   const guardWrite = useViewAsWriteGuard();
+  const { hasPermission } = useEffectiveTier();
+  const canExport = hasPermission("can_export_reports");
 
   const { data: testData = [], isLoading: testsLoading, refetch } = useSupabaseData();
   const { data: athletes = [], isLoading: athletesLoading } = useAthletes();
 
-  const recent = useRecentReports(teamId ?? "default");
+  const recent = useRecentReports(teamId);
 
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
   const [reportKind, setReportKind] = useState<ReportKind>("force-plate");
