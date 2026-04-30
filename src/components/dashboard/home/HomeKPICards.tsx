@@ -18,6 +18,10 @@ interface Props {
 export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner }: Props) => {
   const { profile } = useAuth();
   const { symbol } = useTeamCurrency(useEffectiveTeamId().teamId);
+  // Hooks MUST be called unconditionally before any early return.
+  const containerVariants = useReducedMotionVariants(listContainer);
+  const itemVariants = useReducedMotionVariants(listItem);
+
   const allCards = [
     ...(isSuperAdmin
       ? [{ id: "orgs", icon: Building2, label: "Active Organisations", value: metrics?.activeOrgLogins30d, sub: `${metrics?.totalOrganisations ?? 0} total`, color: "text-blue-600" }]
@@ -43,9 +47,6 @@ export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner 
       </div>
     );
   }
-
-  const containerVariants = useReducedMotionVariants(listContainer);
-  const itemVariants = useReducedMotionVariants(listItem);
 
   return (
     <motion.div
