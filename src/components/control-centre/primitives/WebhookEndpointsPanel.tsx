@@ -171,6 +171,9 @@ export const WebhookEndpointsPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">
+                <button className="cc-btn" onClick={() => handleTestFire(ep)} disabled={!ep.is_active || testing === ep.id} title="Send test event">
+                  <Send className="w-3.5 h-3.5" /> {testing === ep.id ? 'Testing…' : 'Test'}
+                </button>
                 <button className="cc-btn" onClick={() => handleToggle(ep)} title={ep.is_active ? 'Disable' : 'Enable'}>
                   <Power className="w-3.5 h-3.5" /> {ep.is_active ? 'Disable' : 'Enable'}
                 </button>
