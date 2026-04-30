@@ -1999,6 +1999,25 @@ export type Database = {
           updated_at: string
         }[]
       }
+      list_team_report_activity: {
+        Args: { row_limit?: number; team_uuid: string }
+        Returns: {
+          athlete_id: string
+          created_at: string
+          duration_ms: number
+          error_reason: string
+          event_type: string
+          filename: string
+          id: string
+          organisation_name: string
+          report_type: string
+          report_url: string
+          severity: string
+          status: string
+          team_id: string
+          test_count: number
+        }[]
+      }
       list_testing_anomalies: {
         Args: { row_limit?: number }
         Returns: {

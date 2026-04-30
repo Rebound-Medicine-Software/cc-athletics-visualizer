@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useEffectiveTier } from "@/lib/impersonation/useEffectiveTeam";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAthletes } from "@/hooks/useAthletes";
@@ -40,7 +41,7 @@ import {
   Mail,
   RefreshCw,
   Sparkles,
-  Trash2,
+  
   User,
   Users,
   X,
@@ -129,11 +130,11 @@ const PdfPreview = ({ fileUrl }: { fileUrl: string }) => {
 const RecentReportsCard = ({
   reports,
   onPreview,
-  onClear,
+  onRefresh,
 }: {
   reports: RecentReport[];
   onPreview: (r: RecentReport) => void;
-  onClear: () => void;
+  onRefresh: () => void;
 }) => (
   <Card>
     <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
@@ -142,14 +143,12 @@ const RecentReportsCard = ({
           <Clock className="h-4 w-4" /> Recent reports
         </CardTitle>
         <CardDescription className="text-xs">
-          Reports generated from this device. Stored locally for your reference.
+          Recent report activity for your organisation, scoped by tenant.
         </CardDescription>
       </div>
-      {reports.length > 0 && (
-        <Button variant="ghost" size="sm" onClick={onClear} className="text-muted-foreground">
-          <Trash2 className="h-3.5 w-3.5 mr-1" /> Clear
-        </Button>
-      )}
+      <Button variant="ghost" size="sm" onClick={onRefresh} className="text-muted-foreground">
+        <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+      </Button>
     </CardHeader>
     <CardContent className="pt-0">
       {reports.length === 0 ? (
@@ -214,11 +213,13 @@ export const ReportsSection = () => {
   const { teamBranding } = useAuth();
   const { teamId, isImpersonating, impersonatedTeamName } = useEffectiveTeamId();
   const guardWrite = useViewAsWriteGuard();
+  const { hasPermission } = useEffectiveTier();
+  const canExport = hasPermission("can_export_reports");
 
   const { data: testData = [], isLoading: testsLoading, refetch } = useSupabaseData();
   const { data: athletes = [], isLoading: athletesLoading } = useAthletes();
 
-  const recent = useRecentReports(teamId ?? "default");
+  const recent = useRecentReports(teamId);
 
   const [selectedAthleteId, setSelectedAthleteId] = useState<string>("");
   const [reportKind, setReportKind] = useState<ReportKind>("force-plate");
@@ -288,6 +289,14 @@ export const ReportsSection = () => {
   const generateForcePlate = async (mode: "preview" | "download" | "email") => {
     if (!selectedAthlete) return;
     if (mode !== "preview" && guardWrite("Generating reports")) return;
+    if (mode !== "preview" && !canExport) {
+      toast({
+        title: "Upgrade required",
+        description: "Your current tier doesn't include report export. Preview is still available.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (athleteTests.length === 0) {
       toast({
         title: "No test data",
@@ -365,6 +374,14 @@ export const ReportsSection = () => {
   const generateAthleteSummary = async () => {
     if (!selectedAthlete) return;
     if (guardWrite("Generating reports")) return;
+    if (!canExport) {
+      toast({
+        title: "Upgrade required",
+        description: "Your current tier doesn't include report export.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setBusyKind("download");
     try {
@@ -597,7 +614,8 @@ export const ReportsSection = () => {
                     <Button
                       variant="secondary"
                       onClick={() => generateForcePlate("download")}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind === "download" ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -609,7 +627,8 @@ export const ReportsSection = () => {
                     <Button
                       variant="outline"
                       onClick={() => generateForcePlate("email")}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind === "email" ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -623,7 +642,8 @@ export const ReportsSection = () => {
                   <div>
                     <Button
                       onClick={generateAthleteSummary}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -634,6 +654,11 @@ export const ReportsSection = () => {
                     </Button>
                   </div>
                 )}
+                {!canExport && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Download and email require a tier with report export. Preview remains available.
+                  </p>
+                )}
               </>
             )}
           </CardContent>
@@ -643,7 +668,7 @@ export const ReportsSection = () => {
         <RecentReportsCard
           reports={recent.items}
           onPreview={handlePreviewExisting}
-          onClear={recent.clear}
+          onRefresh={recent.refresh}
         />
       </div>
 
@@ -666,7 +691,8 @@ export const ReportsSection = () => {
             <Button
               className="flex-1"
               onClick={() => previewUrl && previewName && downloadBlob(previewUrl, previewName)}
-              disabled={isImpersonating}
+              disabled={isImpersonating || !canExport}
+              title={!canExport ? "Report export is not included in your tier" : undefined}
             >
               <Download className="h-4 w-4 mr-1.5" /> Save as PDF
             </Button>
@@ -679,7 +705,7 @@ export const ReportsSection = () => {
 
       {/* Footnote about scope */}
       <p className="text-[11px] text-muted-foreground">
-        Recent reports are stored locally in your browser per organisation. Platform-wide report
+        Recent reports reflect server-side activity for your organisation. Platform-wide report
         analytics live in Super Admin → Reports & AI Engine.
       </p>
     </div>

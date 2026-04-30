@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { jsPDF } from 'https://esm.sh/jspdf@2.5.1'
+import { logActivity } from '../_shared/logActivity.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -239,6 +240,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  const startTs = Date.now()
+  let teamIdForLog: string | null = null
+  let athleteIdForLog: string | null = null
+  let athleteNameForLog: string | null = null
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -247,9 +253,23 @@ serve(async (req) => {
 
     const body = await req.json()
     let { athlete_id, athlete_name, team_name, test_data, branding } = body
+    athleteIdForLog = athlete_id ?? null
+    athleteNameForLog = athlete_name ?? null
 
     if (!athlete_name || !test_data || test_data.length === 0) {
       throw new Error('athlete_name and test_data are required')
+    }
+
+    // Resolve team_id for telemetry (best-effort, never fatal)
+    if (athlete_id) {
+      try {
+        const { data: a } = await supabaseClient
+          .from('athletes')
+          .select('team_id')
+          .eq('id', athlete_id)
+          .maybeSingle()
+        teamIdForLog = a?.team_id ?? null
+      } catch (_) { /* ignore */ }
     }
 
     // Fetch and encode logo image if branding has a logo_url
@@ -1849,6 +1869,24 @@ serve(async (req) => {
 
     console.log('Force plate PDF generated successfully:', signedUrlData.signedUrl)
 
+    const durationMs = Date.now() - startTs
+    await logActivity({
+      eventType: 'report_generated',
+      eventSource: 'generate-force-plate-report',
+      severity: 'success',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      organisationName: team_name ?? null,
+      metadata: {
+        report_type: 'force-plate',
+        athlete_name: athleteNameForLog,
+        filename: fileName,
+        report_url: signedUrlData.signedUrl,
+        test_count: groupedTests.size,
+        duration_ms: durationMs,
+      },
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -1865,8 +1903,22 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error generating force plate PDF:', error)
+    const errMsg = error instanceof Error ? error.message : String(error)
+    await logActivity({
+      eventType: 'report_generation_failed',
+      eventSource: 'generate-force-plate-report',
+      severity: 'critical',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'force-plate',
+        athlete_name: athleteNameForLog,
+        duration_ms: Date.now() - startTs,
+        error: errMsg,
+      },
+    })
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ error: errMsg }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
