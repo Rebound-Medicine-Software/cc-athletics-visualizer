@@ -12,7 +12,7 @@ import {
   useIntegrationHealthRealtime,
   useImpersonationRealtime,
 } from '../hooks/useRealtimeChannel';
-import { useCallback, useRef } from 'react';
+
 
 interface AuditRow {
   event_id: string;
