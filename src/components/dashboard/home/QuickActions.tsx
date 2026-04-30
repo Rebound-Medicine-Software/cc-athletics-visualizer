@@ -27,6 +27,8 @@ interface QuickActionsProps {
  */
 export const QuickActions = ({ title = "Quick actions", actions }: QuickActionsProps) => {
   const visible = actions.filter((a) => a.visible !== false);
+  const containerVariants = useReducedMotionVariants(listContainer);
+  const itemVariants = useReducedMotionVariants(listItem);
   if (visible.length === 0) return null;
 
   return (
@@ -40,14 +42,14 @@ export const QuickActions = ({ title = "Quick actions", actions }: QuickActionsP
       <CardContent>
         <motion.div
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2"
-          variants={useReducedMotionVariants(listContainer)}
+          variants={containerVariants}
           initial="hidden"
           animate="visible"
         >
           {visible.map((a) => (
             <motion.div
               key={a.id}
-              variants={useReducedMotionVariants(listItem)}
+              variants={itemVariants}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.97 }}
               transition={{ duration: 0.15 }}
