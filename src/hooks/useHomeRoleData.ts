@@ -7,11 +7,10 @@ import { supabase } from "@/integrations/supabase/client";
 export interface TodayBooking {
   id: string;
   appointment_date: string;
-  appointment_time: string | null;
-  athlete_name: string | null;
-  practitioner_name: string | null;
+  notes: string | null;
   status: string | null;
-  duration_minutes: number | null;
+  client_id: string | null;
+  therapist_id: string | null;
 }
 
 export const useTodayBookings = (
@@ -29,9 +28,7 @@ export const useTodayBookings = (
 
       let q = supabase
         .from("bookings")
-        .select(
-          "id, appointment_date, appointment_time, athlete_name, practitioner_name, status, duration_minutes, practitioner_user_id"
-        )
+        .select("id, appointment_date, notes, status, client_id, therapist_id")
         .eq("team_id", teamId)
         .gte("appointment_date", start.toISOString())
         .lte("appointment_date", end.toISOString())
@@ -39,23 +36,10 @@ export const useTodayBookings = (
         .limit(20);
 
       if (practitionerUserId) {
-        q = q.eq("practitioner_user_id", practitionerUserId);
+        q = q.eq("therapist_id", practitionerUserId);
       }
 
-      const { data, error } = await q;
-      if (error) {
-        // If schema doesn't include practitioner_user_id (or column differs)
-        // fall back to team-only result.
-        const { data: fallback } = await supabase
-          .from("bookings")
-          .select("id, appointment_date, appointment_time, athlete_name, practitioner_name, status, duration_minutes")
-          .eq("team_id", teamId)
-          .gte("appointment_date", start.toISOString())
-          .lte("appointment_date", end.toISOString())
-          .order("appointment_date", { ascending: true })
-          .limit(20);
-        return (fallback ?? []) as TodayBooking[];
-      }
+      const { data } = await q;
       return (data ?? []) as TodayBooking[];
     },
     enabled: !!teamId,
