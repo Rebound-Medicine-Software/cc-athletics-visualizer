@@ -376,6 +376,14 @@ export const ReportsSection = () => {
   const generateAthleteSummary = async () => {
     if (!selectedAthlete) return;
     if (guardWrite("Generating reports")) return;
+    if (!canExport) {
+      toast({
+        title: "Upgrade required",
+        description: "Your current tier doesn't include report export.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setBusyKind("download");
     try {
