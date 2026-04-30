@@ -10,6 +10,7 @@ import { BookingCalendar } from "./BookingCalendar";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { HomeOverview } from "./home/HomeOverview";
 import { ComingSoonSection } from "./ComingSoonSection";
+import { ReportsSection } from "./reports/ReportsSection";
 import { SectionHeader } from "./SectionHeader";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -126,19 +127,7 @@ export const DashboardContent = ({
           </div>
         );
       case "reports":
-        return (
-          <ComingSoonSection
-            title="Custom Reports"
-            description="Branded report templates and exportable PDFs tailored to your organisation."
-            eta="Q3 2026"
-            bullets={[
-              "Generate athlete progress reports",
-              "Schedule recurring email exports",
-              "Custom branded PDF templates",
-              "Multi-athlete cohort summaries",
-            ]}
-          />
-        );
+        return <ReportsSection />;
       case "programming":
         return (
           <ComingSoonSection
