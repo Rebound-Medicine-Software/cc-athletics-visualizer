@@ -616,7 +616,8 @@ export const ReportsSection = () => {
                     <Button
                       variant="secondary"
                       onClick={() => generateForcePlate("download")}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind === "download" ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -628,7 +629,8 @@ export const ReportsSection = () => {
                     <Button
                       variant="outline"
                       onClick={() => generateForcePlate("email")}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind === "email" ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -642,7 +644,8 @@ export const ReportsSection = () => {
                   <div>
                     <Button
                       onClick={generateAthleteSummary}
-                      disabled={!selectedAthlete || busyKind !== null || isImpersonating}
+                      disabled={!selectedAthlete || busyKind !== null || isImpersonating || !canExport}
+                      title={!canExport ? "Report export is not included in your tier" : undefined}
                     >
                       {busyKind ? (
                         <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -652,6 +655,11 @@ export const ReportsSection = () => {
                       Generate Athlete Summary
                     </Button>
                   </div>
+                )}
+                {!canExport && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Download and email require a tier with report export. Preview remains available.
+                  </p>
                 )}
               </>
             )}
