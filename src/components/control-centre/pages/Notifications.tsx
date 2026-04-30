@@ -274,6 +274,10 @@ export const Notifications: React.FC = () => {
         </div>
       </div>
 
+      <div className="mb-5">
+        <WebhookEndpointsPanel />
+      </div>
+
       <DataTable
         rows={loading ? [] : campaigns}
         empty={loading ? 'Loading campaigns…' : 'No campaigns yet'}
