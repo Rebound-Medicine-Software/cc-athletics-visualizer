@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Menu, X } from "lucide-react";
 import { TeamBranding } from "@/contexts/AuthContext";
+import { motion, useReducedMotion } from "framer-motion";
 
 export interface NavItem {
   id: string;
@@ -42,6 +43,7 @@ export const DashboardSidebar = ({
   handleLogout,
   onNavigate,
 }: DashboardSidebarProps) => {
+  const reduce = useReducedMotion();
   const handleItemClick = (itemId: string) => {
     if (itemId === "settings" || itemId === "profiles" || itemId === "admin") {
       onNavigate?.(itemId);
@@ -114,24 +116,36 @@ export const DashboardSidebar = ({
                 {isNavigationCollapsed && gi > 0 && (
                   <div className="mx-2 my-2 border-t border-border" aria-hidden="true" />
                 )}
-                {group.items.map((item) => (
-                  <Button
-                    key={item.id}
-                    variant={activeSection === item.id ? "default" : "ghost"}
-                    className={`w-full justify-start text-left overflow-hidden ${isNavigationCollapsed ? "px-2" : ""}`}
-                    onClick={() => handleItemClick(item.id)}
-                    aria-current={activeSection === item.id ? "page" : undefined}
-                    title={isNavigationCollapsed ? item.label : undefined}
-                  >
-                    <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"}`} />
-                    {!isNavigationCollapsed && (
-                      <div className="flex flex-col items-start min-w-0 overflow-hidden">
-                        <span className="font-medium truncate w-full">{item.label}</span>
-                        <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
-                      </div>
-                    )}
-                  </Button>
-                ))}
+                {group.items.map((item) => {
+                  const isActive = activeSection === item.id;
+                  return (
+                    <div key={item.id} className="relative">
+                      {isActive && !reduce && (
+                        <motion.span
+                          layoutId="sidebar-active-pill"
+                          className="absolute inset-0 rounded-md bg-primary"
+                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <Button
+                        variant={isActive ? "default" : "ghost"}
+                        className={`relative w-full justify-start text-left overflow-hidden transition-transform hover:translate-x-0.5 ${isNavigationCollapsed ? "px-2" : ""} ${isActive && !reduce ? "bg-transparent hover:bg-transparent" : ""}`}
+                        onClick={() => handleItemClick(item.id)}
+                        aria-current={isActive ? "page" : undefined}
+                        title={isNavigationCollapsed ? item.label : undefined}
+                      >
+                        <item.icon className={`w-4 h-4 ${isNavigationCollapsed ? "" : "mr-3"} ${isActive ? "text-primary-foreground" : ""}`} />
+                        {!isNavigationCollapsed && (
+                          <div className={`flex flex-col items-start min-w-0 overflow-hidden ${isActive ? "text-primary-foreground" : ""}`}>
+                            <span className="font-medium truncate w-full">{item.label}</span>
+                            <span className="text-xs opacity-70 truncate w-full">{item.description}</span>
+                          </div>
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </nav>

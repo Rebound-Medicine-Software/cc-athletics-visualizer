@@ -5,6 +5,8 @@ import { KpiCardSkeleton } from "@/components/dashboard/skeletons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeamCurrency } from "@/hooks/useTeamCurrency";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { motion } from "framer-motion";
+import { listContainer, listItem, useReducedMotionVariants, hoverLift } from "@/lib/motion";
 
 interface Props {
   metrics?: HomeMetrics;
@@ -42,20 +44,30 @@ export const HomeKPICards = ({ metrics, isLoading, isSuperAdmin, isPractitioner 
     );
   }
 
+  const containerVariants = useReducedMotionVariants(listContainer);
+  const itemVariants = useReducedMotionVariants(listItem);
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+    <motion.div
+      className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {cards.map((c, i) => (
-        <Card key={i} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-2">
-              <c.icon className={`h-5 w-5 ${c.color}`} />
-            </div>
-            <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">{c.label}</div>
-            <div className="text-2xl font-bold text-foreground">{c.value ?? 0}</div>
-            <div className="text-xs text-muted-foreground mt-1">{c.sub}</div>
-          </CardContent>
-        </Card>
+        <motion.div key={i} variants={itemVariants} {...hoverLift}>
+          <Card className="hover:shadow-md transition-shadow h-full">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <c.icon className={`h-5 w-5 ${c.color}`} />
+              </div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide font-semibold mb-1">{c.label}</div>
+              <div className="text-2xl font-bold text-foreground">{c.value ?? 0}</div>
+              <div className="text-xs text-muted-foreground mt-1">{c.sub}</div>
+            </CardContent>
+          </Card>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 };

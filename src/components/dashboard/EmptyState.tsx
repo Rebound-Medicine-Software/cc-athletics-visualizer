@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LucideIcon, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion, useReducedMotion } from "framer-motion";
+import { motionEase } from "@/lib/motion";
 
 export interface EmptyStateAction {
   label: string;
@@ -63,6 +65,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   compact = false,
   className,
 }) => {
+  const reduce = useReducedMotion();
   const body = (
     <div
       className={cn(
@@ -71,14 +74,17 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className
       )}
     >
-      <div
+      <motion.div
+        initial={reduce ? false : { scale: 0.85, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.32, ease: motionEase.emphasized }}
         className={cn(
           "rounded-full bg-muted flex items-center justify-center mb-4",
           compact ? "w-12 h-12" : "w-16 h-16"
         )}
       >
         <Icon className={cn("text-muted-foreground", compact ? "h-6 w-6" : "h-8 w-8")} />
-      </div>
+      </motion.div>
       <h3 className={cn("font-semibold text-foreground mb-1.5", compact ? "text-sm" : "text-lg")}>
         {title}
       </h3>
@@ -88,10 +94,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </p>
       )}
       {(primaryAction || secondaryAction) && (
-        <div className="flex items-center gap-2 flex-wrap justify-center">
+        <motion.div
+          initial={reduce ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.24, delay: 0.08, ease: motionEase.standard }}
+          className="flex items-center gap-2 flex-wrap justify-center"
+        >
           {primaryAction && renderAction(primaryAction, "default")}
           {secondaryAction && renderAction(secondaryAction, "outline")}
-        </div>
+        </motion.div>
       )}
     </div>
   );

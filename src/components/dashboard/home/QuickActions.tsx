@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LucideIcon, Zap } from "lucide-react";
+import { motion } from "framer-motion";
+import { listContainer, listItem, useReducedMotionVariants } from "@/lib/motion";
 
 export interface QuickAction {
   id: string;
@@ -25,6 +27,8 @@ interface QuickActionsProps {
  */
 export const QuickActions = ({ title = "Quick actions", actions }: QuickActionsProps) => {
   const visible = actions.filter((a) => a.visible !== false);
+  const containerVariants = useReducedMotionVariants(listContainer);
+  const itemVariants = useReducedMotionVariants(listItem);
   if (visible.length === 0) return null;
 
   return (
@@ -36,22 +40,34 @@ export const QuickActions = ({ title = "Quick actions", actions }: QuickActionsP
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2">
+        <motion.div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-6 gap-2"
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+        >
           {visible.map((a) => (
-            <Button
+            <motion.div
               key={a.id}
-              variant="outline"
-              size="sm"
-              className="h-auto py-3 flex flex-col items-center justify-center gap-1.5 text-center whitespace-normal"
-              onClick={a.onClick}
-              disabled={a.disabled}
-              title={a.description}
+              variants={itemVariants}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ duration: 0.15 }}
             >
-              <a.icon className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium leading-tight">{a.label}</span>
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-auto w-full py-3 flex flex-col items-center justify-center gap-1.5 text-center whitespace-normal hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                onClick={a.onClick}
+                disabled={a.disabled}
+                title={a.description}
+              >
+                <a.icon className="w-4 h-4 text-primary" />
+                <span className="text-xs font-medium leading-tight">{a.label}</span>
+              </Button>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </CardContent>
     </Card>
   );
