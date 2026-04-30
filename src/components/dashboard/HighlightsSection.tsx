@@ -124,11 +124,8 @@ export const HighlightsSection = ({
     });
   };
 
-  // Dummy handlers for second Individual Filters (no functionality yet)
-  const handleSecondTestSelect = (testName: string) => {
-    console.log("Second Individual Filters test selected:", testName);
-  };
-  
+
+
   return <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
       <Card 
         className="mb-6 mt-4 border-2"
@@ -223,7 +220,6 @@ export const HighlightsSection = ({
                      testNames: value,
                      selectedAthlete: ""
                    }));
-                   handleSecondTestSelect(value);
                  }}
               >
                 <SelectTrigger className="bg-white text-center">
