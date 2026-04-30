@@ -10,7 +10,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useAuth } from "@/contexts/AuthContext";
-import { useImpersonation } from "@/lib/impersonation/useEffectiveTeamId";
+import { useImpersonation } from "@/lib/impersonation/ImpersonationContext";
 import { toast } from "sonner";
 import {
   Activity,
@@ -136,7 +136,7 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
     }
 
     // ---- Practitioner / Clinician
-    if (role === "clinician" || role === "practitioner") {
+    if (role === "clinician") {
       list.push(
         { id: "pr-home", label: "My Day", icon: Home, group: "Navigate", keywords: "home today", perform: () => goSection("home") },
         { id: "pr-bookings", label: "Bookings", icon: Calendar, group: "Navigate", perform: () => goSection("bookings") },
