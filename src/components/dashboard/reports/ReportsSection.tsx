@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useEffectiveTier } from "@/lib/impersonation/useEffectiveTeam";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAthletes } from "@/hooks/useAthletes";
 import { supabase } from "@/integrations/supabase/client";
+import { Document, Page, pdfjs } from "react-pdf";
 import { Document, Page, pdfjs } from "react-pdf";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
