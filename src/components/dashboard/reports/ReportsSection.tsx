@@ -291,6 +291,14 @@ export const ReportsSection = () => {
   const generateForcePlate = async (mode: "preview" | "download" | "email") => {
     if (!selectedAthlete) return;
     if (mode !== "preview" && guardWrite("Generating reports")) return;
+    if (mode !== "preview" && !canExport) {
+      toast({
+        title: "Upgrade required",
+        description: "Your current tier doesn't include report export. Preview is still available.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (athleteTests.length === 0) {
       toast({
         title: "No test data",
