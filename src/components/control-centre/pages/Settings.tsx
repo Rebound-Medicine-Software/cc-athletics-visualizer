@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PageHeader } from '../primitives/PageHeader';
-import { Flag, Sparkles, ShieldCheck, Database, FileText, Loader2 } from 'lucide-react';
+import { Flag, Sparkles, ShieldCheck, Database, FileText, Loader2, Info, X } from 'lucide-react';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { TierTemplatesEditor } from '../primitives/TierTemplatesEditor';
 import { DefaultBrandingEditor } from '../primitives/DefaultBrandingEditor';
@@ -11,6 +11,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+const PLACEHOLDER_BANNER_KEY = 'cc.settings.placeholder_banner_dismissed';
 
 type FeatureFlag = {
   id: string;
@@ -34,6 +36,14 @@ const placeholderSections = [
 export const Settings: React.FC = () => {
   const queryClient = useQueryClient();
   const [pendingFlag, setPendingFlag] = useState<FeatureFlag | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  useEffect(() => {
+    setBannerDismissed(localStorage.getItem(PLACEHOLDER_BANNER_KEY) === '1');
+  }, []);
+  const dismissBanner = () => {
+    localStorage.setItem(PLACEHOLDER_BANNER_KEY, '1');
+    setBannerDismissed(true);
+  };
 
   const { data: flags = [], isLoading, error } = useQuery({
     queryKey: ['cc', 'feature-flags'],
@@ -117,20 +127,32 @@ export const Settings: React.FC = () => {
         <DefaultBrandingEditor />
       </div>
 
+      {!bannerDismissed && (
+        <div className="cc-glass p-3 mb-3 flex items-start gap-3" style={{ borderColor: 'hsl(var(--cc-gold) / 0.4)' }}>
+          <Info className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'hsl(var(--cc-gold))' }} />
+          <div className="flex-1 text-[12px]">
+            <strong>Coming soon — not active yet.</strong> The four panels below are reserved for future phases. They are visible for navigation reference only and have no backend wired up.
+          </div>
+          <button onClick={dismissBanner} className="text-[11px] opacity-70 hover:opacity-100" aria-label="Dismiss">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {placeholderSections.map((s) => {
           const Icon = s.icon;
           return (
             <button
               key={s.title}
-              onClick={() => toast(s.title, { description: s.note })}
-              className="cc-glass p-4 text-left"
+              onClick={() => toast(s.title, { description: `Coming soon — ${s.note}` })}
+              className="cc-glass p-4 text-left opacity-80"
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'hsl(var(--cc-navy) / 0.25)', border: '1px solid hsl(var(--cc-navy-glow) / 0.4)' }}>
                   <Icon className="w-5 h-5" style={{ color: 'hsl(var(--cc-navy-glow))' }} />
                 </div>
-                <StatusBadge variant="muted">Placeholder</StatusBadge>
+                <StatusBadge variant="warning">Coming soon</StatusBadge>
               </div>
               <div className="text-[14px] font-semibold mb-1">{s.title}</div>
               <div className="text-[12px]" style={{ color: 'hsl(var(--cc-fg-muted))' }}>{s.desc}</div>
