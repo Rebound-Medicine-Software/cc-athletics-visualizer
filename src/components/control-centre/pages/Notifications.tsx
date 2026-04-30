@@ -30,8 +30,8 @@ interface Org { id: string; name: string }
 
 const channelOptions: { value: Channel; label: string }[] = [
   { value: 'email', label: 'Email (NotificationAPI)' },
-  { value: 'in_app', label: 'In-App (record-only)' },
-  { value: 'webhook', label: 'Webhook (record-only)' },
+  { value: 'in_app', label: 'In-App (delivers to org owner inbox)' },
+  { value: 'webhook', label: 'Webhook (requires configured endpoint)' },
 ];
 
 const statusVariant = (s: string) =>
