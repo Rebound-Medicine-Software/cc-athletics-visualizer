@@ -219,7 +219,7 @@ export const useBookings = () => {
 
   const createBooking = async (date: Date, title: string, notes?: string) => {
     if (guardWrite('Creating a booking')) return;
-    if (!profile?.team_id) {
+    if (!effectiveTeamId) {
       toast.error("No team found");
       return;
     }
@@ -227,8 +227,8 @@ export const useBookings = () => {
       // Create local booking in Supabase
       const { error } = await supabase.from("bookings").insert({
         appointment_date: date.toISOString(),
-        team_id: profile.team_id,
-        therapist_id: profile.user_id,
+        team_id: effectiveTeamId,
+        therapist_id: profile?.user_id ?? null,
         notes: title || "New Appointment",
         status: "scheduled",
       });
