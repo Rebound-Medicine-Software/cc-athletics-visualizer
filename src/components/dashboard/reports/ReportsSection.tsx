@@ -7,7 +7,6 @@ import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useAthletes } from "@/hooks/useAthletes";
 import { supabase } from "@/integrations/supabase/client";
 import { Document, Page, pdfjs } from "react-pdf";
-import { Document, Page, pdfjs } from "react-pdf";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
