@@ -1838,6 +1838,146 @@ serve(async (req) => {
       doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
     }
 
+    // ===== AI COACH INSIGHT PAGE (optional) =====
+    if (includedAiInsight) {
+      try {
+        doc.addPage()
+        pageNumber++
+        const pageWidth = 210
+        const pageHeight = 297
+        const marginLeft = 15
+        const marginRight = 15
+        const contentWidth = pageWidth - marginLeft - marginRight
+
+        // Header bar
+        doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+        doc.rect(0, 0, pageWidth, 20, 'F')
+
+        let headerTextX = marginLeft
+        if (logoDataUrl) {
+          try {
+            const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
+            doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, 10, 10)
+            headerTextX = marginLeft + 14
+          } catch (_) { /* ignore */ }
+        }
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(255, 255, 255)
+        const aiHeaderTitle = branding?.org_name
+          ? `${branding.org_name.toUpperCase()} | AI COACH INSIGHT`
+          : 'AI COACH INSIGHT'
+        doc.text(aiHeaderTitle, headerTextX, 12)
+
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(220, 220, 220)
+        doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, pageWidth - marginRight, 12, { align: 'right' })
+
+        let yPos = 30
+
+        // Test focus pill
+        if (ai_insight.testName) {
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text(`Test focus: ${String(ai_insight.testName)}`, marginLeft, yPos)
+          yPos += 7
+        }
+
+        // Disclaimer banner
+        doc.setFillColor(252, 248, 227)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, 10, 2, 2, 'FD')
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(120, 90, 20)
+        doc.text(
+          'AI-generated coaching commentary. Review before sharing with athletes.',
+          marginLeft + 4,
+          yPos + 6.5,
+        )
+        yPos += 16
+
+        // Explanation
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('Explanation', marginLeft, yPos)
+        yPos += 6
+
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(50, 50, 50)
+        const explanationLines = doc.splitTextToSize(String(ai_insight.explanation || ''), contentWidth)
+        doc.text(explanationLines, marginLeft, yPos)
+        yPos += explanationLines.length * 5 + 6
+
+        // Recommendations
+        const recs: string[] = Array.isArray(ai_insight.recommendations) ? ai_insight.recommendations : []
+        if (recs.length > 0) {
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('Recommendations', marginLeft, yPos)
+          yPos += 6
+
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(50, 50, 50)
+          for (const rec of recs) {
+            const lines = doc.splitTextToSize(`• ${String(rec)}`, contentWidth - 4)
+            if (yPos + lines.length * 5 > pageHeight - 20) {
+              doc.addPage()
+              pageNumber++
+              yPos = 20
+            }
+            doc.text(lines, marginLeft + 2, yPos)
+            yPos += lines.length * 5 + 2
+          }
+          yPos += 4
+        }
+
+        // Key cues
+        const cues: string[] = Array.isArray(ai_insight.keyCues) ? ai_insight.keyCues : []
+        if (cues.length > 0) {
+          if (yPos + 20 > pageHeight - 20) {
+            doc.addPage()
+            pageNumber++
+            yPos = 20
+          }
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('Key cues', marginLeft, yPos)
+          yPos += 6
+
+          doc.setFontSize(10)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(50, 50, 50)
+          for (const cue of cues) {
+            const lines = doc.splitTextToSize(`• ${String(cue)}`, contentWidth - 4)
+            if (yPos + lines.length * 5 > pageHeight - 20) {
+              doc.addPage()
+              pageNumber++
+              yPos = 20
+            }
+            doc.text(lines, marginLeft + 2, yPos)
+            yPos += lines.length * 5 + 2
+          }
+        }
+
+        // Footer
+        doc.setFontSize(8)
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+        doc.text(`Page ${pageNumber}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+      } catch (insightErr) {
+        console.error('Failed to render AI insight page:', insightErr)
+        // Non-fatal: report still completes without the AI page
+      }
+    }
+
     // Generate filename - remove all special characters including en-dash
     const safeName = athlete_name.replace(/[^a-zA-Z0-9\s]/g, '').trim()
     const safeTeamName = (team_name || 'Unknown').replace(/[^a-zA-Z0-9\s]/g, '').trim()
