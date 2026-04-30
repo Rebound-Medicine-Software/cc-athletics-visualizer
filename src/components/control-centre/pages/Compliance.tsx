@@ -94,6 +94,23 @@ export const Compliance: React.FC = () => {
   useEffect(() => { loadOverview(); }, []);
   useEffect(() => { loadRows(); }, [range, severity, source]);
 
+  // Realtime: debounced refresh when audit-relevant inserts arrive
+  const loadRowsRef = useRef(loadRows);
+  const loadOverviewRef = useRef(loadOverview);
+  loadRowsRef.current = loadRows;
+  loadOverviewRef.current = loadOverview;
+  const debounceRef = useRef<number | null>(null);
+  const scheduleRefresh = useCallback(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      loadRowsRef.current();
+      loadOverviewRef.current();
+    }, 750);
+  }, []);
+  usePlatformActivityRealtime(scheduleRefresh);
+  useIntegrationHealthRealtime(scheduleRefresh);
+  useImpersonationRealtime(scheduleRefresh);
+
   const handleSearchKey = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') loadRows();
   };
