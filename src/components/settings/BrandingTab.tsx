@@ -28,6 +28,16 @@ export const BrandingTab = () => {
     fontFamily: 'Inter'
   });
 
+  const isDirty = !!pendingLogoFile || (teamBranding && (
+    brandingForm.name !== (teamBranding.name || '') ||
+    brandingForm.logo_url !== (teamBranding.logo_url || '') ||
+    brandingForm.primaryColor !== (teamBranding.primary_color || '#3B82F6') ||
+    brandingForm.secondaryColor !== (teamBranding.secondary_color || '#1E40AF') ||
+    brandingForm.accentColor !== (teamBranding.accent_color || '#F59E0B') ||
+    brandingForm.fontFamily !== (teamBranding.font_family || 'Inter')
+  ));
+  useDirtyTracker('branding', !!isDirty);
+
   useEffect(() => {
     fetchTeamBranding();
   }, [effectiveTeamId]);
