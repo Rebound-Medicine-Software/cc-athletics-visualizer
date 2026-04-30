@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Eye, EyeOff, Shield, Mail, Lock, User, RefreshCw, CheckCircle, UserCheck, Heart, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BrandIntro, hasSeenIntro, markIntroSeen } from "@/components/landing/BrandIntro";
 
 // Phases: 0=logo animating in, 1=logo pulsing/loading, 2=transitioning, 3=auth visible
 type LoadPhase = 0 | 1 | 2 | 3;
@@ -103,7 +104,9 @@ const LOADING_STYLES = `
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [loadPhase, setLoadPhase] = useState<LoadPhase>(0);
+  // Skip the legacy 12-second intro entirely. Auth UI shows immediately;
+  // the brand intro (if needed) is rendered as a brief overlay below.
+  const [loadPhase, setLoadPhase] = useState<LoadPhase>(3);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -111,12 +114,13 @@ const Auth = () => {
   const [showForgotModal, setShowForgotModal] = useState<'password' | 'email' | 'both' | null>(null);
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState("");
-  
+  const [showIntro, setShowIntro] = useState(false);
+
   const [loginData, setLoginData] = useState({
     email: "",
     password: ""
   });
-  
+
   const [signupData, setSignupData] = useState({
     email: "",
     password: "",
@@ -126,13 +130,11 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    // Phase 0→1: stripes animate in (~1.5s), then pulse
-    const t1 = setTimeout(() => setLoadPhase(1), 100);
-    // Phase 1→2: start morphing at 8s
-    const t2 = setTimeout(() => setLoadPhase(2), 8000);
-    // Phase 2→3: auth fully visible at 12s (slower transition)
-    const t3 = setTimeout(() => setLoadPhase(3), 12000);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    // Show the short brand intro only once per browser session, only when
+    // the user lands on /auth without coming from the marketing landing.
+    if (!hasSeenIntro()) {
+      setShowIntro(true);
+    }
   }, []);
 
   const isTransitioning = loadPhase >= 2;
@@ -529,6 +531,15 @@ const Auth = () => {
   return (
     <div className="min-h-screen relative overflow-hidden">
       <style>{LOADING_STYLES}</style>
+
+      {showIntro && (
+        <BrandIntro
+          onComplete={() => {
+            markIntroSeen();
+            setShowIntro(false);
+          }}
+        />
+      )}
 
       {/* Background — solid navy */}
       <div
