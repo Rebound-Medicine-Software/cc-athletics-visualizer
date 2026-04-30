@@ -707,7 +707,7 @@ export const ReportsSection = () => {
 
       {/* Footnote about scope */}
       <p className="text-[11px] text-muted-foreground">
-        Recent reports are stored locally in your browser per organisation. Platform-wide report
+        Recent reports reflect server-side activity for your organisation. Platform-wide report
         analytics live in Super Admin → Reports & AI Engine.
       </p>
     </div>
