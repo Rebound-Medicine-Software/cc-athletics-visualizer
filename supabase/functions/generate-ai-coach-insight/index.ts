@@ -148,27 +148,50 @@ Provide a short explanation of what this test measures and why it matters, follo
       };
     }
 
+    const durationMs = Date.now() - startTs;
     await logActivity({
       eventType: 'ai_coach_insight_generated',
       eventSource: 'generate-ai-coach-insight',
-      severity: 'info',
-      metadata: { test_name: testMetrics.testName, test_date: testMetrics.testDate },
+      severity: 'success',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'ai-coach-insight',
+        test_name: testNameForLog,
+        test_date: testMetrics.testDate,
+        duration_ms: durationMs,
+      },
     });
-    await logIntegrationHealth('lovable_ai_gateway', 'success', { payload: { route: 'ai_coach_insight' } });
+    await logIntegrationHealth('lovable_ai_gateway', 'success', {
+      teamId: teamIdForLog,
+      latencyMs: durationMs,
+      payload: { route: 'ai_coach_insight' },
+    });
 
     return new Response(JSON.stringify({ success: true, insight }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("AI Coach Insight error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const durationMs = Date.now() - startTs;
     await logIntegrationHealth('lovable_ai_gateway', 'failed', {
-      failureReason: `ai coach: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500),
+      teamId: teamIdForLog,
+      latencyMs: durationMs,
+      failureReason: `ai coach: ${errMsg}`.slice(0, 500),
     });
     await logActivity({
       eventType: 'ai_coach_insight_failed',
       eventSource: 'generate-ai-coach-insight',
       severity: 'warning',
-      metadata: { error: error instanceof Error ? error.message : String(error) },
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'ai-coach-insight',
+        test_name: testNameForLog,
+        duration_ms: durationMs,
+        error: errMsg,
+      },
     });
     return new Response(
       JSON.stringify({ 
