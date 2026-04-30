@@ -13,6 +13,7 @@ import { ComingSoonSection } from "./ComingSoonSection";
 import { SectionHeader } from "./SectionHeader";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
+import { PageTransition } from "./PageTransition";
 import { BarChart3, Activity } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -228,7 +229,9 @@ export const DashboardContent = ({
         fontFamily: branding.font_family || 'Inter, system-ui, sans-serif'
       } : {}}
     >
-      {renderContent()}
+      <PageTransition sectionKey={activeSection}>
+        {renderContent()}
+      </PageTransition>
     </div>
   );
 };
