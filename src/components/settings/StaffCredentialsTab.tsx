@@ -58,7 +58,8 @@ export const StaffCredentialsTab = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveTeamId]);
 
   const fetchUsers = async () => {
     try {
