@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBranding } from "@/hooks/useBranding";
 import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
+import { useDirtyTracker } from "./UnsavedChangesContext";
 
 interface StaffUser {
   id: string;

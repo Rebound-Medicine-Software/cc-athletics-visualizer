@@ -6,12 +6,16 @@ import { Label } from "@/components/ui/label";
 import { Key, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useDirtyTracker } from "./UnsavedChangesContext";
 
 export const ApiKeysTab = () => {
   const [apiKey, setApiKey] = useState("");
   const [currentApiKey, setCurrentApiKey] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [apiKeyValidated, setApiKeyValidated] = useState(false);
+
+  // Dirty when the entered key differs from the saved one
+  useDirtyTracker("api-keys", apiKey !== currentApiKey);
 
   useEffect(() => {
     const loadApiKey = async () => {
