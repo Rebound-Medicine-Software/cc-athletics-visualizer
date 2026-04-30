@@ -25,10 +25,24 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTs = Date.now();
+  let teamIdForLog: string | null = null;
+  let athleteIdForLog: string | null = null;
+  let testNameForLog: string | null = null;
+
   try {
-    const { testMetrics } = await req.json() as { testMetrics: TestMetrics };
+    const body = await req.json() as {
+      testMetrics: TestMetrics;
+      team_id?: string | null;
+      athlete_id?: string | null;
+    };
+    const testMetrics = body.testMetrics;
+    teamIdForLog = body.team_id ?? null;
+    athleteIdForLog = body.athlete_id ?? null;
+    testNameForLog = testMetrics?.testName ?? null;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
@@ -134,27 +148,50 @@ Provide a short explanation of what this test measures and why it matters, follo
       };
     }
 
+    const durationMs = Date.now() - startTs;
     await logActivity({
       eventType: 'ai_coach_insight_generated',
       eventSource: 'generate-ai-coach-insight',
-      severity: 'info',
-      metadata: { test_name: testMetrics.testName, test_date: testMetrics.testDate },
+      severity: 'success',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'ai-coach-insight',
+        test_name: testNameForLog,
+        test_date: testMetrics.testDate,
+        duration_ms: durationMs,
+      },
     });
-    await logIntegrationHealth('lovable_ai_gateway', 'success', { payload: { route: 'ai_coach_insight' } });
+    await logIntegrationHealth('lovable_ai_gateway', 'success', {
+      teamId: teamIdForLog,
+      latencyMs: durationMs,
+      payload: { route: 'ai_coach_insight' },
+    });
 
     return new Response(JSON.stringify({ success: true, insight }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("AI Coach Insight error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const durationMs = Date.now() - startTs;
     await logIntegrationHealth('lovable_ai_gateway', 'failed', {
-      failureReason: `ai coach: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500),
+      teamId: teamIdForLog,
+      latencyMs: durationMs,
+      failureReason: `ai coach: ${errMsg}`.slice(0, 500),
     });
     await logActivity({
       eventType: 'ai_coach_insight_failed',
       eventSource: 'generate-ai-coach-insight',
       severity: 'warning',
-      metadata: { error: error instanceof Error ? error.message : String(error) },
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'ai-coach-insight',
+        test_name: testNameForLog,
+        duration_ms: durationMs,
+        error: errMsg,
+      },
     });
     return new Response(
       JSON.stringify({ 
