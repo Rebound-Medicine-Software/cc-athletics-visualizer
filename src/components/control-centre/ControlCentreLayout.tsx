@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NAV_ITEMS } from './nav';
-import { Search, Bell, Command, ChevronDown, Sparkles, LogOut } from 'lucide-react';
+import { Search, Bell, Command, ChevronDown, Sparkles, Menu, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -12,29 +12,61 @@ interface ControlCentreLayoutProps {
 
 export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active, onNavigate, children }) => {
   const [search, setSearch] = useState('');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { profile, signOut } = useAuth() as any;
 
   const groups = ['Overview', 'Tenants', 'Operations', 'Governance'] as const;
 
+  // Close mobile drawer whenever the active section changes
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [active]);
+
+  const handleNav = (id: string) => {
+    onNavigate(id);
+    setMobileNavOpen(false);
+  };
+
   return (
-    <div className="control-centre flex w-full">
-      {/* Sidebar */}
-      <aside className="cc-sidebar w-[260px] flex-shrink-0 sticky top-0 h-screen overflow-y-auto py-5 px-3">
-        <div className="px-3 mb-6">
-          <div className="flex items-center gap-2.5">
+    <div className="control-centre flex w-full relative">
+      {/* Mobile overlay */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar — off-canvas drawer below lg, fixed in flow at lg+ */}
+      <aside
+        className={`cc-sidebar fixed lg:sticky top-0 left-0 h-screen w-[260px] flex-shrink-0 overflow-y-auto py-5 px-3 z-50 transition-transform duration-200 ease-out ${
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="px-3 mb-6 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center font-bold"
+              className="w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0"
               style={{ background: 'var(--cc-grad-gold)', color: 'hsl(222 30% 8%)' }}
             >
               N
             </div>
-            <div>
-              <div className="text-[14px] font-bold tracking-tight" style={{ color: 'hsl(var(--cc-fg))' }}>NEXUS HUB</div>
-              <div className="text-[10.5px] font-medium uppercase tracking-widest" style={{ color: 'hsl(var(--cc-gold))' }}>
+            <div className="min-w-0">
+              <div className="text-[14px] font-bold tracking-tight truncate" style={{ color: 'hsl(var(--cc-fg))' }}>NEXUS HUB</div>
+              <div className="text-[10.5px] font-medium uppercase tracking-widest truncate" style={{ color: 'hsl(var(--cc-gold))' }}>
                 Control Centre
               </div>
             </div>
           </div>
+          <button
+            type="button"
+            className="lg:hidden p-1.5 rounded-md hover:bg-white/10 shrink-0"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close navigation"
+          >
+            <X className="w-4 h-4" style={{ color: 'hsl(var(--cc-fg))' }} />
+          </button>
         </div>
 
         {groups.map((g) => (
@@ -48,7 +80,7 @@ export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active
                 return (
                   <button
                     key={n.id}
-                    onClick={() => onNavigate(n.id)}
+                    onClick={() => handleNav(n.id)}
                     className={`cc-nav-item w-full text-left ${active === n.id ? 'active' : ''}`}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" />
@@ -73,19 +105,28 @@ export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active
       </aside>
 
       {/* Main area */}
-      <div className="flex-1 min-w-0 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col w-full">
         {/* Top bar */}
-        <header className="cc-topbar sticky top-0 z-20 flex items-center gap-3 px-6 py-3">
-          <div className="flex-1 max-w-xl relative">
+        <header className="cc-topbar sticky top-0 z-20 flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3">
+          <button
+            type="button"
+            className="lg:hidden p-2 rounded-md hover:bg-white/10 shrink-0"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu className="w-4 h-4" style={{ color: 'hsl(var(--cc-fg))' }} />
+          </button>
+
+          <div className="flex-1 min-w-0 max-w-xl relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--cc-fg-dim))' }} />
             <input
               className="cc-input"
-              placeholder="Search organisations, practitioners, athletes, tests..."
+              placeholder="Search organisations, practitioners..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
             <kbd
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+              className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
               style={{ background: 'hsl(var(--cc-surface-2))', color: 'hsl(var(--cc-fg-dim))', border: '1px solid hsl(var(--cc-border))' }}
             >
               <Command className="w-2.5 h-2.5" /> K
@@ -93,7 +134,7 @@ export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active
           </div>
 
           <button
-            className="cc-btn relative"
+            className="cc-btn relative shrink-0"
             onClick={() => toast('3 unread system notifications')}
           >
             <Bell className="w-4 h-4" />
@@ -103,7 +144,7 @@ export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active
             />
           </button>
 
-          <div className="flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer hover:bg-white/5"
+          <div className="flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer hover:bg-white/5 shrink-0"
                onClick={() => signOut?.().then(() => toast.success('Signed out'))}>
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-[13px]"
@@ -111,17 +152,17 @@ export const ControlCentreLayout: React.FC<ControlCentreLayoutProps> = ({ active
             >
               {(profile?.full_name || profile?.email || 'SA').slice(0, 2).toUpperCase()}
             </div>
-            <div className="hidden sm:block">
+            <div className="hidden md:block">
               <div className="text-[12.5px] font-semibold" style={{ color: 'hsl(var(--cc-fg))' }}>
                 {profile?.full_name || 'Super Admin'}
               </div>
               <div className="text-[10.5px]" style={{ color: 'hsl(var(--cc-gold))' }}>SUPER_ADMIN</div>
             </div>
-            <ChevronDown className="w-3.5 h-3.5" style={{ color: 'hsl(var(--cc-fg-dim))' }} />
+            <ChevronDown className="w-3.5 h-3.5 hidden md:block" style={{ color: 'hsl(var(--cc-fg-dim))' }} />
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-x-hidden">{children}</main>
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-x-hidden">{children}</main>
       </div>
     </div>
   );
