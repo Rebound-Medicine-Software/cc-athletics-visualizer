@@ -52,17 +52,28 @@ export const DashboardHeader = ({
         boxShadow: "0 4px 12px 0 rgba(0,0,0,0.03)",
       }}
     >
-      <div className="w-full px-6 py-4">
-        <div className="flex items-center justify-between min-w-0 gap-4">
-          <div className="flex items-center gap-3 min-w-0">
+      <div className="w-full px-3 sm:px-6 py-3 sm:py-4">
+        <div className="flex items-center justify-between min-w-0 gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {onOpenMobileNav && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-9 w-9 shrink-0"
+                onClick={onOpenMobileNav}
+                aria-label="Open navigation"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            )}
             {teamBranding?.logo_url ? (
               <img
                 src={teamBranding.logo_url}
                 alt="Organization Logo"
-                className="w-9 h-9 rounded object-cover shrink-0"
+                className="w-9 h-9 rounded object-cover shrink-0 hidden sm:block"
               />
             ) : (
-              <Activity className="w-8 h-8 shrink-0 text-primary" />
+              <Activity className="w-8 h-8 shrink-0 text-primary hidden sm:block" />
             )}
             <div className="min-w-0">
               {/* Breadcrumb */}
