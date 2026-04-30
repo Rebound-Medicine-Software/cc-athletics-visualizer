@@ -532,6 +532,15 @@ const Auth = () => {
     <div className="min-h-screen relative overflow-hidden">
       <style>{LOADING_STYLES}</style>
 
+      {showIntro && (
+        <BrandIntro
+          onComplete={() => {
+            markIntroSeen();
+            setShowIntro(false);
+          }}
+        />
+      )}
+
       {/* Background — solid navy */}
       <div
         className="absolute inset-0 transition-all duration-[4000ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
