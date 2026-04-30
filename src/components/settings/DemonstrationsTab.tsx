@@ -9,6 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Plus, Edit, Trash2, Save, X, Video, Play } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useDirtyTracker } from "./UnsavedChangesContext";
 
 interface ExerciseVideo {
   id: string;
@@ -91,6 +92,13 @@ export const DemonstrationsTab = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ExerciseVideo>>({});
   const [modalVideo, setModalVideo] = useState<{ url: string; type: 'youtube' | 'vimeo' | 'direct' | 'unknown'; id?: string } | null>(null);
+
+  // Dirty whenever an add/edit form has any input
+  const isFormDirty = (isAdding || !!editingId) && (
+    !!editForm.test_name || !!editForm.video_url ||
+    !!editForm.Purpose || !!editForm.Procedure
+  );
+  useDirtyTracker("demonstrations", isFormDirty);
 
   useEffect(() => {
     fetchVideos();

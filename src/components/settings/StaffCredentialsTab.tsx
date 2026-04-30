@@ -59,6 +59,13 @@ export const StaffCredentialsTab = () => {
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
+  // Dirty whenever an inline add/edit form is open with any user input
+  const isFormDirty = (isAdding || !!editingId) && (
+    !!editForm.email || !!editForm.password || !!editForm.full_name ||
+    !!editForm.role_title || !!editForm.qualifications || !!editForm.avatar_url
+  );
+  useDirtyTracker("staff-credentials", isFormDirty);
+
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
