@@ -96,22 +96,23 @@ export const CommandPalette = ({ open, onOpenChange }: CommandPaletteProps) => {
 
     // ---- Super Admin
     if (role === "super_admin") {
+      const cc = (section: string) => `/control-centre?section=${section}`;
       list.push(
         { id: "cc-dashboard", label: "Global Dashboard", icon: LayoutDashboard, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-health", label: "Platform Health", icon: HeartPulse, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-orgs", label: "Organisations", icon: Building2, group: "Control Centre", keywords: "tenants search", perform: () => go("/control-centre") },
-        { id: "cc-users", label: "Users & Practitioners", icon: Users, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-athletes", label: "Athletes Global Registry", icon: UserCircle, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-live", label: "Live Testing Data Monitor", icon: Activity, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-analytics", label: "Analytics Warehouse", icon: BarChart3, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-bookings", label: "Bookings Infrastructure", icon: CalendarRange, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-reports", label: "Reports & AI Engine", icon: FileText, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-billing", label: "Billing / Tiers / Revenue", icon: CreditCard, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-integrations", label: "API & Integrations", icon: Plug, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-compliance", label: "Compliance / Audit Logs", icon: ShieldCheck, group: "Control Centre", keywords: "audit", perform: () => go("/control-centre") },
-        { id: "cc-notifs", label: "Notifications Centre", icon: Bell, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-support", label: "Support Desk", icon: LifeBuoy, group: "Control Centre", perform: () => go("/control-centre") },
-        { id: "cc-settings", label: "Platform Settings", icon: SettingsIcon, group: "Control Centre", perform: () => go("/control-centre") },
+        { id: "cc-health", label: "Platform Health", icon: HeartPulse, group: "Control Centre", perform: () => go(cc("health")) },
+        { id: "cc-orgs", label: "Organisations", icon: Building2, group: "Control Centre", keywords: "tenants search", perform: () => go(cc("organisations")) },
+        { id: "cc-users", label: "Users & Practitioners", icon: Users, group: "Control Centre", perform: () => go(cc("practitioners")) },
+        { id: "cc-athletes", label: "Athletes Global Registry", icon: UserCircle, group: "Control Centre", perform: () => go(cc("athletes")) },
+        { id: "cc-live", label: "Live Testing Data Monitor", icon: Activity, group: "Control Centre", perform: () => go(cc("live")) },
+        { id: "cc-analytics", label: "Analytics Warehouse", icon: BarChart3, group: "Control Centre", perform: () => go(cc("analytics")) },
+        { id: "cc-bookings", label: "Bookings Infrastructure", icon: CalendarRange, group: "Control Centre", perform: () => go(cc("bookings")) },
+        { id: "cc-reports", label: "Reports & AI Engine", icon: FileText, group: "Control Centre", perform: () => go(cc("reports")) },
+        { id: "cc-billing", label: "Billing / Tiers / Revenue", icon: CreditCard, group: "Control Centre", perform: () => go(cc("billing")) },
+        { id: "cc-integrations", label: "API & Integrations", icon: Plug, group: "Control Centre", perform: () => go(cc("integrations")) },
+        { id: "cc-compliance", label: "Compliance / Audit Logs", icon: ShieldCheck, group: "Control Centre", keywords: "audit", perform: () => go(cc("compliance")) },
+        { id: "cc-notifs", label: "Notifications Centre", icon: Bell, group: "Control Centre", perform: () => go(cc("notifications")) },
+        { id: "cc-support", label: "Support Desk", icon: LifeBuoy, group: "Control Centre", perform: () => go(cc("support")) },
+        { id: "cc-settings", label: "Platform Settings", icon: SettingsIcon, group: "Control Centre", perform: () => go(cc("settings")) },
       );
     }
 
