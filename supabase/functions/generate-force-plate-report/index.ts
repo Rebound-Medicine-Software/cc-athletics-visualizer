@@ -2026,6 +2026,7 @@ serve(async (req) => {
         report_url: signedUrlData.signedUrl,
         test_count: groupedTests.size,
         duration_ms: durationMs,
+        included_ai_insight: includedAiInsight,
       },
     })
 
