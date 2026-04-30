@@ -229,6 +229,16 @@ export const ReportsSection = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string>("");
 
+  // AI Coach insight state
+  const [aiTestName, setAiTestName] = useState<string>("");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiInsight, setAiInsight] = useState<{
+    explanation: string;
+    recommendations: string[];
+    keyCues: string[];
+  } | null>(null);
+
   // Cleanup blob urls on unmount
   useEffect(() => {
     return () => {
