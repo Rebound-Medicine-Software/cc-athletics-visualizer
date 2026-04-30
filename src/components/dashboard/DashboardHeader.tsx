@@ -67,6 +67,7 @@ export const DashboardHeader = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh Data
             </Button>
+            <InAppInbox />
             <SendReportsModal />
           </div>
         </div>
