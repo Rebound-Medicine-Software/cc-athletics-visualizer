@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SendReportsModal } from "./SendReportsModal";
+import { InAppInbox } from "@/components/notifications/InAppInbox";
 
 interface DashboardHeaderProps {
   handleRefresh: () => void;
@@ -66,6 +67,7 @@ export const DashboardHeader = ({
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh Data
             </Button>
+            <InAppInbox />
             <SendReportsModal />
           </div>
         </div>

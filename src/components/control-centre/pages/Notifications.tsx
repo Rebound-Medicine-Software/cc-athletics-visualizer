@@ -3,6 +3,7 @@ import { PageHeader } from '../primitives/PageHeader';
 import { DataTable } from '../primitives/DataTable';
 import { StatusBadge } from '../primitives/StatusBadge';
 import { NotificationCampaignDrawer } from '../primitives/NotificationCampaignDrawer';
+import { WebhookEndpointsPanel } from '../primitives/WebhookEndpointsPanel';
 import { Megaphone, Send, Users, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -271,6 +272,10 @@ export const Notifications: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mb-5">
+        <WebhookEndpointsPanel />
       </div>
 
       <DataTable
