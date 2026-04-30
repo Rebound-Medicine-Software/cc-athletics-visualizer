@@ -14,6 +14,33 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// SSRF guard. Returns null if safe, or an error code.
+function checkSsrf(rawUrl: string): string | null {
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return "invalid_url"; }
+  if (u.protocol !== "https:") return "https_required";
+  const host = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (!host) return "invalid_host";
+  if (["localhost", "127.0.0.1", "0.0.0.0", "::1", "::"].includes(host)) return "blocked_loopback";
+  if (host.endsWith(".local") || host.endsWith(".localhost") || host.endsWith(".internal")) return "blocked_internal_hostname";
+  if (!host.includes(".") && !host.includes(":")) return "blocked_internal_hostname";
+  // IPv4 ranges
+  const m = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a, b] = [parseInt(m[1]), parseInt(m[2])];
+    if (a === 10) return "blocked_private_ip";
+    if (a === 127) return "blocked_loopback";
+    if (a === 0) return "blocked_private_ip";
+    if (a === 192 && b === 168) return "blocked_private_ip";
+    if (a === 172 && b >= 16 && b <= 31) return "blocked_private_ip";
+    if (a === 169 && b === 254) return "blocked_link_local";
+    if (a === 100 && b >= 64 && b <= 127) return "blocked_private_ip";
+  }
+  // IPv6 link-local (fe80::/10) and unique-local (fc00::/7)
+  if (/^fe[89ab][0-9a-f]:/i.test(host) || /^f[cd][0-9a-f]{2}:/i.test(host)) return "blocked_private_ip";
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
