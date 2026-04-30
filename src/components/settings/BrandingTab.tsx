@@ -8,6 +8,7 @@ import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BrandingForm } from '@/components/shared/BrandingForm';
+import { useDirtyTracker } from '@/components/settings/UnsavedChangesContext';
 
 export const BrandingTab = () => {
   const { profile, refreshProfile } = useAuth();
