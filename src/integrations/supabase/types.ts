@@ -1498,6 +1498,7 @@ export type Database = {
       }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       count_active_webhook_endpoints: { Args: never; Returns: number }
+      count_unread_in_app_notifications: { Args: never; Returns: number }
       create_notification_campaign: {
         Args: {
           p_delivery_channel?: string
@@ -1509,8 +1510,26 @@ export type Database = {
         }
         Returns: string
       }
+      create_webhook_endpoint: {
+        Args: {
+          p_is_active?: boolean
+          p_label: string
+          p_secret?: string
+          p_team_id?: string
+          p_url: string
+        }
+        Returns: string
+      }
       delete_platform_tier_template: {
         Args: { p_id: string }
+        Returns: boolean
+      }
+      delete_webhook_endpoint: {
+        Args: { p_endpoint_id: string }
+        Returns: boolean
+      }
+      dismiss_notification: {
+        Args: { p_notification_id: string }
         Returns: boolean
       }
       get_analytics_warehouse_overview: { Args: never; Returns: Json }
@@ -1794,6 +1813,21 @@ export type Database = {
           updated_at: string
         }[]
       }
+      list_my_in_app_notifications: {
+        Args: { p_include_dismissed?: boolean; p_limit?: number }
+        Returns: {
+          campaign_id: string
+          created_at: string
+          dismissed_at: string
+          id: string
+          message: string
+          metadata: Json
+          read_at: string
+          severity: string
+          team_id: string
+          title: string
+        }[]
+      }
       list_notification_campaigns: {
         Args: never
         Returns: {
@@ -1977,6 +2011,27 @@ export type Database = {
           test_name: string
         }[]
       }
+      list_webhook_endpoints: {
+        Args: never
+        Returns: {
+          created_at: string
+          failure_reason: string
+          has_secret: boolean
+          id: string
+          is_active: boolean
+          label: string
+          last_failure_at: string
+          last_success_at: string
+          team_id: string
+          team_name: string
+          updated_at: string
+          url: string
+        }[]
+      }
+      mark_notification_read: {
+        Args: { p_notification_id: string }
+        Returns: boolean
+      }
       preview_notification_audience: {
         Args: { p_target_type: string; p_target_value?: string }
         Returns: {
@@ -2059,6 +2114,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      toggle_webhook_endpoint: {
+        Args: { p_endpoint_id: string; p_is_active: boolean }
+        Returns: boolean
       }
       update_default_branding_settings: {
         Args: { p_value: Json }
