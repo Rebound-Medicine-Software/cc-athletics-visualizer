@@ -165,10 +165,6 @@ export const getNavigationItems = (): NavigationItem[] => [
 
 export const useFilteredNavigation = () => {
   const { profile, hasPermission, isRole } = useAuth();
-  // Prefer the effective tier (impersonated org's tier during View-As) when present.
-  // Falls back silently if helper not available.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { useEffectiveTier } = require('@/lib/impersonation/useEffectiveTeam');
   const { hasPermission: hasEffectivePermission, tier: effectiveTier } = useEffectiveTier();
 
   const getFilteredNavigation = () => {
