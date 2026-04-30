@@ -300,6 +300,63 @@ export const ReportsSection = () => {
     document.body.removeChild(a);
   };
 
+  /** Build & call the AI Coach insight edge function for the current selection.
+   *  Returns the insight payload (with testName) or null if no eligible test data.
+   *  Throws on edge-function error so callers can decide how to handle. */
+  const buildAiInsightForReport = async (): Promise<{
+    testName: string;
+    explanation: string;
+    recommendations: string[];
+    keyCues: string[];
+  } | null> => {
+    if (!selectedAthlete) return null;
+    const targetTestName = aiTestName || uniqueTestNames[0];
+    if (!targetTestName) return null;
+
+    const records = (athleteTests as any[])
+      .filter((t) => t.test_name === targetTestName)
+      .sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
+    const latest = records[0];
+    if (!latest) return null;
+
+    const m = latest.metrics ?? {};
+    const numericKey =
+      ["peak_power", "rsi", "jump_height_ft", "force_peak", "avg_power"].find(
+        (k) => typeof m[k] === "number",
+      ) ?? Object.keys(m).find((k) => typeof m[k] === "number");
+    const currentValue = numericKey ? Number(m[numericKey]) : undefined;
+    const previousValues = records
+      .slice(1, 6)
+      .map((r: any) => (numericKey ? r.metrics?.[numericKey] : undefined))
+      .filter((v: any) => typeof v === "number");
+
+    const res = await supabase.functions.invoke("generate-ai-coach-insight", {
+      body: {
+        team_id: teamId,
+        athlete_id: selectedAthlete.id,
+        testMetrics: {
+          testName: targetTestName,
+          testDate: latest.test_date,
+          currentValue,
+          previousValues,
+          metricUnit: "",
+          metricType: numericKey ?? undefined,
+        },
+      },
+    });
+    if (res.error) throw new Error(res.error.message || "AI insight failed");
+    const insight = (res.data as any)?.insight;
+    if (!insight || typeof insight.explanation !== "string") {
+      throw new Error("Empty AI response");
+    }
+    return {
+      testName: targetTestName,
+      explanation: insight.explanation,
+      recommendations: Array.isArray(insight.recommendations) ? insight.recommendations : [],
+      keyCues: Array.isArray(insight.keyCues) ? insight.keyCues : [],
+    };
+  };
+
   const generateForcePlate = async (mode: "preview" | "download" | "email") => {
     if (!selectedAthlete) return;
     if (mode !== "preview" && guardWrite("Generating reports")) return;
