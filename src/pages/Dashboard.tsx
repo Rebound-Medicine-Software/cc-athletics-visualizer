@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
+import { DashboardSkeleton } from "@/components/dashboard/skeletons";
 import {
   Activity,
   LogOut,
