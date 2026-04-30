@@ -264,13 +264,13 @@ export const useBookings = () => {
       });
       const newUid = result?.data?.uid;
       // If notes were provided, save them to the collaborative notes table
-      if (params.notes && newUid && profile?.team_id) {
+      if (params.notes && newUid && effectiveTeamId) {
         await supabase.from("booking_notes" as any).insert({
           cal_uid: newUid,
-          team_id: profile.team_id,
+          team_id: effectiveTeamId,
           notes: params.notes,
-          last_edited_by: profile.user_id,
-          last_edited_by_name: profile.full_name || profile.email,
+          last_edited_by: profile?.user_id ?? null,
+          last_edited_by_name: profile?.full_name || profile?.email || "Practitioner",
         });
       }
       toast.success("Booking created in Cal.com");
