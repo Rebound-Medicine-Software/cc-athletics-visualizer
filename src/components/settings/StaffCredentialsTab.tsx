@@ -62,26 +62,10 @@ export const StaffCredentialsTab = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get current user's session to filter by team
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Get current user's profile to find team_id
-      const { data: currentProfile } = await supabase
-        .from('profiles')
-        .select('team_id, role')
-        .eq('user_id', session.user.id)
-        .single();
-
-      if (!currentProfile) {
-        console.log('No profile found for current user');
-        setUsers([]);
-        return;
-      }
-
-      // If no team_id, show empty list (new accounts might not have team setup yet)
-      if (!currentProfile.team_id) {
-        console.log('User has no team_id set');
+      // Source the team_id from the effective team context so View-As shows the
+      // impersonated organisation's staff (not the Super Admin's own team).
+      if (!effectiveTeamId) {
+        console.log('No effective team_id; skipping staff fetch');
         setUsers([]);
         return;
       }
@@ -90,7 +74,7 @@ export const StaffCredentialsTab = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('team_id', currentProfile.team_id)
+        .eq('team_id', effectiveTeamId)
         .in('role', ['practitioner', 'staff', 'clinician'])
         .order('created_at', { ascending: false });
 
