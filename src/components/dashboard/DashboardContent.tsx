@@ -100,51 +100,79 @@ export const DashboardContent = ({
         return <HomeOverview />;
       case "live-data":
         return (
-          <LiveDataSection
-            data={data}
-            selectedTeams={selectedTeams}
-            branding={branding}
-          />
+          <div className="space-y-4">
+            <SectionHeader
+              title="Live Data"
+              description="Real-time force-plate streams from connected hardware. Use the filters in each card to drill into a specific test or athlete."
+            />
+            <LiveDataSection
+              data={data}
+              selectedTeams={selectedTeams}
+              branding={branding}
+            />
+          </div>
         );
       case "bookings":
-        return <BookingCalendar />;
+        return (
+          <div className="space-y-4">
+            <SectionHeader
+              title="Bookings"
+              description="Schedule athlete sessions, manage practitioner availability, and sync with Cal.com."
+            />
+            <BookingCalendar />
+          </div>
+        );
       case "profiles":
-        return <StaffCredentialsTab />;
+        return (
+          <div className="space-y-4">
+            <SectionHeader
+              title="Practitioner Profiles"
+              description="Invite, review, and manage staff credentials for your organisation."
+            />
+            <StaffCredentialsTab />
+          </div>
+        );
       case "reports":
         return (
           <ComingSoonSection
-            title="Reports — Coming Soon"
-            description="Custom report templates and exportable PDFs for your organisation are not yet available."
+            title="Custom Reports"
+            description="Branded report templates and exportable PDFs tailored to your organisation."
+            eta="Q3 2026"
             bullets={[
               "Generate athlete progress reports",
-              "Schedule recurring exports",
+              "Schedule recurring email exports",
               "Custom branded PDF templates",
+              "Multi-athlete cohort summaries",
             ]}
           />
         );
       case "programming":
         return (
           <ComingSoonSection
-            title="Programming — Coming Soon"
-            description="Exercise programming and template management is not yet available on this dashboard."
-            bullets={[
-              "Build exercise programs",
-              "Assign templates to athletes",
-              "Track adherence",
-            ]}
+            title="Exercise Programming"
+            description="Build, assign, and track exercise programs directly from your dashboard."
+            eta="Q4 2026"
             tierGated
+            bullets={[
+              "Build reusable exercise programs",
+              "Assign templates to athletes",
+              "Track adherence over time",
+              "Link programs to test results",
+            ]}
           />
         );
       case "payment":
       case "payment-packages":
         return (
           <ComingSoonSection
-            title="Payment Packages — Coming Soon"
-            description="Subscription management and billing for organisations is not yet available. Please contact support for tier changes."
+            title="Payment Packages"
+            description="Self-serve subscription management for your organisation. Contact support for tier changes in the meantime."
+            eta="Q3 2026"
             bullets={[
               "View current subscription tier",
               "Upgrade or downgrade plan",
               "Manage billing details",
+              "Download past invoices",
             ]}
           />
         );
