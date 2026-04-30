@@ -164,30 +164,35 @@ export const getNavigationItems = (): NavigationItem[] => [
 
 export const useFilteredNavigation = () => {
   const { profile, hasPermission, isRole } = useAuth();
-  
+  // Prefer the effective tier (impersonated org's tier during View-As) when present.
+  // Falls back silently if helper not available.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { useEffectiveTier } = require('@/lib/impersonation/useEffectiveTeam');
+  const { hasPermission: hasEffectivePermission, tier: effectiveTier } = useEffectiveTier();
+
   const getFilteredNavigation = () => {
     if (!profile) return [];
-    
+
     // Super Admin gets special navigation
     if (profile.role === 'super_admin') {
       return getSuperAdminNavigation();
     }
-    
+
     // Other roles get standard navigation
     return getNavigationItems().filter(item => {
-      // Check if user role is allowed
       if (!item.roles.includes(profile.role)) return false;
-      
-      // Check permissions if specified
+
       if (item.permissions && item.permissions.length > 0) {
-        return item.permissions.some(permission => 
-          hasPermission(permission as keyof UserTier)
-        );
+        return item.permissions.some(permission => {
+          // Use effective tier when impersonating or available
+          if (effectiveTier) return hasEffectivePermission(permission as any);
+          return hasPermission(permission as keyof UserTier);
+        });
       }
-      
+
       return true;
     });
   };
-  
+
   return { filteredNavigation: getFilteredNavigation(), profile, isRole };
 };
