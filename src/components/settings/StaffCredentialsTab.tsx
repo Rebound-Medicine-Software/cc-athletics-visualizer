@@ -114,6 +114,7 @@ export const StaffCredentialsTab = () => {
   };
 
   const handleSave = async () => {
+    if (guardWrite('Saving staff member')) return;
     if (!editForm.email.trim()) {
       toast.error("Email is required");
       return;
