@@ -113,7 +113,7 @@ export const BrandingTab = () => {
 
   const handleSave = async () => {
     if (guardWrite('Saving branding')) return;
-    if (!profile?.team_id) {
+    if (!effectiveTeamId) {
       toast({ variant: 'destructive', title: 'Error', description: 'No team associated with your account' });
       return;
     }
@@ -132,7 +132,7 @@ export const BrandingTab = () => {
           accent_color: brandingForm.accentColor,
           font_family: brandingForm.fontFamily
         })
-        .eq('id', profile.team_id);
+        .eq('id', effectiveTeamId);
 
       if (error) throw error;
 
