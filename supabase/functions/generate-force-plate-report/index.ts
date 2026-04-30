@@ -240,6 +240,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  const startTs = Date.now()
+  let teamIdForLog: string | null = null
+  let athleteIdForLog: string | null = null
+  let athleteNameForLog: string | null = null
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -248,9 +253,23 @@ serve(async (req) => {
 
     const body = await req.json()
     let { athlete_id, athlete_name, team_name, test_data, branding } = body
+    athleteIdForLog = athlete_id ?? null
+    athleteNameForLog = athlete_name ?? null
 
     if (!athlete_name || !test_data || test_data.length === 0) {
       throw new Error('athlete_name and test_data are required')
+    }
+
+    // Resolve team_id for telemetry (best-effort, never fatal)
+    if (athlete_id) {
+      try {
+        const { data: a } = await supabaseClient
+          .from('athletes')
+          .select('team_id')
+          .eq('id', athlete_id)
+          .maybeSingle()
+        teamIdForLog = a?.team_id ?? null
+      } catch (_) { /* ignore */ }
     }
 
     // Fetch and encode logo image if branding has a logo_url
