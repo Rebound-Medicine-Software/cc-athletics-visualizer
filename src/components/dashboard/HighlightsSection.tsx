@@ -220,7 +220,6 @@ export const HighlightsSection = ({
                      testNames: value,
                      selectedAthlete: ""
                    }));
-                   handleSecondTestSelect(value);
                  }}
               >
                 <SelectTrigger className="bg-white text-center">
