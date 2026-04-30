@@ -41,7 +41,7 @@ import {
   Mail,
   RefreshCw,
   Sparkles,
-  Trash2,
+  
   User,
   Users,
   X,
