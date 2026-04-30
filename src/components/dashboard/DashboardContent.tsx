@@ -11,6 +11,7 @@ import { LiveDataSection } from "./LiveDataSection";
 import { BookingCalendar } from "./BookingCalendar";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { HomeOverview } from "./home/HomeOverview";
+import { ComingSoonSection } from "./ComingSoonSection";
 import { AlertCircle, CheckCircle, RefreshCw, ChevronRight, ChevronLeft } from "lucide-react";
 
 export interface DashboardContentProps {
@@ -101,6 +102,44 @@ export const DashboardContent = ({
         return <BookingCalendar />;
       case "profiles":
         return <StaffCredentialsTab />;
+      case "reports":
+        return (
+          <ComingSoonSection
+            title="Reports — Coming Soon"
+            description="Custom report templates and exportable PDFs for your organisation are not yet available."
+            bullets={[
+              "Generate athlete progress reports",
+              "Schedule recurring exports",
+              "Custom branded PDF templates",
+            ]}
+          />
+        );
+      case "programming":
+        return (
+          <ComingSoonSection
+            title="Programming — Coming Soon"
+            description="Exercise programming and template management is not yet available on this dashboard."
+            bullets={[
+              "Build exercise programs",
+              "Assign templates to athletes",
+              "Track adherence",
+            ]}
+            tierGated
+          />
+        );
+      case "payment":
+      case "payment-packages":
+        return (
+          <ComingSoonSection
+            title="Payment Packages — Coming Soon"
+            description="Subscription management and billing for organisations is not yet available. Please contact support for tier changes."
+            bullets={[
+              "View current subscription tier",
+              "Upgrade or downgrade plan",
+              "Manage billing details",
+            ]}
+          />
+        );
       default:
         return (
           <>
