@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddAthleteFromApiDialog } from "./AddAthleteFromApiDialog";
+import { useDirtyTracker } from "./UnsavedChangesContext";
 
 interface Athlete {
   id: string;
@@ -63,6 +64,13 @@ export const AthleteCredentialsTab = () => {
   const [deleting, setDeleting] = useState(false);
   
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
+
+  // Dirty whenever an inline edit form is open with any user input
+  const isFormDirty = !!editingId && (
+    !!editForm.avatar_url || !!editForm.password ||
+    !!editForm.email || !!editForm.team_logo_url
+  );
+  useDirtyTracker("athlete-credentials", isFormDirty);
 
   useEffect(() => {
     fetchAthletes();
