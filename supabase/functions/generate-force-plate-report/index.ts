@@ -1869,6 +1869,24 @@ serve(async (req) => {
 
     console.log('Force plate PDF generated successfully:', signedUrlData.signedUrl)
 
+    const durationMs = Date.now() - startTs
+    await logActivity({
+      eventType: 'report_generated',
+      eventSource: 'generate-force-plate-report',
+      severity: 'success',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      organisationName: team_name ?? null,
+      metadata: {
+        report_type: 'force-plate',
+        athlete_name: athleteNameForLog,
+        filename: fileName,
+        report_url: signedUrlData.signedUrl,
+        test_count: groupedTests.size,
+        duration_ms: durationMs,
+      },
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -1885,8 +1903,22 @@ serve(async (req) => {
     )
   } catch (error) {
     console.error('Error generating force plate PDF:', error)
+    const errMsg = error instanceof Error ? error.message : String(error)
+    await logActivity({
+      eventType: 'report_generation_failed',
+      eventSource: 'generate-force-plate-report',
+      severity: 'critical',
+      teamId: teamIdForLog,
+      athleteId: athleteIdForLog,
+      metadata: {
+        report_type: 'force-plate',
+        athlete_name: athleteNameForLog,
+        duration_ms: Date.now() - startTs,
+        error: errMsg,
+      },
+    })
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ error: errMsg }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
