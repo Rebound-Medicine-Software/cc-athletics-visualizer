@@ -810,6 +810,36 @@ export const ReportsSection = () => {
                   </div>
                 )}
 
+                {reportKind === "force-plate" && selectedAthlete && (
+                  <label
+                    className={`flex items-start gap-2 rounded-md border p-2.5 text-xs ${
+                      !canExport ? "opacity-60" : ""
+                    }`}
+                  >
+                    <Checkbox
+                      checked={includeAiInReport}
+                      onCheckedChange={(v) => setIncludeAiInReport(v === true)}
+                      disabled={!canExport || isImpersonating || uniqueTestNames.length === 0}
+                      className="mt-0.5"
+                    />
+                    <span className="space-y-0.5">
+                      <span className="font-medium flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-600" />
+                        Include AI Coach Insight in PDF
+                      </span>
+                      <span className="block text-muted-foreground">
+                        {uniqueTestNames.length === 0
+                          ? "No tests in range to analyse."
+                          : !canExport
+                            ? "Requires a tier with report export."
+                            : isImpersonating
+                              ? "Disabled in View-As mode."
+                              : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
+                      </span>
+                    </span>
+                  </label>
+                )}
+
                 {reportKind === "force-plate" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Button
