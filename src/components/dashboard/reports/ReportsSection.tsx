@@ -693,7 +693,8 @@ export const ReportsSection = () => {
             <Button
               className="flex-1"
               onClick={() => previewUrl && previewName && downloadBlob(previewUrl, previewName)}
-              disabled={isImpersonating}
+              disabled={isImpersonating || !canExport}
+              title={!canExport ? "Report export is not included in your tier" : undefined}
             >
               <Download className="h-4 w-4 mr-1.5" /> Save as PDF
             </Button>
