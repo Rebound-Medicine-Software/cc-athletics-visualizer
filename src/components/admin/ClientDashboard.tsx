@@ -10,13 +10,15 @@ import { PaymentPackages } from './client/PaymentPackages';
 import { AdminHeader } from './AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/hooks/useBranding';
+import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 
 export const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
   const { profile } = useAuth();
-  
-  // Apply branding for client role
-  useBranding(profile?.team_id, profile?.role);
+  const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
+
+  // Apply branding for client role (uses effective team during View-As)
+  useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
 
   const renderContent = () => {
     switch (activeSection) {
