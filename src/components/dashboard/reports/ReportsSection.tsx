@@ -211,11 +211,13 @@ const RecentReportsCard = ({
 /* ---------- main section ---------- */
 
 export const ReportsSection = () => {
-  const { teamBranding } = useAuth();
+  const { teamBranding, user } = useAuth();
   const { teamId, isImpersonating, impersonatedTeamName } = useEffectiveTeamId();
   const guardWrite = useViewAsWriteGuard();
   const { hasPermission } = useEffectiveTier();
   const canExport = hasPermission("can_export_reports");
+  const canUseAiCoach = hasPermission("can_use_ai_coach");
+  const canIncludeAiInPdf = canExport && canUseAiCoach;
 
   const { data: testData = [], isLoading: testsLoading, refetch } = useSupabaseData();
   const { data: athletes = [], isLoading: athletesLoading } = useAthletes();
