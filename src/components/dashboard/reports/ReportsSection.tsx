@@ -387,7 +387,7 @@ export const ReportsSection = () => {
       let aiInsightForReport:
         | { testName: string; explanation: string; recommendations: string[]; keyCues: string[] }
         | null = null;
-      if (includeAiInReport) {
+      if (includeAiInReport && canIncludeAiInPdf) {
         try {
           // Reuse the on-screen insight if it matches the chosen test focus
           const focusName = aiTestName || uniqueTestNames[0];
