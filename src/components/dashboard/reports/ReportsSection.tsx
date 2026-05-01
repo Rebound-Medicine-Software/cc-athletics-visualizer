@@ -336,6 +336,7 @@ export const ReportsSection = () => {
       body: {
         team_id: teamId,
         athlete_id: selectedAthlete.id,
+        created_by: user?.id ?? null,
         testMetrics: {
           testName: targetTestName,
           testDate: latest.test_date,
@@ -531,11 +532,11 @@ export const ReportsSection = () => {
   const generateAiInsight = async () => {
     if (!selectedAthlete) return;
     if (guardWrite("Generating AI insight")) return;
-    if (!canExport) {
+    if (!canUseAiCoach) {
       toast({
         title: "Upgrade required",
         description:
-          "AI Coach insights use the same access as report export. Your current tier doesn't include export.",
+          "AI Coach is not included in your current tier. Contact your administrator to enable it.",
         variant: "destructive",
       });
       return;
@@ -581,6 +582,7 @@ export const ReportsSection = () => {
         body: {
           team_id: teamId,
           athlete_id: selectedAthlete.id,
+          created_by: user?.id ?? null,
           testMetrics: {
             testName: targetTestName,
             testDate: latest.test_date,
