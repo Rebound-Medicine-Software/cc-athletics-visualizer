@@ -95,7 +95,12 @@ serve(async (req) => {
               },
             });
             return new Response(
-              JSON.stringify({ success: true, insight: cached.insight, cached: true }),
+              JSON.stringify({
+                success: true,
+                insight: cached.insight,
+                cached: true,
+                cached_at: cached.created_at,
+              }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } },
             );
           }
