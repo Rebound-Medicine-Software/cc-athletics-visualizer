@@ -25,7 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { History } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
@@ -241,6 +249,22 @@ export const ReportsSection = () => {
     recommendations: string[];
     keyCues: string[];
   } | null>(null);
+  const [aiInsightMeta, setAiInsightMeta] = useState<{
+    cached: boolean;
+    createdAt: string | null;
+    testName: string | null;
+    testDate: string | null;
+  } | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<Array<{
+    id: string;
+    test_name: string;
+    test_date: string | null;
+    created_at: string;
+    insight: any;
+    athlete_id: string | null;
+  }> | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Whether to embed an AI Coach Insight section into the generated PDF
   const [includeAiInReport, setIncludeAiInReport] = useState(false);
@@ -529,9 +553,10 @@ export const ReportsSection = () => {
   };
 
   /* ----- AI Coach insight ----- */
-  const generateAiInsight = async () => {
+  const generateAiInsight = async (opts?: { forceRefresh?: boolean }) => {
+    const forceRefresh = !!opts?.forceRefresh;
     if (!selectedAthlete) return;
-    if (guardWrite("Generating AI insight")) return;
+    if (guardWrite(forceRefresh ? "Refreshing AI insight" : "Generating AI insight")) return;
     if (!canUseAiCoach) {
       toast({
         title: "Upgrade required",
@@ -551,7 +576,6 @@ export const ReportsSection = () => {
       return;
     }
 
-    // Pick the most recent record for the chosen test
     const records = (athleteTests as any[])
       .filter((t) => t.test_name === targetTestName)
       .sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
@@ -562,7 +586,6 @@ export const ReportsSection = () => {
     }
 
     const m = latest.metrics ?? {};
-    // Pick a representative numeric metric (peak power, rsi, jump_height_ft, etc.)
     const numericKey =
       ["peak_power", "rsi", "jump_height_ft", "force_peak", "avg_power"].find(
         (k) => typeof m[k] === "number",
@@ -577,12 +600,14 @@ export const ReportsSection = () => {
     setAiBusy(true);
     setAiError(null);
     setAiInsight(null);
+    setAiInsightMeta(null);
     try {
       const res = await supabase.functions.invoke("generate-ai-coach-insight", {
         body: {
           team_id: teamId,
           athlete_id: selectedAthlete.id,
           created_by: user?.id ?? null,
+          force_refresh: forceRefresh,
           testMetrics: {
             testName: targetTestName,
             testDate: latest.test_date,
@@ -595,8 +620,15 @@ export const ReportsSection = () => {
       });
       if (res.error) throw new Error(res.error.message || "AI insight failed");
       const insight = (res.data as any)?.insight;
+      const cached = !!(res.data as any)?.cached;
       if (!insight) throw new Error("Empty AI response");
       setAiInsight(insight);
+      setAiInsightMeta({
+        cached,
+        createdAt: cached ? null : new Date().toISOString(),
+        testName: targetTestName,
+        testDate: latest.test_date ?? null,
+      });
       recent.add({
         kind: "athlete-summary",
         athlete_name: selectedAthlete.name,
@@ -610,6 +642,53 @@ export const ReportsSection = () => {
     } finally {
       setAiBusy(false);
     }
+  };
+
+  const loadCachedHistory = async () => {
+    if (!teamId) return;
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    try {
+      let q = supabase
+        .from("ai_coach_insights")
+        .select("id, test_name, test_date, created_at, insight, athlete_id")
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false })
+        .limit(25);
+      if (selectedAthlete?.id) q = q.eq("athlete_id", selectedAthlete.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      setHistoryItems((data as any[]) ?? []);
+    } catch (e: any) {
+      toast({ title: "Failed to load history", description: e?.message ?? "", variant: "destructive" });
+      setHistoryItems([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const reuseCachedInsight = (item: {
+    id: string;
+    test_name: string;
+    test_date: string | null;
+    created_at: string;
+    insight: any;
+  }) => {
+    const ins = item.insight ?? {};
+    setAiInsight({
+      explanation: typeof ins.explanation === "string" ? ins.explanation : "",
+      recommendations: Array.isArray(ins.recommendations) ? ins.recommendations : [],
+      keyCues: Array.isArray(ins.keyCues) ? ins.keyCues : [],
+    });
+    setAiInsightMeta({
+      cached: true,
+      createdAt: item.created_at,
+      testName: item.test_name,
+      testDate: item.test_date,
+    });
+    setAiTestName(item.test_name);
+    setAiError(null);
+    setHistoryOpen(false);
   };
 
   const copyInsight = async () => {
@@ -969,18 +1048,43 @@ export const ReportsSection = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  onClick={generateAiInsight}
-                  disabled={aiBusy || isImpersonating || !canUseAiCoach}
-                  title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
-                >
-                  {aiBusy ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-1.5" />
-                  )}
-                  Generate insight
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => generateAiInsight()}
+                    disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                    title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
+                  >
+                    {aiBusy ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-1.5" />
+                    )}
+                    Generate insight
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!confirm("Refreshing will bypass the cache and may consume AI credits. Continue?")) return;
+                      generateAiInsight({ forceRefresh: true });
+                    }}
+                    disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                    title={
+                      isImpersonating
+                        ? "Refresh is disabled in View-As mode"
+                        : !canUseAiCoach
+                          ? "AI Coach is not included in your tier"
+                          : "Bypass cache and regenerate (uses AI credits)"
+                    }
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Refresh
+                  </Button>
+                  <Button variant="ghost" onClick={loadCachedHistory} disabled={!teamId}>
+                    <History className="h-4 w-4 mr-1.5" />
+                    History
+                  </Button>
+                </div>
+
               </div>
 
               {!canUseAiCoach && (
@@ -1007,10 +1111,28 @@ export const ReportsSection = () => {
 
               {aiInsight && !aiBusy && (
                 <div className="rounded-lg border bg-muted/30 p-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-medium flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-amber-600" />
-                      Insight for {selectedAthlete.name}
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="space-y-1">
+                      <div className="font-medium flex items-center gap-2 flex-wrap">
+                        <Sparkles className="h-4 w-4 text-amber-600" />
+                        Insight for {selectedAthlete.name}
+                        {aiInsightMeta?.cached ? (
+                          <Badge variant="secondary" className="font-normal">Cached insight</Badge>
+                        ) : aiInsightMeta ? (
+                          <Badge className="font-normal">Generated just now</Badge>
+                        ) : null}
+                      </div>
+                      {aiInsightMeta && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {aiInsightMeta.testName}
+                          {aiInsightMeta.testDate ? ` · test ${aiInsightMeta.testDate}` : ""}
+                          {aiInsightMeta.createdAt
+                            ? ` · ${formatRelative(aiInsightMeta.createdAt)}`
+                            : aiInsightMeta.cached
+                              ? " · reused from cache"
+                              : ""}
+                        </div>
+                      )}
                     </div>
                     <Button size="sm" variant="ghost" onClick={copyInsight}>
                       Copy
@@ -1043,6 +1165,7 @@ export const ReportsSection = () => {
                   )}
                 </div>
               )}
+
 
               {!aiInsight && !aiBusy && !aiError && (
                 <EmptyState
@@ -1088,6 +1211,64 @@ export const ReportsSection = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Cached insight history */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <History className="h-4 w-4" /> Cached AI Insights
+            </SheetTitle>
+            <SheetDescription>
+              {selectedAthlete
+                ? `Recent cached insights for ${selectedAthlete.name}.`
+                : "Recent cached insights for your team."}{" "}
+              Reusing a cached insight does not consume AI credits.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {historyLoading && (
+              <>
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </>
+            )}
+            {!historyLoading && historyItems && historyItems.length === 0 && (
+              <EmptyState
+                inline
+                compact
+                icon={Sparkles}
+                title="No cached insights"
+                description="Generate an insight to populate the cache."
+              />
+            )}
+            {!historyLoading &&
+              historyItems?.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-md border p-3 text-sm space-y-1 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium truncate">{item.test_name}</div>
+                    <Badge variant="secondary" className="font-normal text-[10px]">
+                      Cached
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {item.test_date ? `Test ${item.test_date} · ` : ""}
+                    Saved {formatRelative(item.created_at)}
+                  </div>
+                  <div className="pt-1">
+                    <Button size="sm" variant="outline" onClick={() => reuseCachedInsight(item)}>
+                      Open / reuse
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Footnote about scope */}
       <p className="text-[11px] text-muted-foreground">
