@@ -25,7 +25,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { History } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 
@@ -241,6 +249,22 @@ export const ReportsSection = () => {
     recommendations: string[];
     keyCues: string[];
   } | null>(null);
+  const [aiInsightMeta, setAiInsightMeta] = useState<{
+    cached: boolean;
+    createdAt: string | null;
+    testName: string | null;
+    testDate: string | null;
+  } | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyItems, setHistoryItems] = useState<Array<{
+    id: string;
+    test_name: string;
+    test_date: string | null;
+    created_at: string;
+    insight: any;
+    athlete_id: string | null;
+  }> | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Whether to embed an AI Coach Insight section into the generated PDF
   const [includeAiInReport, setIncludeAiInReport] = useState(false);
