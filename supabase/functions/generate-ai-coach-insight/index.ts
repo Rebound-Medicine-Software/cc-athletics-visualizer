@@ -243,7 +243,41 @@ Provide a short explanation of what this test measures and why it matters, follo
       payload: { route: 'ai_coach_insight' },
     });
 
-    return new Response(JSON.stringify({ success: true, insight }), {
+    // ---------- CACHE WRITE ----------
+    if (teamIdForLog) {
+      try {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
+        const sUrl = Deno.env.get("SUPABASE_URL");
+        const sKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (sUrl && sKey) {
+          const svc = createClient(sUrl, sKey, { auth: { persistSession: false } });
+          await svc.from("ai_coach_insights").insert({
+            team_id: teamIdForLog,
+            athlete_id: athleteIdForLog,
+            test_name: testMetrics.testName,
+            test_date: testMetrics.testDate ?? null,
+            source_metrics_hash: sourceHash,
+            insight,
+            created_by: body.created_by ?? null,
+          });
+          await logActivity({
+            eventType: "ai_coach_insight_cached",
+            eventSource: "generate-ai-coach-insight",
+            severity: "info",
+            teamId: teamIdForLog,
+            athleteId: athleteIdForLog,
+            metadata: {
+              test_name: testNameForLog,
+              source_metrics_hash: sourceHash,
+            },
+          });
+        }
+      } catch (persistErr) {
+        console.error("[ai-coach] cache persist failed", persistErr);
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, insight, cached: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
