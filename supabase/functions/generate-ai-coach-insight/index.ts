@@ -282,7 +282,7 @@ Provide a short explanation of what this test measures and why it matters, follo
       }
     }
 
-    return new Response(JSON.stringify({ success: true, insight, cached: false }), {
+    return new Response(JSON.stringify({ success: true, insight, cached: false, generated_at: new Date().toISOString() }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
