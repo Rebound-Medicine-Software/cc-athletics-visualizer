@@ -95,7 +95,12 @@ serve(async (req) => {
               },
             });
             return new Response(
-              JSON.stringify({ success: true, insight: cached.insight, cached: true }),
+              JSON.stringify({
+                success: true,
+                insight: cached.insight,
+                cached: true,
+                cached_at: cached.created_at,
+              }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } },
             );
           }
@@ -277,7 +282,7 @@ Provide a short explanation of what this test measures and why it matters, follo
       }
     }
 
-    return new Response(JSON.stringify({ success: true, insight, cached: false }), {
+    return new Response(JSON.stringify({ success: true, insight, cached: false, generated_at: new Date().toISOString() }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
