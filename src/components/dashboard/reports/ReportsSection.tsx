@@ -553,9 +553,10 @@ export const ReportsSection = () => {
   };
 
   /* ----- AI Coach insight ----- */
-  const generateAiInsight = async () => {
+  const generateAiInsight = async (opts?: { forceRefresh?: boolean }) => {
+    const forceRefresh = !!opts?.forceRefresh;
     if (!selectedAthlete) return;
-    if (guardWrite("Generating AI insight")) return;
+    if (guardWrite(forceRefresh ? "Refreshing AI insight" : "Generating AI insight")) return;
     if (!canUseAiCoach) {
       toast({
         title: "Upgrade required",
@@ -575,7 +576,6 @@ export const ReportsSection = () => {
       return;
     }
 
-    // Pick the most recent record for the chosen test
     const records = (athleteTests as any[])
       .filter((t) => t.test_name === targetTestName)
       .sort((a, b) => (a.test_date < b.test_date ? 1 : -1));
@@ -586,7 +586,6 @@ export const ReportsSection = () => {
     }
 
     const m = latest.metrics ?? {};
-    // Pick a representative numeric metric (peak power, rsi, jump_height_ft, etc.)
     const numericKey =
       ["peak_power", "rsi", "jump_height_ft", "force_peak", "avg_power"].find(
         (k) => typeof m[k] === "number",
@@ -601,12 +600,14 @@ export const ReportsSection = () => {
     setAiBusy(true);
     setAiError(null);
     setAiInsight(null);
+    setAiInsightMeta(null);
     try {
       const res = await supabase.functions.invoke("generate-ai-coach-insight", {
         body: {
           team_id: teamId,
           athlete_id: selectedAthlete.id,
           created_by: user?.id ?? null,
+          force_refresh: forceRefresh,
           testMetrics: {
             testName: targetTestName,
             testDate: latest.test_date,
@@ -619,8 +620,15 @@ export const ReportsSection = () => {
       });
       if (res.error) throw new Error(res.error.message || "AI insight failed");
       const insight = (res.data as any)?.insight;
+      const cached = !!(res.data as any)?.cached;
       if (!insight) throw new Error("Empty AI response");
       setAiInsight(insight);
+      setAiInsightMeta({
+        cached,
+        createdAt: cached ? null : new Date().toISOString(),
+        testName: targetTestName,
+        testDate: latest.test_date ?? null,
+      });
       recent.add({
         kind: "athlete-summary",
         athlete_name: selectedAthlete.name,
@@ -634,6 +642,53 @@ export const ReportsSection = () => {
     } finally {
       setAiBusy(false);
     }
+  };
+
+  const loadCachedHistory = async () => {
+    if (!teamId) return;
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    try {
+      let q = supabase
+        .from("ai_coach_insights")
+        .select("id, test_name, test_date, created_at, insight, athlete_id")
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false })
+        .limit(25);
+      if (selectedAthlete?.id) q = q.eq("athlete_id", selectedAthlete.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      setHistoryItems((data as any[]) ?? []);
+    } catch (e: any) {
+      toast({ title: "Failed to load history", description: e?.message ?? "", variant: "destructive" });
+      setHistoryItems([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const reuseCachedInsight = (item: {
+    id: string;
+    test_name: string;
+    test_date: string | null;
+    created_at: string;
+    insight: any;
+  }) => {
+    const ins = item.insight ?? {};
+    setAiInsight({
+      explanation: typeof ins.explanation === "string" ? ins.explanation : "",
+      recommendations: Array.isArray(ins.recommendations) ? ins.recommendations : [],
+      keyCues: Array.isArray(ins.keyCues) ? ins.keyCues : [],
+    });
+    setAiInsightMeta({
+      cached: true,
+      createdAt: item.created_at,
+      testName: item.test_name,
+      testDate: item.test_date,
+    });
+    setAiTestName(item.test_name);
+    setAiError(null);
+    setHistoryOpen(false);
   };
 
   const copyInsight = async () => {
