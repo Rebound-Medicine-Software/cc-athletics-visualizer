@@ -1111,10 +1111,28 @@ export const ReportsSection = () => {
 
               {aiInsight && !aiBusy && (
                 <div className="rounded-lg border bg-muted/30 p-4 space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-medium flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-amber-600" />
-                      Insight for {selectedAthlete.name}
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <div className="space-y-1">
+                      <div className="font-medium flex items-center gap-2 flex-wrap">
+                        <Sparkles className="h-4 w-4 text-amber-600" />
+                        Insight for {selectedAthlete.name}
+                        {aiInsightMeta?.cached ? (
+                          <Badge variant="secondary" className="font-normal">Cached insight</Badge>
+                        ) : aiInsightMeta ? (
+                          <Badge className="font-normal">Generated just now</Badge>
+                        ) : null}
+                      </div>
+                      {aiInsightMeta && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {aiInsightMeta.testName}
+                          {aiInsightMeta.testDate ? ` · test ${aiInsightMeta.testDate}` : ""}
+                          {aiInsightMeta.createdAt
+                            ? ` · ${formatRelative(aiInsightMeta.createdAt)}`
+                            : aiInsightMeta.cached
+                              ? " · reused from cache"
+                              : ""}
+                        </div>
+                      )}
                     </div>
                     <Button size="sm" variant="ghost" onClick={copyInsight}>
                       Copy
@@ -1147,6 +1165,7 @@ export const ReportsSection = () => {
                   )}
                 </div>
               )}
+
 
               {!aiInsight && !aiBusy && !aiError && (
                 <EmptyState
