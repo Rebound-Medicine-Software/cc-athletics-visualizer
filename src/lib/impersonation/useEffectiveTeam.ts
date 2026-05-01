@@ -65,6 +65,7 @@ export interface EffectiveTier {
   can_edit_programming: boolean;
   can_export_reports: boolean;
   can_adjust_sets_reps: boolean;
+  can_use_ai_coach: boolean;
   max_bookings_per_month: number | null;
 }
 
@@ -86,7 +87,7 @@ export const useEffectiveTier = () => {
       if (!tierId) return null;
       const { data, error } = await supabase
         .from('tiers')
-        .select('id, name, price_monthly, can_view_analytics, can_edit_programming, can_export_reports, can_adjust_sets_reps, max_bookings_per_month')
+        .select('id, name, price_monthly, can_view_analytics, can_edit_programming, can_export_reports, can_adjust_sets_reps, can_use_ai_coach, max_bookings_per_month')
         .eq('id', tierId)
         .maybeSingle();
       if (error) throw error;
@@ -97,7 +98,7 @@ export const useEffectiveTier = () => {
   const tier = query.data ?? null;
 
   const hasPermission = (perm: keyof Pick<EffectiveTier,
-    'can_view_analytics' | 'can_edit_programming' | 'can_export_reports' | 'can_adjust_sets_reps'>): boolean => {
+    'can_view_analytics' | 'can_edit_programming' | 'can_export_reports' | 'can_adjust_sets_reps' | 'can_use_ai_coach'>): boolean => {
     // During View-As, if the impersonated org has no tier yet, default to allowing
     // tenant feature visibility (Super Admin should not be locked out by missing tier).
     if (isImpersonating && !tier) return true;

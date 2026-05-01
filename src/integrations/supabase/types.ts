@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_coach_insights: {
+        Row: {
+          athlete_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          insight: Json
+          source_metrics_hash: string
+          team_id: string
+          test_date: string | null
+          test_name: string
+        }
+        Insert: {
+          athlete_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          insight: Json
+          source_metrics_hash: string
+          team_id: string
+          test_date?: string | null
+          test_name: string
+        }
+        Update: {
+          athlete_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          insight?: Json
+          source_metrics_hash?: string
+          team_id?: string
+          test_date?: string | null
+          test_name?: string
+        }
+        Relationships: []
+      }
       athletes: {
         Row: {
           activity_status: string | null
@@ -1378,6 +1414,7 @@ export type Database = {
           can_adjust_sets_reps: boolean | null
           can_edit_programming: boolean | null
           can_export_reports: boolean | null
+          can_use_ai_coach: boolean
           can_view_analytics: boolean | null
           created_at: string
           id: string
@@ -1391,6 +1428,7 @@ export type Database = {
           can_adjust_sets_reps?: boolean | null
           can_edit_programming?: boolean | null
           can_export_reports?: boolean | null
+          can_use_ai_coach?: boolean
           can_view_analytics?: boolean | null
           created_at?: string
           id?: string
@@ -1404,6 +1442,7 @@ export type Database = {
           can_adjust_sets_reps?: boolean | null
           can_edit_programming?: boolean | null
           can_export_reports?: boolean | null
+          can_use_ai_coach?: boolean
           can_view_analytics?: boolean | null
           created_at?: string
           id?: string
