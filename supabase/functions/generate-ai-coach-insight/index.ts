@@ -35,11 +35,86 @@ serve(async (req) => {
       testMetrics: TestMetrics;
       team_id?: string | null;
       athlete_id?: string | null;
+      created_by?: string | null;
+      force_refresh?: boolean;
     };
     const testMetrics = body.testMetrics;
     teamIdForLog = body.team_id ?? null;
     athleteIdForLog = body.athlete_id ?? null;
     testNameForLog = testMetrics?.testName ?? null;
+
+    // Build a deterministic source-metrics fingerprint (no raw PII stored)
+    const hashInput = JSON.stringify({
+      t: testMetrics?.testName ?? "",
+      d: testMetrics?.testDate ?? "",
+      cv: testMetrics?.currentValue ?? null,
+      pv: testMetrics?.previousValues ?? [],
+      bl: testMetrics?.baseline ?? null,
+      pr: testMetrics?.personalRecord ?? null,
+      ll: testMetrics?.leftLimb ?? null,
+      rl: testMetrics?.rightLimb ?? null,
+      asym: testMetrics?.asymmetryPercent ?? null,
+      mu: testMetrics?.metricUnit ?? "",
+      mt: testMetrics?.metricType ?? "",
+    });
+    const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(hashInput));
+    const sourceHash = Array.from(new Uint8Array(hashBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    // ---------- CACHE LOOKUP ----------
+    if (!body.force_refresh && teamIdForLog) {
+      try {
+        const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
+        const sUrl = Deno.env.get("SUPABASE_URL");
+        const sKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (sUrl && sKey) {
+          const svc = createClient(sUrl, sKey, { auth: { persistSession: false } });
+          const { data: cached } = await svc
+            .from("ai_coach_insights")
+            .select("insight, created_at")
+            .eq("team_id", teamIdForLog)
+            .eq("test_name", testMetrics.testName)
+            .eq("source_metrics_hash", sourceHash)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (cached?.insight) {
+            const durationMs = Date.now() - startTs;
+            await logActivity({
+              eventType: "ai_coach_insight_cache_hit",
+              eventSource: "generate-ai-coach-insight",
+              severity: "info",
+              teamId: teamIdForLog,
+              athleteId: athleteIdForLog,
+              metadata: {
+                test_name: testNameForLog,
+                test_date: testMetrics.testDate,
+                duration_ms: durationMs,
+                source_metrics_hash: sourceHash,
+              },
+            });
+            return new Response(
+              JSON.stringify({ success: true, insight: cached.insight, cached: true }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+          await logActivity({
+            eventType: "ai_coach_insight_cache_miss",
+            eventSource: "generate-ai-coach-insight",
+            severity: "info",
+            teamId: teamIdForLog,
+            athleteId: athleteIdForLog,
+            metadata: {
+              test_name: testNameForLog,
+              source_metrics_hash: sourceHash,
+            },
+          });
+        }
+      } catch (cacheErr) {
+        console.error("[ai-coach] cache lookup failed", cacheErr);
+      }
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
