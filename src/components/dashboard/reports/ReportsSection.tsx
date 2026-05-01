@@ -1048,18 +1048,43 @@ export const ReportsSection = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button
-                  onClick={generateAiInsight}
-                  disabled={aiBusy || isImpersonating || !canUseAiCoach}
-                  title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
-                >
-                  {aiBusy ? (
-                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4 mr-1.5" />
-                  )}
-                  Generate insight
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => generateAiInsight()}
+                    disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                    title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
+                  >
+                    {aiBusy ? (
+                      <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-1.5" />
+                    )}
+                    Generate insight
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!confirm("Refreshing will bypass the cache and may consume AI credits. Continue?")) return;
+                      generateAiInsight({ forceRefresh: true });
+                    }}
+                    disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                    title={
+                      isImpersonating
+                        ? "Refresh is disabled in View-As mode"
+                        : !canUseAiCoach
+                          ? "AI Coach is not included in your tier"
+                          : "Bypass cache and regenerate (uses AI credits)"
+                    }
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Refresh
+                  </Button>
+                  <Button variant="ghost" onClick={loadCachedHistory} disabled={!teamId}>
+                    <History className="h-4 w-4 mr-1.5" />
+                    History
+                  </Button>
+                </div>
+
               </div>
 
               {!canUseAiCoach && (
