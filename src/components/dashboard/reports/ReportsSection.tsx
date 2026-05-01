@@ -817,13 +817,13 @@ export const ReportsSection = () => {
                 {reportKind === "force-plate" && selectedAthlete && (
                   <label
                     className={`flex items-start gap-2 rounded-md border p-2.5 text-xs ${
-                      !canExport ? "opacity-60" : ""
+                      !canIncludeAiInPdf ? "opacity-60" : ""
                     }`}
                   >
                     <Checkbox
-                      checked={includeAiInReport}
+                      checked={includeAiInReport && canIncludeAiInPdf}
                       onCheckedChange={(v) => setIncludeAiInReport(v === true)}
-                      disabled={!canExport || isImpersonating || uniqueTestNames.length === 0}
+                      disabled={!canIncludeAiInPdf || isImpersonating || uniqueTestNames.length === 0}
                       className="mt-0.5"
                     />
                     <span className="space-y-0.5">
@@ -834,11 +834,13 @@ export const ReportsSection = () => {
                       <span className="block text-muted-foreground">
                         {uniqueTestNames.length === 0
                           ? "No tests in range to analyse."
-                          : !canExport
-                            ? "Requires a tier with report export."
-                            : isImpersonating
-                              ? "Disabled in View-As mode."
-                              : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
+                          : !canUseAiCoach
+                            ? "Requires a tier with AI Coach access."
+                            : !canExport
+                              ? "Requires a tier with report export."
+                              : isImpersonating
+                                ? "Disabled in View-As mode."
+                                : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
                       </span>
                     </span>
                   </label>
@@ -969,8 +971,8 @@ export const ReportsSection = () => {
                 </div>
                 <Button
                   onClick={generateAiInsight}
-                  disabled={aiBusy || isImpersonating || !canExport}
-                  title={!canExport ? "AI insights use report export permission" : undefined}
+                  disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                  title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
                 >
                   {aiBusy ? (
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -981,10 +983,10 @@ export const ReportsSection = () => {
                 </Button>
               </div>
 
-              {!canExport && (
+              {!canUseAiCoach && (
                 <p className="text-[11px] text-muted-foreground">
-                  AI Coach insights require a tier with report export. (No dedicated AI permission
-                  exists yet — falls back to <code>can_export_reports</code>.)
+                  AI Coach insights require a tier with <code>can_use_ai_coach</code>. Embedding AI
+                  in PDFs additionally requires <code>can_export_reports</code>.
                 </p>
               )}
 
