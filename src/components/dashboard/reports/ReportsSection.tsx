@@ -621,11 +621,13 @@ export const ReportsSection = () => {
       if (res.error) throw new Error(res.error.message || "AI insight failed");
       const insight = (res.data as any)?.insight;
       const cached = !!(res.data as any)?.cached;
+      const cachedAt = (res.data as any)?.cached_at ?? null;
+      const generatedAt = (res.data as any)?.generated_at ?? null;
       if (!insight) throw new Error("Empty AI response");
       setAiInsight(insight);
       setAiInsightMeta({
         cached,
-        createdAt: cached ? null : new Date().toISOString(),
+        createdAt: cached ? cachedAt : (generatedAt ?? new Date().toISOString()),
         testName: targetTestName,
         testDate: latest.test_date ?? null,
       });
@@ -1126,10 +1128,12 @@ export const ReportsSection = () => {
                         <div className="text-[11px] text-muted-foreground">
                           {aiInsightMeta.testName}
                           {aiInsightMeta.testDate ? ` · test ${aiInsightMeta.testDate}` : ""}
-                          {aiInsightMeta.createdAt
-                            ? ` · ${formatRelative(aiInsightMeta.createdAt)}`
-                            : aiInsightMeta.cached
-                              ? " · reused from cache"
+                          {aiInsightMeta.cached
+                            ? aiInsightMeta.createdAt
+                              ? ` · saved ${formatRelative(aiInsightMeta.createdAt)}`
+                              : " · reused from cache"
+                            : aiInsightMeta.createdAt
+                              ? ` · generated ${formatRelative(aiInsightMeta.createdAt)}`
                               : ""}
                         </div>
                       )}
