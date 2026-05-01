@@ -1212,6 +1212,64 @@ export const ReportsSection = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Cached insight history */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <History className="h-4 w-4" /> Cached AI Insights
+            </SheetTitle>
+            <SheetDescription>
+              {selectedAthlete
+                ? `Recent cached insights for ${selectedAthlete.name}.`
+                : "Recent cached insights for your team."}{" "}
+              Reusing a cached insight does not consume AI credits.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            {historyLoading && (
+              <>
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </>
+            )}
+            {!historyLoading && historyItems && historyItems.length === 0 && (
+              <EmptyState
+                inline
+                compact
+                icon={Sparkles}
+                title="No cached insights"
+                description="Generate an insight to populate the cache."
+              />
+            )}
+            {!historyLoading &&
+              historyItems?.map((item) => (
+                <div
+                  key={item.id}
+                  className="rounded-md border p-3 text-sm space-y-1 hover:bg-muted/40 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-medium truncate">{item.test_name}</div>
+                    <Badge variant="secondary" className="font-normal text-[10px]">
+                      Cached
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {item.test_date ? `Test ${item.test_date} · ` : ""}
+                    Saved {formatRelative(item.created_at)}
+                  </div>
+                  <div className="pt-1">
+                    <Button size="sm" variant="outline" onClick={() => reuseCachedInsight(item)}>
+                      Open / reuse
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Footnote about scope */}
       <p className="text-[11px] text-muted-foreground">
         Recent reports reflect server-side activity for your organisation. Platform-wide report
