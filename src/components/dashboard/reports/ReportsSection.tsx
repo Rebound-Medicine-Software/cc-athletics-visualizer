@@ -211,11 +211,13 @@ const RecentReportsCard = ({
 /* ---------- main section ---------- */
 
 export const ReportsSection = () => {
-  const { teamBranding } = useAuth();
+  const { teamBranding, user } = useAuth();
   const { teamId, isImpersonating, impersonatedTeamName } = useEffectiveTeamId();
   const guardWrite = useViewAsWriteGuard();
   const { hasPermission } = useEffectiveTier();
   const canExport = hasPermission("can_export_reports");
+  const canUseAiCoach = hasPermission("can_use_ai_coach");
+  const canIncludeAiInPdf = canExport && canUseAiCoach;
 
   const { data: testData = [], isLoading: testsLoading, refetch } = useSupabaseData();
   const { data: athletes = [], isLoading: athletesLoading } = useAthletes();
@@ -334,6 +336,7 @@ export const ReportsSection = () => {
       body: {
         team_id: teamId,
         athlete_id: selectedAthlete.id,
+        created_by: user?.id ?? null,
         testMetrics: {
           testName: targetTestName,
           testDate: latest.test_date,
@@ -384,7 +387,7 @@ export const ReportsSection = () => {
       let aiInsightForReport:
         | { testName: string; explanation: string; recommendations: string[]; keyCues: string[] }
         | null = null;
-      if (includeAiInReport) {
+      if (includeAiInReport && canIncludeAiInPdf) {
         try {
           // Reuse the on-screen insight if it matches the chosen test focus
           const focusName = aiTestName || uniqueTestNames[0];
@@ -529,11 +532,11 @@ export const ReportsSection = () => {
   const generateAiInsight = async () => {
     if (!selectedAthlete) return;
     if (guardWrite("Generating AI insight")) return;
-    if (!canExport) {
+    if (!canUseAiCoach) {
       toast({
         title: "Upgrade required",
         description:
-          "AI Coach insights use the same access as report export. Your current tier doesn't include export.",
+          "AI Coach is not included in your current tier. Contact your administrator to enable it.",
         variant: "destructive",
       });
       return;
@@ -579,6 +582,7 @@ export const ReportsSection = () => {
         body: {
           team_id: teamId,
           athlete_id: selectedAthlete.id,
+          created_by: user?.id ?? null,
           testMetrics: {
             testName: targetTestName,
             testDate: latest.test_date,
@@ -813,13 +817,13 @@ export const ReportsSection = () => {
                 {reportKind === "force-plate" && selectedAthlete && (
                   <label
                     className={`flex items-start gap-2 rounded-md border p-2.5 text-xs ${
-                      !canExport ? "opacity-60" : ""
+                      !canIncludeAiInPdf ? "opacity-60" : ""
                     }`}
                   >
                     <Checkbox
-                      checked={includeAiInReport}
+                      checked={includeAiInReport && canIncludeAiInPdf}
                       onCheckedChange={(v) => setIncludeAiInReport(v === true)}
-                      disabled={!canExport || isImpersonating || uniqueTestNames.length === 0}
+                      disabled={!canIncludeAiInPdf || isImpersonating || uniqueTestNames.length === 0}
                       className="mt-0.5"
                     />
                     <span className="space-y-0.5">
@@ -830,11 +834,13 @@ export const ReportsSection = () => {
                       <span className="block text-muted-foreground">
                         {uniqueTestNames.length === 0
                           ? "No tests in range to analyse."
-                          : !canExport
-                            ? "Requires a tier with report export."
-                            : isImpersonating
-                              ? "Disabled in View-As mode."
-                              : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
+                          : !canUseAiCoach
+                            ? "Requires a tier with AI Coach access."
+                            : !canExport
+                              ? "Requires a tier with report export."
+                              : isImpersonating
+                                ? "Disabled in View-As mode."
+                                : `Generates an insight for "${aiTestName || uniqueTestNames[0]}" and appends it as a final page. If AI fails, the report is still produced.`}
                       </span>
                     </span>
                   </label>
@@ -965,8 +971,8 @@ export const ReportsSection = () => {
                 </div>
                 <Button
                   onClick={generateAiInsight}
-                  disabled={aiBusy || isImpersonating || !canExport}
-                  title={!canExport ? "AI insights use report export permission" : undefined}
+                  disabled={aiBusy || isImpersonating || !canUseAiCoach}
+                  title={!canUseAiCoach ? "AI Coach is not included in your tier" : undefined}
                 >
                   {aiBusy ? (
                     <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -977,10 +983,10 @@ export const ReportsSection = () => {
                 </Button>
               </div>
 
-              {!canExport && (
+              {!canUseAiCoach && (
                 <p className="text-[11px] text-muted-foreground">
-                  AI Coach insights require a tier with report export. (No dedicated AI permission
-                  exists yet — falls back to <code>can_export_reports</code>.)
+                  AI Coach insights require a tier with <code>can_use_ai_coach</code>. Embedding AI
+                  in PDFs additionally requires <code>can_export_reports</code>.
                 </p>
               )}
 

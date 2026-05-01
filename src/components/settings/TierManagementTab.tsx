@@ -21,6 +21,7 @@ interface Tier {
   can_edit_programming: boolean;
   can_export_reports: boolean;
   can_adjust_sets_reps: boolean;
+  can_use_ai_coach: boolean;
   max_bookings_per_month: number;
 }
 
@@ -41,6 +42,7 @@ export const TierManagementTab = () => {
     can_edit_programming: false,
     can_export_reports: false,
     can_adjust_sets_reps: false,
+    can_use_ai_coach: false,
     max_bookings_per_month: 0
   });
 
@@ -78,6 +80,7 @@ export const TierManagementTab = () => {
       can_edit_programming: tier.can_edit_programming,
       can_export_reports: tier.can_export_reports,
       can_adjust_sets_reps: tier.can_adjust_sets_reps,
+      can_use_ai_coach: tier.can_use_ai_coach ?? false,
       max_bookings_per_month: tier.max_bookings_per_month
     });
     setIsEditModalOpen(true);
@@ -148,6 +151,7 @@ export const TierManagementTab = () => {
                 <TableHead>Analytics</TableHead>
                 <TableHead>Programming</TableHead>
                 <TableHead>Reports</TableHead>
+                <TableHead>AI Coach</TableHead>
                 <TableHead>Adjust Sets/Reps</TableHead>
                 <TableHead>Max Bookings</TableHead>
                 <TableHead>Actions</TableHead>
@@ -161,6 +165,7 @@ export const TierManagementTab = () => {
                   <TableCell>{tier.can_view_analytics ? '✓' : '✗'}</TableCell>
                   <TableCell>{tier.can_edit_programming ? '✓' : '✗'}</TableCell>
                   <TableCell>{tier.can_export_reports ? '✓' : '✗'}</TableCell>
+                  <TableCell>{tier.can_use_ai_coach ? '✓' : '✗'}</TableCell>
                   <TableCell>{tier.can_adjust_sets_reps ? '✓' : '✗'}</TableCell>
                   <TableCell>{tier.max_bookings_per_month}</TableCell>
                   <TableCell>
@@ -242,6 +247,15 @@ export const TierManagementTab = () => {
                     onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, can_export_reports: checked }))}
                   />
                   <Label htmlFor="reports">Can Export Reports</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="ai-coach"
+                    checked={editForm.can_use_ai_coach}
+                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, can_use_ai_coach: checked }))}
+                  />
+                  <Label htmlFor="ai-coach">Can Use AI Coach</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
