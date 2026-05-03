@@ -221,7 +221,7 @@ const Auth = () => {
       if (user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, user_id, email, role, role_title, full_name, team_id, setup_completed, created_by')
           .eq('user_id', user.id)
           .single();
         if (!profile) { await supabase.auth.signOut(); setError("Your account profile has been removed. Please contact your organization or sign up again."); return; }
