@@ -23,15 +23,11 @@ export const ApiKeysTab = () => {
         // First try to load from database
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('api_key')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          if (profile?.api_key) {
-            setCurrentApiKey(profile.api_key);
-            setApiKey(profile.api_key);
+          const { data: apiKeyValue } = await supabase.rpc('get_my_api_key');
+
+          if (apiKeyValue) {
+            setCurrentApiKey(apiKeyValue as string);
+            setApiKey(apiKeyValue as string);
             setApiKeyValidated(true);
             return;
           }

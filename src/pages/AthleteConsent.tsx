@@ -32,25 +32,24 @@ const AthleteConsent = () => {
 
   const validateToken = async () => {
     try {
-      const { data, error } = await supabase
-        .from("athletes")
-        .select("name, consent_status")
-        .eq("consent_token", token)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("get_athlete_by_consent_token", {
+        _token: token as string,
+      });
 
       if (error) throw error;
 
-      if (!data) {
+      const row = Array.isArray(data) ? data[0] : null;
+      if (!row) {
         setState("invalid");
         return;
       }
 
-      if (data.consent_status === "confirmed") {
+      if (row.consent_status === "confirmed") {
         setState("already_confirmed");
         return;
       }
 
-      setAthleteName(data.name);
+      setAthleteName(row.name);
       setState("ready");
     } catch (err) {
       console.error("Token validation error:", err);
@@ -64,17 +63,16 @@ const AthleteConsent = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("athletes")
-        .update({
-          consent_status: "confirmed",
-          consent_signed_name: signedName.trim(),
-          consent_signed_at: new Date().toISOString(),
-        })
-        .eq("consent_token", token)
-        .eq("consent_status", "pending");
+      const { data, error } = await supabase.rpc("submit_athlete_consent", {
+        _token: token as string,
+        _signed_name: signedName.trim(),
+      });
 
       if (error) throw error;
+      if (!data) {
+        setState("error");
+        return;
+      }
       setState("submitted");
     } catch (err) {
       console.error("Consent submission error:", err);
