@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SectionHeader } from '../dashboard/SectionHeader';
-import { ComingSoonSection } from '../dashboard/ComingSoonSection';
 import { ExerciseLibrary } from './exerciseLibrary/ExerciseLibrary';
 import { TemplatesTab } from './templates/TemplatesTab';
+import { AssignmentsTab } from './assignments/AssignmentsTab';
 
 export const ProgrammingSection = () => {
   return (
