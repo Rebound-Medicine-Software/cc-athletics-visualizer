@@ -10,6 +10,7 @@ import { BookingCalendar } from "./BookingCalendar";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { HomeOverview } from "./home/HomeOverview";
 import { ComingSoonSection } from "./ComingSoonSection";
+import { ProgrammingSection } from "@/components/programming/ProgrammingSection";
 import { ReportsSection } from "./reports/ReportsSection";
 import { SectionHeader } from "./SectionHeader";
 import { EmptyState } from "./EmptyState";
@@ -129,20 +130,7 @@ export const DashboardContent = ({
       case "reports":
         return <ReportsSection />;
       case "programming":
-        return (
-          <ComingSoonSection
-            title="Exercise Programming"
-            description="Build, assign, and track exercise programs directly from your dashboard."
-            eta="Q4 2026"
-            tierGated
-            bullets={[
-              "Build reusable exercise programs",
-              "Assign templates to athletes",
-              "Track adherence over time",
-              "Link programs to test results",
-            ]}
-          />
-        );
+        return <ProgrammingSection />;
       case "payment":
       case "payment-packages":
         return (
