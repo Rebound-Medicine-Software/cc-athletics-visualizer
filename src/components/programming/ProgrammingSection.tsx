@@ -24,17 +24,7 @@ export const ProgrammingSection = () => {
           <TemplatesTab />
         </TabsContent>
         <TabsContent value="assignments">
-          <ComingSoonSection
-            title="Athlete Assignments"
-            description="Assign templates to athletes with per-athlete overrides and adherence tracking."
-            eta="Following phase"
-            bullets={[
-              'Assign templates to athletes',
-              'Per-athlete sets/reps overrides',
-              'Track adherence and completion',
-              'Link results to test outcomes',
-            ]}
-          />
+          <AssignmentsTab />
         </TabsContent>
       </Tabs>
     </div>
