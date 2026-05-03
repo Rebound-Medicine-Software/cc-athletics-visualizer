@@ -1,8 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SectionHeader } from '../dashboard/SectionHeader';
-import { ComingSoonSection } from '../dashboard/ComingSoonSection';
 import { ExerciseLibrary } from './exerciseLibrary/ExerciseLibrary';
 import { TemplatesTab } from './templates/TemplatesTab';
+import { AssignmentsTab } from './assignments/AssignmentsTab';
 
 export const ProgrammingSection = () => {
   return (
@@ -24,17 +24,7 @@ export const ProgrammingSection = () => {
           <TemplatesTab />
         </TabsContent>
         <TabsContent value="assignments">
-          <ComingSoonSection
-            title="Athlete Assignments"
-            description="Assign templates to athletes with per-athlete overrides and adherence tracking."
-            eta="Following phase"
-            bullets={[
-              'Assign templates to athletes',
-              'Per-athlete sets/reps overrides',
-              'Track adherence and completion',
-              'Link results to test outcomes',
-            ]}
-          />
+          <AssignmentsTab />
         </TabsContent>
       </Tabs>
     </div>
