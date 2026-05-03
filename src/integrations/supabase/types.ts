@@ -50,6 +50,56 @@ export type Database = {
         }
         Relationships: []
       }
+      athlete_program_assignments: {
+        Row: {
+          assigned_by: string | null
+          athlete_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          override_payload: Json
+          start_date: string
+          status: string
+          team_id: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          athlete_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          override_payload?: Json
+          start_date?: string
+          status?: string
+          team_id: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          athlete_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          override_payload?: Json
+          start_date?: string
+          status?: string
+          team_id?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "athlete_program_assignments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "programming_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       athletes: {
         Row: {
           activity_status: string | null
@@ -448,6 +498,54 @@ export type Database = {
           Purpose?: string | null
           test_name?: string
           updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      exercises: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          equipment: string[]
+          id: string
+          instructions: string | null
+          is_archived: boolean
+          name: string
+          primary_muscles: string[]
+          team_id: string
+          updated_at: string
+          updated_by: string | null
+          video_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment?: string[]
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean
+          name: string
+          primary_muscles?: string[]
+          team_id: string
+          updated_at?: string
+          updated_by?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment?: string[]
+          id?: string
+          instructions?: string | null
+          is_archived?: boolean
+          name?: string
+          primary_muscles?: string[]
+          team_id?: string
+          updated_at?: string
+          updated_by?: string | null
           video_url?: string | null
         }
         Relationships: []
@@ -1056,6 +1154,218 @@ export type Database = {
           },
         ]
       }
+      programme_completion_logs: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          id: string
+          load_used: string | null
+          logged_by: string | null
+          notes: string | null
+          performed_on: string
+          programming_exercise_id: string | null
+          reps_completed: string | null
+          rpe: number | null
+          sets_completed: number | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          id?: string
+          load_used?: string | null
+          logged_by?: string | null
+          notes?: string | null
+          performed_on?: string
+          programming_exercise_id?: string | null
+          reps_completed?: string | null
+          rpe?: number | null
+          sets_completed?: number | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          load_used?: string | null
+          logged_by?: string | null
+          notes?: string | null
+          performed_on?: string
+          programming_exercise_id?: string | null
+          reps_completed?: string | null
+          rpe?: number | null
+          sets_completed?: number | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_completion_logs_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_program_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_completion_logs_programming_exercise_id_fkey"
+            columns: ["programming_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "programming_exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programming_blocks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          position: number
+          template_id: string
+          updated_at: string
+          week_number: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          position?: number
+          template_id: string
+          updated_at?: string
+          week_number?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          position?: number
+          template_id?: string
+          updated_at?: string
+          week_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programming_blocks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "programming_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programming_exercises: {
+        Row: {
+          block_id: string
+          created_at: string
+          exercise_id: string | null
+          id: string
+          load: string | null
+          notes: string | null
+          position: number
+          reps: string | null
+          rest_seconds: number | null
+          rpe: number | null
+          sets: number | null
+          tempo: string | null
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          exercise_id?: string | null
+          id?: string
+          load?: string | null
+          notes?: string | null
+          position?: number
+          reps?: string | null
+          rest_seconds?: number | null
+          rpe?: number | null
+          sets?: number | null
+          tempo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          exercise_id?: string | null
+          id?: string
+          load?: string | null
+          notes?: string | null
+          position?: number
+          reps?: string | null
+          rest_seconds?: number | null
+          rpe?: number | null
+          sets?: number | null
+          tempo?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programming_exercises_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "programming_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programming_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programming_templates: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_weeks: number | null
+          goal: string | null
+          id: string
+          is_published: boolean
+          name: string
+          team_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_weeks?: number | null
+          goal?: string | null
+          id?: string
+          is_published?: boolean
+          name: string
+          team_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_weeks?: number | null
+          goal?: string | null
+          id?: string
+          is_published?: boolean
+          name?: string
+          team_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       "Region Testing": {
         Row: {
           address: string | null
@@ -1534,6 +1844,18 @@ export type Database = {
           p_team_uuid: string
         }
         Returns: Json
+      }
+      can_access_program_assignment: {
+        Args: { _assignment_id: string }
+        Returns: boolean
+      }
+      can_access_programming_block: {
+        Args: { _block_id: string }
+        Returns: boolean
+      }
+      can_access_programming_template: {
+        Args: { _template_id: string }
+        Returns: boolean
       }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       count_active_webhook_endpoints: { Args: never; Returns: number }
