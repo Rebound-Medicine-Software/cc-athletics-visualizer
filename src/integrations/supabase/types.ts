@@ -1572,6 +1572,13 @@ export type Database = {
         Returns: boolean
       }
       get_analytics_warehouse_overview: { Args: never; Returns: Json }
+      get_athlete_by_consent_token: {
+        Args: { _token: string }
+        Returns: {
+          consent_status: string
+          name: string
+        }[]
+      }
       get_athletes_overview: { Args: never; Returns: Json }
       get_audit_event_detail: { Args: { event_id_in: string }; Returns: Json }
       get_audit_overview: { Args: never; Returns: Json }
@@ -1648,6 +1655,7 @@ export type Database = {
         }[]
       }
       get_live_testing_overview: { Args: never; Returns: Json }
+      get_my_api_key: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
       get_notification_campaign_detail: {
@@ -2108,6 +2116,17 @@ export type Database = {
         Args: { p_endpoint_id: string; p_reason?: string; p_success: boolean }
         Returns: undefined
       }
+      org_admin_list_team_credentials: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          password_hash: string
+          role: string
+          user_id: string
+        }[]
+      }
       preview_notification_audience: {
         Args: { p_target_type: string; p_target_value?: string }
         Returns: {
@@ -2165,6 +2184,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_athlete_consent: {
+        Args: { _signed_name: string; _token: string }
+        Returns: boolean
       }
       suspend_organisation: {
         Args: { reason: string; team_uuid: string }
