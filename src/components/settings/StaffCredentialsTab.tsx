@@ -82,15 +82,28 @@ export const StaffCredentialsTab = () => {
       }
 
       // Fetch staff users from the same team (including both practitioner and staff roles)
+      // NOTE: api_key / password_hash are no longer readable via direct SELECT;
+      // password_hash is fetched via SECURITY DEFINER RPC (org-admin scoped) and merged.
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, email, full_name, role, role_title, qualifications, avatar_url, team_id, tier_id, subscription_status, created_at, updated_at, setup_completed, created_by')
         .eq('team_id', effectiveTeamId)
         .in('role', ['practitioner', 'staff', 'clinician'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setUsers(data || []);
+
+      const { data: creds } = await supabase.rpc('org_admin_list_team_credentials');
+      const credMap = new Map<string, string | null>();
+      (creds as Array<{ id: string; password_hash: string | null }> | null)?.forEach((c) => {
+        credMap.set(c.id, c.password_hash);
+      });
+
+      const merged = (data || []).map((u: any) => ({
+        ...u,
+        password_hash: credMap.get(u.id) ?? null,
+      }));
+      setUsers(merged);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast.error("Failed to load staff users");
