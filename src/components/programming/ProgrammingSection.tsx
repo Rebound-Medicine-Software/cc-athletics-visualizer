@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SectionHeader } from '../dashboard/SectionHeader';
 import { ComingSoonSection } from '../dashboard/ComingSoonSection';
 import { ExerciseLibrary } from './exerciseLibrary/ExerciseLibrary';
+import { TemplatesTab } from './templates/TemplatesTab';
 
 export const ProgrammingSection = () => {
   return (
@@ -20,17 +21,7 @@ export const ProgrammingSection = () => {
           <ExerciseLibrary />
         </TabsContent>
         <TabsContent value="templates">
-          <ComingSoonSection
-            title="Programme Templates"
-            description="Design reusable training programmes with phases, blocks, and prescriptions."
-            eta="Next phase"
-            bullets={[
-              'Multi-week template builder',
-              'Drag-and-drop blocks & exercises',
-              'Sets, reps, load, tempo, RPE',
-              'Publish and version templates',
-            ]}
-          />
+          <TemplatesTab />
         </TabsContent>
         <TabsContent value="assignments">
           <ComingSoonSection
