@@ -140,6 +140,21 @@ serve(async (req) => {
       })
     }
 
+    // Normalize CC creation_date (epoch ms | seconds | ISO string) to YYYY-MM-DD or null.
+    const toIsoDate = (v: any): string | null => {
+      if (v === null || v === undefined || v === '') return null
+      let d: Date | null = null
+      if (typeof v === 'number') {
+        // Treat >1e12 as ms, otherwise seconds.
+        d = new Date(v > 1e12 ? v : v * 1000)
+      } else if (typeof v === 'string') {
+        const n = Number(v)
+        d = !isNaN(n) && v.trim() !== '' ? new Date(n > 1e12 ? n : n * 1000) : new Date(v)
+      }
+      if (!d || isNaN(d.getTime())) return null
+      return d.toISOString().slice(0, 10)
+    }
+
     // Store teams in database (upsert each external team into our teams table)
     console.log(`Storing ${teamsData.teams.length} teams...`)
     for (const team of teamsData.teams) {
@@ -148,7 +163,7 @@ serve(async (req) => {
         .upsert({
           cc_team_id: team.id,
           name: team.name,
-          creation_date: team.creation_date,
+          creation_date: toIsoDate(team.creation_date),
         }, {
           onConflict: 'cc_team_id'
         })
