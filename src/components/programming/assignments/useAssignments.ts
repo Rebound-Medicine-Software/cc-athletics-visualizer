@@ -324,7 +324,7 @@ export const useUpdateAssignmentOverrides = () => {
       const { error } = await supabase
         .from('athlete_program_assignments')
         .update({
-          override_payload: input.overridePayload,
+          override_payload: input.overridePayload as any,
           updated_at: new Date().toISOString(),
         })
         .eq('id', input.id);
