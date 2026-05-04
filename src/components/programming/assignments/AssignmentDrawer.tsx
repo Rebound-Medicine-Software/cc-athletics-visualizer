@@ -11,16 +11,29 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { Pause, Play, CheckCircle2, XCircle, Lock } from 'lucide-react';
+import {
+  Pause,
+  Play,
+  CheckCircle2,
+  XCircle,
+  Lock,
+  Sliders,
+  ClipboardCheck,
+  Trash2,
+  AlertCircle,
+} from 'lucide-react';
 import {
   useAssignment,
   useTemplateStructure,
   useCompletionSummary,
   useUpdateAssignmentStatus,
+  useDeleteCompletionLog,
 } from './useAssignments';
 import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
 import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
-import type { AssignmentStatus } from './types';
+import { OverrideEditorDialog } from './OverrideEditorDialog';
+import { LogCompletionDialog } from './LogCompletionDialog';
+import type { AssignmentStatus, ExerciseOverride } from './types';
 
 interface Props {
   assignmentId: string | null;
@@ -36,16 +49,32 @@ const statusVariant: Record<AssignmentStatus, string> = {
 };
 
 export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) => {
-  const { data: assignment, isLoading } = useAssignment(assignmentId);
+  const {
+    data: assignment,
+    isLoading,
+    error: assignmentError,
+  } = useAssignment(assignmentId);
   const templateId = assignment?.template_id ?? null;
-  const { data: structure, isLoading: sLoading } = useTemplateStructure(templateId);
-  const { data: logs = [] } = useCompletionSummary(assignmentId);
+  const {
+    data: structure,
+    isLoading: sLoading,
+    error: structureError,
+  } = useTemplateStructure(templateId);
+  const {
+    data: logs = [],
+    isLoading: logsLoading,
+    error: logsError,
+  } = useCompletionSummary(assignmentId);
   const statusMut = useUpdateAssignmentStatus();
+  const deleteLogMut = useDeleteCompletionLog();
 
   const { hasPermission } = useEffectiveTier();
   const canEdit = hasPermission('can_edit_programming');
-  const canOverride = hasPermission('can_adjust_sets_reps');
+  const canOverride = hasPermission('can_adjust_sets_reps') || canEdit;
   const guardWrite = useViewAsWriteGuard();
+
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
 
   const exercisesByBlock = useMemo(() => {
     const map: Record<string, any[]> = {};
@@ -55,13 +84,35 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
     return map;
   }, [structure]);
 
+  const overrides: Record<string, ExerciseOverride> =
+    (assignment?.override_payload as any) ?? {};
+  const overrideCount = Object.keys(overrides).length;
+
   const sessionsCount = logs.length;
   const lastSession = logs[0]?.performed_on as string | undefined;
+  const uniqueDays = useMemo(
+    () => new Set(logs.map((l: any) => l.performed_on)).size,
+    [logs]
+  );
 
   const setStatus = (next: AssignmentStatus) => {
     if (!assignment) return;
     if (guardWrite('Updating assignment')) return;
     statusMut.mutate({ id: assignment.id, status: next, athleteId: assignment.athlete_id });
+  };
+
+  const removeLog = (logId: string) => {
+    if (!assignment) return;
+    if (guardWrite('Removing log')) return;
+    deleteLogMut.mutate({ id: logId, assignmentId: assignment.id });
+  };
+
+  const exerciseLabel = (programmingExerciseId: string | null | undefined) => {
+    if (!programmingExerciseId) return 'Whole session';
+    const ex = (structure?.exercises ?? []).find((e: any) => e.id === programmingExerciseId);
+    if (!ex) return 'Exercise';
+    const lib = ex.exercise_id ? structure?.library[ex.exercise_id] : null;
+    return lib?.name ?? 'Custom exercise';
   };
 
   return (
@@ -70,14 +121,23 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
         <SheetHeader>
           <SheetTitle>Assignment details</SheetTitle>
           <SheetDescription>
-            Read-only view of the assigned programme structure and athlete progress.
+            Manage overrides, log completion, and review programme structure.
           </SheetDescription>
         </SheetHeader>
 
-        {isLoading || !assignment ? (
+        {assignmentError ? (
+          <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+            <div>
+              <div className="font-medium">Could not load assignment</div>
+              <div className="text-muted-foreground">{(assignmentError as any).message}</div>
+            </div>
+          </div>
+        ) : isLoading || !assignment ? (
           <div className="space-y-3 mt-4">
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-40 w-full" />
+            <Skeleton className="h-24 w-full" />
           </div>
         ) : (
           <div className="space-y-5 mt-4">
@@ -105,17 +165,47 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
                 </div>
                 <div>
                   <div className="text-muted-foreground text-xs">End</div>
-                  <div>{assignment.end_date ? format(parseISO(assignment.end_date), 'PP') : '—'}</div>
+                  <div>
+                    {assignment.end_date ? format(parseISO(assignment.end_date), 'PP') : '—'}
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Status actions */}
+            {/* Action bar */}
             <div className="flex flex-wrap gap-2">
-              {!canEdit && (
+              {!canEdit && !canOverride && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
                   <Lock className="h-3 w-3" /> Read-only (tier)
                 </div>
+              )}
+              {canOverride && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (guardWrite('Editing overrides')) return;
+                    setOverrideOpen(true);
+                  }}
+                >
+                  <Sliders className="h-4 w-4 mr-1" /> Overrides
+                  {overrideCount > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-[10px]">
+                      {overrideCount}
+                    </Badge>
+                  )}
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (guardWrite('Logging completion')) return;
+                    setLogOpen(true);
+                  }}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-1" /> Log session
+                </Button>
               )}
               {canEdit && assignment.status === 'active' && (
                 <Button size="sm" variant="outline" onClick={() => setStatus('paused')}>
@@ -161,10 +251,14 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
             </div>
 
             {/* Adherence */}
-            <div className="rounded-lg border p-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg border p-4 grid grid-cols-3 gap-3 text-sm">
               <div>
                 <div className="text-muted-foreground text-xs">Sessions logged</div>
                 <div className="font-semibold">{sessionsCount}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground text-xs">Distinct days</div>
+                <div className="font-semibold">{uniqueDays}</div>
               </div>
               <div>
                 <div className="text-muted-foreground text-xs">Last session</div>
@@ -174,13 +268,96 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
               </div>
             </div>
 
-            {/* Blocks (read-only) */}
+            {/* Completion history */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm font-medium">Recent completions</div>
+                {logs.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Showing latest {Math.min(logs.length, 50)}
+                  </span>
+                )}
+              </div>
+              {logsError ? (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                  <div className="text-muted-foreground">
+                    {(logsError as any).message ?? 'Failed to load completion logs.'}
+                  </div>
+                </div>
+              ) : logsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground text-center">
+                  No sessions logged yet.
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {logs.map((l: any) => (
+                    <div
+                      key={l.id}
+                      className="rounded-md border px-3 py-2 text-sm flex items-start justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium">
+                            {format(parseISO(l.performed_on), 'PP')}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            {exerciseLabel(l.programming_exercise_id)}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {[
+                            l.sets_completed != null
+                              ? `${l.sets_completed}×${l.reps_completed ?? '–'}`
+                              : null,
+                            l.load_used,
+                            l.rpe != null ? `@${l.rpe}` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || '—'}
+                        </div>
+                        {l.notes && (
+                          <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                            {l.notes}
+                          </div>
+                        )}
+                      </div>
+                      {canEdit && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => removeLog(l.id)}
+                          aria-label="Remove log"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Blocks (read-only with override badges) */}
             <div>
               <div className="text-sm font-medium mb-2">Programme structure</div>
-              {sLoading ? (
+              {structureError ? (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+                  <div className="text-muted-foreground">
+                    {(structureError as any).message ?? 'Failed to load template structure.'}
+                  </div>
+                </div>
+              ) : sLoading ? (
                 <Skeleton className="h-24 w-full" />
               ) : (structure?.blocks ?? []).length === 0 ? (
-                <div className="text-sm text-muted-foreground">
+                <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground text-center">
                   This template has no blocks yet.
                 </div>
               ) : (
@@ -204,17 +381,34 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
                         )}
                         {(exercisesByBlock[b.id] ?? []).map((ex: any) => {
                           const lib = ex.exercise_id ? structure!.library[ex.exercise_id] : null;
+                          const ov = overrides[ex.id];
+                          const merged = {
+                            sets: ov?.sets ?? ex.sets,
+                            reps: ov?.reps ?? ex.reps,
+                            load: ov?.load ?? ex.load,
+                            rpe: ov?.rpe ?? ex.rpe,
+                          };
                           return (
                             <div
                               key={ex.id}
                               className="flex items-center justify-between text-sm rounded bg-muted/40 px-2 py-1"
                             >
-                              <span>{lib?.name ?? 'Custom exercise'}</span>
+                              <span className="flex items-center gap-1.5">
+                                {lib?.name ?? 'Custom exercise'}
+                                {ov && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] h-4 px-1 border-amber-500/40 text-amber-700 dark:text-amber-400"
+                                  >
+                                    overridden
+                                  </Badge>
+                                )}
+                              </span>
                               <span className="text-xs text-muted-foreground">
                                 {[
-                                  ex.sets ? `${ex.sets}×${ex.reps ?? '–'}` : null,
-                                  ex.load,
-                                  ex.rpe ? `@${ex.rpe}` : null,
+                                  merged.sets ? `${merged.sets}×${merged.reps ?? '–'}` : null,
+                                  merged.load,
+                                  merged.rpe ? `@${merged.rpe}` : null,
                                 ]
                                   .filter(Boolean)
                                   .join(' · ')}
@@ -229,14 +423,37 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
               )}
             </div>
 
-            {/* Override placeholder */}
-            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-              <div className="font-medium text-foreground mb-1">Per-athlete overrides</div>
-              {canOverride
-                ? 'Override editor coming in PGM6 — your tier allows sets/reps adjustments.'
-                : 'Per-athlete overrides require the can_adjust_sets_reps permission.'}
-            </div>
+            {!canOverride && (
+              <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
+                Per-athlete overrides require <code>can_adjust_sets_reps</code> or{' '}
+                <code>can_edit_programming</code>.
+              </div>
+            )}
           </div>
+        )}
+
+        {assignment && (
+          <>
+            <OverrideEditorDialog
+              open={overrideOpen}
+              onOpenChange={setOverrideOpen}
+              assignmentId={assignment.id}
+              athleteId={assignment.athlete_id}
+              initialOverrides={overrides}
+              blocks={structure?.blocks ?? []}
+              exercisesByBlock={exercisesByBlock}
+              library={structure?.library ?? {}}
+            />
+            <LogCompletionDialog
+              open={logOpen}
+              onOpenChange={setLogOpen}
+              assignmentId={assignment.id}
+              athleteId={assignment.athlete_id}
+              blocks={structure?.blocks ?? []}
+              exercisesByBlock={exercisesByBlock}
+              library={structure?.library ?? {}}
+            />
+          </>
         )}
       </SheetContent>
     </Sheet>

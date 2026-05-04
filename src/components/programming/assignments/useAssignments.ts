@@ -3,7 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { Assignment, AssignmentRow, AssignmentStatus } from './types';
+import type {
+  Assignment,
+  AssignmentRow,
+  AssignmentStatus,
+  ExerciseOverride,
+  CompletionLogInput,
+} from './types';
 
 const logActivity = async (params: {
   teamId: string | null;
@@ -175,9 +181,10 @@ export const useCompletionSummary = (assignmentId: string | null) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('programme_completion_logs')
-        .select('id, performed_on, sets_completed, reps_completed, rpe')
+        .select('id, performed_on, programming_exercise_id, sets_completed, reps_completed, load_used, rpe, notes, logged_by, created_at')
         .eq('assignment_id', assignmentId!)
         .order('performed_on', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50);
       if (error) throw error;
       return data ?? [];
@@ -299,5 +306,119 @@ export const useUpdateAssignmentDates = () => {
       toast.success('Dates updated');
     },
     onError: (err: any) => toast.error(err.message ?? 'Failed to update dates'),
+  });
+};
+
+/* ---------------- Overrides ---------------- */
+
+export const useUpdateAssignmentOverrides = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      athleteId?: string | null;
+      overridePayload: Record<string, ExerciseOverride>;
+    }) => {
+      const { error } = await supabase
+        .from('athlete_program_assignments')
+        .update({
+          override_payload: input.overridePayload as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.id);
+      if (error) throw error;
+      await logActivity({
+        teamId,
+        userId: user?.id ?? null,
+        athleteId: input.athleteId ?? null,
+        eventType: 'programme_assignment_overrides_updated',
+        metadata: {
+          assignment_id: input.id,
+          override_count: Object.keys(input.overridePayload ?? {}).length,
+        },
+      });
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['programme-assignments'] });
+      qc.invalidateQueries({ queryKey: ['programme-assignment', vars.id] });
+      toast.success('Overrides saved');
+    },
+    onError: (err: any) => toast.error(err.message ?? 'Failed to save overrides'),
+  });
+};
+
+/* ---------------- Completion logging ---------------- */
+
+export const useLogCompletion = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: CompletionLogInput & { athleteId?: string | null }) => {
+      if (!teamId) throw new Error('No effective team');
+      const { data, error } = await supabase
+        .from('programme_completion_logs')
+        .insert({
+          team_id: teamId,
+          assignment_id: input.assignmentId,
+          programming_exercise_id: input.programmingExerciseId ?? null,
+          performed_on: input.performedOn,
+          sets_completed: input.setsCompleted ?? null,
+          reps_completed: input.repsCompleted ?? null,
+          load_used: input.loadUsed ?? null,
+          rpe: input.rpe ?? null,
+          notes: input.notes ?? null,
+          logged_by: user?.id ?? null,
+        })
+        .select('id')
+        .maybeSingle();
+      if (error) throw error;
+      await logActivity({
+        teamId,
+        userId: user?.id ?? null,
+        athleteId: input.athleteId ?? null,
+        eventType: 'programme_completion_logged',
+        metadata: {
+          assignment_id: input.assignmentId,
+          programming_exercise_id: input.programmingExerciseId ?? null,
+          performed_on: input.performedOn,
+          log_id: data?.id ?? null,
+        },
+      });
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['assignment-completion', vars.assignmentId] });
+      toast.success('Session logged');
+    },
+    onError: (err: any) => toast.error(err.message ?? 'Failed to log session'),
+  });
+};
+
+export const useDeleteCompletionLog = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: { id: string; assignmentId: string }) => {
+      const { error } = await supabase
+        .from('programme_completion_logs')
+        .delete()
+        .eq('id', input.id);
+      if (error) throw error;
+      await logActivity({
+        teamId,
+        userId: user?.id ?? null,
+        eventType: 'programme_completion_log_deleted',
+        metadata: { log_id: input.id, assignment_id: input.assignmentId },
+      });
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['assignment-completion', vars.assignmentId] });
+      toast.success('Log removed');
+    },
+    onError: (err: any) => toast.error(err.message ?? 'Failed to remove log'),
   });
 };
