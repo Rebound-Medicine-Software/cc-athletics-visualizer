@@ -2120,6 +2120,10 @@ export type Database = {
       }
       is_super_admin: { Args: never; Returns: boolean }
       is_super_admin_owner: { Args: { _user_id: string }; Returns: boolean }
+      link_athlete_to_user: {
+        Args: { athlete_uuid: string; user_uuid: string }
+        Returns: string
+      }
       list_athletes_global: {
         Args: {
           filter_activity?: string
@@ -2404,6 +2408,22 @@ export type Database = {
           test_name: string
         }[]
       }
+      list_unlinked_athletes_with_profile_matches: {
+        Args: { team_uuid: string }
+        Returns: {
+          athlete_email: string
+          athlete_id: string
+          athlete_last_test_at: string
+          athlete_name: string
+          match_count: number
+          match_email: string
+          match_full_name: string
+          match_profile_id: string
+          match_role: string
+          match_setup_completed: boolean
+          match_user_id: string
+        }[]
+      }
       list_webhook_endpoints: {
         Args: never
         Returns: {
@@ -2543,6 +2563,10 @@ export type Database = {
       toggle_webhook_endpoint: {
         Args: { p_endpoint_id: string; p_is_active: boolean }
         Returns: boolean
+      }
+      unlink_athlete_user: {
+        Args: { athlete_uuid: string; reason: string }
+        Returns: string
       }
       update_default_branding_settings: {
         Args: { p_value: Json }
