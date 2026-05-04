@@ -193,7 +193,9 @@ export const AddAthleteFromApiDialog = ({
           weight_kg: a.weight_kg ?? null,
         }));
 
-      const { error } = await supabase.from("athletes").insert(toInsert);
+      const { error } = await supabase
+        .from("athletes")
+        .upsert(toInsert, { onConflict: "team_id,cc_athlete_id", ignoreDuplicates: true });
       if (error) throw error;
 
       toast.success(`${toInsert.length} athlete(s) added successfully`);
