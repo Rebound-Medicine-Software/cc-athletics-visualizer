@@ -3,7 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { Assignment, AssignmentRow, AssignmentStatus } from './types';
+import type {
+  Assignment,
+  AssignmentRow,
+  AssignmentStatus,
+  ExerciseOverride,
+  CompletionLogInput,
+} from './types';
 
 const logActivity = async (params: {
   teamId: string | null;
