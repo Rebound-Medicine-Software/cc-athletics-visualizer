@@ -140,10 +140,10 @@ serve(async (req) => {
       })
     }
 
-    // Store teams in database
-    console.log('Storing teams...')
+    // Store teams in database (upsert each external team into our teams table)
+    console.log(`Storing ${teamsData.teams.length} teams...`)
     for (const team of teamsData.teams) {
-      await supabaseClient
+      const { error: teamUpsertErr } = await supabaseClient
         .from('teams')
         .upsert({
           cc_team_id: team.id,
@@ -152,17 +152,33 @@ serve(async (req) => {
         }, {
           onConflict: 'cc_team_id'
         })
+      if (teamUpsertErr) {
+        console.error('Team upsert failed', { cc_team_id: team.id, error: teamUpsertErr.message })
+      }
     }
 
-    // Create team mapping
-    const teamMap = new Map()
-    teamsData.teams.forEach(team => {
-      teamMap.set(team.id, team.name)
+    // Build cc_team_id -> internal team_id map (REQUIRED so athletes are linked
+    // to the correct team and RLS / multi-org filtering works downstream).
+    const ccTeamIds = teamsData.teams.map((t: any) => t.id)
+    const { data: dbTeams, error: dbTeamsErr } = await supabaseClient
+      .from('teams')
+      .select('id, cc_team_id, name')
+      .in('cc_team_id', ccTeamIds)
+    if (dbTeamsErr) {
+      console.error('Failed to load internal team ids', dbTeamsErr.message)
+    }
+    const ccToInternalTeamId = new Map<string, string>()
+    const teamMap = new Map<string, string>() // cc_team_id -> name
+    ;(dbTeams || []).forEach((t: any) => {
+      ccToInternalTeamId.set(t.cc_team_id, t.id)
+    })
+    teamsData.teams.forEach((t: any) => {
+      teamMap.set(t.id, t.name)
     })
 
-    // Process and store athletes and test data
-    const allAthletes = new Set()
-    const allTestData = []
+    // Process and store athletes and test data — dedupe by cc_athlete_id (NOT by object ref).
+    const allAthletes = new Map<string, any>()
+    const allTestData: any[] = []
 
     // Helper function to extract demographics
     const extractDemographics = (athlete) => {
@@ -197,10 +213,11 @@ serve(async (req) => {
     for (const athlete of jumpData.athletes) {
       const demographics = extractDemographics(athlete)
       
-      allAthletes.add({
+      allAthletes.set(athlete.id, {
         cc_athlete_id: athlete.id,
         name: athlete.name,
         cc_team_id: athlete.team_id,
+        team_id: ccToInternalTeamId.get(athlete.team_id) ?? null,
         ...demographics,
       })
 
@@ -233,10 +250,11 @@ serve(async (req) => {
     for (const athlete of isometricData.athletes) {
       const demographics = extractDemographics(athlete)
       
-      allAthletes.add({
+      allAthletes.set(athlete.id, {
         cc_athlete_id: athlete.id,
         name: athlete.name,
         cc_team_id: athlete.team_id,
+        team_id: ccToInternalTeamId.get(athlete.team_id) ?? null,
         ...demographics,
       })
 
@@ -264,10 +282,11 @@ serve(async (req) => {
     for (const athlete of pogoData.athletes) {
       const demographics = extractDemographics(athlete)
       
-      allAthletes.add({
+      allAthletes.set(athlete.id, {
         cc_athlete_id: athlete.id,
         name: athlete.name,
         cc_team_id: athlete.team_id,
+        team_id: ccToInternalTeamId.get(athlete.team_id) ?? null,
         ...demographics,
       })
 
@@ -341,15 +360,29 @@ serve(async (req) => {
       })
     }
 
-    // Store athletes
-    console.log(`Storing ${allAthletes.size} athletes...`)
-    const athleteArray = Array.from(allAthletes)
+    // Store athletes — iterate the deduped Map values, log per-team failures.
+    console.log(`Storing ${allAthletes.size} athletes across ${ccToInternalTeamId.size} teams...`)
+    const athleteArray = Array.from(allAthletes.values())
+    let athleteUpsertFailures = 0
     for (const athlete of athleteArray) {
-      await supabaseClient
+      const { error: athErr } = await supabaseClient
         .from('athletes')
-        .upsert(athlete, {
-          onConflict: 'cc_athlete_id'
+        .upsert(athlete, { onConflict: 'cc_athlete_id' })
+      if (athErr) {
+        athleteUpsertFailures++
+        await logActivity({
+          eventType: 'test_upload_failed',
+          eventSource: 'sync-cc-athletics',
+          severity: 'warning',
+          teamId: athlete.team_id ?? scopedTeamId,
+          metadata: {
+            failure_reason: athErr.message,
+            stage: 'athlete_upsert',
+            cc_athlete_id: athlete.cc_athlete_id,
+            cc_team_id: athlete.cc_team_id,
+          },
         })
+      }
     }
 
     // Store test data in batches
