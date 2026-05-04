@@ -75,6 +75,7 @@ const GROUPS: Group[] = [
     sections: [
       { id: "staff-credentials", label: "Staff Credentials", description: "Practitioner accounts and access." },
       { id: "athlete-credentials", label: "Athlete Credentials", description: "Athlete login credentials." },
+      { id: "athlete-linking", label: "Account Linking", description: "Link athletes to client accounts." },
     ],
   },
   {
