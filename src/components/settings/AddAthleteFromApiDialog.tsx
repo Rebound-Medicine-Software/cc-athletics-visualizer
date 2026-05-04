@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, RefreshCw, Search, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 
 interface CCAthlete {
   athlete_id: string;
@@ -35,6 +37,8 @@ export const AddAthleteFromApiDialog = ({
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const { teamId } = useEffectiveTeamId();
+  const guardWrite = useViewAsWriteGuard();
 
   // Filters
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -170,6 +174,11 @@ export const AddAthleteFromApiDialog = ({
 
   const handleAdd = async () => {
     if (selectedIds.size === 0) return;
+    if (guardWrite("Adding athletes")) return;
+    if (!teamId) {
+      toast.error("No team context — cannot add athletes.");
+      return;
+    }
     setAdding(true);
     try {
       const toInsert = filteredAthletes
@@ -177,6 +186,7 @@ export const AddAthleteFromApiDialog = ({
         .map((a) => ({
           cc_athlete_id: a.athlete_id,
           name: a.name,
+          team_id: teamId,
           gender: a.gender || null,
           age: a.age ?? null,
           height_cm: a.height_cm ?? null,
