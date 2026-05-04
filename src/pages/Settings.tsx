@@ -35,6 +35,7 @@ type SectionId =
   | "demonstrations"
   | "staff-credentials"
   | "athlete-credentials"
+  | "athlete-linking"
   | "data-housing"
   | "tier-management";
 
