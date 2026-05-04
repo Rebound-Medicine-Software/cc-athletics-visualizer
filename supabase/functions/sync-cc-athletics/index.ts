@@ -367,7 +367,7 @@ serve(async (req) => {
     for (const athlete of athleteArray) {
       const { error: athErr } = await supabaseClient
         .from('athletes')
-        .upsert(athlete, { onConflict: 'cc_athlete_id' })
+        .upsert(athlete, { onConflict: 'team_id,cc_athlete_id' })
       if (athErr) {
         athleteUpsertFailures++
         await logActivity({
