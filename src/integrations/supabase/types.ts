@@ -123,6 +123,7 @@ export type Database = {
           reports_sent_count: number | null
           team_id: string | null
           updated_at: string | null
+          user_id: string | null
           weight_kg: number | null
         }
         Insert: {
@@ -147,6 +148,7 @@ export type Database = {
           reports_sent_count?: number | null
           team_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
           weight_kg?: number | null
         }
         Update: {
@@ -171,6 +173,7 @@ export type Database = {
           reports_sent_count?: number | null
           team_id?: string | null
           updated_at?: string | null
+          user_id?: string | null
           weight_kg?: number | null
         }
         Relationships: [
@@ -1858,6 +1861,7 @@ export type Database = {
         Returns: boolean
       }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
+      claim_athlete_for_current_user: { Args: never; Returns: string }
       count_active_webhook_endpoints: { Args: never; Returns: number }
       count_unread_in_app_notifications: { Args: never; Returns: number }
       create_notification_campaign: {
