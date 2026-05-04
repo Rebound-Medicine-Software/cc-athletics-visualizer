@@ -142,6 +142,7 @@ const SettingsInner = () => {
       case "demonstrations": return <DemonstrationsTab />;
       case "staff-credentials": return <StaffCredentialsTab />;
       case "athlete-credentials": return <AthleteCredentialsTab />;
+      case "athlete-linking": return <AthleteAccountLinkingTab />;
       case "data-housing": return <DataHousingTab />;
       case "tier-management": return <TierManagementTab />;
     }
