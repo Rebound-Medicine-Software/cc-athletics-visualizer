@@ -140,6 +140,21 @@ serve(async (req) => {
       })
     }
 
+    // Normalize CC creation_date (epoch ms | seconds | ISO string) to YYYY-MM-DD or null.
+    const toIsoDate = (v: any): string | null => {
+      if (v === null || v === undefined || v === '') return null
+      let d: Date | null = null
+      if (typeof v === 'number') {
+        // Treat >1e12 as ms, otherwise seconds.
+        d = new Date(v > 1e12 ? v : v * 1000)
+      } else if (typeof v === 'string') {
+        const n = Number(v)
+        d = !isNaN(n) && v.trim() !== '' ? new Date(n > 1e12 ? n : n * 1000) : new Date(v)
+      }
+      if (!d || isNaN(d.getTime())) return null
+      return d.toISOString().slice(0, 10)
+    }
+
     // Store teams in database (upsert each external team into our teams table)
     console.log(`Storing ${teamsData.teams.length} teams...`)
     for (const team of teamsData.teams) {
@@ -148,7 +163,7 @@ serve(async (req) => {
         .upsert({
           cc_team_id: team.id,
           name: team.name,
-          creation_date: team.creation_date,
+          creation_date: toIsoDate(team.creation_date),
         }, {
           onConflict: 'cc_team_id'
         })
@@ -402,12 +417,24 @@ serve(async (req) => {
       }
     }
 
-    // Store test data in batches
-    console.log(`Storing ${allTestData.length} test records...`)
+    // Dedupe test_data by conflict key (cc_athlete_id, test_date, test_name, repetition_number).
+    // Keep the entry with the most non-null metric fields (fallback: last seen).
+    const dedupedMap = new Map<string, any>()
+    const fieldScore = (r: any) => Object.values(r?.metrics ?? {}).filter(v => v !== null && v !== undefined).length
+                                   + Object.values(r ?? {}).filter(v => v !== null && v !== undefined).length
+    for (const row of allTestData) {
+      const key = `${row.cc_athlete_id}|${row.test_date}|${row.test_name}|${row.repetition_number}`
+      const prev = dedupedMap.get(key)
+      if (!prev || fieldScore(row) >= fieldScore(prev)) dedupedMap.set(key, row)
+    }
+    const dedupedTestData = Array.from(dedupedMap.values())
+    const inBatchDuplicateCount = allTestData.length - dedupedTestData.length
+    console.log(`Storing ${dedupedTestData.length} test records (deduped ${inBatchDuplicateCount} in-batch duplicates)...`)
+
     const batchSize = 100
     let upsertFailures = 0
-    for (let i = 0; i < allTestData.length; i += batchSize) {
-      const batch = allTestData.slice(i, i + batchSize)
+    for (let i = 0; i < dedupedTestData.length; i += batchSize) {
+      const batch = dedupedTestData.slice(i, i + batchSize)
       const { error: upsertErr } = await supabaseClient
         .from('test_data')
         .upsert(batch, {
@@ -425,6 +452,7 @@ serve(async (req) => {
             stage: 'test_data_upsert',
             batch_size: batch.length,
             batch_offset: i,
+            in_batch_duplicates_removed: inBatchDuplicateCount,
             manual_retry: manualRetry,
             target_team_id: scopedTeamId,
           },
