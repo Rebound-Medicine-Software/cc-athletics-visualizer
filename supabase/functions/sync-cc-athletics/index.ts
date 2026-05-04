@@ -417,12 +417,24 @@ serve(async (req) => {
       }
     }
 
-    // Store test data in batches
-    console.log(`Storing ${allTestData.length} test records...`)
+    // Dedupe test_data by conflict key (cc_athlete_id, test_date, test_name, repetition_number).
+    // Keep the entry with the most non-null metric fields (fallback: last seen).
+    const dedupedMap = new Map<string, any>()
+    const fieldScore = (r: any) => Object.values(r?.metrics ?? {}).filter(v => v !== null && v !== undefined).length
+                                   + Object.values(r ?? {}).filter(v => v !== null && v !== undefined).length
+    for (const row of allTestData) {
+      const key = `${row.cc_athlete_id}|${row.test_date}|${row.test_name}|${row.repetition_number}`
+      const prev = dedupedMap.get(key)
+      if (!prev || fieldScore(row) >= fieldScore(prev)) dedupedMap.set(key, row)
+    }
+    const dedupedTestData = Array.from(dedupedMap.values())
+    const inBatchDuplicateCount = allTestData.length - dedupedTestData.length
+    console.log(`Storing ${dedupedTestData.length} test records (deduped ${inBatchDuplicateCount} in-batch duplicates)...`)
+
     const batchSize = 100
     let upsertFailures = 0
-    for (let i = 0; i < allTestData.length; i += batchSize) {
-      const batch = allTestData.slice(i, i + batchSize)
+    for (let i = 0; i < dedupedTestData.length; i += batchSize) {
+      const batch = dedupedTestData.slice(i, i + batchSize)
       const { error: upsertErr } = await supabaseClient
         .from('test_data')
         .upsert(batch, {
@@ -440,6 +452,7 @@ serve(async (req) => {
             stage: 'test_data_upsert',
             batch_size: batch.length,
             batch_offset: i,
+            in_batch_duplicates_removed: inBatchDuplicateCount,
             manual_retry: manualRetry,
             target_team_id: scopedTeamId,
           },
