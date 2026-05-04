@@ -140,10 +140,10 @@ serve(async (req) => {
       })
     }
 
-    // Store teams in database
-    console.log('Storing teams...')
+    // Store teams in database (upsert each external team into our teams table)
+    console.log(`Storing ${teamsData.teams.length} teams...`)
     for (const team of teamsData.teams) {
-      await supabaseClient
+      const { error: teamUpsertErr } = await supabaseClient
         .from('teams')
         .upsert({
           cc_team_id: team.id,
@@ -152,17 +152,33 @@ serve(async (req) => {
         }, {
           onConflict: 'cc_team_id'
         })
+      if (teamUpsertErr) {
+        console.error('Team upsert failed', { cc_team_id: team.id, error: teamUpsertErr.message })
+      }
     }
 
-    // Create team mapping
-    const teamMap = new Map()
-    teamsData.teams.forEach(team => {
-      teamMap.set(team.id, team.name)
+    // Build cc_team_id -> internal team_id map (REQUIRED so athletes are linked
+    // to the correct team and RLS / multi-org filtering works downstream).
+    const ccTeamIds = teamsData.teams.map((t: any) => t.id)
+    const { data: dbTeams, error: dbTeamsErr } = await supabaseClient
+      .from('teams')
+      .select('id, cc_team_id, name')
+      .in('cc_team_id', ccTeamIds)
+    if (dbTeamsErr) {
+      console.error('Failed to load internal team ids', dbTeamsErr.message)
+    }
+    const ccToInternalTeamId = new Map<string, string>()
+    const teamMap = new Map<string, string>() // cc_team_id -> name
+    ;(dbTeams || []).forEach((t: any) => {
+      ccToInternalTeamId.set(t.cc_team_id, t.id)
+    })
+    teamsData.teams.forEach((t: any) => {
+      teamMap.set(t.id, t.name)
     })
 
-    // Process and store athletes and test data
-    const allAthletes = new Set()
-    const allTestData = []
+    // Process and store athletes and test data — dedupe by cc_athlete_id (NOT by object ref).
+    const allAthletes = new Map<string, any>()
+    const allTestData: any[] = []
 
     // Helper function to extract demographics
     const extractDemographics = (athlete) => {
