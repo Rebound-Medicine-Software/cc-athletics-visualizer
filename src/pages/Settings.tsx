@@ -19,6 +19,7 @@ import { ApiKeysTab } from "@/components/settings/ApiKeysTab";
 import { DemonstrationsTab } from "@/components/settings/DemonstrationsTab";
 import { DataHousingTab } from "@/components/settings/DataHousingTab";
 import { AthleteCredentialsTab } from "@/components/settings/AthleteCredentialsTab";
+import { AthleteAccountLinkingTab } from "@/components/settings/AthleteAccountLinkingTab";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
