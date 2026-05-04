@@ -365,6 +365,23 @@ serve(async (req) => {
     const athleteArray = Array.from(allAthletes.values())
     let athleteUpsertFailures = 0
     for (const athlete of athleteArray) {
+      // Composite unique index requires both team_id and cc_athlete_id; skip orphans.
+      if (!athlete.team_id) {
+        athleteUpsertFailures++
+        await logActivity({
+          eventType: 'test_upload_failed',
+          eventSource: 'sync-cc-athletics',
+          severity: 'warning',
+          teamId: scopedTeamId,
+          metadata: {
+            failure_reason: 'missing_internal_team_id',
+            stage: 'athlete_upsert',
+            cc_athlete_id: athlete.cc_athlete_id,
+            cc_team_id: athlete.cc_team_id,
+          },
+        })
+        continue
+      }
       const { error: athErr } = await supabaseClient
         .from('athletes')
         .upsert(athlete, { onConflict: 'team_id,cc_athlete_id' })
