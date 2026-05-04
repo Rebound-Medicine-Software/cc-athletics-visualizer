@@ -19,6 +19,7 @@ import { ApiKeysTab } from "@/components/settings/ApiKeysTab";
 import { DemonstrationsTab } from "@/components/settings/DemonstrationsTab";
 import { DataHousingTab } from "@/components/settings/DataHousingTab";
 import { AthleteCredentialsTab } from "@/components/settings/AthleteCredentialsTab";
+import { AthleteAccountLinkingTab } from "@/components/settings/AthleteAccountLinkingTab";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
@@ -34,6 +35,7 @@ type SectionId =
   | "demonstrations"
   | "staff-credentials"
   | "athlete-credentials"
+  | "athlete-linking"
   | "data-housing"
   | "tier-management";
 
@@ -73,6 +75,7 @@ const GROUPS: Group[] = [
     sections: [
       { id: "staff-credentials", label: "Staff Credentials", description: "Practitioner accounts and access." },
       { id: "athlete-credentials", label: "Athlete Credentials", description: "Athlete login credentials." },
+      { id: "athlete-linking", label: "Account Linking", description: "Link athletes to client accounts." },
     ],
   },
   {
@@ -139,6 +142,7 @@ const SettingsInner = () => {
       case "demonstrations": return <DemonstrationsTab />;
       case "staff-credentials": return <StaffCredentialsTab />;
       case "athlete-credentials": return <AthleteCredentialsTab />;
+      case "athlete-linking": return <AthleteAccountLinkingTab />;
       case "data-housing": return <DataHousingTab />;
       case "tier-management": return <TierManagementTab />;
     }
