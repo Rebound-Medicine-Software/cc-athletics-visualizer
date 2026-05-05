@@ -104,15 +104,36 @@ export const useAssignment = (id: string | null) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('athlete_program_assignments')
-        .select(
-          `*,
-           athletes:athlete_id ( id, name, email, avatar_url ),
-           programming_templates:template_id ( id, name, description, goal, duration_weeks, is_published )`
-        )
+        .select('*')
         .eq('id', id!)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      if (!data) return null;
+
+      const [athleteRes, templateRes] = await Promise.all([
+        data.athlete_id
+          ? supabase
+              .from('athletes')
+              .select('id, name, email, avatar_url')
+              .eq('id', data.athlete_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as any),
+        data.template_id
+          ? supabase
+              .from('programming_templates')
+              .select('id, name, description, goal, duration_weeks, is_published')
+              .eq('id', data.template_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as any),
+      ]);
+      if (athleteRes.error) throw athleteRes.error;
+      if (templateRes.error) throw templateRes.error;
+
+      return {
+        ...data,
+        athletes: athleteRes.data,
+        programming_templates: templateRes.data,
+      } as any;
     },
   });
 };
