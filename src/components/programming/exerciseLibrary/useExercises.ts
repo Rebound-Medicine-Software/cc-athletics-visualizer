@@ -327,15 +327,21 @@ export const useRestoreExercises = () => {
           team_id: teamId,
           user_id: user?.id ?? null,
           severity: 'info',
-          metadata: { exercise_ids: rows.map((r) => r.id), count: rows.length },
+          metadata: { exercise_ids: exercises.map((e) => e.id), count: exercises.length, reassigned },
         });
       } catch {/* non-fatal */}
-      return { count: rows.length };
+      return { count: exercises.length, reassigned };
     },
-    onSuccess: ({ count }) => {
+    onSuccess: ({ count, reassigned }) => {
       qc.invalidateQueries({ queryKey: ['exercises'] });
       qc.invalidateQueries({ queryKey: ['exercises-facets'] });
-      toast.success(`${count} exercise${count === 1 ? '' : 's'} restored`);
+      if (reassigned > 0) {
+        toast.success(
+          `${count} restored — ${reassigned} as new exercise${reassigned === 1 ? '' : 's'} (original ID unavailable)`,
+        );
+      } else {
+        toast.success(`${count} exercise${count === 1 ? '' : 's'} restored`);
+      }
     },
     onError: (e: any) => toast.error(e.message ?? 'Restore failed'),
   });
