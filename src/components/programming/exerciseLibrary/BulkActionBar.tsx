@@ -66,24 +66,34 @@ export const BulkActionBar = ({
       setConfirmDelete(false);
       onClear();
       const { deleted, skipped } = result;
+      if (deleted.length > 0 && teamId) {
+        saveUndoBuffer(teamId, deleted);
+      }
       toast.success(
         `${deleted.length} exercise${deleted.length === 1 ? '' : 's'} deleted${
           skipped.length ? `, ${skipped.length} skipped (in use)` : ''
         }`,
         {
-          duration: 8000,
+          duration: UNDO_TTL,
           action: deleted.length
             ? {
                 label: 'Undo',
-                onClick: () => restoreMut.mutate(deleted),
+                onClick: () => {
+                  restoreMut.mutate(deleted);
+                  clearUndoBuffer();
+                },
               }
             : undefined,
+          onAutoClose: () => clearUndoBuffer(),
+          onDismiss: () => clearUndoBuffer(),
         },
       );
     } catch {
       /* error toast handled in hook */
     }
   };
+
+  const visibleSelected = selected.length - hiddenCount;
 
   return (
     <>
