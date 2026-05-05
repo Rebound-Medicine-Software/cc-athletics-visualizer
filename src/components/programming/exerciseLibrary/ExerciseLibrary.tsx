@@ -47,7 +47,9 @@ export const ExerciseLibrary = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Selection persists across filter changes — keyed by id, holds full Exercise
+  // so we can act on items currently hidden by filters.
+  const [selectedMap, setSelectedMap] = useState<Map<string, Exercise>>(new Map());
 
   const { hasPermission } = useEffectiveTier();
   const canEdit = hasPermission('can_edit_programming');
