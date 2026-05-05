@@ -18,10 +18,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock, Upload } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
 import { BulkUploadDialog } from './BulkUploadDialog';
+import { BulkActionBar } from './BulkActionBar';
 import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
   useExercises,
@@ -45,6 +47,7 @@ export const ExerciseLibrary = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { hasPermission } = useEffectiveTier();
   const canEdit = hasPermission('can_edit_programming');
@@ -92,6 +95,22 @@ export const ExerciseLibrary = () => {
   };
 
   const writeBlocked = !canEdit || isViewAs;
+
+  const visibleIds = useMemo(() => (exercises ?? []).map((e) => e.id), [exercises]);
+  const selectedExercises = useMemo(
+    () => (exercises ?? []).filter((e) => selectedIds.has(e.id)),
+    [exercises, selectedIds],
+  );
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => setSelectedIds(new Set(visibleIds));
+  const clearSelection = () => setSelectedIds(new Set());
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
 
   if (error) {
     return (
@@ -195,6 +214,30 @@ export const ExerciseLibrary = () => {
         </p>
       )}
 
+      {!writeBlocked && exercises && exercises.length > 0 && (
+        <BulkActionBar
+          selected={selectedExercises}
+          onClear={clearSelection}
+          onSelectAll={selectAllVisible}
+          onUnselectAll={clearSelection}
+          totalVisible={visibleIds.length}
+          disabled={writeBlocked}
+        />
+      )}
+
+      {!writeBlocked && exercises && exercises.length > 0 && (
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <Checkbox
+            id="select-all-visible"
+            checked={allVisibleSelected}
+            onCheckedChange={(c) => (c ? selectAllVisible() : clearSelection())}
+          />
+          <Label htmlFor="select-all-visible" className="cursor-pointer">
+            Select all {visibleIds.length} visible
+          </Label>
+        </div>
+      )}
+
       {/* List */}
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -227,11 +270,20 @@ export const ExerciseLibrary = () => {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {exercises.map((ex) => (
-            <Card key={ex.id} className={ex.is_archived ? 'opacity-70' : ''}>
+            <Card key={ex.id} className={`${ex.is_archived ? 'opacity-70' : ''} ${selectedIds.has(ex.id) ? 'ring-2 ring-primary' : ''}`}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h4 className="font-semibold truncate">{ex.name}</h4>
+                  <div className="flex items-start gap-2 min-w-0">
+                    {!writeBlocked && (
+                      <Checkbox
+                        className="mt-1"
+                        checked={selectedIds.has(ex.id)}
+                        onCheckedChange={() => toggleSelect(ex.id)}
+                        aria-label={`Select ${ex.name}`}
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <h4 className="font-semibold truncate">{ex.name}</h4>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {ex.category && (
                         <Badge variant="secondary" className="text-[10px]">
@@ -244,6 +296,7 @@ export const ExerciseLibrary = () => {
                         </Badge>
                       )}
                     </div>
+                  </div>
                   </div>
                 </div>
 
