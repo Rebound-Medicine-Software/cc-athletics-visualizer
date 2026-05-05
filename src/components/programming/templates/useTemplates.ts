@@ -455,3 +455,114 @@ export const useReorderPrescribed = () => {
     onError: (e: any) => toast.error(e.message ?? 'Failed to reorder exercises'),
   });
 };
+
+/* ---------------- Sessions ---------------- */
+
+export const useSessions = (blockId: string | null) => {
+  return useQuery({
+    queryKey: ['programming-sessions', blockId],
+    enabled: !!blockId,
+    queryFn: async (): Promise<ProgrammingSession[]> => {
+      const { data, error } = await supabase
+        .from('programming_sessions')
+        .select('*')
+        .eq('block_id', blockId!)
+        .order('position', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ProgrammingSession[];
+    },
+  });
+};
+
+export const useCreateSession = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async ({ blockId, position, dayOffset }: { blockId: string; position: number; dayOffset: number }) => {
+      const { data, error } = await supabase
+        .from('programming_sessions')
+        .insert({ block_id: blockId, position, day_offset: dayOffset, name: `Day ${dayOffset + 1}` })
+        .select()
+        .single();
+      if (error) throw error;
+      await logActivity({
+        teamId, userId: user?.id ?? null,
+        eventType: 'programming_session_created',
+        metadata: { block_id: blockId, session_id: data.id, day_offset: dayOffset },
+      });
+      return data as ProgrammingSession;
+    },
+    onSuccess: (s) => qc.invalidateQueries({ queryKey: ['programming-sessions', s.block_id] }),
+    onError: (e: any) => toast.error(e.message ?? 'Failed to create session'),
+  });
+};
+
+export const useUpdateSession = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (patch: Partial<ProgrammingSession> & { id: string }) => {
+      const { id, ...rest } = patch;
+      const { data, error } = await supabase
+        .from('programming_sessions')
+        .update(rest)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      await logActivity({
+        teamId, userId: user?.id ?? null,
+        eventType: 'programming_session_updated',
+        metadata: { session_id: id },
+      });
+      return data as ProgrammingSession;
+    },
+    onSuccess: (s) => qc.invalidateQueries({ queryKey: ['programming-sessions', s.block_id] }),
+    onError: (e: any) => toast.error(e.message ?? 'Failed to update session'),
+  });
+};
+
+export const useDeleteSession = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (s: ProgrammingSession) => {
+      const { error } = await supabase.from('programming_sessions').delete().eq('id', s.id);
+      if (error) throw error;
+      await logActivity({
+        teamId, userId: user?.id ?? null,
+        eventType: 'programming_session_deleted',
+        metadata: { session_id: s.id, block_id: s.block_id },
+      });
+      return s;
+    },
+    onSuccess: (s) => {
+      qc.invalidateQueries({ queryKey: ['programming-sessions', s.block_id] });
+      qc.invalidateQueries({ queryKey: ['programming-prescribed', s.block_id] });
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Failed to delete session'),
+  });
+};
+
+export const useReorderSessions = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ blockId, ordered }: { blockId: string; ordered: ProgrammingSession[] }) => {
+      for (let i = 0; i < ordered.length; i++) {
+        if (ordered[i].position !== i) {
+          const { error } = await supabase
+            .from('programming_sessions')
+            .update({ position: i })
+            .eq('id', ordered[i].id);
+          if (error) throw error;
+        }
+      }
+      return blockId;
+    },
+    onSuccess: (blockId) => qc.invalidateQueries({ queryKey: ['programming-sessions', blockId] }),
+    onError: (e: any) => toast.error(e.message ?? 'Failed to reorder sessions'),
+  });
+};
