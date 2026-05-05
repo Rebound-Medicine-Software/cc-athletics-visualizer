@@ -235,9 +235,10 @@ export const ExerciseLibrary = () => {
       {!writeBlocked && exercises && exercises.length > 0 && (
         <BulkActionBar
           selected={selectedExercises}
+          hiddenCount={hiddenSelectedCount}
           onClear={clearSelection}
-          onSelectAll={selectAllVisible}
-          onUnselectAll={clearSelection}
+          onSelectAllVisible={selectAllVisible}
+          onUnselectAll={unselectAllVisible}
           totalVisible={visibleIds.length}
           disabled={writeBlocked}
         />
