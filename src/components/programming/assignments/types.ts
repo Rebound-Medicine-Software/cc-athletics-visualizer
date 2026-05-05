@@ -25,6 +25,7 @@ export interface AssignmentRow extends Assignment {
   athlete_name: string | null;
   template_name: string | null;
   template_published: boolean;
+  assigned_by_name?: string | null;
 }
 
 /**
