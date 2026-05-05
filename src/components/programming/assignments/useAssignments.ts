@@ -148,15 +148,17 @@ export const useTemplateStructure = (templateId: string | null) => {
 
       const blockIds = (blocks ?? []).map((b) => b.id);
       let exercises: any[] = [];
+      let sessions: any[] = [];
       let library: Record<string, any> = {};
       if (blockIds.length) {
-        const { data: ex, error: eErr } = await supabase
-          .from('programming_exercises')
-          .select('*')
-          .in('block_id', blockIds)
-          .order('position', { ascending: true });
+        const [{ data: ex, error: eErr }, { data: ss, error: sErr }] = await Promise.all([
+          supabase.from('programming_exercises').select('*').in('block_id', blockIds).order('position', { ascending: true }),
+          supabase.from('programming_sessions').select('*').in('block_id', blockIds).order('position', { ascending: true }),
+        ]);
         if (eErr) throw eErr;
+        if (sErr) throw sErr;
         exercises = ex ?? [];
+        sessions = ss ?? [];
 
         const exIds = exercises.map((e) => e.exercise_id).filter(Boolean);
         if (exIds.length) {
@@ -167,7 +169,7 @@ export const useTemplateStructure = (templateId: string | null) => {
           library = Object.fromEntries((lib ?? []).map((x) => [x.id, x]));
         }
       }
-      return { blocks: blocks ?? [], exercises, library };
+      return { blocks: blocks ?? [], exercises, sessions, library };
     },
   });
 };
@@ -181,7 +183,7 @@ export const useCompletionSummary = (assignmentId: string | null) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('programme_completion_logs')
-        .select('id, performed_on, programming_exercise_id, sets_completed, reps_completed, load_used, rpe, notes, logged_by, created_at')
+        .select('id, performed_on, programming_exercise_id, programming_session_id, sets_completed, reps_completed, load_used, rpe, notes, logged_by, created_at')
         .eq('assignment_id', assignmentId!)
         .order('performed_on', { ascending: false })
         .order('created_at', { ascending: false })
@@ -364,6 +366,7 @@ export const useLogCompletion = () => {
           team_id: teamId,
           assignment_id: input.assignmentId,
           programming_exercise_id: input.programmingExerciseId ?? null,
+          programming_session_id: input.programmingSessionId ?? null,
           performed_on: input.performedOn,
           sets_completed: input.setsCompleted ?? null,
           reps_completed: input.repsCompleted ?? null,
@@ -379,10 +382,13 @@ export const useLogCompletion = () => {
         teamId,
         userId: user?.id ?? null,
         athleteId: input.athleteId ?? null,
-        eventType: 'programme_completion_logged',
+        eventType: input.programmingSessionId && !input.programmingExerciseId
+          ? 'programme_session_completed'
+          : 'programme_completion_logged',
         metadata: {
           assignment_id: input.assignmentId,
           programming_exercise_id: input.programmingExerciseId ?? null,
+          programming_session_id: input.programmingSessionId ?? null,
           performed_on: input.performedOn,
           log_id: data?.id ?? null,
         },

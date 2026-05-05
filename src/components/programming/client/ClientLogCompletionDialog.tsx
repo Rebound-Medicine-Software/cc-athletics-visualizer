@@ -25,6 +25,7 @@ interface Props {
     reps?: string | null;
     load?: string | null;
   } | null;
+  session?: { id: string; name: string } | null;
 }
 
 export const ClientLogCompletionDialog = ({
@@ -33,6 +34,7 @@ export const ClientLogCompletionDialog = ({
   assignment,
   athleteId,
   exercise,
+  session,
 }: Props) => {
   const today = new Date().toISOString().slice(0, 10);
   const [performedOn, setPerformedOn] = useState(today);
@@ -51,7 +53,7 @@ export const ClientLogCompletionDialog = ({
       setRpe('');
       setNotes('');
     }
-  }, [open, exercise?.id]);
+  }, [open, exercise?.id, session?.id]);
 
   const mut = useClientLogCompletion();
 
@@ -62,6 +64,7 @@ export const ClientLogCompletionDialog = ({
       assignmentAthleteId: assignment.athlete_id,
       athleteId,
       programmingExerciseId: exercise?.id ?? null,
+      programmingSessionId: session?.id ?? null,
       performedOn,
       setsCompleted: sets ? Number(sets) : null,
       repsCompleted: reps || null,
@@ -76,9 +79,9 @@ export const ClientLogCompletionDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Log session</DialogTitle>
+          <DialogTitle>Log {session && !exercise ? 'session' : 'exercise'}</DialogTitle>
           <DialogDescription>
-            {exercise ? exercise.name : 'Whole session'}
+            {exercise ? exercise.name : session ? session.name : 'Whole programme'}
           </DialogDescription>
         </DialogHeader>
 

@@ -1167,6 +1167,7 @@ export type Database = {
           notes: string | null
           performed_on: string
           programming_exercise_id: string | null
+          programming_session_id: string | null
           reps_completed: string | null
           rpe: number | null
           sets_completed: number | null
@@ -1182,6 +1183,7 @@ export type Database = {
           notes?: string | null
           performed_on?: string
           programming_exercise_id?: string | null
+          programming_session_id?: string | null
           reps_completed?: string | null
           rpe?: number | null
           sets_completed?: number | null
@@ -1197,6 +1199,7 @@ export type Database = {
           notes?: string | null
           performed_on?: string
           programming_exercise_id?: string | null
+          programming_session_id?: string | null
           reps_completed?: string | null
           rpe?: number | null
           sets_completed?: number | null
@@ -1216,6 +1219,13 @@ export type Database = {
             columns: ["programming_exercise_id"]
             isOneToOne: false
             referencedRelation: "programming_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_completion_logs_programming_session_id_fkey"
+            columns: ["programming_session_id"]
+            isOneToOne: false
+            referencedRelation: "programming_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -1273,6 +1283,7 @@ export type Database = {
           reps: string | null
           rest_seconds: number | null
           rpe: number | null
+          session_id: string | null
           sets: number | null
           tempo: string | null
           updated_at: string
@@ -1288,6 +1299,7 @@ export type Database = {
           reps?: string | null
           rest_seconds?: number | null
           rpe?: number | null
+          session_id?: string | null
           sets?: number | null
           tempo?: string | null
           updated_at?: string
@@ -1303,6 +1315,7 @@ export type Database = {
           reps?: string | null
           rest_seconds?: number | null
           rpe?: number | null
+          session_id?: string | null
           sets?: number | null
           tempo?: string | null
           updated_at?: string
@@ -1320,6 +1333,54 @@ export type Database = {
             columns: ["exercise_id"]
             isOneToOne: false
             referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programming_exercises_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "programming_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programming_sessions: {
+        Row: {
+          block_id: string
+          created_at: string
+          day_offset: number
+          id: string
+          name: string
+          notes: string | null
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          day_offset?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          day_offset?: number
+          id?: string
+          name?: string
+          notes?: string | null
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programming_sessions_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "programming_blocks"
             referencedColumns: ["id"]
           },
         ]
