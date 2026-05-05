@@ -89,9 +89,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   let inputUrl = "";
+  let gidOverride: string | undefined;
   try {
     const body = await req.json().catch(() => ({}));
     inputUrl = typeof body?.url === "string" ? body.url : "";
+    if (typeof body?.gid === "string" && /^\d+$/.test(body.gid)) gidOverride = body.gid;
+    else if (typeof body?.gid === "number") gidOverride = String(body.gid);
 
     if (!inputUrl || inputUrl.length > 1000) {
       return fail("invalid_url", { reason: "missing_or_too_long" });
@@ -111,7 +114,7 @@ serve(async (req) => {
       return fail("unsupported_host", { hostname: parsed.hostname });
     }
 
-    const target = normalizeTarget(parsed);
+    const target = normalizeTarget(parsed, gidOverride);
 
     // Timeout guard
     const ctrl = new AbortController();
