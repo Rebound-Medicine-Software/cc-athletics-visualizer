@@ -48,32 +48,37 @@ function fail(code: ErrorCode, diagnostics: Record<string, unknown> = {}, status
   );
 }
 
-function normalizeTarget(parsed: URL): string {
-  // Accept multiple shapes:
-  // - /spreadsheets/d/ID/edit?...#gid=N        → /export?format=csv&gid=N
-  // - /spreadsheets/d/ID/export?format=csv...  → keep
-  // - /spreadsheets/d/e/ID/pub?output=csv      → keep
-  // - /spreadsheets/d/ID/gviz/tq?tqx=out:csv   → keep
-  // - /spreadsheets/d/e/ID/pubhtml             → swap to pub?output=csv
+function normalizeTarget(parsed: URL, gidOverride?: string): string {
   const path = parsed.pathname;
 
-  if (path.includes("/export") || path.includes("/gviz/")) return parsed.toString();
+  if (path.includes("/export") || path.includes("/gviz/")) {
+    if (gidOverride) {
+      const u = new URL(parsed.toString());
+      u.searchParams.set("gid", gidOverride);
+      return u.toString();
+    }
+    return parsed.toString();
+  }
 
-  // Published-to-web variants
   const pubMatch = path.match(/\/spreadsheets\/d\/e\/([^/]+)\/(pub|pubhtml)/);
   if (pubMatch) {
-    if (parsed.searchParams.get("output") === "csv") return parsed.toString();
-    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1];
+    const gid =
+      gidOverride ??
+      parsed.searchParams.get("gid") ??
+      parsed.hash?.match(/gid=(\d+)/)?.[1];
     const u = new URL(`https://docs.google.com/spreadsheets/d/e/${pubMatch[1]}/pub`);
     u.searchParams.set("output", "csv");
     if (gid) u.searchParams.set("gid", gid);
     return u.toString();
   }
 
-  // Standard /spreadsheets/d/ID/...
   const m = path.match(/\/spreadsheets\/d\/([^/]+)/);
   if (m) {
-    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1] ?? "0";
+    const gid =
+      gidOverride ??
+      parsed.searchParams.get("gid") ??
+      parsed.hash?.match(/gid=(\d+)/)?.[1] ??
+      "0";
     return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
   }
 
@@ -84,9 +89,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   let inputUrl = "";
+  let gidOverride: string | undefined;
   try {
     const body = await req.json().catch(() => ({}));
     inputUrl = typeof body?.url === "string" ? body.url : "";
+    if (typeof body?.gid === "string" && /^\d+$/.test(body.gid)) gidOverride = body.gid;
+    else if (typeof body?.gid === "number") gidOverride = String(body.gid);
 
     if (!inputUrl || inputUrl.length > 1000) {
       return fail("invalid_url", { reason: "missing_or_too_long" });
@@ -106,7 +114,7 @@ serve(async (req) => {
       return fail("unsupported_host", { hostname: parsed.hostname });
     }
 
-    const target = normalizeTarget(parsed);
+    const target = normalizeTarget(parsed, gidOverride);
 
     // Timeout guard
     const ctrl = new AbortController();
@@ -163,6 +171,9 @@ serve(async (req) => {
     const estimated_line_count =
       (text.match(/\n/g)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
 
+    const preview_head = text.slice(0, 500);
+    const preview_tail = text.length > 500 ? text.slice(-500) : "";
+
     return ok({
       csv: text,
       byte_length,
@@ -170,6 +181,8 @@ serve(async (req) => {
       source_url_used: target,
       status_code,
       content_type,
+      preview_head,
+      preview_tail,
     });
   } catch (err) {
     console.log(`[fetch-google-sheet-csv] internal_error url=${inputUrl} err=${(err as Error).message}`);
