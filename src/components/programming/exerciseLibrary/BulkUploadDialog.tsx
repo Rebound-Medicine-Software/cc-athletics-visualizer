@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/accordion';
 import { Upload, FileSpreadsheet, Wand2, Trash2, X, Info, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId, useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
@@ -40,6 +41,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { VideoPreviewButton, toEmbedUrl } from '../shared/VideoPreviewButton';
 import { EXERCISE_CATEGORIES } from './types';
+
+interface Diagnostics {
+  byte_length?: number;
+  estimated_line_count?: number;
+  source_url_used?: string;
+  rows_fetched: number;
+  rows_parsed: number;
+  skipped_empty: number;
+  parse_errors: number;
+}
 
 type ImportMode = 'create_only' | 'update_by_name' | 'update_by_url' | 'skip_duplicates';
 type RowStatus = 'new' | 'duplicate' | 'will_update' | 'invalid';
@@ -61,29 +72,22 @@ interface PreviewRow {
   aiApplied?: boolean;
 }
 
-// ----- CSV parsing (RFC4180-ish) -----
-const parseCsv = (text: string): string[][] => {
-  const rows: string[][] = [];
-  let cur: string[] = [];
-  let val = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { val += '"'; i++; }
-        else inQuotes = false;
-      } else val += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ',') { cur.push(val); val = ''; }
-      else if (c === '\n') { cur.push(val); rows.push(cur); cur = []; val = ''; }
-      else if (c === '\r') { /* skip */ }
-      else val += c;
-    }
-  }
-  if (val.length || cur.length) { cur.push(val); rows.push(cur); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''));
+// ----- CSV parsing using PapaParse (robust: quoted cells, embedded newlines, commas) -----
+const parseCsv = (text: string): { grid: string[][]; skippedEmpty: number; parseErrors: number } => {
+  const cleaned = text.replace(/^\uFEFF/, '');
+  const result = Papa.parse<string[]>(cleaned, {
+    skipEmptyLines: false,
+    dynamicTyping: false,
+    transform: (v) => (typeof v === 'string' ? v : String(v ?? '')),
+  });
+  const all = (result.data ?? []) as string[][];
+  let skippedEmpty = 0;
+  const grid = all.filter((r) => {
+    const keep = Array.isArray(r) && r.some((c) => (c ?? '').toString().trim() !== '');
+    if (!keep) skippedEmpty++;
+    return keep;
+  });
+  return { grid, skippedEmpty, parseErrors: result.errors?.length ?? 0 };
 };
 
 // Strip BOM, zero-width chars, surrounding quotes; lowercase; remove all whitespace/punct
@@ -175,8 +179,9 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   const [enriching, setEnriching] = useState(false);
   const [mode, setMode] = useState<ImportMode>('create_only');
   const [rows, setRows] = useState<PreviewRow[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
-  const reset = () => { setRows([]); setSheetUrl(''); };
+  const reset = () => { setRows([]); setSheetUrl(''); setDiagnostics(null); };
 
   // Build status given existing exercises
   const classify = async (parsed: PreviewRow[]) => {
@@ -209,12 +214,17 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     });
   };
 
-  const ingestCsvText = async (text: string) => {
-    // Strip BOM at very start of file
-    const cleaned = text.replace(/^\uFEFF/, '');
-    const grid = parseCsv(cleaned);
+  const ingestCsvText = async (text: string, sourceMeta?: Partial<Diagnostics>) => {
+    const { grid, skippedEmpty, parseErrors } = parseCsv(text);
     if (grid.length < 2) {
       toast.error('CSV is empty or only has a header.');
+      setDiagnostics({
+        ...sourceMeta,
+        rows_fetched: grid.length,
+        rows_parsed: 0,
+        skipped_empty: skippedEmpty,
+        parse_errors: parseErrors,
+      } as Diagnostics);
       return;
     }
     const detected = detectHeaderRow(grid);
@@ -231,12 +241,12 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     const dataRows = grid.slice(headerIndex + 1);
     const parsed: PreviewRow[] = dataRows.map((cells, i) => ({
       id: `r-${i}-${Math.random().toString(36).slice(2, 8)}`,
-      name: cells[idxMap.name] ?? '',
-      video_url: idxMap.video_url !== undefined ? cells[idxMap.video_url] ?? '' : '',
+      name: (cells[idxMap.name] ?? '').trim(),
+      video_url: idxMap.video_url !== undefined ? (cells[idxMap.video_url] ?? '').trim() : '',
       start_position: idxMap.start_position !== undefined ? cells[idxMap.start_position] ?? '' : '',
       end_position: idxMap.end_position !== undefined ? cells[idxMap.end_position] ?? '' : '',
       description: idxMap.description !== undefined ? cells[idxMap.description] ?? '' : '',
-      category: idxMap.category !== undefined ? cells[idxMap.category] ?? '' : '',
+      category: idxMap.category !== undefined ? (cells[idxMap.category] ?? '').trim() : '',
       primary_muscles: idxMap.primary_muscles !== undefined ? cells[idxMap.primary_muscles] ?? '' : '',
       equipment: idxMap.equipment !== undefined ? cells[idxMap.equipment] ?? '' : '',
       selected: true,
@@ -244,18 +254,28 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     }));
     const classified = await classify(parsed);
     setRows(classified);
+    setDiagnostics({
+      ...sourceMeta,
+      rows_fetched: grid.length,
+      rows_parsed: classified.length,
+      skipped_empty: skippedEmpty,
+      parse_errors: parseErrors,
+    } as Diagnostics);
     toast.success(
-      `Loaded ${classified.length} rows. Header on row ${headerIndex + 1}: ${headers.filter(Boolean).join(', ')}`,
+      `Loaded ${classified.length} rows (header row ${headerIndex + 1}). Skipped ${skippedEmpty} empty.`,
       { duration: 6000 },
     );
   };
 
   const onFile = async (f: File) => {
-    if (f.size > 5_000_000) { toast.error('File too large (max 5MB)'); return; }
+    if (f.size > 10_000_000) { toast.error('File too large (max 10MB)'); return; }
     setLoading(true);
     try {
       const text = await f.text();
-      await ingestCsvText(text);
+      await ingestCsvText(text, {
+        byte_length: f.size,
+        source_url_used: f.name,
+      });
     } finally { setLoading(false); }
   };
 
@@ -268,7 +288,12 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      await ingestCsvText((data as any).csv);
+      const d = data as any;
+      await ingestCsvText(d.csv, {
+        byte_length: d.byte_length,
+        estimated_line_count: d.estimated_line_count,
+        source_url_used: d.source_url_used,
+      });
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to fetch sheet');
     } finally { setLoading(false); }
@@ -507,6 +532,25 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'invalid', true); }}>Only errors</Button>
               </div>
             </div>
+
+            {diagnostics && (
+              <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 px-1">
+                {diagnostics.byte_length !== undefined && <span>Bytes: {diagnostics.byte_length.toLocaleString()}</span>}
+                {diagnostics.estimated_line_count !== undefined && <span>~Lines: {diagnostics.estimated_line_count.toLocaleString()}</span>}
+                <span>Fetched: {diagnostics.rows_fetched}</span>
+                <span>Parsed: {diagnostics.rows_parsed}</span>
+                <span>Skipped empty: {diagnostics.skipped_empty}</span>
+                <span>Parser warnings: {diagnostics.parse_errors}</span>
+                <span>Valid: {stats.new + stats.upd}</span>
+                <span>Invalid: {stats.inv}</span>
+                <span>Selected: {stats.selected}</span>
+                {diagnostics.source_url_used && (
+                  <span className="truncate max-w-[420px]" title={diagnostics.source_url_used}>
+                    Source: {diagnostics.source_url_used}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-2">
               <Label className="text-xs">Mode</Label>
