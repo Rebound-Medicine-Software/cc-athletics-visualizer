@@ -234,7 +234,7 @@ export const OverrideEditorDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={mut.isPending}>
+          <Button onClick={handleSave} disabled={mut.isPending || !canAdjust}>
             {mut.isPending ? 'Saving…' : 'Save overrides'}
           </Button>
         </DialogFooter>
