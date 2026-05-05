@@ -47,11 +47,7 @@ export const useAssignments = (filters: {
     queryFn: async (): Promise<AssignmentRow[]> => {
       let q = supabase
         .from('athlete_program_assignments')
-        .select(
-          `*,
-           athletes:athlete_id ( id, name ),
-           programming_templates:template_id ( id, name, is_published )`
-        )
+        .select('*')
         .eq('team_id', teamId!)
         .order('updated_at', { ascending: false });
 
@@ -64,11 +60,38 @@ export const useAssignments = (filters: {
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []).map((row: any) => ({
+      const rows = data ?? [];
+      if (!rows.length) return [];
+
+      const athleteIds = Array.from(new Set(rows.map((r: any) => r.athlete_id).filter(Boolean)));
+      const templateIds = Array.from(new Set(rows.map((r: any) => r.template_id).filter(Boolean)));
+
+      const [athletesRes, templatesRes] = await Promise.all([
+        athleteIds.length
+          ? supabase.from('athletes').select('id, name').in('id', athleteIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        templateIds.length
+          ? supabase
+              .from('programming_templates')
+              .select('id, name, is_published')
+              .in('id', templateIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+      if (athletesRes.error) throw athletesRes.error;
+      if (templatesRes.error) throw templatesRes.error;
+
+      const athleteMap = Object.fromEntries(
+        (athletesRes.data ?? []).map((a: any) => [a.id, a])
+      );
+      const templateMap = Object.fromEntries(
+        (templatesRes.data ?? []).map((t: any) => [t.id, t])
+      );
+
+      return rows.map((row: any) => ({
         ...row,
-        athlete_name: row.athletes?.name ?? null,
-        template_name: row.programming_templates?.name ?? null,
-        template_published: !!row.programming_templates?.is_published,
+        athlete_name: athleteMap[row.athlete_id]?.name ?? null,
+        template_name: templateMap[row.template_id]?.name ?? null,
+        template_published: !!templateMap[row.template_id]?.is_published,
       })) as AssignmentRow[];
     },
   });
