@@ -249,7 +249,7 @@ export const ExerciseLibrary = () => {
           <Checkbox
             id="select-all-visible"
             checked={allVisibleSelected}
-            onCheckedChange={(c) => (c ? selectAllVisible() : clearSelection())}
+            onCheckedChange={(c) => (c ? selectAllVisible() : unselectAllVisible())}
           />
           <Label htmlFor="select-all-visible" className="cursor-pointer">
             Select all {visibleIds.length} visible
