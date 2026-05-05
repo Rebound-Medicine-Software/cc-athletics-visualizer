@@ -163,6 +163,9 @@ serve(async (req) => {
     const estimated_line_count =
       (text.match(/\n/g)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
 
+    const preview_head = text.slice(0, 500);
+    const preview_tail = text.length > 500 ? text.slice(-500) : "";
+
     return ok({
       csv: text,
       byte_length,
@@ -170,6 +173,8 @@ serve(async (req) => {
       source_url_used: target,
       status_code,
       content_type,
+      preview_head,
+      preview_tail,
     });
   } catch (err) {
     console.log(`[fetch-google-sheet-csv] internal_error url=${inputUrl} err=${(err as Error).message}`);
