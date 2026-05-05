@@ -48,6 +48,7 @@ export interface ExerciseOverride {
 export interface CompletionLogInput {
   assignmentId: string;
   programmingExerciseId?: string | null;
+  programmingSessionId?: string | null;
   performedOn: string; // YYYY-MM-DD
   setsCompleted?: number | null;
   repsCompleted?: string | null;

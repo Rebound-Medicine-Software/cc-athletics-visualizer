@@ -366,6 +366,7 @@ export const useLogCompletion = () => {
           team_id: teamId,
           assignment_id: input.assignmentId,
           programming_exercise_id: input.programmingExerciseId ?? null,
+          programming_session_id: input.programmingSessionId ?? null,
           performed_on: input.performedOn,
           sets_completed: input.setsCompleted ?? null,
           reps_completed: input.repsCompleted ?? null,
@@ -381,10 +382,13 @@ export const useLogCompletion = () => {
         teamId,
         userId: user?.id ?? null,
         athleteId: input.athleteId ?? null,
-        eventType: 'programme_completion_logged',
+        eventType: input.programmingSessionId && !input.programmingExerciseId
+          ? 'programme_session_completed'
+          : 'programme_completion_logged',
         metadata: {
           assignment_id: input.assignmentId,
           programming_exercise_id: input.programmingExerciseId ?? null,
+          programming_session_id: input.programmingSessionId ?? null,
           performed_on: input.performedOn,
           log_id: data?.id ?? null,
         },
