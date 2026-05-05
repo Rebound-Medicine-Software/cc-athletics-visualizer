@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/accordion';
 import { Upload, FileSpreadsheet, Wand2, Trash2, X, Info, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId, useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
@@ -40,6 +41,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { VideoPreviewButton, toEmbedUrl } from '../shared/VideoPreviewButton';
 import { EXERCISE_CATEGORIES } from './types';
+
+interface Diagnostics {
+  byte_length?: number;
+  estimated_line_count?: number;
+  source_url_used?: string;
+  rows_fetched: number;
+  rows_parsed: number;
+  skipped_empty: number;
+  parse_errors: number;
+}
 
 type ImportMode = 'create_only' | 'update_by_name' | 'update_by_url' | 'skip_duplicates';
 type RowStatus = 'new' | 'duplicate' | 'will_update' | 'invalid';
