@@ -65,8 +65,9 @@ export const useAssignments = (filters: {
 
       const athleteIds = Array.from(new Set(rows.map((r: any) => r.athlete_id).filter(Boolean)));
       const templateIds = Array.from(new Set(rows.map((r: any) => r.template_id).filter(Boolean)));
+      const assignerIds = Array.from(new Set(rows.map((r: any) => r.assigned_by).filter(Boolean)));
 
-      const [athletesRes, templatesRes] = await Promise.all([
+      const [athletesRes, templatesRes, assignersRes] = await Promise.all([
         athleteIds.length
           ? supabase.from('athletes').select('id, name').in('id', athleteIds)
           : Promise.resolve({ data: [], error: null } as any),
@@ -76,9 +77,16 @@ export const useAssignments = (filters: {
               .select('id, name, is_published')
               .in('id', templateIds)
           : Promise.resolve({ data: [], error: null } as any),
+        assignerIds.length
+          ? supabase
+              .from('profiles')
+              .select('user_id, full_name, email')
+              .in('user_id', assignerIds)
+          : Promise.resolve({ data: [], error: null } as any),
       ]);
       if (athletesRes.error) throw athletesRes.error;
       if (templatesRes.error) throw templatesRes.error;
+      if (assignersRes.error) throw assignersRes.error;
 
       const athleteMap = Object.fromEntries(
         (athletesRes.data ?? []).map((a: any) => [a.id, a])
@@ -86,12 +94,19 @@ export const useAssignments = (filters: {
       const templateMap = Object.fromEntries(
         (templatesRes.data ?? []).map((t: any) => [t.id, t])
       );
+      const assignerMap = Object.fromEntries(
+        (assignersRes.data ?? []).map((p: any) => [p.user_id, p])
+      );
 
       return rows.map((row: any) => ({
         ...row,
         athlete_name: athleteMap[row.athlete_id]?.name ?? null,
         template_name: templateMap[row.template_id]?.name ?? null,
         template_published: !!templateMap[row.template_id]?.is_published,
+        assigned_by_name:
+          assignerMap[row.assigned_by]?.full_name ??
+          assignerMap[row.assigned_by]?.email ??
+          null,
       })) as AssignmentRow[];
     },
   });
