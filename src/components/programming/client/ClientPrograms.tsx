@@ -1,17 +1,14 @@
 import { useMemo, useState } from 'react';
-import { format, parseISO, startOfWeek, isAfter, subDays } from 'date-fns';
+import { format, parseISO, startOfWeek, isAfter, subDays, differenceInCalendarDays } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { ClipboardCheck, AlertCircle, CheckCircle2, Calendar, Lock } from 'lucide-react';
+import { ClipboardCheck, AlertCircle, CheckCircle2, Calendar, Lock, CalendarDays } from 'lucide-react';
 import { useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { useClientAthlete } from './useClientAthlete';
-import {
-  useClientAssignments,
-  useClientCompletionLogs,
-} from './useClientAssignments';
+import { useClientAssignments, useClientCompletionLogs } from './useClientAssignments';
 import { useTemplateStructure } from '../assignments/useAssignments';
 import { ClientLogCompletionDialog } from './ClientLogCompletionDialog';
 import type { ExerciseOverride } from '../assignments/types';
@@ -36,11 +33,8 @@ const EmptyState = ({ title, description }: { title: string; description: string
 export const ClientPrograms = () => {
   const isViewAs = useIsViewAsMode();
   const { data: athlete, isLoading: athleteLoading, error: athleteError } = useClientAthlete();
-  const {
-    data: assignments = [],
-    isLoading: aLoading,
-    error: aError,
-  } = useClientAssignments(athlete?.id ?? null);
+  const { data: assignments = [], isLoading: aLoading, error: aError } =
+    useClientAssignments(athlete?.id ?? null);
 
   const active = assignments.find((a: any) => a.status === 'active') ?? assignments[0] ?? null;
   const history = assignments.filter((a: any) => a.id !== active?.id);
@@ -50,14 +44,7 @@ export const ClientPrograms = () => {
 
   const [logOpen, setLogOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
-
-  const exercisesByBlock = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    (structure?.exercises ?? []).forEach((ex: any) => {
-      (map[ex.block_id] = map[ex.block_id] ?? []).push(ex);
-    });
-    return map;
-  }, [structure]);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   const overrides: Record<string, ExerciseOverride> =
     (active?.override_payload as Record<string, ExerciseOverride>) ?? {};
@@ -76,15 +63,66 @@ export const ClientPrograms = () => {
     };
   };
 
+  // Build session schedule
+  const today = new Date();
+  const startDate = active?.start_date ? parseISO(active.start_date) : null;
+  const daysSinceStart = startDate ? differenceInCalendarDays(today, startDate) : 0;
+
+  const sessionGroups = useMemo(() => {
+    if (!structure) return { today: [], upcoming: [], past: [], unscheduled: [] };
+    const blockMap = Object.fromEntries((structure.blocks ?? []).map((b: any) => [b.id, b]));
+    const exByBlock: Record<string, any[]> = {};
+    const exBySession: Record<string, any[]> = {};
+    const unscheduledByBlock: Record<string, any[]> = {};
+    (structure.exercises ?? []).forEach((ex: any) => {
+      (exByBlock[ex.block_id] = exByBlock[ex.block_id] ?? []).push(ex);
+      if (ex.session_id) (exBySession[ex.session_id] = exBySession[ex.session_id] ?? []).push(ex);
+      else (unscheduledByBlock[ex.block_id] = unscheduledByBlock[ex.block_id] ?? []).push(ex);
+    });
+
+    const completedSessionIds = new Set(
+      (logs ?? []).map((l: any) => l.programming_session_id).filter(Boolean)
+    );
+
+    const enriched = (structure.sessions ?? []).map((s: any) => ({
+      ...s,
+      block: blockMap[s.block_id],
+      exercises: exBySession[s.id] ?? [],
+      completed: completedSessionIds.has(s.id),
+    }));
+
+    const todayList = enriched.filter((s) => s.day_offset === daysSinceStart);
+    const upcoming = enriched
+      .filter((s) => s.day_offset > daysSinceStart)
+      .sort((a, b) => a.day_offset - b.day_offset)
+      .slice(0, 5);
+    const past = enriched
+      .filter((s) => s.day_offset < daysSinceStart)
+      .sort((a, b) => b.day_offset - a.day_offset)
+      .slice(0, 5);
+
+    // Unscheduled exercises - shown only if blocks have any
+    const unscheduledBlocks = (structure.blocks ?? [])
+      .map((b: any) => ({ block: b, exercises: unscheduledByBlock[b.id] ?? [] }))
+      .filter((b) => b.exercises.length > 0);
+
+    return { today: todayList, upcoming, past, unscheduled: unscheduledBlocks };
+  }, [structure, logs, daysSinceStart]);
+
   // Adherence (last 7 days)
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekLogs = logs.filter((l: any) => isAfter(parseISO(l.performed_on), subDays(weekStart, 1)));
   const distinctDays = new Set(weekLogs.map((l: any) => l.performed_on)).size;
-
   const lastLogDate = logs[0]?.performed_on ?? null;
 
-  const openLogDialog = (ex: any | null) => {
+  const openExerciseLog = (ex: any) => {
+    setSelectedSession(null);
     setSelectedExercise(ex);
+    setLogOpen(true);
+  };
+  const openSessionLog = (s: any) => {
+    setSelectedExercise(null);
+    setSelectedSession(s ? { id: s.id, name: s.name } : null);
     setLogOpen(true);
   };
 
@@ -124,6 +162,65 @@ export const ClientPrograms = () => {
     );
   }
 
+  const renderSessionCard = (s: any, variant: 'today' | 'upcoming' | 'past') => (
+    <div key={s.id} className="rounded-md border">
+      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold flex items-center gap-2">
+            {s.name}
+            {s.completed && <Badge variant="outline" className="text-[10px]">Completed</Badge>}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {s.block?.name ?? 'Block'} · D+{s.day_offset}
+            {startDate ? ` · ${format(new Date(startDate.getTime() + s.day_offset * 86400000), 'EEE d MMM')}` : ''}
+          </p>
+        </div>
+        {variant === 'today' && (
+          <Button size="sm" variant="outline" disabled={isViewAs} onClick={() => openSessionLog(s)}>
+            <ClipboardCheck className="mr-1 h-4 w-4" /> Log session
+          </Button>
+        )}
+      </div>
+      <div className="divide-y">
+        {s.exercises.length === 0 ? (
+          <p className="px-3 py-3 text-xs italic text-muted-foreground">No exercises in this session.</p>
+        ) : (
+          s.exercises.map((ex: any) => {
+            const m = merge(ex);
+            const lib = structure?.library?.[ex.exercise_id] ?? {};
+            return (
+              <div key={ex.id} className="flex items-start justify-between gap-3 p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
+                    {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {[
+                      m.sets ? `${m.sets} sets` : null,
+                      m.reps ? `${m.reps} reps` : null,
+                      m.load ? `@ ${m.load}` : null,
+                      m.rpe ? `RPE ${m.rpe}` : null,
+                      m.tempo ? `Tempo ${m.tempo}` : null,
+                      m.rest_seconds ? `${m.rest_seconds}s rest` : null,
+                    ].filter(Boolean).join(' · ') || 'No prescription set'}
+                  </p>
+                  {m.notes && <p className="mt-1 text-xs italic text-muted-foreground">{m.notes}</p>}
+                </div>
+                {variant === 'today' && (
+                  <Button size="sm" variant="ghost" disabled={isViewAs}
+                    onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
+                    <CheckCircle2 className="mr-1 h-4 w-4" /> Log
+                  </Button>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -146,13 +243,13 @@ export const ClientPrograms = () => {
                   {active.programming_templates?.duration_weeks
                     ? `${active.programming_templates.duration_weeks} weeks`
                     : 'No duration set'}
+                  {startDate ? ` · Day ${daysSinceStart + 1}` : ''}
                 </p>
               </div>
               <Badge className="capitalize">{active.status}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Adherence */}
             <div className="grid grid-cols-3 gap-3">
               <div className="rounded-md border p-3">
                 <p className="text-xs text-muted-foreground">This week</p>
@@ -166,109 +263,109 @@ export const ClientPrograms = () => {
               </div>
               <div className="rounded-md border p-3">
                 <p className="text-xs text-muted-foreground">Last session</p>
-                <p className="text-lg font-semibold">
-                  {lastLogDate ? format(parseISO(lastLogDate), 'd MMM') : '—'}
-                </p>
+                <p className="text-lg font-semibold">{lastLogDate ? format(parseISO(lastLogDate), 'd MMM') : '—'}</p>
               </div>
             </div>
 
             <Separator />
 
-            {/* Programme structure */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <SectionTitle>Today's exercises</SectionTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isViewAs}
-                  onClick={() => openLogDialog(null)}
-                >
-                  <ClipboardCheck className="mr-2 h-4 w-4" /> Log whole session
-                </Button>
-              </div>
+            {sLoading && <Skeleton className="h-40 w-full" />}
 
-              {sLoading && <Skeleton className="h-40 w-full" />}
-              {!sLoading && (!structure?.blocks?.length) && (
-                <EmptyState
-                  title="No exercises in this programme yet"
-                  description="Your practitioner hasn't added exercises to this programme."
-                />
-              )}
-              {!sLoading &&
-                structure?.blocks?.map((block: any) => (
-                  <div key={block.id} className="rounded-md border">
-                    <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
-                      <p className="text-sm font-semibold">
-                        {block.name}
-                        {block.week_number ? (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            Week {block.week_number}
-                          </span>
-                        ) : null}
-                      </p>
-                    </div>
-                    <div className="divide-y">
-                      {(exercisesByBlock[block.id] ?? []).map((ex: any) => {
-                        const m = merge(ex);
-                        const lib = structure.library[ex.exercise_id] ?? {};
-                        return (
-                          <div key={ex.id} className="flex items-start justify-between gap-3 p-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
-                                {m.hasOverride && (
-                                  <Badge variant="outline" className="text-xs">Adjusted</Badge>
-                                )}
-                              </div>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {[
-                                  m.sets ? `${m.sets} sets` : null,
-                                  m.reps ? `${m.reps} reps` : null,
-                                  m.load ? `@ ${m.load}` : null,
-                                  m.rpe ? `RPE ${m.rpe}` : null,
-                                  m.tempo ? `Tempo ${m.tempo}` : null,
-                                  m.rest_seconds ? `${m.rest_seconds}s rest` : null,
-                                ]
-                                  .filter(Boolean)
-                                  .join(' · ') || 'No prescription set'}
-                              </p>
-                              {m.notes && (
-                                <p className="mt-1 text-xs italic text-muted-foreground">{m.notes}</p>
-                              )}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={isViewAs}
-                              onClick={() =>
-                                openLogDialog({
-                                  id: ex.id,
-                                  name: lib.name ?? 'Exercise',
-                                  sets: m.sets,
-                                  reps: m.reps,
-                                  load: m.load,
-                                })
-                              }
-                            >
-                              <CheckCircle2 className="mr-1 h-4 w-4" /> Log
-                            </Button>
-                          </div>
-                        );
-                      })}
-                      {!(exercisesByBlock[block.id] ?? []).length && (
-                        <p className="px-3 py-3 text-xs text-muted-foreground">No exercises in this block.</p>
-                      )}
-                    </div>
+            {!sLoading && (
+              <>
+                {/* Today */}
+                <div className="space-y-3">
+                  <SectionTitle>Today's session</SectionTitle>
+                  {sessionGroups.today.length === 0 ? (
+                    <EmptyState
+                      title="No session scheduled for today"
+                      description="Check upcoming sessions below or any unscheduled exercises."
+                    />
+                  ) : (
+                    sessionGroups.today.map((s) => renderSessionCard(s, 'today'))
+                  )}
+                </div>
+
+                {/* Upcoming */}
+                {sessionGroups.upcoming.length > 0 && (
+                  <div className="space-y-3">
+                    <SectionTitle>Upcoming sessions</SectionTitle>
+                    {sessionGroups.upcoming.map((s) => renderSessionCard(s, 'upcoming'))}
                   </div>
-                ))}
-            </div>
+                )}
+
+                {/* Completed/past */}
+                {sessionGroups.past.length > 0 && (
+                  <div className="space-y-3">
+                    <SectionTitle>Recent sessions</SectionTitle>
+                    {sessionGroups.past.map((s) => renderSessionCard(s, 'past'))}
+                  </div>
+                )}
+
+                {/* Unscheduled fallback */}
+                {sessionGroups.unscheduled.length > 0 && (
+                  <div className="space-y-3">
+                    <SectionTitle>Unscheduled exercises</SectionTitle>
+                    {sessionGroups.unscheduled.map(({ block, exercises }) => (
+                      <div key={block.id} className="rounded-md border">
+                        <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+                          <p className="text-sm font-semibold">
+                            {block.name}
+                            {block.week_number ? (
+                              <span className="ml-2 text-xs text-muted-foreground">Week {block.week_number}</span>
+                            ) : null}
+                          </p>
+                          <Button size="sm" variant="ghost" disabled={isViewAs} onClick={() => openSessionLog(null)}>
+                            <ClipboardCheck className="mr-1 h-4 w-4" /> Log
+                          </Button>
+                        </div>
+                        <div className="divide-y">
+                          {exercises.map((ex: any) => {
+                            const m = merge(ex);
+                            const lib = structure?.library?.[ex.exercise_id] ?? {};
+                            return (
+                              <div key={ex.id} className="flex items-start justify-between gap-3 p-3">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
+                                    {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
+                                  </div>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {[
+                                      m.sets ? `${m.sets} sets` : null,
+                                      m.reps ? `${m.reps} reps` : null,
+                                      m.load ? `@ ${m.load}` : null,
+                                      m.rpe ? `RPE ${m.rpe}` : null,
+                                    ].filter(Boolean).join(' · ') || 'No prescription set'}
+                                  </p>
+                                </div>
+                                <Button size="sm" variant="ghost" disabled={isViewAs}
+                                  onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
+                                  <CheckCircle2 className="mr-1 h-4 w-4" /> Log
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty programme */}
+                {(structure?.blocks?.length ?? 0) === 0 && (
+                  <EmptyState
+                    title="No exercises in this programme yet"
+                    description="Your practitioner hasn't added exercises to this programme."
+                  />
+                )}
+              </>
+            )}
 
             <Separator />
 
-            {/* Recent logs */}
             <div className="space-y-2">
-              <SectionTitle>Recent sessions</SectionTitle>
+              <SectionTitle>Recent logs</SectionTitle>
               {lLoading && <Skeleton className="h-24 w-full" />}
               {!lLoading && !logs.length && (
                 <EmptyState title="No sessions logged yet" description="Logged sessions will appear here." />
@@ -278,6 +375,11 @@ export const ClientPrograms = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
                       {format(parseISO(log.performed_on), 'EEE d MMM yyyy')}
+                      {log.programming_session_id && !log.programming_exercise_id && (
+                        <Badge variant="outline" className="ml-2 text-[10px] gap-1">
+                          <CalendarDays className="h-3 w-3" /> Session
+                        </Badge>
+                      )}
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">
                       {[
@@ -285,9 +387,7 @@ export const ClientPrograms = () => {
                         log.reps_completed ? `${log.reps_completed} reps` : null,
                         log.load_used ? `@ ${log.load_used}` : null,
                         log.rpe ? `RPE ${log.rpe}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' · ') || 'Session logged'}
+                      ].filter(Boolean).join(' · ') || 'Session logged'}
                     </p>
                     {log.notes && <p className="mt-1 text-xs italic text-muted-foreground">{log.notes}</p>}
                   </div>
@@ -328,6 +428,7 @@ export const ClientPrograms = () => {
           assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
           athleteId={athlete.id}
           exercise={selectedExercise}
+          session={selectedSession}
         />
       )}
     </div>
