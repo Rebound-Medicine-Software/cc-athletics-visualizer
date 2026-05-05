@@ -155,6 +155,11 @@ serve(async (req) => {
       return d.toISOString().slice(0, 10)
     }
 
+    // Workspace team that owns this API key. The current global CC_ATHLETICS_API_KEY
+    // belongs to the Evolve Physiotherapy workspace; every CC team returned by it
+    // is therefore a child of that workspace (parent/child team hierarchy).
+    const WORKSPACE_TEAM_ID = '2577a78f-edf7-4201-a70b-db764ce489fc'
+
     // Store teams in database (upsert each external team into our teams table)
     console.log(`Storing ${teamsData.teams.length} teams...`)
     for (const team of teamsData.teams) {
@@ -169,6 +174,24 @@ serve(async (req) => {
         })
       if (teamUpsertErr) {
         console.error('Team upsert failed', { cc_team_id: team.id, error: teamUpsertErr.message })
+      }
+    }
+
+    // Backfill parent_team_id for any CC team that's not the workspace itself and
+    // doesn't already have a parent. Never re-parent the workspace team or rows
+    // that already declare a parent.
+    const ccIdsForParenting = teamsData.teams
+      .map((t: any) => t.id)
+      .filter((id: string) => !!id)
+    if (ccIdsForParenting.length > 0) {
+      const { error: parentErr } = await supabaseClient
+        .from('teams')
+        .update({ parent_team_id: WORKSPACE_TEAM_ID })
+        .in('cc_team_id', ccIdsForParenting)
+        .is('parent_team_id', null)
+        .neq('id', WORKSPACE_TEAM_ID)
+      if (parentErr) {
+        console.error('parent_team_id backfill failed', parentErr.message)
       }
     }
 
