@@ -7,7 +7,7 @@ import { TestData } from '@/types/forcePlateTypes';
 import { toast } from 'sonner';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useWorkspaceTeams } from '@/hooks/useWorkspaceTeams';
 
 export interface UseCCAthletics {
   data: TestData[] | null;
@@ -21,56 +21,42 @@ export interface UseCCAthletics {
 export const useCCAthletics = (): UseCCAthletics => {
   const [apiKey, setApiKeyState] = useState<string | null>(null);
   const { profile } = useAuth();
-  const { teamId, isImpersonating, impersonatedTeamName } = useEffectiveTeamId();
+  const { teamId, isImpersonating } = useEffectiveTeamId();
+  const { data: workspaceTeams } = useWorkspaceTeams();
+  const isGlobalAdmin = profile?.role === 'super_admin' && !isImpersonating;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['cc-athletics-data', apiKey, teamId ?? 'all', isImpersonating],
+    queryKey: ['cc-athletics-data', apiKey, teamId ?? 'all', isImpersonating,
+      (workspaceTeams ?? []).map((t) => t.id).sort().join(',')],
     queryFn: async () => {
-      if (!apiKey) {
-        throw new Error('API key is required');
-      }
+      if (!apiKey) throw new Error('API key is required');
 
       const ccApi = new CCAthletics({ apiKey });
       const processor = new DataProcessor();
 
-      console.log('Fetching CC Athletics data...', { teamId, isImpersonating });
       const { teams, jumpAthletes, isometricAthletes, pogoAthletes } = await ccApi.getAllData();
-
       processor.setTeams(teams);
 
       const jumpData = processor.processJumpData(jumpAthletes);
       const isometricData = processor.processIsometricData(isometricAthletes);
       const pogoData = processor.processPogoData(pogoAthletes);
-
       const allData = [...jumpData, ...isometricData, ...pogoData];
-      console.log(`Processed ${allData.length} test records`);
 
-      // Resolve effective team name and apply post-fetch scoping.
-      // The upstream CC Athletics API has no per-tenant scoping, so we
-      // restrict client-side to the relevant team_name.
-      let effectiveTeamName: string | null = null;
-      if (isImpersonating && impersonatedTeamName) {
-        effectiveTeamName = impersonatedTeamName;
-      } else if (profile?.role !== 'super_admin' && teamId) {
-        const { data: teamRow } = await supabase
-          .from('teams')
-          .select('name')
-          .eq('id', teamId)
-          .maybeSingle();
-        effectiveTeamName = teamRow?.name ?? null;
-      }
+      if (isGlobalAdmin) return allData;
 
-      if (effectiveTeamName) {
-        const filtered = allData.filter(
-          (r: any) => (r.team_name ?? '').toLowerCase() === effectiveTeamName!.toLowerCase(),
-        );
-        console.log(`Scoped CC Athletics data ${allData.length} → ${filtered.length} for "${effectiveTeamName}"`);
-        return filtered;
-      }
-
-      return allData;
+      // Workspace = parent + every child CC team. Filter by name (CC payload
+      // only carries names), but allowlist comes from the parent_team_id graph.
+      const allowedNames = new Set(
+        (workspaceTeams ?? []).map((t) => (t.name || '').toLowerCase()),
+      );
+      if (allowedNames.size === 0) return [];
+      const filtered = allData.filter(
+        (r: any) => allowedNames.has((r.team_name ?? '').toLowerCase()),
+      );
+      console.log(`Scoped CC Athletics data ${allData.length} → ${filtered.length} across ${allowedNames.size} workspace team(s)`);
+      return filtered;
     },
-    enabled: !!apiKey,
+    enabled: !!apiKey && (isGlobalAdmin || workspaceTeams !== undefined),
     refetchInterval: 5 * 60 * 1000,
     retry: 2,
   });
