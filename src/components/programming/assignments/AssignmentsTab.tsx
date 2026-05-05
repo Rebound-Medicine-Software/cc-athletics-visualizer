@@ -140,10 +140,12 @@ export const AssignmentsTab = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Athlete</TableHead>
-                  <TableHead>Template</TableHead>
+                  <TableHead>Programme</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Assigned</TableHead>
+                  <TableHead>Assigned by</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,12 +164,16 @@ export const AssignmentsTab = () => {
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      <Badge className={statusColor[r.status]}>{r.status}</Badge>
+                    </TableCell>
                     <TableCell>{format(parseISO(r.start_date), 'PP')}</TableCell>
                     <TableCell>
                       {r.end_date ? format(parseISO(r.end_date), 'PP') : '—'}
                     </TableCell>
-                    <TableCell>
-                      <Badge className={statusColor[r.status]}>{r.status}</Badge>
+                    <TableCell>{format(parseISO(r.created_at), 'PP')}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.assigned_by_name ?? '—'}
                     </TableCell>
                   </TableRow>
                 ))}
