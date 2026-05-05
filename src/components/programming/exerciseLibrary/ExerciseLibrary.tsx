@@ -21,6 +21,7 @@ import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, 
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
+import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
   useExercises,
   useExerciseFacets,
@@ -248,11 +249,7 @@ export const ExerciseLibrary = () => {
 
                 <div className="flex items-center justify-between gap-2 pt-2 border-t">
                   {ex.video_url ? (
-                    <Button asChild variant="ghost" size="sm" className="h-8 px-2">
-                      <a href={ex.video_url} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" /> Video
-                      </a>
-                    </Button>
+                    <VideoPreviewButton url={ex.video_url} />
                   ) : (
                     <span />
                   )}

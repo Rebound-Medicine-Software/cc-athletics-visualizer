@@ -14,7 +14,7 @@ export const ProgrammingSection = () => {
       <Tabs defaultValue="library" className="space-y-4">
         <TabsList>
           <TabsTrigger value="library">Exercise Library</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="templates">Programme Builder</TabsTrigger>
           <TabsTrigger value="assignments">Assignments</TabsTrigger>
         </TabsList>
         <TabsContent value="library">

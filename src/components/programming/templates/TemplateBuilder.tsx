@@ -188,6 +188,16 @@ export const TemplateBuilder = ({ templateId, onBack }: Props) => {
                 </>
               )}
             </Button>
+            {(blocks?.length ?? 0) > 0 && !archived && (
+              <Button
+                size="sm"
+                disabled={writeBlocked}
+                onClick={handleFinish}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                {template.is_published ? 'Ready to assign' : 'Finish Programme'}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
