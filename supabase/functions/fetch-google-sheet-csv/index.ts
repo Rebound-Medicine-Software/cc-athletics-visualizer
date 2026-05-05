@@ -5,80 +5,174 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Allow only Google docs published CSV URLs to prevent SSRF.
 const ALLOWED_HOSTS = new Set(["docs.google.com"]);
+
+type ErrorCode =
+  | "invalid_url"
+  | "unsupported_host"
+  | "google_fetch_failed"
+  | "not_published_or_private"
+  | "file_too_large"
+  | "empty_csv"
+  | "timeout"
+  | "internal_error";
+
+const ERROR_MESSAGES: Record<ErrorCode, string> = {
+  invalid_url: "The URL is missing or malformed. Please paste a valid Google Sheets link.",
+  unsupported_host: "Only links from docs.google.com are allowed.",
+  google_fetch_failed: "Google Sheets refused the request. Check the link and that the sheet is shared.",
+  not_published_or_private:
+    "This sheet is not publicly published as CSV. In Google Sheets, go to File → Share → Publish to web → CSV.",
+  file_too_large: "The sheet is too large to import (limit 10MB).",
+  empty_csv: "The published sheet appears to be empty.",
+  timeout: "Google Sheets took too long to respond. Try again in a moment.",
+  internal_error: "Something went wrong fetching the sheet.",
+};
+
+function ok(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function fail(code: ErrorCode, diagnostics: Record<string, unknown> = {}, status = 200) {
+  // Always return 200 so client SDK doesn't swallow the body as a non-2xx error.
+  return ok(
+    {
+      error: code,
+      message: ERROR_MESSAGES[code],
+      diagnostics,
+    },
+    status,
+  );
+}
+
+function normalizeTarget(parsed: URL): string {
+  // Accept multiple shapes:
+  // - /spreadsheets/d/ID/edit?...#gid=N        → /export?format=csv&gid=N
+  // - /spreadsheets/d/ID/export?format=csv...  → keep
+  // - /spreadsheets/d/e/ID/pub?output=csv      → keep
+  // - /spreadsheets/d/ID/gviz/tq?tqx=out:csv   → keep
+  // - /spreadsheets/d/e/ID/pubhtml             → swap to pub?output=csv
+  const path = parsed.pathname;
+
+  if (path.includes("/export") || path.includes("/gviz/")) return parsed.toString();
+
+  // Published-to-web variants
+  const pubMatch = path.match(/\/spreadsheets\/d\/e\/([^/]+)\/(pub|pubhtml)/);
+  if (pubMatch) {
+    if (parsed.searchParams.get("output") === "csv") return parsed.toString();
+    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1];
+    const u = new URL(`https://docs.google.com/spreadsheets/d/e/${pubMatch[1]}/pub`);
+    u.searchParams.set("output", "csv");
+    if (gid) u.searchParams.set("gid", gid);
+    return u.toString();
+  }
+
+  // Standard /spreadsheets/d/ID/...
+  const m = path.match(/\/spreadsheets\/d\/([^/]+)/);
+  if (m) {
+    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1] ?? "0";
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
+  }
+
+  return parsed.toString();
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  let inputUrl = "";
   try {
-    const { url } = await req.json();
-    if (typeof url !== "string" || url.length > 1000) {
-      return new Response(JSON.stringify({ error: "Invalid URL" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const body = await req.json().catch(() => ({}));
+    inputUrl = typeof body?.url === "string" ? body.url : "";
+
+    if (!inputUrl || inputUrl.length > 1000) {
+      return fail("invalid_url", { reason: "missing_or_too_long" });
     }
+
     let parsed: URL;
     try {
-      parsed = new URL(url);
+      parsed = new URL(inputUrl);
     } catch {
-      return new Response(JSON.stringify({ error: "Malformed URL" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      return fail("invalid_url", { reason: "malformed" });
+    }
+
+    if (parsed.protocol !== "https:") {
+      return fail("invalid_url", { reason: "non_https", protocol: parsed.protocol });
+    }
+    if (!ALLOWED_HOSTS.has(parsed.hostname)) {
+      return fail("unsupported_host", { hostname: parsed.hostname });
+    }
+
+    const target = normalizeTarget(parsed);
+
+    // Timeout guard
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 20_000);
+
+    let res: Response;
+    try {
+      res = await fetch(target, { redirect: "follow", signal: ctrl.signal });
+    } catch (e) {
+      clearTimeout(tid);
+      const msg = (e as Error)?.name === "AbortError" ? "timeout" : "google_fetch_failed";
+      console.log(`[fetch-google-sheet-csv] fetch_error target=${target} err=${(e as Error).message}`);
+      return fail(msg as ErrorCode, { source_url_used: target });
+    }
+    clearTimeout(tid);
+
+    const status_code = res.status;
+    const content_type = res.headers.get("content-type") ?? "";
+    const byte_length_header = res.headers.get("content-length");
+
+    console.log(
+      `[fetch-google-sheet-csv] target=${target} status=${status_code} ct=${content_type} cl=${byte_length_header ?? "?"}`,
+    );
+
+    if (!res.ok) {
+      // 401/403/404 from /export typically means private or unpublished
+      const code: ErrorCode =
+        status_code === 401 || status_code === 403 || status_code === 404
+          ? "not_published_or_private"
+          : "google_fetch_failed";
+      return fail(code, { source_url_used: target, status_code, content_type });
+    }
+
+    // Google returns text/html (a sign-in page) when the sheet is private.
+    if (content_type.includes("text/html")) {
+      return fail("not_published_or_private", {
+        source_url_used: target,
+        status_code,
+        content_type,
+        hint: "Received HTML instead of CSV — sheet likely requires sign-in.",
       });
     }
-    if (parsed.protocol !== "https:" || !ALLOWED_HOSTS.has(parsed.hostname)) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Only published Google Sheets CSV links from docs.google.com are allowed.",
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
-    // Try to coerce to CSV export form
-    let target = parsed.toString();
-    if (
-      parsed.pathname.includes("/spreadsheets/d/") &&
-      !parsed.searchParams.get("output") &&
-      !parsed.pathname.endsWith("/pub")
-    ) {
-      // /spreadsheets/d/ID/edit?... → export?format=csv
-      const m = parsed.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
-      if (m) {
-        const gid = parsed.hash?.match(/gid=(\d+)/)?.[1] ?? "0";
-        target = `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
-      }
-    }
-
-    const res = await fetch(target, { redirect: "follow" });
-    if (!res.ok) {
-      return new Response(
-        JSON.stringify({ error: `Sheet fetch failed (${res.status})` }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
     const text = await res.text();
     const byte_length = new TextEncoder().encode(text).length;
+
     if (byte_length > 10_000_000) {
-      return new Response(JSON.stringify({ error: "Sheet too large (>10MB)" }), {
-        status: 413,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return fail("file_too_large", { source_url_used: target, byte_length });
     }
-    // Estimated line count (handles \n, ignores trailing empty)
-    const estimated_line_count = (text.match(/\n/g)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
-    console.log(`[fetch-google-sheet-csv] target=${target} bytes=${byte_length} lines~=${estimated_line_count}`);
-    return new Response(JSON.stringify({ csv: text, byte_length, estimated_line_count, source_url_used: target }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!text.trim()) {
+      return fail("empty_csv", { source_url_used: target, byte_length });
+    }
+
+    const estimated_line_count =
+      (text.match(/\n/g)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
+
+    return ok({
+      csv: text,
+      byte_length,
+      estimated_line_count,
+      source_url_used: target,
+      status_code,
+      content_type,
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.log(`[fetch-google-sheet-csv] internal_error url=${inputUrl} err=${(err as Error).message}`);
+    return fail("internal_error", { message: (err as Error).message });
   }
 });

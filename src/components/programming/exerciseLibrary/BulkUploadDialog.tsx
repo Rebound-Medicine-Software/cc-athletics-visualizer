@@ -286,16 +286,35 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
       const { data, error } = await supabase.functions.invoke('fetch-google-sheet-csv', {
         body: { url: sheetUrl.trim() },
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      if (error) {
+        // Try to surface the structured error from the function response body
+        const ctx: any = (error as any).context;
+        let detail = '';
+        try {
+          const body = await ctx?.json?.();
+          if (body?.message) detail = body.message;
+          else if (body?.error) detail = String(body.error);
+        } catch { /* ignore */ }
+        throw new Error(detail || error.message || 'Failed to reach the sheet fetcher.');
+      }
       const d = data as any;
+      if (d?.error) {
+        const diag = d.diagnostics
+          ? ` (status ${d.diagnostics.status_code ?? '—'}${d.diagnostics.content_type ? `, ${d.diagnostics.content_type}` : ''})`
+          : '';
+        toast.error(d.message ?? d.error, {
+          description: `${d.error}${diag}${d.diagnostics?.source_url_used ? `\n${d.diagnostics.source_url_used}` : ''}`,
+          duration: 12000,
+        });
+        return;
+      }
       await ingestCsvText(d.csv, {
         byte_length: d.byte_length,
         estimated_line_count: d.estimated_line_count,
         source_url_used: d.source_url_used,
       });
     } catch (e: any) {
-      toast.error(e.message ?? 'Failed to fetch sheet');
+      toast.error(e.message ?? 'Failed to fetch sheet', { duration: 10000 });
     } finally { setLoading(false); }
   };
 
