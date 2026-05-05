@@ -165,6 +165,111 @@ export const useUpdateExercise = () => {
   });
 };
 
+export const useBulkArchiveExercises = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async ({ ids, archive }: { ids: string[]; archive: boolean }) => {
+      if (!teamId) throw new Error('No team context');
+      if (ids.length === 0) return { count: 0 };
+      const { error } = await supabase
+        .from('exercises')
+        .update({ is_archived: archive, updated_by: user?.id ?? null })
+        .in('id', ids)
+        .eq('team_id', teamId);
+      if (error) throw error;
+      try {
+        await supabase.from('platform_activity_logs').insert({
+          event_type: archive ? 'exercise_bulk_archived' : 'exercise_bulk_unarchived',
+          event_source: 'programming.exercise_library',
+          team_id: teamId,
+          user_id: user?.id ?? null,
+          severity: 'info',
+          metadata: { exercise_ids: ids, count: ids.length },
+        });
+      } catch {/* non-fatal */}
+      return { count: ids.length };
+    },
+    onSuccess: ({ count }, vars) => {
+      qc.invalidateQueries({ queryKey: ['exercises'] });
+      qc.invalidateQueries({ queryKey: ['exercises-facets'] });
+      toast.success(`${count} exercise${count === 1 ? '' : 's'} ${vars.archive ? 'archived' : 'restored'}`);
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Bulk update failed'),
+  });
+};
+
+/**
+ * Returns map of exercise id -> referenced count in programming_exercises.
+ */
+export const useExerciseReferenceCounts = (ids: string[]) => {
+  const { teamId } = useEffectiveTeamId();
+  return useQuery({
+    queryKey: ['exercise-ref-counts', teamId, [...ids].sort()],
+    enabled: !!teamId && ids.length > 0,
+    queryFn: async (): Promise<Record<string, number>> => {
+      const { data, error } = await supabase
+        .from('programming_exercises')
+        .select('exercise_id')
+        .in('exercise_id', ids);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      ids.forEach((id) => (counts[id] = 0));
+      (data ?? []).forEach((row: any) => {
+        if (row.exercise_id) counts[row.exercise_id] = (counts[row.exercise_id] ?? 0) + 1;
+      });
+      return counts;
+    },
+  });
+};
+
+export const useBulkDeleteExercises = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!teamId) throw new Error('No team context');
+      if (ids.length === 0) return { count: 0 };
+      // Safety: re-check no references exist
+      const { data: refs, error: refErr } = await supabase
+        .from('programming_exercises')
+        .select('exercise_id')
+        .in('exercise_id', ids);
+      if (refErr) throw refErr;
+      const referenced = new Set((refs ?? []).map((r: any) => r.exercise_id));
+      const safe = ids.filter((id) => !referenced.has(id));
+      if (safe.length === 0) throw new Error('All selected exercises are used in programmes. Archive them instead.');
+      const { error } = await supabase
+        .from('exercises')
+        .delete()
+        .in('id', safe)
+        .eq('team_id', teamId);
+      if (error) throw error;
+      try {
+        await supabase.from('platform_activity_logs').insert({
+          event_type: 'exercise_bulk_deleted',
+          event_source: 'programming.exercise_library',
+          team_id: teamId,
+          user_id: user?.id ?? null,
+          severity: 'warning',
+          metadata: { exercise_ids: safe, count: safe.length, skipped_referenced: ids.length - safe.length },
+        });
+      } catch {/* non-fatal */}
+      return { count: safe.length, skipped: ids.length - safe.length };
+    },
+    onSuccess: ({ count, skipped }) => {
+      qc.invalidateQueries({ queryKey: ['exercises'] });
+      qc.invalidateQueries({ queryKey: ['exercises-facets'] });
+      toast.success(
+        `${count} exercise${count === 1 ? '' : 's'} deleted${skipped ? `, ${skipped} skipped (in use)` : ''}`,
+      );
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Bulk delete failed'),
+  });
+};
+
 export const useToggleArchiveExercise = () => {
   const qc = useQueryClient();
   const { teamId } = useEffectiveTeamId();
