@@ -99,20 +99,36 @@ export const ExerciseLibrary = () => {
   const writeBlocked = !canEdit || isViewAs;
 
   const visibleIds = useMemo(() => (exercises ?? []).map((e) => e.id), [exercises]);
-  const selectedExercises = useMemo(
-    () => (exercises ?? []).filter((e) => selectedIds.has(e.id)),
-    [exercises, selectedIds],
+  const visibleIdSet = useMemo(() => new Set(visibleIds), [visibleIds]);
+  const selectedExercises = useMemo(() => Array.from(selectedMap.values()), [selectedMap]);
+  const hiddenSelectedCount = useMemo(
+    () => selectedExercises.filter((e) => !visibleIdSet.has(e.id)).length,
+    [selectedExercises, visibleIdSet],
   );
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+  const selectedIds = useMemo(() => new Set(selectedMap.keys()), [selectedMap]);
+
+  const toggleSelect = (ex: Exercise) => {
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      next.has(ex.id) ? next.delete(ex.id) : next.set(ex.id, ex);
       return next;
     });
   };
-  const selectAllVisible = () => setSelectedIds(new Set(visibleIds));
-  const clearSelection = () => setSelectedIds(new Set());
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const selectAllVisible = () =>
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      (exercises ?? []).forEach((e) => next.set(e.id, e));
+      return next;
+    });
+  const unselectAllVisible = () =>
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      visibleIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  const clearSelection = () => setSelectedMap(new Map());
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
 
   if (error) {
     return (
