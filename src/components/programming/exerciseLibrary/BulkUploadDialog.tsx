@@ -513,6 +513,13 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                     placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"
                     disabled={loading}
                   />
+                  <Input
+                    value={sheetGid}
+                    onChange={(e) => setSheetGid(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="gid (tab id)"
+                    className="w-36"
+                    disabled={loading}
+                  />
                   <Button onClick={onLoadSheet} disabled={loading || !sheetUrl.trim()}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Load'}
                   </Button>
