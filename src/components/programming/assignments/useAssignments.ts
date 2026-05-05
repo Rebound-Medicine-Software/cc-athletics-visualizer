@@ -183,7 +183,7 @@ export const useCompletionSummary = (assignmentId: string | null) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('programme_completion_logs')
-        .select('id, performed_on, programming_exercise_id, sets_completed, reps_completed, load_used, rpe, notes, logged_by, created_at')
+        .select('id, performed_on, programming_exercise_id, programming_session_id, sets_completed, reps_completed, load_used, rpe, notes, logged_by, created_at')
         .eq('assignment_id', assignmentId!)
         .order('performed_on', { ascending: false })
         .order('created_at', { ascending: false })
