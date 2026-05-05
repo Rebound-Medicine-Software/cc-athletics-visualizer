@@ -47,6 +47,7 @@ export const ExerciseLibrary = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { hasPermission } = useEffectiveTier();
   const canEdit = hasPermission('can_edit_programming');
