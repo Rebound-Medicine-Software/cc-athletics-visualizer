@@ -354,14 +354,16 @@ export const useCreatePrescribed = () => {
       blockId,
       exerciseId,
       position,
+      sessionId,
     }: {
       blockId: string;
       exerciseId: string;
       position: number;
+      sessionId?: string | null;
     }) => {
       const { data, error } = await supabase
         .from('programming_exercises')
-        .insert({ block_id: blockId, exercise_id: exerciseId, position })
+        .insert({ block_id: blockId, exercise_id: exerciseId, position, session_id: sessionId ?? null })
         .select()
         .single();
       if (error) throw error;
