@@ -102,9 +102,7 @@ export const BulkActionBar = ({
           {selected.length} selected
         </span>
         <span className="text-xs text-muted-foreground">
-          {hiddenCount > 0
-            ? `(${hiddenCount} hidden by filters)`
-            : `of ${totalVisible} visible`}
+          ({visibleSelected} visible{hiddenCount > 0 ? `, ${hiddenCount} hidden` : ''} · of {totalVisible} shown)
         </span>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button size="sm" variant="ghost" onClick={onSelectAllVisible} disabled={disabled}>
