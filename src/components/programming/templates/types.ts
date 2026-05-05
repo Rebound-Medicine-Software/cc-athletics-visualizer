@@ -24,9 +24,21 @@ export interface Block {
   updated_at: string;
 }
 
+export interface ProgrammingSession {
+  id: string;
+  block_id: string;
+  name: string;
+  day_offset: number;
+  position: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PrescribedExercise {
   id: string;
   block_id: string;
+  session_id: string | null;
   exercise_id: string | null;
   position: number;
   sets: number | null;
