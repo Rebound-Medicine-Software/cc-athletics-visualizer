@@ -86,14 +86,30 @@ const parseCsv = (text: string): string[][] => {
   return rows.filter((r) => r.some((c) => c.trim() !== ''));
 };
 
-const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, '');
+// Strip BOM, zero-width chars, surrounding quotes; lowercase; remove all whitespace/punct
+const norm = (s: string) =>
+  (s ?? '')
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\u2060]/g, '')
+    .replace(/^["'\s]+|["'\s]+$/g, '')
+    .toLowerCase()
+    .replace(/[\s_\-./]+/g, '');
+
 const FIELD_ALIASES: Record<string, keyof PreviewRow> = {
   exercise: 'name',
   exercisename: 'name',
   name: 'name',
+  movement: 'name',
+  movementname: 'name',
+  exercisetitle: 'name',
+  title: 'name',
   url: 'video_url',
   videourl: 'video_url',
   video: 'video_url',
+  videolink: 'video_url',
+  link: 'video_url',
+  youtube: 'video_url',
+  youtubeurl: 'video_url',
   exercisestartposition: 'start_position',
   startposition: 'start_position',
   start: 'start_position',
@@ -103,10 +119,33 @@ const FIELD_ALIASES: Record<string, keyof PreviewRow> = {
   description: 'description',
   instructions: 'description',
   notes: 'description',
+  cues: 'description',
   category: 'category',
+  type: 'category',
   primarymuscles: 'primary_muscles',
   muscles: 'primary_muscles',
+  muscle: 'primary_muscles',
+  musclegroup: 'primary_muscles',
   equipment: 'equipment',
+  gear: 'equipment',
+};
+
+// Find the first row that contains a column mapping to "name" (Exercise-like)
+const detectHeaderRow = (grid: string[][]): { headerIndex: number; headers: string[]; idxMap: Record<string, number> } | null => {
+  const maxScan = Math.min(grid.length, 15);
+  for (let i = 0; i < maxScan; i++) {
+    const row = grid[i];
+    if (!row || row.every((c) => !c || !c.trim())) continue;
+    const idxMap: Record<string, number> = {};
+    row.forEach((h, idx) => {
+      const key = FIELD_ALIASES[norm(h)];
+      if (key && idxMap[key] === undefined) idxMap[key] = idx;
+    });
+    if (idxMap.name !== undefined) {
+      return { headerIndex: i, headers: row.map((h) => (h ?? '').trim()), idxMap };
+    }
+  }
+  return null;
 };
 
 const isValidUrl = (u: string) => {
@@ -171,22 +210,26 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   };
 
   const ingestCsvText = async (text: string) => {
-    const grid = parseCsv(text);
+    // Strip BOM at very start of file
+    const cleaned = text.replace(/^\uFEFF/, '');
+    const grid = parseCsv(cleaned);
     if (grid.length < 2) {
       toast.error('CSV is empty or only has a header.');
       return;
     }
-    const header = grid[0].map((h) => norm(h));
-    const idxMap: Record<string, number> = {};
-    header.forEach((h, i) => {
-      const key = FIELD_ALIASES[h];
-      if (key) idxMap[key] = i;
-    });
-    if (idxMap.name === undefined) {
-      toast.error('Missing required "Exercise" column.');
+    const detected = detectHeaderRow(grid);
+    if (!detected) {
+      const preview = grid.slice(0, 3).map((r, i) => `Row ${i + 1}: ${r.slice(0, 6).join(' | ')}`).join('\n');
+      const firstHeaders = (grid[0] ?? []).map((h) => (h ?? '').trim()).filter(Boolean).join(', ');
+      toast.error(
+        `Missing required "Exercise" column. Detected headers: ${firstHeaders || '(none)'}\n\nFirst rows:\n${preview}`,
+        { duration: 12000 },
+      );
       return;
     }
-    const parsed: PreviewRow[] = grid.slice(1).map((cells, i) => ({
+    const { headerIndex, headers, idxMap } = detected;
+    const dataRows = grid.slice(headerIndex + 1);
+    const parsed: PreviewRow[] = dataRows.map((cells, i) => ({
       id: `r-${i}-${Math.random().toString(36).slice(2, 8)}`,
       name: cells[idxMap.name] ?? '',
       video_url: idxMap.video_url !== undefined ? cells[idxMap.video_url] ?? '' : '',
@@ -201,7 +244,10 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     }));
     const classified = await classify(parsed);
     setRows(classified);
-    toast.success(`Loaded ${classified.length} rows`);
+    toast.success(
+      `Loaded ${classified.length} rows. Header on row ${headerIndex + 1}: ${headers.filter(Boolean).join(', ')}`,
+      { duration: 6000 },
+    );
   };
 
   const onFile = async (f: File) => {
