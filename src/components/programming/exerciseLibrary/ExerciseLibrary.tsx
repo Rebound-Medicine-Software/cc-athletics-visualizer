@@ -17,12 +17,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock, Upload } from 'lucide-react';
+import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock, Upload, History } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
 import { BulkUploadDialog } from './BulkUploadDialog';
+import { ImportHistoryDialog } from './ImportHistoryDialog';
 import { BulkActionBar } from './BulkActionBar';
 import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
@@ -54,6 +55,7 @@ export const ExerciseLibrary = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
   // Selection persists across filter changes — keyed by id, holds full Exercise
@@ -248,6 +250,13 @@ export const ExerciseLibrary = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              Import history
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
                 if (!canEdit) { toast.warning('Your tier does not allow editing programming.'); return; }
                 if (guardWrite('Bulk importing exercises')) return;
@@ -433,6 +442,7 @@ export const ExerciseLibrary = () => {
       />
 
       <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+      <ImportHistoryDialog open={historyOpen} onOpenChange={setHistoryOpen} />
 
       <AlertDialog open={!!confirmArchive} onOpenChange={(o) => !o && setConfirmArchive(null)}>
         <AlertDialogContent>
