@@ -30,6 +30,28 @@ const EmptyState = ({ title, description }: { title: string; description: string
   </div>
 );
 
+const PrescriptionChips = ({ m }: { m: any }) => {
+  const items: Array<{ label: string; value: string }> = [];
+  if (m.sets || m.reps) items.push({ label: 'Do', value: `${m.sets ?? '–'} sets × ${m.reps ?? '–'} reps` });
+  if (m.load) items.push({ label: 'Load', value: String(m.load) });
+  if (m.tempo) items.push({ label: 'Tempo', value: String(m.tempo) });
+  if (m.rest_seconds) items.push({ label: 'Rest', value: `${m.rest_seconds}s` });
+  if (m.rpe) items.push({ label: 'RPE', value: String(m.rpe) });
+  if (items.length === 0) {
+    return <p className="mt-1 text-xs italic text-muted-foreground">No prescription set</p>;
+  }
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {items.map((it) => (
+        <span key={it.label} className="inline-flex items-center gap-1 rounded border bg-muted/40 px-1.5 py-0.5 text-[11px]">
+          <span className="text-muted-foreground">{it.label}:</span>
+          <span className="font-medium">{it.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+};
+
 export const ClientPrograms = () => {
   const isViewAs = useIsViewAsMode();
   const { data: athlete, isLoading: athleteLoading, error: athleteError } = useClientAthlete();
@@ -195,16 +217,7 @@ export const ClientPrograms = () => {
                     <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
                     {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {[
-                      m.sets ? `${m.sets} sets` : null,
-                      m.reps ? `${m.reps} reps` : null,
-                      m.load ? `@ ${m.load}` : null,
-                      m.rpe ? `RPE ${m.rpe}` : null,
-                      m.tempo ? `Tempo ${m.tempo}` : null,
-                      m.rest_seconds ? `${m.rest_seconds}s rest` : null,
-                    ].filter(Boolean).join(' · ') || 'No prescription set'}
-                  </p>
+                  <PrescriptionChips m={m} />
                   {m.notes && <p className="mt-1 text-xs italic text-muted-foreground">{m.notes}</p>}
                 </div>
                 {variant === 'today' && (
@@ -330,14 +343,7 @@ export const ClientPrograms = () => {
                                     <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
                                     {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
                                   </div>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    {[
-                                      m.sets ? `${m.sets} sets` : null,
-                                      m.reps ? `${m.reps} reps` : null,
-                                      m.load ? `@ ${m.load}` : null,
-                                      m.rpe ? `RPE ${m.rpe}` : null,
-                                    ].filter(Boolean).join(' · ') || 'No prescription set'}
-                                  </p>
+                                  <PrescriptionChips m={m} />
                                 </div>
                                 <Button size="sm" variant="ghost" disabled={isViewAs}
                                   onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
