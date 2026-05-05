@@ -23,6 +23,7 @@ import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
 import { BulkUploadDialog } from './BulkUploadDialog';
+import { ImportHistoryDialog } from './ImportHistoryDialog';
 import { BulkActionBar } from './BulkActionBar';
 import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
