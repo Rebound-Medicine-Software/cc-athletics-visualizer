@@ -297,7 +297,7 @@ export const ExerciseLibrary = () => {
                       <Checkbox
                         className="mt-1"
                         checked={selectedIds.has(ex.id)}
-                        onCheckedChange={() => toggleSelect(ex.id)}
+                        onCheckedChange={() => toggleSelect(ex)}
                         aria-label={`Select ${ex.name}`}
                       />
                     )}
