@@ -148,15 +148,17 @@ export const useTemplateStructure = (templateId: string | null) => {
 
       const blockIds = (blocks ?? []).map((b) => b.id);
       let exercises: any[] = [];
+      let sessions: any[] = [];
       let library: Record<string, any> = {};
       if (blockIds.length) {
-        const { data: ex, error: eErr } = await supabase
-          .from('programming_exercises')
-          .select('*')
-          .in('block_id', blockIds)
-          .order('position', { ascending: true });
+        const [{ data: ex, error: eErr }, { data: ss, error: sErr }] = await Promise.all([
+          supabase.from('programming_exercises').select('*').in('block_id', blockIds).order('position', { ascending: true }),
+          supabase.from('programming_sessions').select('*').in('block_id', blockIds).order('position', { ascending: true }),
+        ]);
         if (eErr) throw eErr;
+        if (sErr) throw sErr;
         exercises = ex ?? [];
+        sessions = ss ?? [];
 
         const exIds = exercises.map((e) => e.exercise_id).filter(Boolean);
         if (exIds.length) {
@@ -167,7 +169,7 @@ export const useTemplateStructure = (templateId: string | null) => {
           library = Object.fromEntries((lib ?? []).map((x) => [x.id, x]));
         }
       }
-      return { blocks: blocks ?? [], exercises, library };
+      return { blocks: blocks ?? [], exercises, sessions, library };
     },
   });
 };
