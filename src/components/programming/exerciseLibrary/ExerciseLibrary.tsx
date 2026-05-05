@@ -18,10 +18,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock, Upload } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
 import { BulkUploadDialog } from './BulkUploadDialog';
+import { BulkActionBar } from './BulkActionBar';
 import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
   useExercises,
