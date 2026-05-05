@@ -343,14 +343,7 @@ export const ClientPrograms = () => {
                                     <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
                                     {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
                                   </div>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    {[
-                                      m.sets ? `${m.sets} sets` : null,
-                                      m.reps ? `${m.reps} reps` : null,
-                                      m.load ? `@ ${m.load}` : null,
-                                      m.rpe ? `RPE ${m.rpe}` : null,
-                                    ].filter(Boolean).join(' · ') || 'No prescription set'}
-                                  </p>
+                                  <PrescriptionChips m={m} />
                                 </div>
                                 <Button size="sm" variant="ghost" disabled={isViewAs}
                                   onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
