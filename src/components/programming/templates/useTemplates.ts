@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import type { Template, Block, PrescribedExercise, TemplateFormValues } from './types';
+import type { Template, Block, PrescribedExercise, TemplateFormValues, ProgrammingSession } from './types';
 
 const logActivity = async (params: {
   teamId: string | null;
