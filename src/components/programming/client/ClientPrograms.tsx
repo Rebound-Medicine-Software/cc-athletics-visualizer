@@ -30,6 +30,28 @@ const EmptyState = ({ title, description }: { title: string; description: string
   </div>
 );
 
+const PrescriptionChips = ({ m }: { m: any }) => {
+  const items: Array<{ label: string; value: string }> = [];
+  if (m.sets || m.reps) items.push({ label: 'Do', value: `${m.sets ?? '–'} sets × ${m.reps ?? '–'} reps` });
+  if (m.load) items.push({ label: 'Load', value: String(m.load) });
+  if (m.tempo) items.push({ label: 'Tempo', value: String(m.tempo) });
+  if (m.rest_seconds) items.push({ label: 'Rest', value: `${m.rest_seconds}s` });
+  if (m.rpe) items.push({ label: 'RPE', value: String(m.rpe) });
+  if (items.length === 0) {
+    return <p className="mt-1 text-xs italic text-muted-foreground">No prescription set</p>;
+  }
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {items.map((it) => (
+        <span key={it.label} className="inline-flex items-center gap-1 rounded border bg-muted/40 px-1.5 py-0.5 text-[11px]">
+          <span className="text-muted-foreground">{it.label}:</span>
+          <span className="font-medium">{it.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+};
+
 export const ClientPrograms = () => {
   const isViewAs = useIsViewAsMode();
   const { data: athlete, isLoading: athleteLoading, error: athleteError } = useClientAthlete();
