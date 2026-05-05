@@ -250,6 +250,13 @@ export const ExerciseLibrary = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              onClick={() => setHistoryOpen(true)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              Import history
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
                 if (!canEdit) { toast.warning('Your tier does not allow editing programming.'); return; }
                 if (guardWrite('Bulk importing exercises')) return;
