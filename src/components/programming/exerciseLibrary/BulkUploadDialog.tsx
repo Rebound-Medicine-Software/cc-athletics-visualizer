@@ -72,29 +72,22 @@ interface PreviewRow {
   aiApplied?: boolean;
 }
 
-// ----- CSV parsing (RFC4180-ish) -----
-const parseCsv = (text: string): string[][] => {
-  const rows: string[][] = [];
-  let cur: string[] = [];
-  let val = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { val += '"'; i++; }
-        else inQuotes = false;
-      } else val += c;
-    } else {
-      if (c === '"') inQuotes = true;
-      else if (c === ',') { cur.push(val); val = ''; }
-      else if (c === '\n') { cur.push(val); rows.push(cur); cur = []; val = ''; }
-      else if (c === '\r') { /* skip */ }
-      else val += c;
-    }
-  }
-  if (val.length || cur.length) { cur.push(val); rows.push(cur); }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''));
+// ----- CSV parsing using PapaParse (robust: quoted cells, embedded newlines, commas) -----
+const parseCsv = (text: string): { grid: string[][]; skippedEmpty: number; parseErrors: number } => {
+  const cleaned = text.replace(/^\uFEFF/, '');
+  const result = Papa.parse<string[]>(cleaned, {
+    skipEmptyLines: false,
+    dynamicTyping: false,
+    transform: (v) => (typeof v === 'string' ? v : String(v ?? '')),
+  });
+  const all = (result.data ?? []) as string[][];
+  let skippedEmpty = 0;
+  const grid = all.filter((r) => {
+    const keep = Array.isArray(r) && r.some((c) => (c ?? '').toString().trim() !== '');
+    if (!keep) skippedEmpty++;
+    return keep;
+  });
+  return { grid, skippedEmpty, parseErrors: result.errors?.length ?? 0 };
 };
 
 // Strip BOM, zero-width chars, surrounding quotes; lowercase; remove all whitespace/punct
