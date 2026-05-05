@@ -288,9 +288,9 @@ export const useRestoreExercises = () => {
   return useMutation({
     mutationFn: async (exercises: Exercise[]) => {
       if (!teamId) throw new Error('No team context');
-      if (exercises.length === 0) return { count: 0 };
-      const rows = exercises.map((e) => ({
-        id: e.id,
+      if (exercises.length === 0) return { count: 0, reassigned: 0 };
+      const buildRow = (e: Exercise, withId: boolean) => ({
+        ...(withId ? { id: e.id } : {}),
         team_id: teamId,
         name: e.name,
         category: e.category,
@@ -301,9 +301,25 @@ export const useRestoreExercises = () => {
         is_archived: e.is_archived,
         created_by: e.created_by,
         updated_by: user?.id ?? null,
-      }));
+      });
+      const rows = exercises.map((e) => buildRow(e, true));
       const { error } = await supabase.from('exercises').insert(rows);
-      if (error) throw error;
+      let reassigned = 0;
+      if (error) {
+        // Likely an ID conflict — fall back to per-row insert without ID
+        for (const ex of exercises) {
+          const { error: e2 } = await supabase
+            .from('exercises')
+            .insert(buildRow(ex, true));
+          if (e2) {
+            const { error: e3 } = await supabase
+              .from('exercises')
+              .insert(buildRow(ex, false));
+            if (e3) throw e3;
+            reassigned += 1;
+          }
+        }
+      }
       try {
         await supabase.from('platform_activity_logs').insert({
           event_type: 'exercise_bulk_restored',
@@ -311,15 +327,21 @@ export const useRestoreExercises = () => {
           team_id: teamId,
           user_id: user?.id ?? null,
           severity: 'info',
-          metadata: { exercise_ids: rows.map((r) => r.id), count: rows.length },
+          metadata: { exercise_ids: exercises.map((e) => e.id), count: exercises.length, reassigned },
         });
       } catch {/* non-fatal */}
-      return { count: rows.length };
+      return { count: exercises.length, reassigned };
     },
-    onSuccess: ({ count }) => {
+    onSuccess: ({ count, reassigned }) => {
       qc.invalidateQueries({ queryKey: ['exercises'] });
       qc.invalidateQueries({ queryKey: ['exercises-facets'] });
-      toast.success(`${count} exercise${count === 1 ? '' : 's'} restored`);
+      if (reassigned > 0) {
+        toast.success(
+          `${count} restored — ${reassigned} as new exercise${reassigned === 1 ? '' : 's'} (original ID unavailable)`,
+        );
+      } else {
+        toast.success(`${count} exercise${count === 1 ? '' : 's'} restored`);
+      }
     },
     onError: (e: any) => toast.error(e.message ?? 'Restore failed'),
   });

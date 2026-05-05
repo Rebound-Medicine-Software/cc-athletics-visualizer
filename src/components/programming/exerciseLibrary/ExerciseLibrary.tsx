@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,8 +35,17 @@ import {
 import { EXERCISE_CATEGORIES, type Exercise } from './types';
 import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
 import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
-import { useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
+import { useEffectiveTeamId, useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { toast } from 'sonner';
+import {
+  saveSelection,
+  loadSelection,
+  clearSelectionStorage,
+  loadUndoBuffer,
+  clearUndoBuffer,
+  UNDO_TTL,
+} from './bulkPersistence';
+import { useRestoreExercises } from './useExercises';
 
 export const ExerciseLibrary = () => {
   const [search, setSearch] = useState('');
@@ -55,6 +64,42 @@ export const ExerciseLibrary = () => {
   const canEdit = hasPermission('can_edit_programming');
   const isViewAs = useIsViewAsMode();
   const guardWrite = useViewAsWriteGuard();
+  const { teamId } = useEffectiveTeamId();
+  const restoreMut = useRestoreExercises();
+  const hydratedRef = useRef(false);
+
+  // Hydrate selection from sessionStorage on mount (per team)
+  useEffect(() => {
+    if (!teamId || hydratedRef.current) return;
+    const stored = loadSelection(teamId);
+    if (stored.length > 0) {
+      setSelectedMap(new Map(stored.map((e) => [e.id, e])));
+    }
+    // Surface persisted undo buffer (e.g. after a refresh within TTL)
+    const undo = loadUndoBuffer(teamId);
+    if (undo.length > 0) {
+      toast(`${undo.length} recently deleted exercise${undo.length === 1 ? '' : 's'}`, {
+        duration: UNDO_TTL,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            restoreMut.mutate(undo);
+            clearUndoBuffer();
+          },
+        },
+        onAutoClose: () => clearUndoBuffer(),
+        onDismiss: () => clearUndoBuffer(),
+      });
+    }
+    hydratedRef.current = true;
+  }, [teamId, restoreMut]);
+
+  // Persist selection on change
+  useEffect(() => {
+    if (!teamId || !hydratedRef.current) return;
+    if (selectedMap.size === 0) clearSelectionStorage();
+    else saveSelection(teamId, Array.from(selectedMap.values()));
+  }, [selectedMap, teamId]);
 
   const filters = useMemo(
     () => ({ search, category, equipment, showArchived }),
