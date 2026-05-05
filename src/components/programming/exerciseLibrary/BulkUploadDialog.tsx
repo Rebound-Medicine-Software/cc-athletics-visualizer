@@ -530,6 +530,7 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'new', true); }}>Only new</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'duplicate' || r.status === 'will_update', true); }}>Only duplicates</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'invalid', true); }}>Only errors</Button>
+              </div>
             </div>
 
             {diagnostics && (
@@ -550,7 +551,6 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                 )}
               </div>
             )}
-            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Label className="text-xs">Mode</Label>
