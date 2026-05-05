@@ -76,7 +76,7 @@ export const AssignmentsTab = () => {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search athlete or template…"
+              placeholder="Search athlete or programme…"
               className="pl-8"
             />
           </div>
