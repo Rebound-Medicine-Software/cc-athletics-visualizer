@@ -179,8 +179,9 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   const [enriching, setEnriching] = useState(false);
   const [mode, setMode] = useState<ImportMode>('create_only');
   const [rows, setRows] = useState<PreviewRow[]>([]);
+  const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
-  const reset = () => { setRows([]); setSheetUrl(''); };
+  const reset = () => { setRows([]); setSheetUrl(''); setDiagnostics(null); };
 
   // Build status given existing exercises
   const classify = async (parsed: PreviewRow[]) => {
