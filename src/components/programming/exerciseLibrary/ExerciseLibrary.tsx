@@ -55,6 +55,7 @@ export const ExerciseLibrary = () => {
   const [showArchived, setShowArchived] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
   // Selection persists across filter changes — keyed by id, holds full Exercise
