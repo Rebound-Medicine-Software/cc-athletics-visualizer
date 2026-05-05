@@ -573,20 +573,50 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
             </div>
 
             {diagnostics && (
-              <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 px-1">
-                {diagnostics.byte_length !== undefined && <span>Bytes: {diagnostics.byte_length.toLocaleString()}</span>}
-                {diagnostics.estimated_line_count !== undefined && <span>~Lines: {diagnostics.estimated_line_count.toLocaleString()}</span>}
-                <span>Fetched: {diagnostics.rows_fetched}</span>
-                <span>Parsed: {diagnostics.rows_parsed}</span>
-                <span>Skipped empty: {diagnostics.skipped_empty}</span>
-                <span>Parser warnings: {diagnostics.parse_errors}</span>
-                <span>Valid: {stats.new + stats.upd}</span>
-                <span>Invalid: {stats.inv}</span>
-                <span>Selected: {stats.selected}</span>
+              <div className="text-[11px] text-muted-foreground space-y-1 px-1">
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {diagnostics.byte_length !== undefined && <span>Bytes: {diagnostics.byte_length.toLocaleString()}</span>}
+                  {diagnostics.estimated_line_count !== undefined && (
+                    <span title="Lines Google returned in the CSV">Google returned ~{diagnostics.estimated_line_count.toLocaleString()} lines</span>
+                  )}
+                  <span title="Non-empty grid rows after PapaParse">Parser found {diagnostics.rows_fetched} rows</span>
+                  <span title="Data rows after detected header">Preview showing {diagnostics.rows_parsed} rows</span>
+                  <span>Skipped empty: {diagnostics.skipped_empty}</span>
+                  <span>Parser warnings: {diagnostics.parse_errors}</span>
+                  {diagnostics.header_index !== undefined && <span>Header row: {diagnostics.header_index + 1}</span>}
+                  <span>Valid: {stats.new + stats.upd}</span>
+                  <span>Invalid: {stats.inv}</span>
+                  <span>Selected: {stats.selected}</span>
+                </div>
                 {diagnostics.source_url_used && (
-                  <span className="truncate max-w-[420px]" title={diagnostics.source_url_used}>
-                    Source: {diagnostics.source_url_used}
-                  </span>
+                  <div className="truncate" title={diagnostics.source_url_used}>
+                    Source: <code>{diagnostics.source_url_used}</code>
+                  </div>
+                )}
+                {(diagnostics.first_rows?.length || diagnostics.preview_head) && (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer">Show raw diagnostics</summary>
+                    {diagnostics.preview_head && (
+                      <pre className="mt-1 p-2 bg-muted/40 rounded text-[10px] whitespace-pre-wrap overflow-auto max-h-32">
+                        <strong>CSV head (500 chars):</strong>{'\n'}{diagnostics.preview_head}
+                      </pre>
+                    )}
+                    {diagnostics.preview_tail && (
+                      <pre className="mt-1 p-2 bg-muted/40 rounded text-[10px] whitespace-pre-wrap overflow-auto max-h-32">
+                        <strong>CSV tail (500 chars):</strong>{'\n'}{diagnostics.preview_tail}
+                      </pre>
+                    )}
+                    {diagnostics.first_rows?.length ? (
+                      <pre className="mt-1 p-2 bg-muted/40 rounded text-[10px] overflow-auto max-h-32">
+                        <strong>First 5 data rows:</strong>{'\n'}{diagnostics.first_rows.map((r, i) => `${i + 1}: ${r.join(' | ')}`).join('\n')}
+                      </pre>
+                    ) : null}
+                    {diagnostics.last_rows?.length ? (
+                      <pre className="mt-1 p-2 bg-muted/40 rounded text-[10px] overflow-auto max-h-32">
+                        <strong>Last 5 data rows:</strong>{'\n'}{diagnostics.last_rows.map((r, i) => `${i + 1}: ${r.join(' | ')}`).join('\n')}
+                      </pre>
+                    ) : null}
+                  </details>
                 )}
               </div>
             )}
