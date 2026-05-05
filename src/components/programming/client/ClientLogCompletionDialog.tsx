@@ -79,9 +79,9 @@ export const ClientLogCompletionDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Log session</DialogTitle>
+          <DialogTitle>Log {session && !exercise ? 'session' : 'exercise'}</DialogTitle>
           <DialogDescription>
-            {exercise ? exercise.name : 'Whole session'}
+            {exercise ? exercise.name : session ? session.name : 'Whole programme'}
           </DialogDescription>
         </DialogHeader>
 
