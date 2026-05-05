@@ -99,6 +99,17 @@ export const OverrideEditorDialog = ({
           <DialogTitle>Per-athlete overrides</DialogTitle>
           <DialogDescription>
             Adjust prescribed values for this athlete. Empty fields fall back to the template.
+            {!canEditFull && canAdjust && (
+              <span className="block mt-1 text-xs">
+                Your tier allows adjusting <strong>sets, reps, load, RPE, notes</strong> only.
+                Tempo and rest are locked.
+              </span>
+            )}
+            {!canAdjust && (
+              <span className="block mt-1 text-xs text-destructive">
+                Your tier does not allow adjusting prescriptions.
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
