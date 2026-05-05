@@ -35,8 +35,17 @@ import {
 import { EXERCISE_CATEGORIES, type Exercise } from './types';
 import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
 import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
-import { useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
+import { useEffectiveTeamId, useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { toast } from 'sonner';
+import {
+  saveSelection,
+  loadSelection,
+  clearSelectionStorage,
+  loadUndoBuffer,
+  clearUndoBuffer,
+  UNDO_TTL,
+} from './bulkPersistence';
+import { useRestoreExercises } from './useExercises';
 
 export const ExerciseLibrary = () => {
   const [search, setSearch] = useState('');
