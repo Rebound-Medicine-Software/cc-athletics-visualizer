@@ -50,6 +50,11 @@ interface Diagnostics {
   rows_parsed: number;
   skipped_empty: number;
   parse_errors: number;
+  preview_head?: string;
+  preview_tail?: string;
+  first_rows?: string[][];
+  last_rows?: string[][];
+  header_index?: number;
 }
 
 type ImportMode = 'create_only' | 'update_by_name' | 'update_by_url' | 'skip_duplicates';
