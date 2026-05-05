@@ -214,6 +214,30 @@ export const ExerciseLibrary = () => {
         </p>
       )}
 
+      {!writeBlocked && exercises && exercises.length > 0 && (
+        <BulkActionBar
+          selected={selectedExercises}
+          onClear={clearSelection}
+          onSelectAll={selectAllVisible}
+          onUnselectAll={clearSelection}
+          totalVisible={visibleIds.length}
+          disabled={writeBlocked}
+        />
+      )}
+
+      {!writeBlocked && exercises && exercises.length > 0 && (
+        <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
+          <Checkbox
+            id="select-all-visible"
+            checked={allVisibleSelected}
+            onCheckedChange={(c) => (c ? selectAllVisible() : clearSelection())}
+          />
+          <Label htmlFor="select-all-visible" className="cursor-pointer">
+            Select all {visibleIds.length} visible
+          </Label>
+        </div>
+      )}
+
       {/* List */}
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
