@@ -210,22 +210,26 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   };
 
   const ingestCsvText = async (text: string) => {
-    const grid = parseCsv(text);
+    // Strip BOM at very start of file
+    const cleaned = text.replace(/^\uFEFF/, '');
+    const grid = parseCsv(cleaned);
     if (grid.length < 2) {
       toast.error('CSV is empty or only has a header.');
       return;
     }
-    const header = grid[0].map((h) => norm(h));
-    const idxMap: Record<string, number> = {};
-    header.forEach((h, i) => {
-      const key = FIELD_ALIASES[h];
-      if (key) idxMap[key] = i;
-    });
-    if (idxMap.name === undefined) {
-      toast.error('Missing required "Exercise" column.');
+    const detected = detectHeaderRow(grid);
+    if (!detected) {
+      const preview = grid.slice(0, 3).map((r, i) => `Row ${i + 1}: ${r.slice(0, 6).join(' | ')}`).join('\n');
+      const firstHeaders = (grid[0] ?? []).map((h) => (h ?? '').trim()).filter(Boolean).join(', ');
+      toast.error(
+        `Missing required "Exercise" column. Detected headers: ${firstHeaders || '(none)'}\n\nFirst rows:\n${preview}`,
+        { duration: 12000 },
+      );
       return;
     }
-    const parsed: PreviewRow[] = grid.slice(1).map((cells, i) => ({
+    const { headerIndex, headers, idxMap } = detected;
+    const dataRows = grid.slice(headerIndex + 1);
+    const parsed: PreviewRow[] = dataRows.map((cells, i) => ({
       id: `r-${i}-${Math.random().toString(36).slice(2, 8)}`,
       name: cells[idxMap.name] ?? '',
       video_url: idxMap.video_url !== undefined ? cells[idxMap.video_url] ?? '' : '',
@@ -240,7 +244,10 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     }));
     const classified = await classify(parsed);
     setRows(classified);
-    toast.success(`Loaded ${classified.length} rows`);
+    toast.success(
+      `Loaded ${classified.length} rows. Header on row ${headerIndex + 1}: ${headers.filter(Boolean).join(', ')}`,
+      { duration: 6000 },
+    );
   };
 
   const onFile = async (f: File) => {
