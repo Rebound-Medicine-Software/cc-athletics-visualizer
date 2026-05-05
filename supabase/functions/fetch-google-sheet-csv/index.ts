@@ -61,13 +61,17 @@ serve(async (req) => {
       );
     }
     const text = await res.text();
-    if (text.length > 5_000_000) {
-      return new Response(JSON.stringify({ error: "Sheet too large" }), {
+    const byte_length = new TextEncoder().encode(text).length;
+    if (byte_length > 10_000_000) {
+      return new Response(JSON.stringify({ error: "Sheet too large (>10MB)" }), {
         status: 413,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    return new Response(JSON.stringify({ csv: text }), {
+    // Estimated line count (handles \n, ignores trailing empty)
+    const estimated_line_count = (text.match(/\n/g)?.length ?? 0) + (text.endsWith("\n") ? 0 : 1);
+    console.log(`[fetch-google-sheet-csv] target=${target} bytes=${byte_length} lines~=${estimated_line_count}`);
+    return new Response(JSON.stringify({ csv: text, byte_length, estimated_line_count, source_url_used: target }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
