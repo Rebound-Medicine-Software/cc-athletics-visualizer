@@ -427,8 +427,21 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     const targets = rows.filter((r) => r.selected && r.status !== 'invalid');
     if (!targets.length) { toast.info('No valid rows selected.'); return; }
     setImporting(true);
-    await logActivity('exercise_import_started', { count: targets.length, mode });
+    const importId =
+      (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+        ? crypto.randomUUID()
+        : `imp-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    await logActivity('exercise_import_started', {
+      import_id: importId,
+      total_rows: targets.length,
+      mode,
+    });
     let created = 0, updated = 0, skipped = 0, failed = 0;
+    const created_ids: string[] = [];
+    const updated_snapshots: Array<{
+      id: string;
+      previous: { name: string; video_url: string | null; primary_muscles: string[]; equipment: string[]; instructions: string | null; category: string | null };
+    }> = [];
     try {
       for (const r of targets) {
         const payload = {
@@ -441,36 +454,70 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
         };
         try {
           if (r.matchedId && (mode === 'update_by_name' || mode === 'update_by_url')) {
+            // Snapshot previous values for rollback
+            const { data: prev } = await supabase
+              .from('exercises')
+              .select('id,name,video_url,primary_muscles,equipment,instructions,category')
+              .eq('id', r.matchedId)
+              .maybeSingle();
             const { error } = await supabase
               .from('exercises')
               .update({ ...payload, updated_by: user?.id ?? null })
               .eq('id', r.matchedId);
             if (error) throw error;
+            if (prev) {
+              updated_snapshots.push({
+                id: prev.id,
+                previous: {
+                  name: prev.name,
+                  video_url: prev.video_url,
+                  primary_muscles: prev.primary_muscles ?? [],
+                  equipment: prev.equipment ?? [],
+                  instructions: prev.instructions,
+                  category: prev.category,
+                },
+              });
+            }
             updated++;
           } else if (r.matchedId && (mode === 'skip_duplicates' || mode === 'create_only')) {
             skipped++;
           } else {
-            const { error } = await supabase.from('exercises').insert({
+            const { data: ins, error } = await supabase.from('exercises').insert({
               ...payload,
               team_id: teamId,
               created_by: user?.id ?? null,
               updated_by: user?.id ?? null,
-            });
+            }).select('id').single();
             if (error) throw error;
+            if (ins?.id) created_ids.push(ins.id);
             created++;
           }
         } catch {
           failed++;
         }
       }
-      await logActivity('exercise_import_completed', { created, updated, skipped, failed, mode });
+      const affected_exercise_ids = [...created_ids, ...updated_snapshots.map((s) => s.id)];
+      await logActivity('exercise_import_completed', {
+        import_id: importId,
+        mode,
+        total_rows: targets.length,
+        created,
+        updated,
+        skipped,
+        invalid: failed,
+        affected_exercise_ids,
+        created_ids,
+        updated_snapshots,
+        status: failed > 0 ? 'partial' : 'success',
+      });
       toast.success(`Import done — ${created} new, ${updated} updated, ${skipped} skipped, ${failed} failed`);
       qc.invalidateQueries({ queryKey: ['exercises'] });
       qc.invalidateQueries({ queryKey: ['exercises-facets'] });
+      qc.invalidateQueries({ queryKey: ['exercise-import-history'] });
       reset();
       onOpenChange(false);
     } catch (e: any) {
-      await logActivity('exercise_import_failed', { error: e.message });
+      await logActivity('exercise_import_failed', { import_id: importId, error: e.message });
       toast.error(e.message ?? 'Import failed');
     } finally { setImporting(false); }
   };
