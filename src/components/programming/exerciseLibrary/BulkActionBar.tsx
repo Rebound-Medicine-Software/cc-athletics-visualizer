@@ -11,17 +11,20 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Archive, ArchiveRestore, Trash2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useBulkArchiveExercises,
   useBulkDeleteExercises,
   useExerciseReferenceCounts,
+  useRestoreExercises,
 } from './useExercises';
 import type { Exercise } from './types';
 
 interface Props {
   selected: Exercise[];
+  hiddenCount: number;
   onClear: () => void;
-  onSelectAll: () => void;
+  onSelectAllVisible: () => void;
   onUnselectAll: () => void;
   totalVisible: number;
   disabled?: boolean;
@@ -29,8 +32,9 @@ interface Props {
 
 export const BulkActionBar = ({
   selected,
+  hiddenCount,
   onClear,
-  onSelectAll,
+  onSelectAllVisible,
   onUnselectAll,
   totalVisible,
   disabled,
@@ -41,6 +45,7 @@ export const BulkActionBar = ({
 
   const archiveMut = useBulkArchiveExercises();
   const deleteMut = useBulkDeleteExercises();
+  const restoreMut = useRestoreExercises();
 
   if (selected.length === 0) return null;
 
@@ -52,16 +57,45 @@ export const BulkActionBar = ({
     : null;
   const blockedCount = refCounts ? ids.length - (deletableCount ?? 0) : null;
 
+  const handleDelete = async () => {
+    try {
+      const result = await deleteMut.mutateAsync(selected);
+      setConfirmDelete(false);
+      onClear();
+      const { deleted, skipped } = result;
+      toast.success(
+        `${deleted.length} exercise${deleted.length === 1 ? '' : 's'} deleted${
+          skipped.length ? `, ${skipped.length} skipped (in use)` : ''
+        }`,
+        {
+          duration: 8000,
+          action: deleted.length
+            ? {
+                label: 'Undo',
+                onClick: () => restoreMut.mutate(deleted),
+              }
+            : undefined,
+        },
+      );
+    } catch {
+      /* error toast handled in hook */
+    }
+  };
+
   return (
     <>
       <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-md border bg-background/95 p-3 shadow-sm backdrop-blur">
         <span className="text-sm font-medium">
           {selected.length} selected
         </span>
-        <span className="text-xs text-muted-foreground">of {totalVisible}</span>
+        <span className="text-xs text-muted-foreground">
+          {hiddenCount > 0
+            ? `(${hiddenCount} hidden by filters)`
+            : `of ${totalVisible} visible`}
+        </span>
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button size="sm" variant="ghost" onClick={onSelectAll} disabled={disabled}>
-            Select all
+          <Button size="sm" variant="ghost" onClick={onSelectAllVisible} disabled={disabled}>
+            Select all visible
           </Button>
           <Button size="sm" variant="ghost" onClick={onUnselectAll} disabled={disabled}>
             Unselect all
@@ -115,18 +149,26 @@ export const BulkActionBar = ({
             <AlertDialogTitle>Delete selected exercises?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-2 text-sm">
-                <p>You selected <strong>{selected.length}</strong> exercise{selected.length === 1 ? '' : 's'}.</p>
+                <p>
+                  You selected <strong>{selected.length}</strong> exercise
+                  {selected.length === 1 ? '' : 's'}.
+                </p>
                 {refCounts ? (
                   <>
                     <p>
-                      <strong>{deletableCount}</strong> can be permanently deleted.
+                      <strong>{deletableCount}</strong> deletable
+                      {(blockedCount ?? 0) > 0 && (
+                        <> · <strong>{blockedCount}</strong> referenced</>
+                      )}
                     </p>
                     {(blockedCount ?? 0) > 0 && (
                       <p className="text-amber-600 dark:text-amber-400">
-                        <strong>{blockedCount}</strong> {blockedCount === 1 ? 'is' : 'are'} used in programmes and will be skipped. Archive instead to keep history intact.
+                        These will be skipped because they are used in programmes. Archive them instead to keep history intact.
                       </p>
                     )}
-                    <p className="text-muted-foreground">This action cannot be undone.</p>
+                    <p className="text-muted-foreground">
+                      Hard delete is irreversible — but you'll have a few seconds to Undo from the toast.
+                    </p>
                   </>
                 ) : (
                   <p className="text-muted-foreground">Checking programme references…</p>
@@ -138,12 +180,9 @@ export const BulkActionBar = ({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={!refCounts || (deletableCount ?? 0) === 0 || deleteMut.isPending}
-              onClick={async (e) => {
+              onClick={(e) => {
                 e.preventDefault();
-                await deleteMut.mutateAsync(ids).then(() => {
-                  setConfirmDelete(false);
-                  onClear();
-                }).catch(() => {});
+                handleDelete();
               }}
             >
               Delete {deletableCount ?? ''}
