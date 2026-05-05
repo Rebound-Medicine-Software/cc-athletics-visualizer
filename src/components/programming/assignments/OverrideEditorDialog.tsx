@@ -51,6 +51,14 @@ export const OverrideEditorDialog = ({
   const [draft, setDraft] = useState<Record<string, ExerciseOverride>>({});
   const mut = useUpdateAssignmentOverrides();
   const guardWrite = useViewAsWriteGuard();
+  const { hasPermission } = useEffectiveTier();
+  const canEditFull = hasPermission('can_edit_programming');
+  const canAdjust = canEditFull || hasPermission('can_adjust_sets_reps');
+  const canEditField = (field: keyof ExerciseOverride) => {
+    if (canEditFull) return true;
+    if (!canAdjust) return false;
+    return field === 'sets' || field === 'reps' || field === 'load' || field === 'rpe' || field === 'notes';
+  };
 
   useEffect(() => {
     if (open) setDraft(JSON.parse(JSON.stringify(initialOverrides ?? {})));
