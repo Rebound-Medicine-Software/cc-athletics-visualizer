@@ -48,32 +48,37 @@ function fail(code: ErrorCode, diagnostics: Record<string, unknown> = {}, status
   );
 }
 
-function normalizeTarget(parsed: URL): string {
-  // Accept multiple shapes:
-  // - /spreadsheets/d/ID/edit?...#gid=N        → /export?format=csv&gid=N
-  // - /spreadsheets/d/ID/export?format=csv...  → keep
-  // - /spreadsheets/d/e/ID/pub?output=csv      → keep
-  // - /spreadsheets/d/ID/gviz/tq?tqx=out:csv   → keep
-  // - /spreadsheets/d/e/ID/pubhtml             → swap to pub?output=csv
+function normalizeTarget(parsed: URL, gidOverride?: string): string {
   const path = parsed.pathname;
 
-  if (path.includes("/export") || path.includes("/gviz/")) return parsed.toString();
+  if (path.includes("/export") || path.includes("/gviz/")) {
+    if (gidOverride) {
+      const u = new URL(parsed.toString());
+      u.searchParams.set("gid", gidOverride);
+      return u.toString();
+    }
+    return parsed.toString();
+  }
 
-  // Published-to-web variants
   const pubMatch = path.match(/\/spreadsheets\/d\/e\/([^/]+)\/(pub|pubhtml)/);
   if (pubMatch) {
-    if (parsed.searchParams.get("output") === "csv") return parsed.toString();
-    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1];
+    const gid =
+      gidOverride ??
+      parsed.searchParams.get("gid") ??
+      parsed.hash?.match(/gid=(\d+)/)?.[1];
     const u = new URL(`https://docs.google.com/spreadsheets/d/e/${pubMatch[1]}/pub`);
     u.searchParams.set("output", "csv");
     if (gid) u.searchParams.set("gid", gid);
     return u.toString();
   }
 
-  // Standard /spreadsheets/d/ID/...
   const m = path.match(/\/spreadsheets\/d\/([^/]+)/);
   if (m) {
-    const gid = parsed.searchParams.get("gid") ?? parsed.hash?.match(/gid=(\d+)/)?.[1] ?? "0";
+    const gid =
+      gidOverride ??
+      parsed.searchParams.get("gid") ??
+      parsed.hash?.match(/gid=(\d+)/)?.[1] ??
+      "0";
     return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=csv&gid=${gid}`;
   }
 
