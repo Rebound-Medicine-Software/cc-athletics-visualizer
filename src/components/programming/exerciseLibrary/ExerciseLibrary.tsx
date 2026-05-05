@@ -315,6 +315,8 @@ export const ExerciseLibrary = () => {
         }}
       />
 
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} />
+
       <AlertDialog open={!!confirmArchive} onOpenChange={(o) => !o && setConfirmArchive(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
