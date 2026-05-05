@@ -293,10 +293,9 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('fetch-google-sheet-csv', {
-        body: { url: sheetUrl.trim() },
+        body: { url: sheetUrl.trim(), gid: sheetGid.trim() || undefined },
       });
       if (error) {
-        // Try to surface the structured error from the function response body
         const ctx: any = (error as any).context;
         let detail = '';
         try {
@@ -321,6 +320,8 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
         byte_length: d.byte_length,
         estimated_line_count: d.estimated_line_count,
         source_url_used: d.source_url_used,
+        preview_head: d.preview_head,
+        preview_tail: d.preview_tail,
       });
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to fetch sheet', { duration: 10000 });
