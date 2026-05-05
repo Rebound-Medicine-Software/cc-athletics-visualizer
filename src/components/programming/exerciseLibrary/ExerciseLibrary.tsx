@@ -270,11 +270,20 @@ export const ExerciseLibrary = () => {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {exercises.map((ex) => (
-            <Card key={ex.id} className={ex.is_archived ? 'opacity-70' : ''}>
+            <Card key={ex.id} className={`${ex.is_archived ? 'opacity-70' : ''} ${selectedIds.has(ex.id) ? 'ring-2 ring-primary' : ''}`}>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <h4 className="font-semibold truncate">{ex.name}</h4>
+                  <div className="flex items-start gap-2 min-w-0">
+                    {!writeBlocked && (
+                      <Checkbox
+                        className="mt-1"
+                        checked={selectedIds.has(ex.id)}
+                        onCheckedChange={() => toggleSelect(ex.id)}
+                        aria-label={`Select ${ex.name}`}
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <h4 className="font-semibold truncate">{ex.name}</h4>
                     <div className="flex flex-wrap items-center gap-1.5 mt-1">
                       {ex.category && (
                         <Badge variant="secondary" className="text-[10px]">
