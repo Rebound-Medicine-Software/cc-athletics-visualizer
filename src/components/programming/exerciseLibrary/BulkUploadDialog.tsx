@@ -214,12 +214,17 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     });
   };
 
-  const ingestCsvText = async (text: string) => {
-    // Strip BOM at very start of file
-    const cleaned = text.replace(/^\uFEFF/, '');
-    const grid = parseCsv(cleaned);
+  const ingestCsvText = async (text: string, sourceMeta?: Partial<Diagnostics>) => {
+    const { grid, skippedEmpty, parseErrors } = parseCsv(text);
     if (grid.length < 2) {
       toast.error('CSV is empty or only has a header.');
+      setDiagnostics({
+        ...sourceMeta,
+        rows_fetched: grid.length,
+        rows_parsed: 0,
+        skipped_empty: skippedEmpty,
+        parse_errors: parseErrors,
+      } as Diagnostics);
       return;
     }
     const detected = detectHeaderRow(grid);
@@ -236,12 +241,12 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     const dataRows = grid.slice(headerIndex + 1);
     const parsed: PreviewRow[] = dataRows.map((cells, i) => ({
       id: `r-${i}-${Math.random().toString(36).slice(2, 8)}`,
-      name: cells[idxMap.name] ?? '',
-      video_url: idxMap.video_url !== undefined ? cells[idxMap.video_url] ?? '' : '',
+      name: (cells[idxMap.name] ?? '').trim(),
+      video_url: idxMap.video_url !== undefined ? (cells[idxMap.video_url] ?? '').trim() : '',
       start_position: idxMap.start_position !== undefined ? cells[idxMap.start_position] ?? '' : '',
       end_position: idxMap.end_position !== undefined ? cells[idxMap.end_position] ?? '' : '',
       description: idxMap.description !== undefined ? cells[idxMap.description] ?? '' : '',
-      category: idxMap.category !== undefined ? cells[idxMap.category] ?? '' : '',
+      category: idxMap.category !== undefined ? (cells[idxMap.category] ?? '').trim() : '',
       primary_muscles: idxMap.primary_muscles !== undefined ? cells[idxMap.primary_muscles] ?? '' : '',
       equipment: idxMap.equipment !== undefined ? cells[idxMap.equipment] ?? '' : '',
       selected: true,
@@ -249,8 +254,15 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
     }));
     const classified = await classify(parsed);
     setRows(classified);
+    setDiagnostics({
+      ...sourceMeta,
+      rows_fetched: grid.length,
+      rows_parsed: classified.length,
+      skipped_empty: skippedEmpty,
+      parse_errors: parseErrors,
+    } as Diagnostics);
     toast.success(
-      `Loaded ${classified.length} rows. Header on row ${headerIndex + 1}: ${headers.filter(Boolean).join(', ')}`,
+      `Loaded ${classified.length} rows (header row ${headerIndex + 1}). Skipped ${skippedEmpty} empty.`,
       { duration: 6000 },
     );
   };
