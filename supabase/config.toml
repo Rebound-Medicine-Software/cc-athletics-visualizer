@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.generate-platform-alerts]
 verify_jwt = false
+
+[functions.fetch-google-sheet-csv]
+verify_jwt = false
+
+[functions.enrich-exercise]
+verify_jwt = false
