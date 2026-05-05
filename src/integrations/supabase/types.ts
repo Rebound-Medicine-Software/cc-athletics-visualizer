@@ -1561,6 +1561,7 @@ export type Database = {
           notificationapi_connected: boolean | null
           organisation_status: string | null
           owner_user_id: string | null
+          parent_team_id: string | null
           practitioner_count: number | null
           primary_color: string | null
           region: string | null
@@ -1594,6 +1595,7 @@ export type Database = {
           notificationapi_connected?: boolean | null
           organisation_status?: string | null
           owner_user_id?: string | null
+          parent_team_id?: string | null
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
@@ -1627,6 +1629,7 @@ export type Database = {
           notificationapi_connected?: boolean | null
           organisation_status?: string | null
           owner_user_id?: string | null
+          parent_team_id?: string | null
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
@@ -1637,7 +1640,22 @@ export type Database = {
           tier_id?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "teams_parent_team_id_fkey"
+            columns: ["parent_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_parent_team_id_fkey"
+            columns: ["parent_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       test_data: {
         Row: {
@@ -1984,6 +2002,7 @@ export type Database = {
       get_my_api_key: { Args: never; Returns: string }
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
+      get_my_workspace_team_ids: { Args: never; Returns: string[] }
       get_notification_campaign_detail: {
         Args: { campaign_uuid: string }
         Returns: Json
