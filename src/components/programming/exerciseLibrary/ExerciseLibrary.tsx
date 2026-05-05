@@ -297,6 +297,7 @@ export const ExerciseLibrary = () => {
                       )}
                     </div>
                   </div>
+                  </div>
                 </div>
 
                 {ex.primary_muscles?.length > 0 && (
