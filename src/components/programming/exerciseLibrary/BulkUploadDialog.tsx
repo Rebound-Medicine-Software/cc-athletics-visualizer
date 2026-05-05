@@ -530,7 +530,26 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'new', true); }}>Only new</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'duplicate' || r.status === 'will_update', true); }}>Only duplicates</Button>
                 <Button size="sm" variant="outline" onClick={() => { setSelected(() => false, false); setSelected((r) => r.status === 'invalid', true); }}>Only errors</Button>
+            </div>
+
+            {diagnostics && (
+              <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1 px-1">
+                {diagnostics.byte_length !== undefined && <span>Bytes: {diagnostics.byte_length.toLocaleString()}</span>}
+                {diagnostics.estimated_line_count !== undefined && <span>~Lines: {diagnostics.estimated_line_count.toLocaleString()}</span>}
+                <span>Fetched: {diagnostics.rows_fetched}</span>
+                <span>Parsed: {diagnostics.rows_parsed}</span>
+                <span>Skipped empty: {diagnostics.skipped_empty}</span>
+                <span>Parser warnings: {diagnostics.parse_errors}</span>
+                <span>Valid: {stats.new + stats.upd}</span>
+                <span>Invalid: {stats.inv}</span>
+                <span>Selected: {stats.selected}</span>
+                {diagnostics.source_url_used && (
+                  <span className="truncate max-w-[420px]" title={diagnostics.source_url_used}>
+                    Source: {diagnostics.source_url_used}
+                  </span>
+                )}
               </div>
+            )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
