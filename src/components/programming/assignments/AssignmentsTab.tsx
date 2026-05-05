@@ -126,7 +126,7 @@ export const AssignmentsTab = () => {
           title="No assignments yet"
           description={
             canEdit
-              ? 'Assign a published template to your athletes to get started.'
+              ? 'Assign a published programme to your athletes to get started.'
               : 'Your tier does not allow programme assignments yet.'
           }
           primaryAction={
