@@ -18,6 +18,8 @@ import {
   useExerciseReferenceCounts,
   useRestoreExercises,
 } from './useExercises';
+import { saveUndoBuffer, clearUndoBuffer, UNDO_TTL } from './bulkPersistence';
+import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import type { Exercise } from './types';
 
 interface Props {
