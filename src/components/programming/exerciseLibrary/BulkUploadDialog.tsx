@@ -268,11 +268,14 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   };
 
   const onFile = async (f: File) => {
-    if (f.size > 5_000_000) { toast.error('File too large (max 5MB)'); return; }
+    if (f.size > 10_000_000) { toast.error('File too large (max 10MB)'); return; }
     setLoading(true);
     try {
       const text = await f.text();
-      await ingestCsvText(text);
+      await ingestCsvText(text, {
+        byte_length: f.size,
+        source_url_used: f.name,
+      });
     } finally { setLoading(false); }
   };
 
@@ -285,7 +288,12 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
-      await ingestCsvText((data as any).csv);
+      const d = data as any;
+      await ingestCsvText(d.csv, {
+        byte_length: d.byte_length,
+        estimated_line_count: d.estimated_line_count,
+        source_url_used: d.source_url_used,
+      });
     } catch (e: any) {
       toast.error(e.message ?? 'Failed to fetch sheet');
     } finally { setLoading(false); }
