@@ -48,6 +48,7 @@ export const BulkActionBar = ({
   const archiveMut = useBulkArchiveExercises();
   const deleteMut = useBulkDeleteExercises();
   const restoreMut = useRestoreExercises();
+  const { teamId } = useEffectiveTeamId();
 
   if (selected.length === 0) return null;
 
