@@ -526,6 +526,9 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Only public/published Google Sheets links from <code>docs.google.com</code> are accepted.
+                  If your sheet has multiple tabs, paste the <code>gid</code> from the tab URL
+                  (e.g. <code>#gid=123456789</code>) — leave blank for the first tab. Note: Google's
+                  "Publish to web → CSV" exports only the published range of the chosen tab.
                 </p>
               </TabsContent>
             </Tabs>
