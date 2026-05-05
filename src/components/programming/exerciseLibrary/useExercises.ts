@@ -229,9 +229,12 @@ export const useBulkDeleteExercises = () => {
   const { teamId } = useEffectiveTeamId();
   const { user } = useAuth();
   return useMutation({
-    mutationFn: async (ids: string[]) => {
+    mutationFn: async (
+      exercises: Exercise[],
+    ): Promise<{ deleted: Exercise[]; skipped: Exercise[] }> => {
       if (!teamId) throw new Error('No team context');
-      if (ids.length === 0) return { count: 0 };
+      if (exercises.length === 0) return { deleted: [], skipped: [] };
+      const ids = exercises.map((e) => e.id);
       // Safety: re-check no references exist
       const { data: refs, error: refErr } = await supabase
         .from('programming_exercises')
@@ -239,12 +242,15 @@ export const useBulkDeleteExercises = () => {
         .in('exercise_id', ids);
       if (refErr) throw refErr;
       const referenced = new Set((refs ?? []).map((r: any) => r.exercise_id));
-      const safe = ids.filter((id) => !referenced.has(id));
-      if (safe.length === 0) throw new Error('All selected exercises are used in programmes. Archive them instead.');
+      const deleted = exercises.filter((e) => !referenced.has(e.id));
+      const skipped = exercises.filter((e) => referenced.has(e.id));
+      if (deleted.length === 0) {
+        throw new Error('All selected exercises are used in programmes. Archive them instead.');
+      }
       const { error } = await supabase
         .from('exercises')
         .delete()
-        .in('id', safe)
+        .in('id', deleted.map((e) => e.id))
         .eq('team_id', teamId);
       if (error) throw error;
       try {
@@ -254,19 +260,68 @@ export const useBulkDeleteExercises = () => {
           team_id: teamId,
           user_id: user?.id ?? null,
           severity: 'warning',
-          metadata: { exercise_ids: safe, count: safe.length, skipped_referenced: ids.length - safe.length },
+          metadata: {
+            exercise_ids: deleted.map((e) => e.id),
+            count: deleted.length,
+            skipped_referenced: skipped.length,
+          },
         });
       } catch {/* non-fatal */}
-      return { count: safe.length, skipped: ids.length - safe.length };
+      return { deleted, skipped };
     },
-    onSuccess: ({ count, skipped }) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['exercises'] });
       qc.invalidateQueries({ queryKey: ['exercises-facets'] });
-      toast.success(
-        `${count} exercise${count === 1 ? '' : 's'} deleted${skipped ? `, ${skipped} skipped (in use)` : ''}`,
-      );
     },
     onError: (e: any) => toast.error(e.message ?? 'Bulk delete failed'),
+  });
+};
+
+/**
+ * Restore previously hard-deleted exercises by re-inserting them with their
+ * original IDs. Used as the Undo action after a bulk delete.
+ */
+export const useRestoreExercises = () => {
+  const qc = useQueryClient();
+  const { teamId } = useEffectiveTeamId();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (exercises: Exercise[]) => {
+      if (!teamId) throw new Error('No team context');
+      if (exercises.length === 0) return { count: 0 };
+      const rows = exercises.map((e) => ({
+        id: e.id,
+        team_id: teamId,
+        name: e.name,
+        category: e.category,
+        primary_muscles: e.primary_muscles ?? [],
+        equipment: e.equipment ?? [],
+        video_url: e.video_url,
+        instructions: e.instructions,
+        is_archived: e.is_archived,
+        created_by: e.created_by,
+        updated_by: user?.id ?? null,
+      }));
+      const { error } = await supabase.from('exercises').insert(rows);
+      if (error) throw error;
+      try {
+        await supabase.from('platform_activity_logs').insert({
+          event_type: 'exercise_bulk_restored',
+          event_source: 'programming.exercise_library',
+          team_id: teamId,
+          user_id: user?.id ?? null,
+          severity: 'info',
+          metadata: { exercise_ids: rows.map((r) => r.id), count: rows.length },
+        });
+      } catch {/* non-fatal */}
+      return { count: rows.length };
+    },
+    onSuccess: ({ count }) => {
+      qc.invalidateQueries({ queryKey: ['exercises'] });
+      qc.invalidateQueries({ queryKey: ['exercises-facets'] });
+      toast.success(`${count} exercise${count === 1 ? '' : 's'} restored`);
+    },
+    onError: (e: any) => toast.error(e.message ?? 'Restore failed'),
   });
 };
 

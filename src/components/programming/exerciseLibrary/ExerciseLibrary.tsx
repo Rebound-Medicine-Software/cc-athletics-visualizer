@@ -47,7 +47,9 @@ export const ExerciseLibrary = () => {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // Selection persists across filter changes — keyed by id, holds full Exercise
+  // so we can act on items currently hidden by filters.
+  const [selectedMap, setSelectedMap] = useState<Map<string, Exercise>>(new Map());
 
   const { hasPermission } = useEffectiveTier();
   const canEdit = hasPermission('can_edit_programming');
@@ -97,20 +99,36 @@ export const ExerciseLibrary = () => {
   const writeBlocked = !canEdit || isViewAs;
 
   const visibleIds = useMemo(() => (exercises ?? []).map((e) => e.id), [exercises]);
-  const selectedExercises = useMemo(
-    () => (exercises ?? []).filter((e) => selectedIds.has(e.id)),
-    [exercises, selectedIds],
+  const visibleIdSet = useMemo(() => new Set(visibleIds), [visibleIds]);
+  const selectedExercises = useMemo(() => Array.from(selectedMap.values()), [selectedMap]);
+  const hiddenSelectedCount = useMemo(
+    () => selectedExercises.filter((e) => !visibleIdSet.has(e.id)).length,
+    [selectedExercises, visibleIdSet],
   );
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+  const selectedIds = useMemo(() => new Set(selectedMap.keys()), [selectedMap]);
+
+  const toggleSelect = (ex: Exercise) => {
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      next.has(ex.id) ? next.delete(ex.id) : next.set(ex.id, ex);
       return next;
     });
   };
-  const selectAllVisible = () => setSelectedIds(new Set(visibleIds));
-  const clearSelection = () => setSelectedIds(new Set());
-  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+  const selectAllVisible = () =>
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      (exercises ?? []).forEach((e) => next.set(e.id, e));
+      return next;
+    });
+  const unselectAllVisible = () =>
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      visibleIds.forEach((id) => next.delete(id));
+      return next;
+    });
+  const clearSelection = () => setSelectedMap(new Map());
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
 
   if (error) {
     return (
@@ -217,9 +235,10 @@ export const ExerciseLibrary = () => {
       {!writeBlocked && exercises && exercises.length > 0 && (
         <BulkActionBar
           selected={selectedExercises}
+          hiddenCount={hiddenSelectedCount}
           onClear={clearSelection}
-          onSelectAll={selectAllVisible}
-          onUnselectAll={clearSelection}
+          onSelectAllVisible={selectAllVisible}
+          onUnselectAll={unselectAllVisible}
           totalVisible={visibleIds.length}
           disabled={writeBlocked}
         />
@@ -230,7 +249,7 @@ export const ExerciseLibrary = () => {
           <Checkbox
             id="select-all-visible"
             checked={allVisibleSelected}
-            onCheckedChange={(c) => (c ? selectAllVisible() : clearSelection())}
+            onCheckedChange={(c) => (c ? selectAllVisible() : unselectAllVisible())}
           />
           <Label htmlFor="select-all-visible" className="cursor-pointer">
             Select all {visibleIds.length} visible
@@ -278,7 +297,7 @@ export const ExerciseLibrary = () => {
                       <Checkbox
                         className="mt-1"
                         checked={selectedIds.has(ex.id)}
-                        onCheckedChange={() => toggleSelect(ex.id)}
+                        onCheckedChange={() => toggleSelect(ex)}
                         aria-label={`Select ${ex.name}`}
                       />
                     )}
