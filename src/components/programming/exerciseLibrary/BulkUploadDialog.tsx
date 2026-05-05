@@ -179,6 +179,7 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
 
   const [tab, setTab] = useState<'csv' | 'sheets'>('csv');
   const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetGid, setSheetGid] = useState('');
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [enriching, setEnriching] = useState(false);
@@ -186,7 +187,7 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
   const [rows, setRows] = useState<PreviewRow[]>([]);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
 
-  const reset = () => { setRows([]); setSheetUrl(''); setDiagnostics(null); };
+  const reset = () => { setRows([]); setSheetUrl(''); setSheetGid(''); setDiagnostics(null); };
 
   // Build status given existing exercises
   const classify = async (parsed: PreviewRow[]) => {
