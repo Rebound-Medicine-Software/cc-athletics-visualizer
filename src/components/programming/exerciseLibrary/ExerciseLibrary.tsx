@@ -64,6 +64,42 @@ export const ExerciseLibrary = () => {
   const canEdit = hasPermission('can_edit_programming');
   const isViewAs = useIsViewAsMode();
   const guardWrite = useViewAsWriteGuard();
+  const { teamId } = useEffectiveTeamId();
+  const restoreMut = useRestoreExercises();
+  const hydratedRef = useRef(false);
+
+  // Hydrate selection from sessionStorage on mount (per team)
+  useEffect(() => {
+    if (!teamId || hydratedRef.current) return;
+    const stored = loadSelection(teamId);
+    if (stored.length > 0) {
+      setSelectedMap(new Map(stored.map((e) => [e.id, e])));
+    }
+    // Surface persisted undo buffer (e.g. after a refresh within TTL)
+    const undo = loadUndoBuffer(teamId);
+    if (undo.length > 0) {
+      toast(`${undo.length} recently deleted exercise${undo.length === 1 ? '' : 's'}`, {
+        duration: UNDO_TTL,
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            restoreMut.mutate(undo);
+            clearUndoBuffer();
+          },
+        },
+        onAutoClose: () => clearUndoBuffer(),
+        onDismiss: () => clearUndoBuffer(),
+      });
+    }
+    hydratedRef.current = true;
+  }, [teamId, restoreMut]);
+
+  // Persist selection on change
+  useEffect(() => {
+    if (!teamId || !hydratedRef.current) return;
+    if (selectedMap.size === 0) clearSelectionStorage();
+    else saveSelection(teamId, Array.from(selectedMap.values()));
+  }, [selectedMap, teamId]);
 
   const filters = useMemo(
     () => ({ search, category, equipment, showArchived }),
