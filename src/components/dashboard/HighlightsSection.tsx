@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MetricCards } from "./MetricCards";
 import { getMetricTypesForTest } from "./filters/filterUtils";
+import { useWorkspaceTeams } from "@/hooks/useWorkspaceTeams";
 
 interface HighlightsSectionProps {
   data: any[];
