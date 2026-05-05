@@ -47,11 +47,7 @@ export const useAssignments = (filters: {
     queryFn: async (): Promise<AssignmentRow[]> => {
       let q = supabase
         .from('athlete_program_assignments')
-        .select(
-          `*,
-           athletes:athlete_id ( id, name ),
-           programming_templates:template_id ( id, name, is_published )`
-        )
+        .select('*')
         .eq('team_id', teamId!)
         .order('updated_at', { ascending: false });
 
@@ -64,11 +60,53 @@ export const useAssignments = (filters: {
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []).map((row: any) => ({
+      const rows = data ?? [];
+      if (!rows.length) return [];
+
+      const athleteIds = Array.from(new Set(rows.map((r: any) => r.athlete_id).filter(Boolean)));
+      const templateIds = Array.from(new Set(rows.map((r: any) => r.template_id).filter(Boolean)));
+      const assignerIds = Array.from(new Set(rows.map((r: any) => r.assigned_by).filter(Boolean)));
+
+      const [athletesRes, templatesRes, assignersRes] = await Promise.all([
+        athleteIds.length
+          ? supabase.from('athletes').select('id, name').in('id', athleteIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        templateIds.length
+          ? supabase
+              .from('programming_templates')
+              .select('id, name, is_published')
+              .in('id', templateIds)
+          : Promise.resolve({ data: [], error: null } as any),
+        assignerIds.length
+          ? supabase
+              .from('profiles')
+              .select('user_id, full_name, email')
+              .in('user_id', assignerIds)
+          : Promise.resolve({ data: [], error: null } as any),
+      ]);
+      if (athletesRes.error) throw athletesRes.error;
+      if (templatesRes.error) throw templatesRes.error;
+      if (assignersRes.error) throw assignersRes.error;
+
+      const athleteMap = Object.fromEntries(
+        (athletesRes.data ?? []).map((a: any) => [a.id, a])
+      );
+      const templateMap = Object.fromEntries(
+        (templatesRes.data ?? []).map((t: any) => [t.id, t])
+      );
+      const assignerMap = Object.fromEntries(
+        (assignersRes.data ?? []).map((p: any) => [p.user_id, p])
+      );
+
+      return rows.map((row: any) => ({
         ...row,
-        athlete_name: row.athletes?.name ?? null,
-        template_name: row.programming_templates?.name ?? null,
-        template_published: !!row.programming_templates?.is_published,
+        athlete_name: athleteMap[row.athlete_id]?.name ?? null,
+        template_name: templateMap[row.template_id]?.name ?? null,
+        template_published: !!templateMap[row.template_id]?.is_published,
+        assigned_by_name:
+          assignerMap[row.assigned_by]?.full_name ??
+          assignerMap[row.assigned_by]?.email ??
+          null,
       })) as AssignmentRow[];
     },
   });
@@ -81,15 +119,36 @@ export const useAssignment = (id: string | null) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('athlete_program_assignments')
-        .select(
-          `*,
-           athletes:athlete_id ( id, name, email, avatar_url ),
-           programming_templates:template_id ( id, name, description, goal, duration_weeks, is_published )`
-        )
+        .select('*')
         .eq('id', id!)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      if (!data) return null;
+
+      const [athleteRes, templateRes] = await Promise.all([
+        data.athlete_id
+          ? supabase
+              .from('athletes')
+              .select('id, name, email, avatar_url')
+              .eq('id', data.athlete_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as any),
+        data.template_id
+          ? supabase
+              .from('programming_templates')
+              .select('id, name, description, goal, duration_weeks, is_published')
+              .eq('id', data.template_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null } as any),
+      ]);
+      if (athleteRes.error) throw athleteRes.error;
+      if (templateRes.error) throw templateRes.error;
+
+      return {
+        ...data,
+        athletes: athleteRes.data,
+        programming_templates: templateRes.data,
+      } as any;
     },
   });
 };

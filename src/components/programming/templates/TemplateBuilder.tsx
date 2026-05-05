@@ -3,7 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Plus, Pencil, Globe, EyeOff, Archive, ArchiveRestore, Lock } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Globe, EyeOff, Archive, ArchiveRestore, Lock, CheckCircle2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 import { ErrorState } from '@/components/dashboard/ErrorState';
 import { TemplateFormDialog } from './TemplateFormDialog';
@@ -79,6 +80,35 @@ export const TemplateBuilder = ({ templateId, onBack }: Props) => {
     const next = [...blocks];
     [next[i], next[j]] = [next[j], next[i]];
     reorderBlocksMut.mutate({ templateId, ordered: next });
+  };
+
+  const handleFinish = async () => {
+    if (guard('Finishing programme')) return;
+    if (!template.name?.trim()) {
+      toast.error('Programme needs a name before finishing.');
+      return;
+    }
+    if (!blocks || blocks.length === 0) {
+      toast.error('Add at least one block before finishing.');
+      return;
+    }
+    const blockIds = blocks.map((b) => b.id);
+    const { count, error } = await supabase
+      .from('programming_exercises')
+      .select('id', { count: 'exact', head: true })
+      .in('block_id', blockIds);
+    if (error) {
+      toast.error(error.message ?? 'Failed to validate programme.');
+      return;
+    }
+    if (!count || count === 0) {
+      toast.error('Add at least one prescribed exercise before finishing.');
+      return;
+    }
+    if (!template.is_published) {
+      publishMut.mutate(template);
+    }
+    toast.success('Programme ready to assign.');
   };
 
   return (
