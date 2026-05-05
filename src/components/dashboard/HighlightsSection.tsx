@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MetricCards } from "./MetricCards";
 import { getMetricTypesForTest } from "./filters/filterUtils";
+import { useWorkspaceTeams } from "@/hooks/useWorkspaceTeams";
 
 interface HighlightsSectionProps {
   data: any[];
@@ -26,8 +27,13 @@ export const HighlightsSection = ({
   allData,
   branding
 }: HighlightsSectionProps) => {
-  // All Teams
-  const allTeams = Array.from(new Set(data.map(d => d.team_name)));
+  // Team options = workspace teams (parent + child CC teams) ∪ teams in the
+  // current dataset. Ensures every CC team imported via the Org's API key
+  // appears in the dropdown even when it has no rows yet.
+  const { data: workspaceTeams } = useWorkspaceTeams();
+  const workspaceNames = (workspaceTeams ?? []).map(t => t.name).filter(Boolean) as string[];
+  const dataTeamNames = Array.from(new Set(data.map(d => d.team_name).filter(Boolean)));
+  const allTeams = Array.from(new Set([...workspaceNames, ...dataTeamNames]));
   const [selectedAthletes, setSelectedAthletes] = useState<string[]>([]);
 
   // Second Individual Filters state
