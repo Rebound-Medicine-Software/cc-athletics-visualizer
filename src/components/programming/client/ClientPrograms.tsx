@@ -217,16 +217,7 @@ export const ClientPrograms = () => {
                     <p className="text-sm font-medium">{lib.name ?? 'Exercise'}</p>
                     {m.hasOverride && <Badge variant="outline" className="text-xs">Adjusted</Badge>}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {[
-                      m.sets ? `${m.sets} sets` : null,
-                      m.reps ? `${m.reps} reps` : null,
-                      m.load ? `@ ${m.load}` : null,
-                      m.rpe ? `RPE ${m.rpe}` : null,
-                      m.tempo ? `Tempo ${m.tempo}` : null,
-                      m.rest_seconds ? `${m.rest_seconds}s rest` : null,
-                    ].filter(Boolean).join(' · ') || 'No prescription set'}
-                  </p>
+                  <PrescriptionChips m={m} />
                   {m.notes && <p className="mt-1 text-xs italic text-muted-foreground">{m.notes}</p>}
                 </div>
                 {variant === 'today' && (
