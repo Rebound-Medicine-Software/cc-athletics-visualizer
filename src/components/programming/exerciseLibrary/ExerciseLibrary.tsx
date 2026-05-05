@@ -17,10 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock } from 'lucide-react';
+import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, Lock, Upload } from 'lucide-react';
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
+import { BulkUploadDialog } from './BulkUploadDialog';
 import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
   useExercises,
@@ -41,6 +42,7 @@ export const ExerciseLibrary = () => {
   const [equipment, setEquipment] = useState('all');
   const [showArchived, setShowArchived] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Exercise | null>(null);
   const [confirmArchive, setConfirmArchive] = useState<Exercise | null>(null);
 
@@ -161,10 +163,24 @@ export const ExerciseLibrary = () => {
               </Label>
             </div>
           </div>
-          <Button onClick={handleNew} disabled={writeBlocked}>
-            {writeBlocked ? <Lock className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-            New exercise
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!canEdit) { toast.warning('Your tier does not allow editing programming.'); return; }
+                if (guardWrite('Bulk importing exercises')) return;
+                setBulkOpen(true);
+              }}
+              disabled={writeBlocked}
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Bulk upload
+            </Button>
+            <Button onClick={handleNew} disabled={writeBlocked}>
+              {writeBlocked ? <Lock className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+              New exercise
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -298,6 +314,8 @@ export const ExerciseLibrary = () => {
           setFormOpen(false);
         }}
       />
+
+      <BulkUploadDialog open={bulkOpen} onOpenChange={setBulkOpen} />
 
       <AlertDialog open={!!confirmArchive} onOpenChange={(o) => !o && setConfirmArchive(null)}>
         <AlertDialogContent>
