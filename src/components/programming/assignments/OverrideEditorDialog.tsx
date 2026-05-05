@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUpdateAssignmentOverrides } from './useAssignments';
 import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
+import { useEffectiveTier } from '@/lib/impersonation/useEffectiveTeam';
 import type { ExerciseOverride } from './types';
 
 interface Props {
