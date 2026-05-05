@@ -266,6 +266,9 @@ export const BulkUploadDialog = ({ open, onOpenChange }: Props) => {
       rows_parsed: classified.length,
       skipped_empty: skippedEmpty,
       parse_errors: parseErrors,
+      header_index: headerIndex,
+      first_rows: dataRows.slice(0, 5).map((r) => r.slice(0, 8)),
+      last_rows: dataRows.slice(-5).map((r) => r.slice(0, 8)),
     } as Diagnostics);
     toast.success(
       `Loaded ${classified.length} rows (header row ${headerIndex + 1}). Skipped ${skippedEmpty} empty.`,
