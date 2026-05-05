@@ -21,6 +21,7 @@ import { Search, Plus, Pencil, Archive, ArchiveRestore, Dumbbell, ExternalLink, 
 import { EmptyState } from '../../dashboard/EmptyState';
 import { ErrorState } from '../../dashboard/ErrorState';
 import { ExerciseFormDialog } from './ExerciseFormDialog';
+import { VideoPreviewButton } from '../shared/VideoPreviewButton';
 import {
   useExercises,
   useExerciseFacets,
