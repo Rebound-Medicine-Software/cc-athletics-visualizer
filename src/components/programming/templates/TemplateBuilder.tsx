@@ -82,6 +82,35 @@ export const TemplateBuilder = ({ templateId, onBack }: Props) => {
     reorderBlocksMut.mutate({ templateId, ordered: next });
   };
 
+  const handleFinish = async () => {
+    if (guard('Finishing programme')) return;
+    if (!template.name?.trim()) {
+      toast.error('Programme needs a name before finishing.');
+      return;
+    }
+    if (!blocks || blocks.length === 0) {
+      toast.error('Add at least one block before finishing.');
+      return;
+    }
+    const blockIds = blocks.map((b) => b.id);
+    const { count, error } = await supabase
+      .from('programming_exercises')
+      .select('id', { count: 'exact', head: true })
+      .in('block_id', blockIds);
+    if (error) {
+      toast.error(error.message ?? 'Failed to validate programme.');
+      return;
+    }
+    if (!count || count === 0) {
+      toast.error('Add at least one prescribed exercise before finishing.');
+      return;
+    }
+    if (!template.is_published) {
+      publishMut.mutate(template);
+    }
+    toast.success('Programme ready to assign.');
+  };
+
   return (
     <div className="space-y-4">
       <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2">
