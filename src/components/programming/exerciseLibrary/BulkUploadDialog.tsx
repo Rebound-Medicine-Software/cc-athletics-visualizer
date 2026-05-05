@@ -86,14 +86,30 @@ const parseCsv = (text: string): string[][] => {
   return rows.filter((r) => r.some((c) => c.trim() !== ''));
 };
 
-const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, '');
+// Strip BOM, zero-width chars, surrounding quotes; lowercase; remove all whitespace/punct
+const norm = (s: string) =>
+  (s ?? '')
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u200B-\u200D\u2060]/g, '')
+    .replace(/^["'\s]+|["'\s]+$/g, '')
+    .toLowerCase()
+    .replace(/[\s_\-./]+/g, '');
+
 const FIELD_ALIASES: Record<string, keyof PreviewRow> = {
   exercise: 'name',
   exercisename: 'name',
   name: 'name',
+  movement: 'name',
+  movementname: 'name',
+  exercisetitle: 'name',
+  title: 'name',
   url: 'video_url',
   videourl: 'video_url',
   video: 'video_url',
+  videolink: 'video_url',
+  link: 'video_url',
+  youtube: 'video_url',
+  youtubeurl: 'video_url',
   exercisestartposition: 'start_position',
   startposition: 'start_position',
   start: 'start_position',
@@ -103,10 +119,33 @@ const FIELD_ALIASES: Record<string, keyof PreviewRow> = {
   description: 'description',
   instructions: 'description',
   notes: 'description',
+  cues: 'description',
   category: 'category',
+  type: 'category',
   primarymuscles: 'primary_muscles',
   muscles: 'primary_muscles',
+  muscle: 'primary_muscles',
+  musclegroup: 'primary_muscles',
   equipment: 'equipment',
+  gear: 'equipment',
+};
+
+// Find the first row that contains a column mapping to "name" (Exercise-like)
+const detectHeaderRow = (grid: string[][]): { headerIndex: number; headers: string[]; idxMap: Record<string, number> } | null => {
+  const maxScan = Math.min(grid.length, 15);
+  for (let i = 0; i < maxScan; i++) {
+    const row = grid[i];
+    if (!row || row.every((c) => !c || !c.trim())) continue;
+    const idxMap: Record<string, number> = {};
+    row.forEach((h, idx) => {
+      const key = FIELD_ALIASES[norm(h)];
+      if (key && idxMap[key] === undefined) idxMap[key] = idx;
+    });
+    if (idxMap.name !== undefined) {
+      return { headerIndex: i, headers: row.map((h) => (h ?? '').trim()), idxMap };
+    }
+  }
+  return null;
 };
 
 const isValidUrl = (u: string) => {
