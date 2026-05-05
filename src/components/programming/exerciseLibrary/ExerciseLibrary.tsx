@@ -96,6 +96,22 @@ export const ExerciseLibrary = () => {
 
   const writeBlocked = !canEdit || isViewAs;
 
+  const visibleIds = useMemo(() => (exercises ?? []).map((e) => e.id), [exercises]);
+  const selectedExercises = useMemo(
+    () => (exercises ?? []).filter((e) => selectedIds.has(e.id)),
+    [exercises, selectedIds],
+  );
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const selectAllVisible = () => setSelectedIds(new Set(visibleIds));
+  const clearSelection = () => setSelectedIds(new Set());
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+
   if (error) {
     return (
       <ErrorState
