@@ -219,23 +219,32 @@ serve(async (req) => {
           if (!rank || total < 2) continue
 
           if (rank === 1) {
+            const meta = {
+              notification_type: 'leader',
+              metric: spec.short,
+              metric_label: spec.label,
+              scope: sc.key,
+              new_rank: rank,
+              total_athletes: total,
+              athlete_id: ath.id,
+              athlete_name: ath.name,
+              priority: 'high',
+            }
             notifsToInsert.push({
               recipient_user_id: ath.user_id!,
               team_id: ath.team_id,
               title: `👑 You lead ${sc.label} — ${spec.label}`,
               message: `#1 of ${total} for ${spec.label}. Keep that crown.`,
               severity: 'success',
-              metadata: {
-                notification_type: 'leader',
-                metric: spec.short,
-                metric_label: spec.label,
-                scope: sc.key,
-                new_rank: rank,
-                total_athletes: total,
-                athlete_id: ath.id,
-                priority: 'high',
-              },
+              metadata: meta,
             })
+            if (sc.key === 'club') {
+              await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+                title: `👑 ${ath.name} leads the club — ${spec.label}`,
+                message: `#1 of ${total} for ${spec.label}.`,
+                metadata: { ...meta, source: 'client_event_broadcast' },
+              })
+            }
             leaderCount++
           } else if (rank <= Math.max(5, Math.ceil(total * 0.1))) {
             // Top 10% (or top 5) — worth notifying
