@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy } from 'lucide-react';
+import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy, Hourglass } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,8 @@ import { useClientAssignments } from '@/components/programming/client/useClientA
 import { useTemplateStructure } from '@/components/programming/assignments/useAssignments';
 import { computeAdherence } from '@/components/programming/assignments/adherence';
 import { useClientMetrics } from './useClientMetrics';
+import { useRetestInterval, DEFAULT_RETEST_INTERVAL_DAYS } from '@/hooks/useRetestInterval';
+import { toast } from 'sonner';
 
 interface Props {
   onSectionChange?: (section: string) => void;
