@@ -268,6 +268,20 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
               />
             )}
 
+            {/* Outcomes (test data link) */}
+            <OutcomesPanel
+              athleteId={assignment.athlete_id}
+              startDate={assignment.start_date}
+              adherencePercentage={
+                computeAdherence({
+                  startDate: assignment.start_date,
+                  sessions: structure?.sessions ?? [],
+                  blocks: structure?.blocks ?? [],
+                  completionLogs: logs as any,
+                }).adherencePercentage
+              }
+            />
+
             {/* Adherence quick stats (logged) */}
             <div className="rounded-lg border p-4 grid grid-cols-3 gap-3 text-sm">
               <div>
