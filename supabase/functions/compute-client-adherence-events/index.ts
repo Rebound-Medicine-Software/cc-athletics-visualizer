@@ -74,6 +74,7 @@ async function broadcastToCoaches(
   }
 }
 
+const dayMs = 86400_000
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
 
