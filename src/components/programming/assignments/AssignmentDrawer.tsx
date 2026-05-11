@@ -36,6 +36,7 @@ import { LogCompletionDialog } from './LogCompletionDialog';
 import type { AssignmentStatus, ExerciseOverride } from './types';
 import { computeAdherence } from './adherence';
 import { AdherencePanel } from './AdherencePanel';
+import { OutcomesPanel } from './OutcomesPanel';
 
 interface Props {
   assignmentId: string | null;
