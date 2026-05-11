@@ -11,23 +11,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
 import { useClientMetrics } from './useClientMetrics';
-import { interpretMetric, tierStyles, MetricInterpretation } from '@/utils/metricInterpretation';
-import { PresentationMode } from './PresentationMode';
+import { interpretMetric, tierStyles } from '@/utils/metricInterpretation';
+import { PresentationMode, type InterpretedSnapshot } from './PresentationMode';
 
 interface Props {
   /** When true, allow practitioners to edit & save coach notes. */
   practitionerMode?: boolean;
   /** Optional explicit test date to anchor the report on (defaults to latest). */
   testDate?: string | null;
-}
-
-export interface InterpretedSnapshot {
-  spec: { testName: string; metricKey: string; label: string };
-  interpretation: MetricInterpretation;
-  changePct: number | null;
-  isImprovement: boolean | null;
-  baselineDisplay: string | null;
-  latestDisplay: string | null;
 }
 
 /**

@@ -3,8 +3,16 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, X, Sparkles, Trophy, Target } from 'lucide-react';
-import { tierStyles } from '@/utils/metricInterpretation';
-import type { InterpretedSnapshot } from './AthleteReportView';
+import { tierStyles, type MetricInterpretation } from '@/utils/metricInterpretation';
+
+export interface InterpretedSnapshot {
+  spec: { testName: string; metricKey: string; label: string };
+  interpretation: MetricInterpretation;
+  changePct: number | null;
+  isImprovement: boolean | null;
+  baselineDisplay: string | null;
+  latestDisplay: string | null;
+}
 
 interface Props {
   athleteName: string;
