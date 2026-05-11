@@ -1626,6 +1626,7 @@ export type Database = {
           practitioner_count: number | null
           primary_color: string | null
           region: string | null
+          retest_interval_days: number
           secondary_color: string | null
           setup_data: Json | null
           stripe_account_id: string | null
@@ -1660,6 +1661,7 @@ export type Database = {
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
+          retest_interval_days?: number
           secondary_color?: string | null
           setup_data?: Json | null
           stripe_account_id?: string | null
@@ -1694,6 +1696,7 @@ export type Database = {
           practitioner_count?: number | null
           primary_color?: string | null
           region?: string | null
+          retest_interval_days?: number
           secondary_color?: string | null
           setup_data?: Json | null
           stripe_account_id?: string | null
