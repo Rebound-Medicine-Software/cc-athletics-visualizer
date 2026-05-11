@@ -39,14 +39,19 @@ export const useClientAthlete = () => {
       if (primary.error) throw primary.error;
       if (primary.data) return primary.data;
 
-      // 2) Fallback: email + team match (legacy)
-      if (!email || !teamId) return null;
-      const fallback = await supabase
+      // 2) Fallback: email match (legacy / first-login self-heal)
+      if (!email) return null;
+
+      // Prefer team-scoped match when we know the team; otherwise fall back
+      // to a global email match (RLS still constrains visibility).
+      let fallbackQuery = supabase
         .from('athletes')
         .select('id, name, email, team_id, avatar_url, user_id')
-        .eq('team_id', teamId)
         .ilike('email', email)
         .limit(2);
+      if (teamId) fallbackQuery = fallbackQuery.eq('team_id', teamId);
+
+      const fallback = await fallbackQuery;
       if (fallback.error) throw fallback.error;
       const rows = fallback.data ?? [];
       if (rows.length === 0) return null;

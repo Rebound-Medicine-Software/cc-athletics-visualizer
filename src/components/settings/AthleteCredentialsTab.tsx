@@ -200,7 +200,7 @@ export const AthleteCredentialsTab = () => {
     return `${adjective}${noun}${numbers}${symbol}`;
   };
 
-  const createAthleteAccount = async (athlete: Athlete, email: string, password: string) => {
+  const createAthleteAccount = async (athlete: Athlete, email: string, password: string, suppressEmail = false) => {
     try {
       // Get current user's profile to identify the organization
       const { data: { user } } = await supabase.auth.getUser();
@@ -233,7 +233,13 @@ export const AthleteCredentialsTab = () => {
           lastName: athlete.name.split(' ').slice(1).join(' ') || '',
           password: password,
           organisationName: team?.name || 'Your Organization',
-          athleteType: 'Athlete'
+          athleteType: 'Athlete',
+          // Deterministic linking — guarantees athletes.user_id is set and
+          // profile.role/team_id are correct so the client can reach
+          // /Dashboard(Client) on first login.
+          athleteId: athlete.id,
+          teamId: athlete.team_id || organizationProfile.team_id,
+          suppressEmail,
         }
       });
 
@@ -434,23 +440,25 @@ export const AthleteCredentialsTab = () => {
         updateData.email = editForm.email;
       }
 
-      // Handle password and account creation
-      if (editForm.password && editForm.email && sendSignupEmails) {
+      // Handle password and account creation — always route through the
+      // edge function so the Supabase Auth user is created/updated AND the
+      // athlete row is linked. The `suppressEmail` flag controls whether
+      // the welcome email is sent.
+      if (editForm.password && editForm.email) {
         try {
-          await createAthleteAccount(athlete, editForm.email, editForm.password);
-          // Store password for future reference
+          await createAthleteAccount(athlete, editForm.email, editForm.password, !sendSignupEmails);
           updateData.password_hash = editForm.password;
-          toast.success(`Account created and credentials sent to ${editForm.email}`);
+          updateData.email = editForm.email;
+          toast.success(
+            sendSignupEmails
+              ? `Account ready and credentials sent to ${editForm.email}`
+              : "Athlete credentials saved (no email sent)"
+          );
         } catch (accountError: any) {
           console.error('Error creating account:', accountError);
           toast.error("Failed to create athlete account: " + (accountError.message || "Unknown error"));
           return;
         }
-      } else if (editForm.password && editForm.email && !sendSignupEmails) {
-        // Store password and email without sending signup email
-        updateData.password_hash = editForm.password;
-        updateData.email = editForm.email;
-        toast.success("Athlete credentials saved (no email sent)");
       } else if (editForm.password && !editForm.email) {
         // Just store password without creating account
         updateData.password_hash = editForm.password;

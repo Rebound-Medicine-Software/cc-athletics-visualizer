@@ -2207,6 +2207,15 @@ export type Database = {
         Args: { athlete_uuid: string; user_uuid: string }
         Returns: string
       }
+      link_client_to_athlete: {
+        Args: {
+          p_athlete_id: string
+          p_created_by?: string
+          p_team_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       list_athletes_global: {
         Args: {
           filter_activity?: string
