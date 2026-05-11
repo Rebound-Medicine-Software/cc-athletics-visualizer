@@ -64,12 +64,13 @@ export const ClientToday = ({ onSectionChange }: Props) => {
   const todaySession = useMemo(() => {
     if (!active || !structure) return null;
     const adherence = computeAdherence({
-      assignment: active,
-      structure,
-      logs: [],
+      startDate: active.start_date,
+      sessions: structure.sessions ?? [],
+      blocks: structure.blocks ?? [],
+      completionLogs: [],
       today: new Date(),
     });
-    return adherence.sessions.find((s: any) => s.status === 'today') ?? null;
+    return adherence.todaySession ?? adherence.nextSession ?? null;
   }, [active, structure]);
 
   const heroMetric = useMemo(() => {
