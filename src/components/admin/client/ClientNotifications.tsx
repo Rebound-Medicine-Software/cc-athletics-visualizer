@@ -84,6 +84,9 @@ export const ClientNotifications = () => {
     },
   });
 
+  const QKEY = ['client-notifications-feed', user?.id] as const;
+  const UNREAD_KEY = ['client-unread-notifications', user?.id] as const;
+
   const markRead = useMutation({
     mutationFn: async (id: string) => {
       await supabase
@@ -91,7 +94,20 @@ export const ClientNotifications = () => {
         .update({ read_at: new Date().toISOString() })
         .eq('id', id);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['client-notifications-feed'] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: QKEY });
+      const prev = qc.getQueryData<Notif[]>(QKEY);
+      qc.setQueryData<Notif[]>(QKEY, (old) =>
+        (old ?? []).map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)),
+      );
+      qc.setQueryData<number>(UNREAD_KEY, (c) => Math.max(0, (c ?? 1) - 1));
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => ctx?.prev && qc.setQueryData(QKEY, ctx.prev),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['client-notifications-feed'] });
+      qc.invalidateQueries({ queryKey: ['client-unread-notifications'] });
+    },
   });
 
   const dismiss = useMutation({
@@ -101,7 +117,14 @@ export const ClientNotifications = () => {
         .update({ dismissed_at: new Date().toISOString() })
         .eq('id', id);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['client-notifications-feed'] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: QKEY });
+      const prev = qc.getQueryData<Notif[]>(QKEY);
+      qc.setQueryData<Notif[]>(QKEY, (old) => (old ?? []).filter((n) => n.id !== id));
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => ctx?.prev && qc.setQueryData(QKEY, ctx.prev),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['client-notifications-feed'] }),
   });
 
   const markAllRead = useMutation({
@@ -112,7 +135,18 @@ export const ClientNotifications = () => {
         .eq('recipient_user_id', user!.id)
         .is('read_at', null);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['client-notifications-feed'] }),
+    onMutate: async () => {
+      const ts = new Date().toISOString();
+      const prev = qc.getQueryData<Notif[]>(QKEY);
+      qc.setQueryData<Notif[]>(QKEY, (old) => (old ?? []).map((n) => ({ ...n, read_at: n.read_at ?? ts })));
+      qc.setQueryData<number>(UNREAD_KEY, 0);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => ctx?.prev && qc.setQueryData(QKEY, ctx.prev),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['client-notifications-feed'] });
+      qc.invalidateQueries({ queryKey: ['client-unread-notifications'] });
+    },
   });
 
   const refresh = async () => {

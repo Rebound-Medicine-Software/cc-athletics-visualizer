@@ -51,6 +51,59 @@ interface NotifInput {
   metadata: Record<string, unknown>
 }
 
+// Broadcast a coach-side notification to every practitioner on a team.
+// Deduped via metadata key over last 7 days. Excludes the triggering athlete user.
+async function broadcastToCoaches(
+  supa: any,
+  teamId: string | null,
+  excludeUserId: string,
+  payload: { title: string; message: string; metadata: Record<string, unknown> },
+): Promise<void> {
+  if (!teamId) return
+  try {
+    const { data: practitioners } = await supa
+      .from('profiles')
+      .select('user_id, role')
+      .eq('team_id', teamId)
+      .in('role', ['organisation', 'staff', 'practitioner', 'super_admin'])
+    const recipients = (practitioners ?? [])
+      .map((p: any) => p.user_id)
+      .filter((id: string | null): id is string => !!id && id !== excludeUserId)
+    if (recipients.length === 0) return
+
+    const m = payload.metadata as any
+    const key = `${m.notification_type}|${m.athlete_id ?? ''}|${m.metric ?? m.assignment_id ?? ''}|${m.milestone ?? m.scope ?? ''}`
+    const since = new Date(Date.now() - 7 * 86400_000).toISOString()
+    const { data: existing } = await supa
+      .from('platform_in_app_notifications')
+      .select('recipient_user_id, metadata, created_at')
+      .in('recipient_user_id', recipients)
+      .gte('created_at', since)
+    const dup = new Set<string>()
+    for (const e of existing ?? []) {
+      const em = (e.metadata ?? {}) as any
+      if (em.source !== 'client_event_broadcast') continue
+      const k = `${em.notification_type}|${em.athlete_id ?? ''}|${em.metric ?? em.assignment_id ?? ''}|${em.milestone ?? em.scope ?? ''}`
+      if (k === key) dup.add(e.recipient_user_id)
+    }
+    const rows = recipients
+      .filter((r: string) => !dup.has(r))
+      .map((r: string) => ({
+        recipient_user_id: r,
+        team_id: teamId,
+        title: payload.title,
+        message: payload.message,
+        severity: 'info',
+        metadata: payload.metadata,
+      }))
+    if (rows.length > 0) {
+      await supa.from('platform_in_app_notifications').insert(rows)
+    }
+  } catch (e) {
+    console.warn('broadcastToCoaches failed', (e as Error).message)
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -157,23 +210,31 @@ serve(async (req) => {
           const isPB = spec.higherIsBetter ? latestVal > prevBest : latestVal < prevBest
           const deltaPct = ((latestVal - prevBest) / Math.abs(prevBest)) * 100
           if (isPB && Math.abs(deltaPct) >= 1) {
+            const meta = {
+              notification_type: 'personal_best',
+              metric: spec.short,
+              metric_label: spec.label,
+              old_value: prevBest,
+              new_value: latestVal,
+              score_delta: deltaPct,
+              created_from_test_id: latestSourceId,
+              athlete_id: ath.id,
+              athlete_name: ath.name,
+              priority: 'high',
+            }
             notifsToInsert.push({
               recipient_user_id: ath.user_id!,
               team_id: ath.team_id,
               title: `🏆 New Personal Best — ${spec.label}`,
               message: `You improved your ${spec.label} by ${Math.abs(deltaPct).toFixed(1)}% (${fmt(latestVal, spec.unit)}).`,
               severity: 'success',
-              metadata: {
-                notification_type: 'personal_best',
-                metric: spec.short,
-                metric_label: spec.label,
-                old_value: prevBest,
-                new_value: latestVal,
-                score_delta: deltaPct,
-                created_from_test_id: latestSourceId,
-                athlete_id: ath.id,
-                priority: 'high',
-              },
+              metadata: meta,
+            })
+            // Coach broadcast
+            await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+              title: `🏆 ${ath.name} hit a PB — ${spec.label}`,
+              message: `+${Math.abs(deltaPct).toFixed(1)}% on ${spec.label} (${fmt(latestVal, spec.unit)}).`,
+              metadata: { ...meta, source: 'client_event_broadcast' },
             })
             pbCount++
           }
@@ -211,23 +272,32 @@ serve(async (req) => {
           if (!rank || total < 2) continue
 
           if (rank === 1) {
+            const meta = {
+              notification_type: 'leader',
+              metric: spec.short,
+              metric_label: spec.label,
+              scope: sc.key,
+              new_rank: rank,
+              total_athletes: total,
+              athlete_id: ath.id,
+              athlete_name: ath.name,
+              priority: 'high',
+            }
             notifsToInsert.push({
               recipient_user_id: ath.user_id!,
               team_id: ath.team_id,
               title: `👑 You lead ${sc.label} — ${spec.label}`,
               message: `#1 of ${total} for ${spec.label}. Keep that crown.`,
               severity: 'success',
-              metadata: {
-                notification_type: 'leader',
-                metric: spec.short,
-                metric_label: spec.label,
-                scope: sc.key,
-                new_rank: rank,
-                total_athletes: total,
-                athlete_id: ath.id,
-                priority: 'high',
-              },
+              metadata: meta,
             })
+            if (sc.key === 'club') {
+              await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+                title: `👑 ${ath.name} leads the club — ${spec.label}`,
+                message: `#1 of ${total} for ${spec.label}.`,
+                metadata: { ...meta, source: 'client_event_broadcast' },
+              })
+            }
             leaderCount++
           } else if (rank <= Math.max(5, Math.ceil(total * 0.1))) {
             // Top 10% (or top 5) — worth notifying

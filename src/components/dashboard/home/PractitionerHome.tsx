@@ -9,6 +9,7 @@ import { TodayBookingsCard } from "./TodayBookingsCard";
 import { AthletesNeedingAttentionCard } from "./AthletesNeedingAttentionCard";
 import { RecentActivityCard } from "./RecentActivityCard";
 import { QuickActions } from "./QuickActions";
+import { PractitionerActionTray } from "./PractitionerActionTray";
 
 interface Props {
   role: string | null;
@@ -70,6 +71,7 @@ export const PractitionerHome = ({ role, setActiveSection }: Props) => {
           />
         </div>
         <div className="space-y-4">
+          <PractitionerActionTray />
           <RecentActivityCard data={activity} isLoading={activityLoading} />
         </div>
       </div>

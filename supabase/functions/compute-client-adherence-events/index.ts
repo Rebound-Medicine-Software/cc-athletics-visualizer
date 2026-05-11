@@ -26,6 +26,54 @@ interface NotifInput {
   metadata: Record<string, unknown>
 }
 
+async function broadcastToCoaches(
+  supa: any,
+  teamId: string | null,
+  excludeUserId: string,
+  payload: { title: string; message: string; metadata: Record<string, unknown> },
+): Promise<void> {
+  if (!teamId) return
+  try {
+    const { data: practitioners } = await supa
+      .from('profiles')
+      .select('user_id, role')
+      .eq('team_id', teamId)
+      .in('role', ['organisation', 'staff', 'practitioner', 'super_admin'])
+    const recipients = (practitioners ?? [])
+      .map((p: any) => p.user_id)
+      .filter((id: string | null): id is string => !!id && id !== excludeUserId)
+    if (recipients.length === 0) return
+    const m = payload.metadata as any
+    const key = `${m.notification_type}|${m.athlete_id ?? ''}|${m.assignment_id ?? ''}|${m.milestone ?? ''}`
+    const since = new Date(Date.now() - 14 * 86400_000).toISOString()
+    const { data: existing } = await supa
+      .from('platform_in_app_notifications')
+      .select('recipient_user_id, metadata, created_at')
+      .in('recipient_user_id', recipients)
+      .gte('created_at', since)
+    const dup = new Set<string>()
+    for (const e of existing ?? []) {
+      const em = (e.metadata ?? {}) as any
+      if (em.source !== 'client_event_broadcast') continue
+      const k = `${em.notification_type}|${em.athlete_id ?? ''}|${em.assignment_id ?? ''}|${em.milestone ?? ''}`
+      if (k === key) dup.add(e.recipient_user_id)
+    }
+    const rows = recipients
+      .filter((r: string) => !dup.has(r))
+      .map((r: string) => ({
+        recipient_user_id: r,
+        team_id: teamId,
+        title: payload.title,
+        message: payload.message,
+        severity: 'info',
+        metadata: payload.metadata,
+      }))
+    if (rows.length > 0) await supa.from('platform_in_app_notifications').insert(rows)
+  } catch (e) {
+    console.warn('broadcastToCoaches failed', (e as Error).message)
+  }
+}
+
 const dayMs = 86400_000
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10)
@@ -203,43 +251,57 @@ serve(async (req) => {
         const weekAgo = addDays(today, -7)
         const lastWeek = past.filter((s) => s.date >= weekAgo)
         if (lastWeek.length >= 2 && lastWeek.every((s) => completedSet.has(s.id))) {
+          const meta = {
+            notification_type: 'programme_milestone',
+            milestone: 'perfect_week',
+            week_sessions: lastWeek.length,
+            assignment_id: asn.id,
+            athlete_id: ath.id,
+            athlete_name: ath.name,
+            priority: 'high',
+          }
           notifsToInsert.push({
             recipient_user_id: ath.user_id!,
             team_id: ath.team_id,
             title: `🏅 Perfect week completed`,
             message: `You completed every session this week (${lastWeek.length}/${lastWeek.length}).`,
             severity: 'success',
-            metadata: {
-              notification_type: 'programme_milestone',
-              milestone: 'perfect_week',
-              week_sessions: lastWeek.length,
-              assignment_id: asn.id,
-              athlete_id: ath.id,
-              priority: 'high',
-            },
+            metadata: meta,
+          })
+          await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+            title: `🏅 ${ath.name} completed a perfect week`,
+            message: `${lastWeek.length}/${lastWeek.length} sessions hit this week.`,
+            metadata: { ...meta, source: 'client_event_broadcast' },
           })
           perfectWeekCount++
         }
 
-        // ---- Programme completed: all sessions scheduled in past AND all completed ----
+        // ---- Programme completed ----
         if (
           scheduled.length > 0 &&
           scheduled.every((s) => s.date <= today) &&
           scheduled.every((s) => completedSet.has(s.id))
         ) {
+          const meta = {
+            notification_type: 'programme_completed',
+            total_sessions: scheduled.length,
+            assignment_id: asn.id,
+            athlete_id: ath.id,
+            athlete_name: ath.name,
+            priority: 'high',
+          }
           notifsToInsert.push({
             recipient_user_id: ath.user_id!,
             team_id: ath.team_id,
             title: `🎉 Programme completed`,
             message: `You finished every session of your programme. Time to celebrate — and book a retest.`,
             severity: 'success',
-            metadata: {
-              notification_type: 'programme_completed',
-              total_sessions: scheduled.length,
-              assignment_id: asn.id,
-              athlete_id: ath.id,
-              priority: 'high',
-            },
+            metadata: meta,
+          })
+          await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+            title: `🎉 ${ath.name} finished their programme`,
+            message: `${scheduled.length} sessions completed. Consider booking a retest.`,
+            metadata: { ...meta, source: 'client_event_broadcast' },
           })
           completionCount++
         }
