@@ -266,22 +266,49 @@ export const ClientPrograms = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-md border p-3">
-                <p className="text-xs text-muted-foreground">This week</p>
-                <p className="text-2xl font-semibold">{distinctDays}</p>
-                <p className="text-xs text-muted-foreground">training days</p>
-              </div>
-              <div className="rounded-md border p-3">
-                <p className="text-xs text-muted-foreground">Total sessions</p>
-                <p className="text-2xl font-semibold">{logs.length}</p>
-                <p className="text-xs text-muted-foreground">logged</p>
-              </div>
-              <div className="rounded-md border p-3">
-                <p className="text-xs text-muted-foreground">Last session</p>
-                <p className="text-lg font-semibold">{lastLogDate ? format(parseISO(lastLogDate), 'd MMM') : '—'}</p>
-              </div>
-            </div>
+            {(() => {
+              const adherence = computeAdherence({
+                startDate: active.start_date,
+                sessions: structure?.sessions ?? [],
+                blocks: structure?.blocks ?? [],
+                completionLogs: logs as any,
+              });
+              const next = adherence.nextSession;
+              return (
+                <>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-md border p-3">
+                      <p className="text-xs text-muted-foreground">This week</p>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <p className="text-2xl font-semibold">{adherence.weekAdherence}%</p>
+                        <p className="text-xs text-muted-foreground">
+                          {adherence.weekCompleted} done · {adherence.weekMissed} missed
+                        </p>
+                      </div>
+                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Flame className="h-3 w-3" /> Streak: {adherence.currentStreak}
+                      </div>
+                    </div>
+                    <div className="rounded-md border p-3">
+                      <p className="text-xs text-muted-foreground">
+                        {next?.status === 'today' ? 'Today' : 'Next session'}
+                      </p>
+                      {next ? (
+                        <>
+                          <p className="mt-1 text-base font-semibold truncate">{next.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(parseISO(next.date), 'EEE d MMM')}
+                            {next.block_name ? ` · ${next.block_name}` : ''}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-1 text-sm text-muted-foreground">No upcoming sessions</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
             <Separator />
 
