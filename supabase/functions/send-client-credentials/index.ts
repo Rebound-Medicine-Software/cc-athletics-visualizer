@@ -14,6 +14,12 @@ interface ClientCredentials {
   password: string;
   organisationName: string;
   athleteType?: string;
+  // Optional but strongly recommended: lets us deterministically link
+  // the auth user to the correct athlete row + team.
+  athleteId?: string;
+  teamId?: string;
+  // When true, skip the NotificationAPI email send.
+  suppressEmail?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
