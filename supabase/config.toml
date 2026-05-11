@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.generate-ai-coach-insight]
 verify_jwt = false
 
+[functions.generate-programming-ai-summary]
+verify_jwt = false
+
 [functions.generate-force-plate-report]
 verify_jwt = false
 
