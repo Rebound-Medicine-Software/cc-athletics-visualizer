@@ -34,6 +34,8 @@ import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
 import { OverrideEditorDialog } from './OverrideEditorDialog';
 import { LogCompletionDialog } from './LogCompletionDialog';
 import type { AssignmentStatus, ExerciseOverride } from './types';
+import { computeAdherence } from './adherence';
+import { AdherencePanel } from './AdherencePanel';
 
 interface Props {
   assignmentId: string | null;
