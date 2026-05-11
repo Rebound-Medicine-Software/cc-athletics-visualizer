@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/hooks/useBranding';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { useRealtimeClientNotifications } from '@/hooks/useRealtimeClientNotifications';
+import { ClientBottomNav } from './client/ClientBottomNav';
 
 export const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
@@ -50,16 +51,30 @@ export const ClientDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AdminSidebar
-          role="client"
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
-        <main className="flex-1 flex flex-col">
-          <AdminHeader role="client" />
-          <div className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">{renderContent()}</div>
+      <div className="min-h-[100dvh] flex w-full bg-background">
+        {/* Sidebar: hidden on mobile — replaced by bottom tab bar */}
+        <div className="hidden md:flex">
+          <AdminSidebar
+            role="client"
+            activeSection={activeSection}
+            onSectionChange={setActiveSection}
+          />
+        </div>
+        <main className="flex-1 flex flex-col min-w-0">
+          <div
+            className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
+            <AdminHeader role="client" />
+          </div>
+          <div
+            className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6"
+            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+          >
+            {renderContent()}
+          </div>
         </main>
+        <ClientBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
       </div>
     </SidebarProvider>
   );
