@@ -16,7 +16,8 @@ import {
   Building2,
   HeadphonesIcon,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 
 export interface NavigationItem {
