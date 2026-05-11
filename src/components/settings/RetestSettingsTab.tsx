@@ -39,7 +39,7 @@ export const RetestSettingsTab = () => {
   const dirty = current != null && draft !== current;
 
   const save = () => {
-    if (!guardWrite('Update retest interval')) return;
+    if (guardWrite('Update retest interval')) return;
     if (draft < MIN_RETEST_INTERVAL_DAYS || draft > MAX_RETEST_INTERVAL_DAYS) {
       toast.error(`Choose between ${MIN_RETEST_INTERVAL_DAYS} and ${MAX_RETEST_INTERVAL_DAYS} days.`);
       return;
