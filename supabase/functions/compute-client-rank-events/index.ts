@@ -27,7 +27,7 @@ const METRICS: MetricSpec[] = [
   { key: 'rsi', label: 'Pogo RSI', unit: '', testName: 'Pogo Jump', higherIsBetter: true, short: 'pogo_rsi' },
 ]
 
-const RETEST_DAYS = 42 // 6 weeks
+const DEFAULT_RETEST_DAYS = 42 // 6 weeks fallback when team has no setting
 const DEDUPE_DAYS = 7
 
 const numeric = (raw: unknown): number | null => {
