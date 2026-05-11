@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,9 @@ export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => 
   // Slide order: title → each metric → summary
   const totalSlides = snapshots.length + 2;
 
+  const touchStartX = useRef<number | null>(null);
+  const touchDeltaX = useRef(0);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -47,6 +50,23 @@ export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => 
       document.body.style.overflow = '';
     };
   }, [onClose, totalSlides]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current == null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  };
+  const onTouchEnd = () => {
+    const d = touchDeltaX.current;
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+    if (Math.abs(d) < 50) return;
+    if (d < 0) setIdx((i) => Math.min(totalSlides - 1, i + 1));
+    else setIdx((i) => Math.max(0, i - 1));
+  };
 
   const goingWell = snapshots.filter((s) => s.interpretation.tier === 'excellent' || s.interpretation.tier === 'good');
   const focusAreas = snapshots.filter((s) => s.interpretation.tier === 'needs_focus' || s.interpretation.tier === 'developing');
