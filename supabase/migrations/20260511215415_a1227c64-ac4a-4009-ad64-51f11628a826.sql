@@ -1,0 +1,1 @@
+UPDATE public.profiles SET role = 'client' WHERE user_id = '48d47dea-4868-45b0-aeeb-3ea442945c5c' AND email = 'jrfisherr@gmail.com';
