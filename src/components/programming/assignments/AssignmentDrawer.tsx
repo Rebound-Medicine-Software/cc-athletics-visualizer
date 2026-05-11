@@ -34,6 +34,8 @@ import { useViewAsWriteGuard } from '@/lib/impersonation/useViewAsWriteGuard';
 import { OverrideEditorDialog } from './OverrideEditorDialog';
 import { LogCompletionDialog } from './LogCompletionDialog';
 import type { AssignmentStatus, ExerciseOverride } from './types';
+import { computeAdherence } from './adherence';
+import { AdherencePanel } from './AdherencePanel';
 
 interface Props {
   assignmentId: string | null;
@@ -250,7 +252,22 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
               )}
             </div>
 
-            {/* Adherence */}
+            {/* Adherence analytics */}
+            {sLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : (
+              <AdherencePanel
+                showTimeline
+                metrics={computeAdherence({
+                  startDate: assignment.start_date,
+                  sessions: structure?.sessions ?? [],
+                  blocks: structure?.blocks ?? [],
+                  completionLogs: logs as any,
+                })}
+              />
+            )}
+
+            {/* Adherence quick stats (logged) */}
             <div className="rounded-lg border p-4 grid grid-cols-3 gap-3 text-sm">
               <div>
                 <div className="text-muted-foreground text-xs">Sessions logged</div>
