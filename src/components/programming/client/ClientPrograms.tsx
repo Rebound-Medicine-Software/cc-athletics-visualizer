@@ -12,6 +12,9 @@ import { useClientAssignments, useClientCompletionLogs } from './useClientAssign
 import { useTemplateStructure } from '../assignments/useAssignments';
 import { ClientLogCompletionDialog } from './ClientLogCompletionDialog';
 import type { ExerciseOverride } from '../assignments/types';
+import { computeAdherence } from '../assignments/adherence';
+import { AdherencePanel } from '../assignments/AdherencePanel';
+import { Flame } from 'lucide-react';
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">{children}</h3>
