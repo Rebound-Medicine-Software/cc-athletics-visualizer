@@ -202,8 +202,11 @@ const handler = async (req: Request): Promise<Response> => {
       console.warn('Activity log insert failed:', logErr);
     }
 
-    // Initialize and send email via NotificationAPI
-    console.log('Initializing NotificationAPI...');
+    // Initialize and send email via NotificationAPI (skipped when suppressed)
+    if (suppressEmail) {
+      console.log('suppressEmail=true — skipping NotificationAPI send');
+    } else {
+      console.log('Initializing NotificationAPI...');
     try {
       notificationapi.init(
         'n3g0q177rbzrr6riq8re90n1yc',
