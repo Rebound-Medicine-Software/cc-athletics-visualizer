@@ -13,6 +13,7 @@ import { AdminHeader } from './AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/hooks/useBranding';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
+import { useRealtimeClientNotifications } from '@/hooks/useRealtimeClientNotifications';
 
 export const ClientDashboard = () => {
   const [activeSection, setActiveSection] = useState('home');
@@ -20,6 +21,8 @@ export const ClientDashboard = () => {
   const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
 
   useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
+  // Realtime: live PB / leader / retest / streak toasts and badge updates
+  useRealtimeClientNotifications();
 
   const renderContent = () => {
     switch (activeSection) {
