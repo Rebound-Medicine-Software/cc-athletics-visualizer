@@ -200,7 +200,7 @@ export const AthleteCredentialsTab = () => {
     return `${adjective}${noun}${numbers}${symbol}`;
   };
 
-  const createAthleteAccount = async (athlete: Athlete, email: string, password: string) => {
+  const createAthleteAccount = async (athlete: Athlete, email: string, password: string, suppressEmail = false) => {
     try {
       // Get current user's profile to identify the organization
       const { data: { user } } = await supabase.auth.getUser();
@@ -233,7 +233,13 @@ export const AthleteCredentialsTab = () => {
           lastName: athlete.name.split(' ').slice(1).join(' ') || '',
           password: password,
           organisationName: team?.name || 'Your Organization',
-          athleteType: 'Athlete'
+          athleteType: 'Athlete',
+          // Deterministic linking — guarantees athletes.user_id is set and
+          // profile.role/team_id are correct so the client can reach
+          // /Dashboard(Client) on first login.
+          athleteId: athlete.id,
+          teamId: athlete.team_id || organizationProfile.team_id,
+          suppressEmail,
         }
       });
 
