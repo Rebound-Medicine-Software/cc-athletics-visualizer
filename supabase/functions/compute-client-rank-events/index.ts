@@ -75,6 +75,20 @@ serve(async (req) => {
     if (athletesErr) throw athletesErr
     const linked = athletes ?? []
 
+    // 1b. Load per-team retest interval (fall back to default)
+    const teamIds = Array.from(new Set(linked.map((a) => a.team_id).filter(Boolean))) as string[]
+    const teamRetestDays = new Map<string, number>()
+    if (teamIds.length > 0) {
+      const { data: teamRows } = await supa
+        .from('teams')
+        .select('id, retest_interval_days')
+        .in('id', teamIds)
+      for (const t of teamRows ?? []) {
+        const v = (t as any).retest_interval_days
+        teamRetestDays.set(t.id, typeof v === 'number' && v > 0 ? v : DEFAULT_RETEST_DAYS)
+      }
+    }
+
     // 2. Pull bounded sample of recent test rows for ranking (per test_name)
     const testNames = Array.from(new Set(METRICS.map((m) => m.testName)))
     const allRowsByTest = new Map<string, any[]>()
@@ -241,8 +255,9 @@ serve(async (req) => {
 
       // ===== E. Retest Due =====
       if (lastTestDate) {
+        const retestDays = (ath.team_id && teamRetestDays.get(ath.team_id)) || DEFAULT_RETEST_DAYS
         const days = Math.floor((now.getTime() - new Date(lastTestDate).getTime()) / 86400_000)
-        if (days >= RETEST_DAYS) {
+        if (days >= retestDays) {
           notifsToInsert.push({
             recipient_user_id: ath.user_id!,
             team_id: ath.team_id,
