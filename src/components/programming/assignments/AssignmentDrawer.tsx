@@ -37,6 +37,7 @@ import type { AssignmentStatus, ExerciseOverride } from './types';
 import { computeAdherence } from './adherence';
 import { AdherencePanel } from './AdherencePanel';
 import { OutcomesPanel } from './OutcomesPanel';
+import { ProgrammingAiSummaryPanel } from './ProgrammingAiSummaryPanel';
 
 interface Props {
   assignmentId: string | null;
@@ -96,6 +97,17 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
   const uniqueDays = useMemo(
     () => new Set(logs.map((l: any) => l.performed_on)).size,
     [logs]
+  );
+
+  const adherenceMetrics = useMemo(
+    () =>
+      computeAdherence({
+        startDate: assignment?.start_date,
+        sessions: structure?.sessions ?? [],
+        blocks: structure?.blocks ?? [],
+        completionLogs: logs as any,
+      }),
+    [assignment?.start_date, structure?.sessions, structure?.blocks, logs]
   );
 
   const setStatus = (next: AssignmentStatus) => {
@@ -257,29 +269,28 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
             {sLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
-              <AdherencePanel
-                showTimeline
-                metrics={computeAdherence({
-                  startDate: assignment.start_date,
-                  sessions: structure?.sessions ?? [],
-                  blocks: structure?.blocks ?? [],
-                  completionLogs: logs as any,
-                })}
-              />
+              <AdherencePanel showTimeline metrics={adherenceMetrics} />
             )}
 
             {/* Outcomes (test data link) */}
             <OutcomesPanel
               athleteId={assignment.athlete_id}
               startDate={assignment.start_date}
-              adherencePercentage={
-                computeAdherence({
-                  startDate: assignment.start_date,
-                  sessions: structure?.sessions ?? [],
-                  blocks: structure?.blocks ?? [],
-                  completionLogs: logs as any,
-                }).adherencePercentage
-              }
+              adherencePercentage={adherenceMetrics.adherencePercentage}
+            />
+
+            {/* AI Coach summary */}
+            <ProgrammingAiSummaryPanel
+              assignmentId={assignment.id}
+              athleteId={assignment.athlete_id}
+              athleteName={assignment.athletes?.name ?? null}
+              programmeName={assignment.programming_templates?.name ?? null}
+              programmeGoal={assignment.programming_templates?.goal ?? null}
+              startDate={assignment.start_date}
+              endDate={assignment.end_date}
+              status={assignment.status}
+              adherence={adherenceMetrics}
+              recentLogs={logs as any}
             />
 
             {/* Adherence quick stats (logged) */}
