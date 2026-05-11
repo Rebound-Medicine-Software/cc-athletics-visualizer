@@ -37,6 +37,7 @@ import type { AssignmentStatus, ExerciseOverride } from './types';
 import { computeAdherence } from './adherence';
 import { AdherencePanel } from './AdherencePanel';
 import { OutcomesPanel } from './OutcomesPanel';
+import { ProgrammingAiSummaryPanel } from './ProgrammingAiSummaryPanel';
 
 interface Props {
   assignmentId: string | null;
