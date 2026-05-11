@@ -47,10 +47,10 @@ export const useRealtimeClientNotifications = () => {
           qc.invalidateQueries({ queryKey: ['client-unread-notifications'] });
 
           if (priority === 'high' || HIGH_PRIORITY_TYPES.has(type)) {
-            const toaster = row.severity === 'success' ? toast.success
-              : row.severity === 'warning' || row.severity === 'critical' ? toast.warning ?? toast.error
-              : toast;
-            toaster(row.title ?? 'New update', {
+            const fn = row.severity === 'success' ? toast.success
+              : row.severity === 'warning' || row.severity === 'critical' ? toast.error
+              : toast.message;
+            fn(row.title ?? 'New update', {
               description: row.message ?? undefined,
               duration: 6000,
             });
