@@ -507,6 +507,21 @@ serve(async (req) => {
       payload: { records: allTestData.length, athletes: allAthletes.size, teams: teamsData.teams.length, manual_retry: manualRetry, scoped: !!scopedTeamId },
     })
 
+    // Fire-and-forget: compute athlete notifications (PBs, rankings, retest)
+    try {
+      const fnUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/compute-client-rank-events`
+      fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify(scopedTeamId ? { team_id: scopedTeamId } : {}),
+      }).catch((e) => console.warn('compute-client-rank-events invoke failed:', e))
+    } catch (e) {
+      console.warn('compute-client-rank-events dispatch error:', e)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.enrich-exercise]
 verify_jwt = false
+
+[functions.compute-client-rank-events]
+verify_jwt = false
