@@ -158,38 +158,51 @@ export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => 
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[2000] bg-background flex flex-col">
-      {/* Minimal practitioner controls */}
-      <div className="flex items-center justify-between px-4 py-3 border-b bg-background/80 backdrop-blur">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div
+      className="fixed inset-0 z-[2000] bg-background flex flex-col h-[100dvh] overflow-hidden touch-pan-y"
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
+      {/* Header — exit always visible */}
+      <div className="flex items-center justify-between px-4 py-3 border-b bg-background/80 backdrop-blur shrink-0">
+        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
           <Sparkles className="h-4 w-4" />
-          Presentation Mode · {idx + 1} / {totalSlides}
+          <span className="hidden sm:inline">Presentation Mode · </span>
+          {idx + 1} / {totalSlides}
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose} className="gap-1">
-          <X className="h-4 w-4" /> Exit
+        <Button variant="ghost" size="sm" onClick={onClose} className="gap-1 h-10 px-3">
+          <X className="h-5 w-5" /> Exit
         </Button>
       </div>
 
-      <div className="flex-1 flex items-center justify-center overflow-y-auto py-8">
+      <div className="flex-1 flex items-center justify-center overflow-y-auto overflow-x-hidden py-6 sm:py-8 px-2">
         {renderSlide()}
       </div>
 
-      <div className="flex items-center justify-between px-6 py-4 border-t bg-background/80 backdrop-blur">
+      <div className="flex items-center justify-between gap-3 px-3 sm:px-6 py-3 sm:py-4 border-t bg-background/80 backdrop-blur shrink-0">
         <Button
           variant="outline"
           size="lg"
           disabled={idx === 0}
           onClick={() => setIdx((i) => Math.max(0, i - 1))}
-          className="gap-2"
+          className="gap-2 h-12 min-w-[5rem]"
+          aria-label="Previous slide"
         >
-          <ChevronLeft className="h-5 w-5" /> Back
+          <ChevronLeft className="h-5 w-5" /> <span className="hidden sm:inline">Back</span>
         </Button>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-wrap justify-center max-w-[60%]">
           {Array.from({ length: totalSlides }).map((_, i) => (
             <button
               key={i}
               onClick={() => setIdx(i)}
-              className={`h-1.5 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-all ${
                 i === idx ? 'w-8 bg-primary' : 'w-2 bg-muted-foreground/30'
               }`}
               aria-label={`Slide ${i + 1}`}
@@ -200,9 +213,10 @@ export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => 
           size="lg"
           disabled={idx === totalSlides - 1}
           onClick={() => setIdx((i) => Math.min(totalSlides - 1, i + 1))}
-          className="gap-2"
+          className="gap-2 h-12 min-w-[5rem]"
+          aria-label="Next slide"
         >
-          Next <ChevronRight className="h-5 w-5" />
+          <span className="hidden sm:inline">Next</span> <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
     </div>,
