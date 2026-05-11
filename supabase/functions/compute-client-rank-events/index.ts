@@ -51,7 +51,59 @@ interface NotifInput {
   metadata: Record<string, unknown>
 }
 
-serve(async (req) => {
+// Broadcast a coach-side notification to every practitioner on a team.
+// Deduped via metadata key over last 7 days. Excludes the triggering athlete user.
+async function broadcastToCoaches(
+  supa: any,
+  teamId: string | null,
+  excludeUserId: string,
+  payload: { title: string; message: string; metadata: Record<string, unknown> },
+): Promise<void> {
+  if (!teamId) return
+  try {
+    const { data: practitioners } = await supa
+      .from('profiles')
+      .select('user_id, role')
+      .eq('team_id', teamId)
+      .in('role', ['organisation', 'staff', 'practitioner', 'super_admin'])
+    const recipients = (practitioners ?? [])
+      .map((p: any) => p.user_id)
+      .filter((id: string | null): id is string => !!id && id !== excludeUserId)
+    if (recipients.length === 0) return
+
+    const m = payload.metadata as any
+    const key = `${m.notification_type}|${m.athlete_id ?? ''}|${m.metric ?? m.assignment_id ?? ''}|${m.milestone ?? m.scope ?? ''}`
+    const since = new Date(Date.now() - 7 * 86400_000).toISOString()
+    const { data: existing } = await supa
+      .from('platform_in_app_notifications')
+      .select('recipient_user_id, metadata, created_at')
+      .in('recipient_user_id', recipients)
+      .gte('created_at', since)
+    const dup = new Set<string>()
+    for (const e of existing ?? []) {
+      const em = (e.metadata ?? {}) as any
+      if (em.source !== 'client_event_broadcast') continue
+      const k = `${em.notification_type}|${em.athlete_id ?? ''}|${em.metric ?? em.assignment_id ?? ''}|${em.milestone ?? em.scope ?? ''}`
+      if (k === key) dup.add(e.recipient_user_id)
+    }
+    const rows = recipients
+      .filter((r: string) => !dup.has(r))
+      .map((r: string) => ({
+        recipient_user_id: r,
+        team_id: teamId,
+        title: payload.title,
+        message: payload.message,
+        severity: 'info',
+        metadata: payload.metadata,
+      }))
+    if (rows.length > 0) {
+      await supa.from('platform_in_app_notifications').insert(rows)
+    }
+  } catch (e) {
+    console.warn('broadcastToCoaches failed', (e as Error).message)
+  }
+}
+
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const supa = createClient(
