@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminSidebar } from './AdminSidebar';
-import { ClientOverview } from './client/ClientOverview';
-import { ClientAnalytics } from './client/ClientAnalytics';
+import { ClientToday } from './client/ClientToday';
+import { ClientMyProgress } from './client/ClientMyProgress';
 import { ClientBookings } from './client/ClientBookings';
 import { ClientReports } from './client/ClientReports';
 import { ClientPrograms } from './client/ClientPrograms';
+import { ClientMyTesting } from './client/ClientMyTesting';
+import { ClientNotifications } from './client/ClientNotifications';
 import { PaymentPackages } from './client/PaymentPackages';
 import { AdminHeader } from './AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,41 +19,43 @@ export const ClientDashboard = () => {
   const { profile } = useAuth();
   const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
 
-  // Apply branding for client role (uses effective team during View-As)
   useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
 
   const renderContent = () => {
     switch (activeSection) {
       case 'home':
-        return <ClientOverview />;
-      case 'analytics':
-        return <ClientAnalytics />;
+        return <ClientToday onSectionChange={setActiveSection} />;
+      case 'progress':
+      case 'analytics': // legacy alias
+        return <ClientMyProgress />;
+      case 'programming':
+        return <ClientPrograms />;
       case 'bookings':
         return <ClientBookings />;
       case 'reports':
         return <ClientReports />;
-      case 'programming':
-        return <ClientPrograms />;
+      case 'testing':
+        return <ClientMyTesting />;
+      case 'notifications':
+        return <ClientNotifications />;
       case 'payment-packages':
         return <PaymentPackages />;
       default:
-        return <ClientOverview />;
+        return <ClientToday onSectionChange={setActiveSection} />;
     }
   };
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AdminSidebar 
+        <AdminSidebar
           role="client"
           activeSection={activeSection}
           onSectionChange={setActiveSection}
         />
         <main className="flex-1 flex flex-col">
           <AdminHeader role="client" />
-          <div className="flex-1 p-6">
-            {renderContent()}
-          </div>
+          <div className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">{renderContent()}</div>
         </main>
       </div>
     </SidebarProvider>

@@ -16,7 +16,8 @@ import {
   Building2,
   HeadphonesIcon,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -102,15 +103,29 @@ export const getNavigationItems = (): NavigationItem[] => [
     label: 'Live Data',
     icon: Activity,
     description: 'Real-time force plate data and measurements',
-    roles: ['organisation', 'clinician', 'client']
+    roles: ['organisation', 'clinician']
+  },
+  {
+    id: 'progress',
+    label: 'My Progress',
+    icon: TrendingUp,
+    description: 'Latest results, baseline comparison and ranking',
+    roles: ['client']
   },
   {
     id: 'analytics',
     label: 'Analytics',
     icon: BarChart3,
     description: 'Performance metrics and data visualization',
-    roles: ['organisation', 'clinician', 'client'],
+    roles: ['organisation', 'clinician'],
     permissions: ['can_view_analytics']
+  },
+  {
+    id: 'programming',
+    label: 'My Programme',
+    icon: Dumbbell,
+    description: 'Your assigned training programme',
+    roles: ['client']
   },
   {
     id: 'bookings',
@@ -118,6 +133,13 @@ export const getNavigationItems = (): NavigationItem[] => [
     icon: Calendar,
     description: 'Appointment scheduling and management',
     roles: ['organisation', 'clinician', 'client']
+  },
+  {
+    id: 'testing',
+    label: 'My Testing',
+    icon: Activity,
+    description: 'Last test, retest date and history',
+    roles: ['client']
   },
   {
     id: 'profiles',
@@ -128,17 +150,31 @@ export const getNavigationItems = (): NavigationItem[] => [
   },
   {
     id: 'reports',
+    label: 'My Reports',
+    icon: FileText,
+    description: 'Your testing history and reports',
+    roles: ['client']
+  },
+  {
+    id: 'reports',
     label: 'Reports',
     icon: FileText,
     description: 'Generate and view performance reports',
-    roles: ['organisation', 'clinician', 'client']
+    roles: ['organisation', 'clinician']
   },
   {
     id: 'programming',
     label: 'Programming',
     icon: Dumbbell,
     description: 'Create and manage training programs',
-    roles: ['organisation', 'clinician', 'client']
+    roles: ['organisation', 'clinician']
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    icon: Bell,
+    description: 'Updates from your coach and rankings',
+    roles: ['client']
   },
   {
     id: 'payment-packages',
