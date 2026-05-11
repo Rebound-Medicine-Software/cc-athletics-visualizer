@@ -118,8 +118,12 @@ export const ClientNotifications = () => {
   const refresh = async () => {
     setRefreshing(true);
     try {
-      const { error } = await supabase.functions.invoke('compute-client-rank-events', { body: {} });
-      if (error) throw error;
+      const [rank, adh] = await Promise.all([
+        supabase.functions.invoke('compute-client-rank-events', { body: {} }),
+        supabase.functions.invoke('compute-client-adherence-events', { body: {} }),
+      ]);
+      if (rank.error) throw rank.error;
+      if (adh.error) throw adh.error;
       toast.success('Checked for new updates');
       await qc.invalidateQueries({ queryKey: ['client-notifications-feed'] });
     } catch (e: any) {
@@ -131,8 +135,13 @@ export const ClientNotifications = () => {
 
   const filtered = useMemo(() => {
     if (category === 'all') return notifications;
-    return notifications.filter((n) => (n.metadata?.notification_type ?? 'default') === category);
+    return notifications.filter((n) => {
+      const t = n.metadata?.notification_type ?? 'default';
+      const cat = (TYPE_META[t] ?? TYPE_META.default).category;
+      return cat === category || t === category;
+    });
   }, [notifications, category]);
+
 
   const unread = notifications.filter((n) => !n.read_at).length;
   const pinned = filtered.filter((n) => {
