@@ -23,6 +23,7 @@ import { AthleteAccountLinkingTab } from "@/components/settings/AthleteAccountLi
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
+import { RetestSettingsTab } from "@/components/settings/RetestSettingsTab";
 import {
   UnsavedChangesProvider,
   useUnsavedChanges,
@@ -31,6 +32,7 @@ import { cn } from "@/lib/utils";
 
 type SectionId =
   | "branding"
+  | "retest-interval"
   | "api-keys"
   | "demonstrations"
   | "staff-credentials"
@@ -55,6 +57,7 @@ const GROUPS: Group[] = [
     description: "Brand identity and how your organisation appears.",
     sections: [
       { id: "branding", label: "Branding", description: "Colours, logo and typography." },
+      { id: "retest-interval", label: "Retest Interval", description: "How often athletes are reminded to re-test." },
     ],
   },
   {
@@ -138,6 +141,7 @@ const SettingsInner = () => {
   const renderSection = () => {
     switch (active) {
       case "branding": return <BrandingTab />;
+      case "retest-interval": return <RetestSettingsTab />;
       case "api-keys": return <ApiKeysTab />;
       case "demonstrations": return <DemonstrationsTab />;
       case "staff-credentials": return <StaffCredentialsTab />;
