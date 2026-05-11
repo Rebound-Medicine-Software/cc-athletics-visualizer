@@ -157,23 +157,31 @@ serve(async (req) => {
           const isPB = spec.higherIsBetter ? latestVal > prevBest : latestVal < prevBest
           const deltaPct = ((latestVal - prevBest) / Math.abs(prevBest)) * 100
           if (isPB && Math.abs(deltaPct) >= 1) {
+            const meta = {
+              notification_type: 'personal_best',
+              metric: spec.short,
+              metric_label: spec.label,
+              old_value: prevBest,
+              new_value: latestVal,
+              score_delta: deltaPct,
+              created_from_test_id: latestSourceId,
+              athlete_id: ath.id,
+              athlete_name: ath.name,
+              priority: 'high',
+            }
             notifsToInsert.push({
               recipient_user_id: ath.user_id!,
               team_id: ath.team_id,
               title: `🏆 New Personal Best — ${spec.label}`,
               message: `You improved your ${spec.label} by ${Math.abs(deltaPct).toFixed(1)}% (${fmt(latestVal, spec.unit)}).`,
               severity: 'success',
-              metadata: {
-                notification_type: 'personal_best',
-                metric: spec.short,
-                metric_label: spec.label,
-                old_value: prevBest,
-                new_value: latestVal,
-                score_delta: deltaPct,
-                created_from_test_id: latestSourceId,
-                athlete_id: ath.id,
-                priority: 'high',
-              },
+              metadata: meta,
+            })
+            // Coach broadcast
+            await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+              title: `🏆 ${ath.name} hit a PB — ${spec.label}`,
+              message: `+${Math.abs(deltaPct).toFixed(1)}% on ${spec.label} (${fmt(latestVal, spec.unit)}).`,
+              metadata: { ...meta, source: 'client_event_broadcast' },
             })
             pbCount++
           }
