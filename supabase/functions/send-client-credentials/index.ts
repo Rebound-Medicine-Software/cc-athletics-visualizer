@@ -257,6 +257,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       // Don't fail the entire request if email fails - just log and continue
     }
+    }
 
     console.log('Function completed successfully');
     return new Response(
