@@ -251,43 +251,57 @@ serve(async (req) => {
         const weekAgo = addDays(today, -7)
         const lastWeek = past.filter((s) => s.date >= weekAgo)
         if (lastWeek.length >= 2 && lastWeek.every((s) => completedSet.has(s.id))) {
+          const meta = {
+            notification_type: 'programme_milestone',
+            milestone: 'perfect_week',
+            week_sessions: lastWeek.length,
+            assignment_id: asn.id,
+            athlete_id: ath.id,
+            athlete_name: ath.name,
+            priority: 'high',
+          }
           notifsToInsert.push({
             recipient_user_id: ath.user_id!,
             team_id: ath.team_id,
             title: `🏅 Perfect week completed`,
             message: `You completed every session this week (${lastWeek.length}/${lastWeek.length}).`,
             severity: 'success',
-            metadata: {
-              notification_type: 'programme_milestone',
-              milestone: 'perfect_week',
-              week_sessions: lastWeek.length,
-              assignment_id: asn.id,
-              athlete_id: ath.id,
-              priority: 'high',
-            },
+            metadata: meta,
+          })
+          await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+            title: `🏅 ${ath.name} completed a perfect week`,
+            message: `${lastWeek.length}/${lastWeek.length} sessions hit this week.`,
+            metadata: { ...meta, source: 'client_event_broadcast' },
           })
           perfectWeekCount++
         }
 
-        // ---- Programme completed: all sessions scheduled in past AND all completed ----
+        // ---- Programme completed ----
         if (
           scheduled.length > 0 &&
           scheduled.every((s) => s.date <= today) &&
           scheduled.every((s) => completedSet.has(s.id))
         ) {
+          const meta = {
+            notification_type: 'programme_completed',
+            total_sessions: scheduled.length,
+            assignment_id: asn.id,
+            athlete_id: ath.id,
+            athlete_name: ath.name,
+            priority: 'high',
+          }
           notifsToInsert.push({
             recipient_user_id: ath.user_id!,
             team_id: ath.team_id,
             title: `🎉 Programme completed`,
             message: `You finished every session of your programme. Time to celebrate — and book a retest.`,
             severity: 'success',
-            metadata: {
-              notification_type: 'programme_completed',
-              total_sessions: scheduled.length,
-              assignment_id: asn.id,
-              athlete_id: ath.id,
-              priority: 'high',
-            },
+            metadata: meta,
+          })
+          await broadcastToCoaches(supa, ath.team_id, ath.user_id!, {
+            title: `🎉 ${ath.name} finished their programme`,
+            message: `${scheduled.length} sessions completed. Consider booking a retest.`,
+            metadata: { ...meta, source: 'client_event_broadcast' },
           })
           completionCount++
         }
