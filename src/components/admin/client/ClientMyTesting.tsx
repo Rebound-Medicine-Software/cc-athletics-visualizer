@@ -6,12 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
-
-const RETEST_INTERVAL_DAYS = 42; // 6 weeks default
+import { useRetestInterval, DEFAULT_RETEST_INTERVAL_DAYS } from '@/hooks/useRetestInterval';
 
 export const ClientMyTesting = () => {
   const { user } = useAuth();
   const { data: athlete } = useClientAthlete();
+  const { data: retestInterval } = useRetestInterval(athlete?.team_id ?? null);
+  const RETEST_INTERVAL_DAYS = retestInterval ?? DEFAULT_RETEST_INTERVAL_DAYS;
 
   const { data: lastTest, isLoading: lLoading } = useQuery({
     queryKey: ['client-last-test', athlete?.name],
