@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy } from 'lucide-react';
+import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy, Hourglass } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,8 @@ import { useClientAssignments } from '@/components/programming/client/useClientA
 import { useTemplateStructure } from '@/components/programming/assignments/useAssignments';
 import { computeAdherence } from '@/components/programming/assignments/adherence';
 import { useClientMetrics } from './useClientMetrics';
+import { useRetestInterval, DEFAULT_RETEST_INTERVAL_DAYS } from '@/hooks/useRetestInterval';
+import { toast } from 'sonner';
 
 interface Props {
   onSectionChange?: (section: string) => void;
@@ -61,6 +63,50 @@ export const ClientToday = ({ onSectionChange }: Props) => {
     teamName: null,
   });
 
+  // Retest: pull team's interval (fallback 42d) and last test date
+  const { data: retestInterval } = useRetestInterval(athlete?.team_id ?? null);
+  const RETEST_DAYS = retestInterval ?? DEFAULT_RETEST_INTERVAL_DAYS;
+  const { data: lastTest } = useQuery({
+    queryKey: ['client-last-test-today', athlete?.name],
+    enabled: !!athlete?.name,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('test_data')
+        .select('test_date')
+        .eq('athlete_name', athlete!.name)
+        .order('test_date', { ascending: false })
+        .limit(1);
+      return (data ?? [])[0] ?? null;
+    },
+  });
+
+  const retestStatus = useMemo(() => {
+    if (!lastTest?.test_date) return null;
+    const last = new Date(lastTest.test_date);
+    const days = Math.floor((Date.now() - last.getTime()) / 86400_000);
+    const due = days >= RETEST_DAYS;
+    const dueSoon = !due && days >= RETEST_DAYS - 7;
+    return { days, due, dueSoon, daysUntil: RETEST_DAYS - days };
+  }, [lastTest, RETEST_DAYS]);
+
+  const requestRetest = async () => {
+    if (!user?.id || !athlete) return;
+    try {
+      await supabase.from('platform_in_app_notifications').insert({
+        recipient_user_id: user.id,
+        team_id: athlete.team_id,
+        title: '⏳ Retest requested',
+        message: `${athlete.name} requested a retest. Your coach has been notified.`,
+        severity: 'info',
+        metadata: { notification_type: 'retest_due', source: 'client_request', athlete_id: athlete.id },
+      });
+      toast.success("Request sent — your coach will be in touch.");
+    } catch (e: any) {
+      toast.error(e.message ?? 'Could not send request');
+    }
+  };
+
   const todaySession = useMemo(() => {
     if (!active || !structure) return null;
     const adherence = computeAdherence({
@@ -89,6 +135,28 @@ export const ClientToday = ({ onSectionChange }: Props) => {
         <h2 className="text-3xl font-bold tracking-tight">Hi {greetingName} 👋</h2>
         <p className="text-sm text-muted-foreground mt-1">Here's what's on for you today.</p>
       </div>
+
+      {retestStatus?.due && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-start gap-3 min-w-0">
+              <Hourglass className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold">⏳ Time to re-test</div>
+                <p className="text-xs text-muted-foreground">
+                  It's been {retestStatus.days} days since your last test.
+                </p>
+              </div>
+            </div>
+            <Button size="sm" onClick={() => onSectionChange?.('bookings')}>
+              Book testing
+            </Button>
+            <Button size="sm" variant="outline" onClick={requestRetest}>
+              Request retest
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Today's plan */}
