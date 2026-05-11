@@ -268,6 +268,7 @@ serve(async (req) => {
               notification_type: 'retest_due',
               days_since_last: days,
               last_test_date: lastTestDate,
+              interval_days: retestDays,
               athlete_id: ath.id,
               priority: 'high',
             },
