@@ -93,6 +93,7 @@ export const ClientToday = ({ onSectionChange }: Props) => {
   const requestRetest = async () => {
     if (!user?.id || !athlete) return;
     try {
+      // 1) Confirmation in athlete's own feed
       await supabase.from('platform_in_app_notifications').insert({
         recipient_user_id: user.id,
         team_id: athlete.team_id,
@@ -100,6 +101,16 @@ export const ClientToday = ({ onSectionChange }: Props) => {
         message: `${athlete.name} requested a retest. Your coach has been notified.`,
         severity: 'info',
         metadata: { notification_type: 'retest_due', source: 'client_request', athlete_id: athlete.id },
+      });
+      // 2) Broadcast to all practitioners on the team (engagement loop)
+      await supabase.functions.invoke('notify-practitioners-of-client-event', {
+        body: {
+          athlete_id: athlete.id,
+          event_type: 'retest_request',
+          title: '⏳ Retest requested',
+          message: `${athlete.name} requested a retest.`,
+          metadata: { days_since_last_test: retestStatus?.days ?? null },
+        },
       });
       toast.success("Request sent — your coach will be in touch.");
     } catch (e: any) {
