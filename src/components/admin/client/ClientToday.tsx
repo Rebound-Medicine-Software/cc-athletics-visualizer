@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy, Hourglass } from 'lucide-react';
+import { Calendar, Bell, Activity, ArrowRight, Dumbbell, Trophy, Hourglass, Presentation } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,6 +93,7 @@ export const ClientToday = ({ onSectionChange }: Props) => {
   const requestRetest = async () => {
     if (!user?.id || !athlete) return;
     try {
+      // 1) Confirmation in athlete's own feed
       await supabase.from('platform_in_app_notifications').insert({
         recipient_user_id: user.id,
         team_id: athlete.team_id,
@@ -100,6 +101,16 @@ export const ClientToday = ({ onSectionChange }: Props) => {
         message: `${athlete.name} requested a retest. Your coach has been notified.`,
         severity: 'info',
         metadata: { notification_type: 'retest_due', source: 'client_request', athlete_id: athlete.id },
+      });
+      // 2) Broadcast to all practitioners on the team (engagement loop)
+      await supabase.functions.invoke('notify-practitioners-of-client-event', {
+        body: {
+          athlete_id: athlete.id,
+          event_type: 'retest_request',
+          title: '⏳ Retest requested',
+          message: `${athlete.name} requested a retest.`,
+          metadata: { days_since_last_test: retestStatus?.days ?? null },
+        },
       });
       toast.success("Request sent — your coach will be in touch.");
     } catch (e: any) {
@@ -131,9 +142,14 @@ export const ClientToday = ({ onSectionChange }: Props) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Hi {greetingName} 👋</h2>
-        <p className="text-sm text-muted-foreground mt-1">Here's what's on for you today.</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Hi {greetingName} 👋</h2>
+          <p className="text-sm text-muted-foreground mt-1">Here's what's on for you today.</p>
+        </div>
+        <Button variant="outline" className="gap-2" onClick={() => onSectionChange?.('reports')}>
+          <Presentation className="h-4 w-4" /> Present Results
+        </Button>
       </div>
 
       {retestStatus?.due && (
