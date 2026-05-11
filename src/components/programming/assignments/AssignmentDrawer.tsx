@@ -99,6 +99,17 @@ export const AssignmentDrawer = ({ assignmentId, open, onOpenChange }: Props) =>
     [logs]
   );
 
+  const adherenceMetrics = useMemo(
+    () =>
+      computeAdherence({
+        startDate: assignment?.start_date,
+        sessions: structure?.sessions ?? [],
+        blocks: structure?.blocks ?? [],
+        completionLogs: logs as any,
+      }),
+    [assignment?.start_date, structure?.sessions, structure?.blocks, logs]
+  );
+
   const setStatus = (next: AssignmentStatus) => {
     if (!assignment) return;
     if (guardWrite('Updating assignment')) return;
