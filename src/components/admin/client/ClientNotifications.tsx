@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Bell, Trophy, Award, CalendarClock, CheckCircle2, Crown, TrendingUp,
-  Hourglass, X, RefreshCw, Pin,
+  Hourglass, X, RefreshCw, Pin, Flame, Target, PartyPopper, MessageSquare,
+  FileText,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,12 +14,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow, isToday, isThisWeek } from 'date-fns';
 import { toast } from 'sonner';
 
-const TYPE_META: Record<string, { Icon: any; tone: string; label: string; pinned: boolean }> = {
-  personal_best: { Icon: Award, tone: 'positive', label: 'Personal Best', pinned: true },
-  leader: { Icon: Crown, tone: 'positive', label: 'Leader', pinned: true },
-  ranking: { Icon: TrendingUp, tone: 'info', label: 'Ranking', pinned: false },
-  retest_due: { Icon: Hourglass, tone: 'attention', label: 'Retest Due', pinned: true },
-  default: { Icon: Bell, tone: 'info', label: 'Update', pinned: false },
+const TYPE_META: Record<string, { Icon: any; tone: string; label: string; pinned: boolean; category: string }> = {
+  personal_best: { Icon: Award, tone: 'positive', label: 'Personal Best', pinned: true, category: 'personal_best' },
+  leader: { Icon: Crown, tone: 'positive', label: 'Leader', pinned: true, category: 'ranking' },
+  ranking: { Icon: TrendingUp, tone: 'info', label: 'Ranking', pinned: false, category: 'ranking' },
+  retest_due: { Icon: Hourglass, tone: 'attention', label: 'Retest Due', pinned: true, category: 'retest' },
+  streak: { Icon: Flame, tone: 'positive', label: 'Streak', pinned: true, category: 'milestones' },
+  adherence: { Icon: Target, tone: 'positive', label: 'Adherence', pinned: false, category: 'milestones' },
+  programme_milestone: { Icon: Trophy, tone: 'positive', label: 'Milestone', pinned: true, category: 'milestones' },
+  programme_completed: { Icon: PartyPopper, tone: 'positive', label: 'Completed', pinned: true, category: 'milestones' },
+  coach_update: { Icon: MessageSquare, tone: 'info', label: 'Coach Update', pinned: false, category: 'coach' },
+  report_available: { Icon: FileText, tone: 'info', label: 'Report', pinned: false, category: 'reports' },
+  default: { Icon: Bell, tone: 'info', label: 'Update', pinned: false, category: 'all' },
 };
 
 const toneClass = (tone: string) => {
@@ -48,9 +55,11 @@ interface Notif {
 const CATEGORIES = [
   { key: 'all', label: 'All' },
   { key: 'personal_best', label: 'PBs' },
-  { key: 'leader', label: 'Leader' },
   { key: 'ranking', label: 'Rankings' },
-  { key: 'retest_due', label: 'Retest' },
+  { key: 'retest', label: 'Retesting' },
+  { key: 'milestones', label: 'Milestones' },
+  { key: 'coach', label: 'Coach' },
+  { key: 'reports', label: 'Reports' },
 ];
 
 export const ClientNotifications = () => {
