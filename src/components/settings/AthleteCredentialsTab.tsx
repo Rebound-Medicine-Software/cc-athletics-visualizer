@@ -777,6 +777,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Gender</TableHead>
                 <TableHead>Weight (kg)</TableHead>
                 <TableHead>Height (cm)</TableHead>
+                <TableHead className="min-w-[220px]">Sports / Events</TableHead>
                 <TableHead>Consent Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
