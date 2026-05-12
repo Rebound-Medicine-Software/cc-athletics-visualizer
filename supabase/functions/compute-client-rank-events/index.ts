@@ -314,6 +314,25 @@ serve(async (req) => {
 
         const scopes: { key: string; label: string; filter: (r: any) => boolean }[] = []
         if (teamName) scopes.push({ key: 'club', label: `your club`, filter: (r) => r.team_name === teamName })
+
+        // Sport scopes — one per canonical sport tagged for this athlete,
+        // but only emitted when the pool meets SPORT_MIN_SAMPLE so we never
+        // compare a sprinter to a rugby player by accident.
+        const mySports = sportsByAthleteName.get(ath.name) ?? new Set<string>()
+        for (const sport of mySports) {
+          const filter = (r: any) => {
+            const peerSports = sportsByAthleteName.get(r.athlete_name)
+            return !!peerSports && peerSports.has(sport)
+          }
+          // Quick sample-size pre-check on the metric's full pool
+          const allRowsForMetric = allRowsByTest.get(spec.testName) ?? []
+          const peerNames = new Set<string>()
+          for (const r of allRowsForMetric) if (filter(r)) peerNames.add(r.athlete_name)
+          if (peerNames.size >= SPORT_MIN_SAMPLE) {
+            scopes.push({ key: `sport:${sport}`, label: `${sport} athletes`, filter })
+          }
+        }
+
         if (region) scopes.push({ key: 'region', label: `your region`, filter: (r) => r.test_region === region })
         scopes.push({ key: 'global', label: 'globally', filter: () => true })
 
