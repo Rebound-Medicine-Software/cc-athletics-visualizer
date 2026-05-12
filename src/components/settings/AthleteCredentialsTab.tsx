@@ -492,7 +492,7 @@ export const AthleteCredentialsTab = () => {
       }
       
       setEditingId(null);
-      setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
+      setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '', sports: [] });
     } catch (error) {
       console.error('Error updating athlete:', error);
       toast.error("Failed to update athlete credentials");
@@ -572,7 +572,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
+    setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '', sports: [] });
   };
 
   const toggleDeleteSelect = (id: string) => {
