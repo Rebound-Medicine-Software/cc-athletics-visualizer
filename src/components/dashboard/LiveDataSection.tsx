@@ -584,7 +584,32 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               </SelectContent>
             </Select>
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sport pool</label>
+            <Select value={sportPool} onValueChange={setSportPool}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Sport pool" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All athletes</SelectItem>
+                {(sportsLookup?.allCanonicalSports ?? []).map((s) => (
+                  <SelectItem key={s} value={s}>Same sport · {s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        {sportPool !== "all" && sportPoolAthleteCount > 0 && sportPoolAthleteCount < SPORT_MIN_SAMPLE && (
+          <p className="text-xs text-amber-600 text-center">
+            Only {sportPoolAthleteCount} athlete{sportPoolAthleteCount === 1 ? '' : 's'} tagged with {sportPool} — comparisons may not be reliable yet.
+          </p>
+        )}
+        {sportPool !== "all" && sportPoolAthleteCount === 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            No athletes tagged with {sportPool} yet. Tag athletes in Settings → Athlete Credentials.
+          </p>
+        )}
       </div>
 
       {/* Comparative Percentile Chart */}
