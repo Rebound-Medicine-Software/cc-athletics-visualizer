@@ -1,10 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Trophy, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
 import { useClientMetrics, useClientRankings } from './useClientMetrics';
 import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
+import { cn } from '@/lib/utils';
 
 const formatVal = (v: number | null, unit: string) => {
   if (v == null) return '—';
@@ -12,12 +13,21 @@ const formatVal = (v: number | null, unit: string) => {
   return unit ? `${rounded} ${unit}` : rounded;
 };
 
-const plainEnglish = (changePct: number | null, isImprovement: boolean | null): string => {
-  if (changePct == null) return 'Need a follow-up test to compare progress.';
+const motivationalCopy = (
+  metricLabel: string,
+  changePct: number | null,
+  isImprovement: boolean | null,
+): string => {
+  if (changePct == null) return 'Need a follow-up test to see your trend.';
   const abs = Math.abs(changePct);
-  if (isImprovement === null) return 'Holding steady since baseline.';
-  if (isImprovement) return `Up ${abs.toFixed(1)}% since your baseline — nice work.`;
-  return `Down ${abs.toFixed(1)}% vs baseline — worth chatting to your coach.`;
+  if (isImprovement === null) return 'Steady — consistency wins.';
+  if (isImprovement) {
+    if (abs >= 10) return `🔥 Big gains — your ${metricLabel.toLowerCase()} is up ${abs.toFixed(1)}%.`;
+    if (abs >= 3) return `Strong progress — up ${abs.toFixed(1)}% from baseline.`;
+    return `Moving in the right direction (+${abs.toFixed(1)}%).`;
+  }
+  if (abs >= 10) return `Down ${abs.toFixed(1)}% — chat to your coach about adjustments.`;
+  return `Slightly down (${abs.toFixed(1)}%) — could be normal variation.`;
 };
 
 export const ClientMyProgress = () => {
@@ -33,63 +43,100 @@ export const ClientMyProgress = () => {
     teamName: null,
   });
 
-  if (aLoading) return <Skeleton className="h-64 w-full" />;
+  if (aLoading) return <Skeleton className="h-64 w-full rounded-2xl" />;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">My Progress</h2>
+    <div className="space-y-5 animate-fade-in">
+      <header className="px-1">
+        <h1 className="text-3xl font-bold tracking-tight">Your progress</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          A simple view of your key performance numbers and how they're trending.
+          How your key numbers are trending.
         </p>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-0.5">
           {sportComparisonLabel((athlete as any)?.sports)}
         </p>
-      </div>
+      </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {mLoading
-          ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40" />)
-          : (metrics ?? []).map((m) => {
-              const Icon = m.direction === 'up' ? TrendingUp : m.direction === 'down' ? TrendingDown : Minus;
-              const tone =
-                m.isImprovement === true
-                  ? 'text-emerald-600'
-                  : m.isImprovement === false
-                  ? 'text-rose-600'
-                  : 'text-muted-foreground';
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-44 rounded-2xl" />
+            ))
+          : (metrics ?? []).map((m, idx) => {
+              const Icon =
+                m.direction === 'up' ? TrendingUp : m.direction === 'down' ? TrendingDown : Minus;
+              const positive = m.isImprovement === true;
+              const negative = m.isImprovement === false;
               return (
-                <Card key={m.spec.short}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center justify-between">
-                      <span>{m.spec.label}</span>
-                      <Icon className={`h-4 w-4 ${tone}`} />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
+                <Card
+                  key={m.spec.short}
+                  className={cn(
+                    'overflow-hidden transition-shadow hover:shadow-md animate-scale-in',
+                    positive && 'border-emerald-500/30',
+                    negative && 'border-rose-500/30',
+                  )}
+                  style={{ animationDelay: `${idx * 40}ms` }}
+                >
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                          {m.spec.label}
+                        </p>
+                      </div>
+                      <div
+                        className={cn(
+                          'h-9 w-9 rounded-xl flex items-center justify-center shrink-0',
+                          positive
+                            ? 'bg-emerald-500/15 text-emerald-600'
+                            : negative
+                            ? 'bg-rose-500/15 text-rose-600'
+                            : 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                    </div>
+
                     {m.latest ? (
                       <>
-                        <div className="flex items-baseline gap-3">
-                          <div className="text-3xl font-bold tabular-nums">
+                        <div className="flex items-baseline gap-2">
+                          <div className="text-3xl font-bold tabular-nums leading-none">
                             {formatVal(m.latest.value, m.spec.unit)}
                           </div>
                           {m.changePct != null && (
-                            <Badge variant={m.isImprovement ? 'default' : 'secondary'} className={tone}>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                'h-5 text-[10px] font-semibold',
+                                positive
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                                  : negative
+                                  ? 'bg-rose-500/15 text-rose-700 dark:text-rose-400'
+                                  : '',
+                              )}
+                            >
                               {m.changePct > 0 ? '+' : ''}
                               {m.changePct.toFixed(1)}%
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          Latest test {new Date(m.latest.date).toLocaleDateString()}
+                        <p className="text-sm leading-snug">
+                          {motivationalCopy(m.spec.label, m.changePct, m.isImprovement)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Latest {new Date(m.latest.date).toLocaleDateString()}
                           {m.baseline && m.baseline.date !== m.latest.date && (
-                            <> · baseline {formatVal(m.baseline.value, m.spec.unit)} on {new Date(m.baseline.date).toLocaleDateString()}</>
+                            <>
+                              {' · '}from {formatVal(m.baseline.value, m.spec.unit)}
+                            </>
                           )}
-                        </div>
-                        <p className="text-sm">{plainEnglish(m.changePct, m.isImprovement)}</p>
+                        </p>
                       </>
                     ) : (
-                      <p className="text-sm text-muted-foreground">No test results yet for this metric.</p>
+                      <p className="text-sm text-muted-foreground">
+                        No test results yet for this metric.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
@@ -97,44 +144,66 @@ export const ClientMyProgress = () => {
             })}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">How you compare</CardTitle>
-          <p className="text-xs text-muted-foreground">Anonymised — we never show other athletes' names or details.</p>
-        </CardHeader>
-        <CardContent>
+      <Card className="overflow-hidden">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+              <Trophy className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold leading-tight">How you compare</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Anonymised — we never show others' names.
+              </p>
+            </div>
+          </div>
+
           {rLoading ? (
-            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full rounded-xl" />
           ) : !rankings?.length ? (
             <p className="text-sm text-muted-foreground">No comparison data yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {rankings.map((r) => {
                 const pct =
                   r.rank && r.totalAthletes >= 5
                     ? Math.max(1, Math.round((r.rank / r.totalAthletes) * 100))
                     : null;
+                const top = pct != null && pct <= 25;
                 const percentileCopy =
                   pct != null
                     ? pct <= 50
                       ? `Top ${pct}% in ${r.scopeLabel}`
                       : `Above ${100 - pct}% in ${r.scopeLabel}`
                     : r.totalAthletes < 5
-                    ? 'Not enough athletes for a reliable comparison yet'
+                    ? 'Need more athletes for a reliable comparison'
                     : null;
                 return (
-                  <div key={`${r.spec.short}-${r.scope}`} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                    <div>
-                      <div className="font-medium">{r.spec.label}</div>
-                      <div className="text-xs text-muted-foreground">{r.beatenByLabel}</div>
+                  <div
+                    key={`${r.spec.short}-${r.scope}`}
+                    className="flex items-center justify-between rounded-xl border bg-card/50 p-3 gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm truncate">{r.spec.label}</span>
+                        {top && <Sparkles className="h-3.5 w-3.5 text-amber-500" />}
+                      </div>
                       {percentileCopy && (
-                        <div className="text-xs text-primary mt-0.5">{percentileCopy}</div>
+                        <p className={cn(
+                          'text-xs mt-0.5 font-medium',
+                          top ? 'text-amber-600' : 'text-primary',
+                        )}>
+                          {percentileCopy}
+                        </p>
                       )}
+                      <p className="text-[11px] text-muted-foreground">{r.beatenByLabel}</p>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold tabular-nums">
+                    <div className="text-right shrink-0">
+                      <div className="font-bold tabular-nums text-lg leading-none">
                         {r.rank ? `#${r.rank}` : '—'}
-                        <span className="text-xs text-muted-foreground"> / {r.totalAthletes}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        of {r.totalAthletes}
                       </div>
                     </div>
                   </div>
