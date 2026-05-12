@@ -719,7 +719,7 @@ export const AthleteCredentialsTab = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search athletes by name or ID..."
@@ -727,6 +727,17 @@ export const AthleteCredentialsTab = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+            <Select value={sportFilter || 'all'} onValueChange={(v) => setSportFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by sport" />
+              </SelectTrigger>
+              <SelectContent className="z-[1500] max-h-72">
+                <SelectItem value="all">All sports</SelectItem>
+                {Array.from(new Set([...ALL_CANONICAL_SPORTS, ...sportsOptions])).sort((a, b) => a.localeCompare(b)).map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               onClick={() => setShowAddDialog(true)}
               size="sm"
@@ -734,6 +745,16 @@ export const AthleteCredentialsTab = () => {
             >
               <Plus className="w-4 h-4" />
               Add Athlete
+            </Button>
+            <Button
+              onClick={() => setShowBulkSports(true)}
+              size="sm"
+              variant="outline"
+              disabled={selectedForDelete.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Tags className="w-4 h-4" />
+              Bulk Sports ({selectedForDelete.size})
             </Button>
             <Button
               onClick={() => setShowDeleteConfirm(true)}
