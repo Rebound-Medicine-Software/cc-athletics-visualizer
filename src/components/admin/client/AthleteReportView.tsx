@@ -287,6 +287,7 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
         <PresentationMode
           athleteName={athlete.name}
           snapshots={interpreted}
+          athleteSports={(athlete as any)?.sports}
           onClose={() => setPresenting(false)}
         />
       )}
