@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddAthleteFromApiDialog } from "./AddAthleteFromApiDialog";
 import { useDirtyTracker } from "./UnsavedChangesContext";
+import { SportsSelector } from "./SportsSelector";
+import { useAthleteSportsOptions } from "@/hooks/useAthleteSportsOptions";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 
 interface Athlete {
   id: string;
@@ -35,6 +38,7 @@ interface Athlete {
   created_at: string;
   team_name?: string;
   team_logo_url?: string;
+  sports?: string[];
 }
 
 export const AthleteCredentialsTab = () => {
@@ -47,8 +51,11 @@ export const AthleteCredentialsTab = () => {
     avatar_url: '',
     password: '',
     email: '',
-    team_logo_url: ''
+    team_logo_url: '',
+    sports: [] as string[],
   });
+  const guardWrite = useViewAsWriteGuard();
+  const { data: sportsOptions = [] } = useAthleteSportsOptions(profile?.team_id ?? null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationPassword, setVerificationPassword] = useState("");
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
@@ -183,7 +190,8 @@ export const AthleteCredentialsTab = () => {
       avatar_url: '',
       password: '',
       email: athlete.email || '',
-      team_logo_url: ''
+      team_logo_url: '',
+      sports: athlete.sports ?? [],
     });
   };
 
@@ -259,6 +267,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleSave = async () => {
     if (!editingId) return;
+    if (guardWrite('Saving athlete credentials')) return;
 
     try {
       const athlete = athletes.find(a => a.id === editingId);
@@ -429,7 +438,18 @@ export const AthleteCredentialsTab = () => {
 
       // Prepare update object
       const updateData: any = {};
-      
+
+      // Sports tags — always persist if changed (allows clearing to [])
+      const currentSports = athlete.sports ?? [];
+      const nextSports = editForm.sports ?? [];
+      const sportsChanged =
+        currentSports.length !== nextSports.length ||
+        currentSports.some((s, i) => s !== nextSports[i]);
+      if (sportsChanged) {
+        updateData.sports = nextSports;
+        updateData.sport_primary = nextSports[0] ?? null;
+      }
+
       // Add avatar URL if changed
       if (avatarUrl && avatarUrl !== athlete.avatar_url) {
         updateData.avatar_url = avatarUrl;
@@ -485,7 +505,7 @@ export const AthleteCredentialsTab = () => {
       }
       
       setEditingId(null);
-      setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
+      setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '', sports: [] });
     } catch (error) {
       console.error('Error updating athlete:', error);
       toast.error("Failed to update athlete credentials");
@@ -565,7 +585,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '' });
+    setEditForm({ avatar_url: '', password: '', email: '', team_logo_url: '', sports: [] });
   };
 
   const toggleDeleteSelect = (id: string) => {
@@ -757,6 +777,7 @@ export const AthleteCredentialsTab = () => {
                 <TableHead>Gender</TableHead>
                 <TableHead>Weight (kg)</TableHead>
                 <TableHead>Height (cm)</TableHead>
+                <TableHead className="min-w-[220px]">Sports / Events</TableHead>
                 <TableHead>Consent Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -938,6 +959,23 @@ export const AthleteCredentialsTab = () => {
                   <TableCell>{athlete.gender || 'N/A'}</TableCell>
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
                   <TableCell>{athlete.height_cm || 'N/A'}</TableCell>
+                  <TableCell className="min-w-[220px] align-top">
+                    {editingId === athlete.id ? (
+                      <SportsSelector
+                        value={editForm.sports}
+                        onChange={(next) => setEditForm({ ...editForm, sports: next })}
+                        options={sportsOptions}
+                      />
+                    ) : (athlete.sports && athlete.sports.length > 0) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {athlete.sports.map((s) => (
+                          <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {athlete.consent_status === 'confirmed' ? (
