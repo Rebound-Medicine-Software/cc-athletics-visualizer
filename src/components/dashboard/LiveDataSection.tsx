@@ -11,6 +11,8 @@ import { getMetricTypesForTest } from "./filters/filterUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEliteAthleteData } from "@/hooks/useEliteAthleteData";
+import { useSportsByAthleteName } from "@/hooks/useSportsByAthleteName";
+import { SPORT_MIN_SAMPLE } from "@/lib/sports/comparisonContext";
 
 interface LiveDataSectionProps {
   data: TestData[];
