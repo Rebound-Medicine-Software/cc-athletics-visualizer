@@ -267,6 +267,7 @@ export const AthleteCredentialsTab = () => {
 
   const handleSave = async () => {
     if (!editingId) return;
+    if (guardWrite('Saving athlete credentials')) return;
 
     try {
       const athlete = athletes.find(a => a.id === editingId);
@@ -437,7 +438,18 @@ export const AthleteCredentialsTab = () => {
 
       // Prepare update object
       const updateData: any = {};
-      
+
+      // Sports tags — always persist if changed (allows clearing to [])
+      const currentSports = athlete.sports ?? [];
+      const nextSports = editForm.sports ?? [];
+      const sportsChanged =
+        currentSports.length !== nextSports.length ||
+        currentSports.some((s, i) => s !== nextSports[i]);
+      if (sportsChanged) {
+        updateData.sports = nextSports;
+        updateData.sport_primary = nextSports[0] ?? null;
+      }
+
       // Add avatar URL if changed
       if (avatarUrl && avatarUrl !== athlete.avatar_url) {
         updateData.avatar_url = avatarUrl;
