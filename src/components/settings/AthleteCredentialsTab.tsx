@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AddAthleteFromApiDialog } from "./AddAthleteFromApiDialog";
 import { useDirtyTracker } from "./UnsavedChangesContext";
+import { SportsSelector } from "./SportsSelector";
+import { useAthleteSportsOptions } from "@/hooks/useAthleteSportsOptions";
+import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
 
 interface Athlete {
   id: string;
@@ -35,6 +38,7 @@ interface Athlete {
   created_at: string;
   team_name?: string;
   team_logo_url?: string;
+  sports?: string[];
 }
 
 export const AthleteCredentialsTab = () => {
@@ -47,8 +51,11 @@ export const AthleteCredentialsTab = () => {
     avatar_url: '',
     password: '',
     email: '',
-    team_logo_url: ''
+    team_logo_url: '',
+    sports: [] as string[],
   });
+  const guardWrite = useViewAsWriteGuard();
+  const { data: sportsOptions = [] } = useAthleteSportsOptions(profile?.team_id ?? null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationPassword, setVerificationPassword] = useState("");
   const [viewingPasswordId, setViewingPasswordId] = useState<string | null>(null);
