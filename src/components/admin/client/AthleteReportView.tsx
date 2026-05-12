@@ -326,6 +326,7 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
           athleteName={athlete.name}
           snapshots={interpreted}
           athleteSports={(athlete as any)?.sports}
+          rankings={presentationRankings}
           onClose={() => setPresenting(false)}
         />
       )}
