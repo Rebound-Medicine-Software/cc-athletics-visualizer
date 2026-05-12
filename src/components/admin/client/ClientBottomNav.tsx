@@ -69,7 +69,7 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
                   'relative flex items-center justify-center h-9 w-12 rounded-2xl transition-all',
                   active && 'bg-primary/10',
                 )}>
-                  <Icon className={cn('h-[22px] w-[22px] transition-transform', active && 'scale-105')} strokeWidth={active ? 2.4 : 2} />
+                  <Icon className={cn('h-[22px] w-[22px] transition-transform', active && 'scale-110')} />
                   {showBadge && (
                     <span className="absolute top-0 right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-4 text-center font-bold">
                       {unread > 9 ? '9+' : unread}
