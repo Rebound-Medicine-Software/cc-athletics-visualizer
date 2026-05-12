@@ -42,11 +42,13 @@ interface Props {
  *  - keyboard ←/→ + on-screen controls
  *  - distraction-free (covers entire screen, z-[2000])
  */
-export const PresentationMode = ({ athleteName, snapshots, athleteSports, onClose }: Props) => {
+export const PresentationMode = ({ athleteName, snapshots, athleteSports, rankings, onClose }: Props) => {
   const sportContext = sportComparisonLabel(athleteSports, '');
+  const compareRankings = (rankings ?? []).filter((r) => r.rank != null);
+  const showCompareSlide = compareRankings.length > 0;
   const [idx, setIdx] = useState(0);
-  // Slide order: title → each metric → summary
-  const totalSlides = snapshots.length + 2;
+  // Slide order: title → each metric → (optional) compare → summary
+  const totalSlides = snapshots.length + 2 + (showCompareSlide ? 1 : 0);
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
