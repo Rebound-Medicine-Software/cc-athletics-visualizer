@@ -121,6 +121,8 @@ export type Database = {
           name: string
           password_hash: string | null
           reports_sent_count: number | null
+          sport_primary: string | null
+          sports: string[]
           team_id: string | null
           updated_at: string | null
           user_id: string | null
@@ -146,6 +148,8 @@ export type Database = {
           name: string
           password_hash?: string | null
           reports_sent_count?: number | null
+          sport_primary?: string | null
+          sports?: string[]
           team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -171,6 +175,8 @@ export type Database = {
           name?: string
           password_hash?: string | null
           reports_sent_count?: number | null
+          sport_primary?: string | null
+          sports?: string[]
           team_id?: string | null
           updated_at?: string | null
           user_id?: string | null
