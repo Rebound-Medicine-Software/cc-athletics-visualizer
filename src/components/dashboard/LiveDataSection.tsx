@@ -34,6 +34,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [filterSport, setFilterSport] = useState<string>("");
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
   const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+  const [sportPool, setSportPool] = useState<string>("all"); // "all" | canonical sport
+  const { data: sportsLookup } = useSportsByAthleteName();
   const [exerciseConfigs, setExerciseConfigs] = useState<{ id: string; test_name: string; metrics: string[] }[]>([]);
   const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
     const stored = localStorage.getItem('hiddenCMJColumns');
