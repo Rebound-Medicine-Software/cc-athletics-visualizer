@@ -114,6 +114,57 @@
     @apply bg-background text-foreground;
     font-family: 'Circular', 'Inter', sans-serif;
   }
+
+  /* ===========================================================
+     ATHLETE THEME — premium dark, mobile-first, athlete-only.
+     Scoped via .athlete-theme so practitioner UI is untouched.
+     Inspired by WHOOP / Apple Fitness / Caliber.
+     =========================================================== */
+  .athlete-theme {
+    /* Layered dark surfaces */
+    --background: 222 38% 7%;            /* Level 1 — deep brand navy */
+    --foreground: 210 30% 96%;
+
+    --card: 222 32% 10%;                 /* Level 2 — elevated card */
+    --card-foreground: 210 30% 96%;
+
+    --popover: 222 34% 12%;
+    --popover-foreground: 210 30% 96%;
+
+    --primary: 38 92% 55%;               /* Reserved gold accent for CTAs / PBs */
+    --primary-foreground: 222 50% 8%;
+    --primary-glow: 42 96% 62%;
+
+    --secondary: 222 24% 16%;            /* Level 3 — highlight surface */
+    --secondary-foreground: 210 30% 96%;
+
+    --muted: 222 22% 14%;
+    --muted-foreground: 215 18% 65%;
+
+    --accent: 38 92% 55%;
+    --accent-foreground: 222 50% 8%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 210 30% 98%;
+
+    --border: 222 22% 18%;
+    --input: 222 22% 18%;
+    --ring: 38 92% 55%;
+
+    --success: 152 70% 45%;
+    --warning: 38 92% 55%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(38 92% 55%), hsl(28 96% 52%));
+    --gradient-hero: linear-gradient(160deg, hsl(222 40% 12%) 0%, hsl(222 38% 8%) 60%, hsl(222 50% 6%) 100%);
+
+    color-scheme: dark;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* Premium card elevation rhythm inside athlete shell */
+  .athlete-theme .athlete-surface-2 { background: hsl(222 30% 11%); }
+  .athlete-theme .athlete-surface-3 { background: hsl(222 26% 14%); }
 }
 
 /* Respect user motion preferences for CSS-only animations.

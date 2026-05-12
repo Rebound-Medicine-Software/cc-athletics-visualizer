@@ -46,11 +46,11 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/50 bg-background/85 backdrop-blur-2xl supports-[backdrop-filter]:bg-background/70"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      <ul className="flex items-stretch justify-around">
+      <ul className="flex items-stretch justify-around px-1 pt-1.5">
         {TABS.map((t) => {
           const active = activeSection === t.id || (t.id === 'progress' && activeSection === 'analytics');
           const Icon = t.icon;
@@ -60,20 +60,23 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
               <button
                 onClick={() => onSectionChange(t.id)}
                 className={cn(
-                  'w-full h-14 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors active:scale-[0.96]',
+                  'w-full h-14 flex flex-col items-center justify-center gap-1 text-[10px] font-semibold tracking-wide transition-all active:scale-[0.92]',
                   active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
                 aria-current={active ? 'page' : undefined}
               >
-                <span className="relative">
-                  <Icon className={cn('h-5 w-5', active && 'scale-110 transition-transform')} />
+                <span className={cn(
+                  'relative flex items-center justify-center h-9 w-12 rounded-2xl transition-all',
+                  active && 'bg-primary/10',
+                )}>
+                  <Icon className={cn('h-[22px] w-[22px] transition-transform', active && 'scale-110')} />
                   {showBadge && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] leading-4 text-center font-semibold">
+                    <span className="absolute top-0 right-1 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-4 text-center font-bold">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   )}
                 </span>
-                <span>{t.label}</span>
+                <span className="uppercase">{t.label}</span>
               </button>
             </li>
           );

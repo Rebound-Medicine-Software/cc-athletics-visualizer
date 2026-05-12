@@ -51,7 +51,7 @@ export const ClientDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-[100dvh] flex w-full bg-background">
+      <div className="athlete-theme min-h-[100dvh] flex w-full bg-background text-foreground">
         {/* Sidebar: hidden on mobile — replaced by bottom tab bar */}
         <div className="hidden md:flex">
           <AdminSidebar
@@ -62,14 +62,14 @@ export const ClientDashboard = () => {
         </div>
         <main className="flex-1 flex flex-col min-w-0">
           <div
-            className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+            className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
             <AdminHeader role="client" />
           </div>
           <div
-            className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full pb-24 md:pb-6"
-            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+            className="flex-1 px-4 md:px-6 pt-5 md:pt-8 max-w-3xl mx-auto w-full"
+            style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
           >
             {renderContent()}
           </div>
