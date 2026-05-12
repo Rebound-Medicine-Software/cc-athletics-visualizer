@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -201,33 +202,68 @@ export const ClientNotifications = () => {
     const typeKey = n.metadata?.notification_type ?? 'default';
     const meta = TYPE_META[typeKey] ?? TYPE_META.default;
     const tone = meta.tone === 'info' ? severityToTone(n.severity) : meta.tone;
+    const iconBg =
+      tone === 'positive'
+        ? 'bg-emerald-500/15 text-emerald-600'
+        : tone === 'attention'
+        ? 'bg-amber-500/15 text-amber-600'
+        : 'bg-primary/10 text-primary';
     return (
-      <Card key={n.id} className={`${toneClass(tone)} ${!n.read_at ? 'ring-1 ring-primary/20' : 'opacity-80'}`}>
+      <Card
+        key={n.id}
+        className={cn(
+          'overflow-hidden transition-all animate-fade-in',
+          toneClass(tone),
+          !n.read_at && 'shadow-sm',
+          n.read_at && 'opacity-70',
+        )}
+      >
         <CardContent className="p-4 flex items-start gap-3">
-          <meta.Icon className="h-5 w-5 mt-0.5 text-primary shrink-0" />
+          <div className={cn('h-10 w-10 rounded-2xl flex items-center justify-center shrink-0', iconBg)}>
+            <meta.Icon className="h-5 w-5" />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm">{n.title}</span>
-              {!n.read_at && <Badge variant="default" className="text-[10px] h-4">New</Badge>}
-              <Badge variant="outline" className="text-[10px] h-4">{meta.label}</Badge>
+              <span className="font-semibold text-sm leading-tight">{n.title}</span>
+              {!n.read_at && (
+                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" aria-label="unread" />
+              )}
             </div>
             {n.message && (
-              <p className="text-xs text-muted-foreground mt-1">{n.message}</p>
+              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.message}</p>
             )}
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-            </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                {meta.label}
+              </span>
+              <span className="text-[10px] text-muted-foreground">·</span>
+              <span className="text-[10px] text-muted-foreground">
+                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+              </span>
+            </div>
           </div>
           <div className="flex flex-col gap-1 shrink-0">
             {!n.read_at && (
-              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
-                onClick={() => markRead.mutate(n.id)} disabled={markRead.isPending}>
-                <CheckCircle2 className="h-3 w-3" />
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0"
+                onClick={() => markRead.mutate(n.id)}
+                disabled={markRead.isPending}
+                aria-label="Mark read"
+              >
+                <CheckCircle2 className="h-4 w-4" />
               </Button>
             )}
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
-              onClick={() => dismiss.mutate(n.id)} disabled={dismiss.isPending}>
-              <X className="h-3 w-3" />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0 text-muted-foreground"
+              onClick={() => dismiss.mutate(n.id)}
+              disabled={dismiss.isPending}
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </CardContent>
@@ -236,38 +272,41 @@ export const ClientNotifications = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            Notifications
-            {unread > 0 && (
-              <Badge className="bg-primary text-primary-foreground">{unread} new</Badge>
-            )}
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Personal bests, rankings and retest reminders — updated as new tests arrive.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
-            Check now
-          </Button>
-          {unread > 0 && (
-            <Button size="sm" variant="ghost" onClick={() => markAllRead.mutate()}>
-              Mark all read
+    <div className="space-y-5 animate-fade-in">
+      <header className="px-1">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              Updates
+              {unread > 0 && (
+                <Badge className="bg-primary text-primary-foreground animate-pop">{unread}</Badge>
+              )}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              PBs, rankings and reminders — fresh as new tests arrive.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
+              <RefreshCw className={cn('h-3.5 w-3.5 mr-1', refreshing && 'animate-spin')} />
+              Refresh
             </Button>
-          )}
+            {unread > 0 && (
+              <Button size="sm" variant="ghost" onClick={() => markAllRead.mutate()}>
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {CATEGORIES.map((c) => (
           <Button
             key={c.key}
             size="sm"
             variant={category === c.key ? 'default' : 'outline'}
+            className="rounded-full shrink-0"
             onClick={() => setCategory(c.key)}
           >
             {c.label}
@@ -276,26 +315,27 @@ export const ClientNotifications = () => {
       </div>
 
       {isLoading ? (
-        <Skeleton className="h-40" />
+        <Skeleton className="h-40 rounded-2xl" />
       ) : filtered.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
-            <Bell className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">
-              No notifications yet. New PBs and ranking changes will appear here.
+          <CardContent className="p-10 text-center">
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
+              <Bell className="h-7 w-7 text-muted-foreground/60" />
+            </div>
+            <p className="text-sm font-medium">All caught up</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              New PBs and ranking changes will appear here.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {pinned.length > 0 && (
             <section className="space-y-2">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-semibold text-muted-foreground px-1">
                 <Pin className="h-3 w-3" /> Pinned
               </div>
-              <div className="grid gap-2 md:grid-cols-2">
-                {pinned.map(renderCard)}
-              </div>
+              <div className="grid gap-2">{pinned.map(renderCard)}</div>
             </section>
           )}
 
@@ -305,13 +345,11 @@ export const ClientNotifications = () => {
             const label = bucket === 'today' ? 'Today' : bucket === 'week' ? 'This week' : 'Older';
             return (
               <section key={bucket} className="space-y-2">
-                <div className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <div className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground flex items-center gap-2 px-1">
                   {bucket === 'older' ? <CalendarClock className="h-3 w-3" /> : <Trophy className="h-3 w-3" />}
                   {label}
                 </div>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {items.map(renderCard)}
-                </div>
+                <div className="grid gap-2">{items.map(renderCard)}</div>
               </section>
             );
           })}

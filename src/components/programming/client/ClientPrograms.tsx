@@ -15,6 +15,7 @@ import type { ExerciseOverride } from '../assignments/types';
 import { computeAdherence } from '../assignments/adherence';
 import { AdherencePanel } from '../assignments/AdherencePanel';
 import { Flame } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
   <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">{children}</h3>
@@ -188,27 +189,38 @@ export const ClientPrograms = () => {
   }
 
   const renderSessionCard = (s: any, variant: 'today' | 'upcoming' | 'past') => (
-    <div key={s.id} className="rounded-md border">
-      <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold flex items-center gap-2">
-            {s.name}
-            {s.completed && <Badge variant="outline" className="text-[10px]">Completed</Badge>}
-          </p>
-          <p className="text-xs text-muted-foreground">
+    <div
+      key={s.id}
+      className={cn(
+        'rounded-2xl border overflow-hidden transition-all animate-fade-in',
+        variant === 'today' && 'border-primary/40 shadow-md shadow-primary/5 bg-gradient-to-br from-primary/5 to-transparent',
+        variant === 'past' && s.completed && 'opacity-80',
+      )}
+    >
+      <div className="flex items-center justify-between px-4 py-3 gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-base font-semibold truncate">{s.name}</p>
+            {s.completed && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-1 border-emerald-500/40 text-emerald-700 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3" /> Done
+              </Badge>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {s.block?.name ?? 'Block'} · D+{s.day_offset}
             {startDate ? ` · ${format(new Date(startDate.getTime() + s.day_offset * 86400000), 'EEE d MMM')}` : ''}
           </p>
         </div>
         {variant === 'today' && (
-          <Button size="sm" variant="outline" disabled={isViewAs} onClick={() => openSessionLog(s)}>
-            <ClipboardCheck className="mr-1 h-4 w-4" /> Log session
+          <Button size="sm" disabled={isViewAs} onClick={() => openSessionLog(s)} className="shrink-0 rounded-full gap-1">
+            <ClipboardCheck className="h-4 w-4" /> Start
           </Button>
         )}
       </div>
-      <div className="divide-y">
+      <div className="divide-y border-t bg-card/40">
         {s.exercises.length === 0 ? (
-          <p className="px-3 py-3 text-xs italic text-muted-foreground">No exercises in this session.</p>
+          <p className="px-4 py-3 text-xs italic text-muted-foreground">No exercises in this session.</p>
         ) : (
           s.exercises.map((ex: any) => {
             const m = merge(ex);
