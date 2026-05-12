@@ -48,8 +48,9 @@ export const ClientMyProgress = () => {
   return (
     <div className="space-y-5 animate-fade-in">
       <header className="px-1">
-        <h1 className="text-3xl font-bold tracking-tight">Your progress</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.18em]">Performance</p>
+        <h1 className="text-[clamp(2rem,7vw,3.25rem)] font-bold tracking-tight mt-1 leading-[1.05]">Your progress</h1>
+        <p className="text-sm text-muted-foreground mt-2">
           How your key numbers are trending.
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">
