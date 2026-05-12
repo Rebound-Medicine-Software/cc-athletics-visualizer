@@ -41,7 +41,35 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
     athleteName: athlete?.name ?? null,
     teamName: null,
   });
+  const { data: rankings } = useClientRankings({
+    athleteId: athlete?.id ?? null,
+    athleteName: athlete?.name ?? null,
+    teamName: null,
+  });
   const [presenting, setPresenting] = useState(false);
+
+  const presentationRankings: PresentationRanking[] = useMemo(() => {
+    if (!rankings) return [];
+    // Prefer club scope per metric; fall back to global.
+    const bestPerMetric = new Map<string, PresentationRanking>();
+    for (const r of rankings) {
+      if (r.totalAthletes < 5 || r.rank == null) continue;
+      const pct = Math.max(1, Math.round((r.rank / r.totalAthletes) * 100));
+      const candidate: PresentationRanking = {
+        label: r.spec.label,
+        scopeLabel: r.scopeLabel,
+        rank: r.rank,
+        totalAthletes: r.totalAthletes,
+        percentile: pct,
+      };
+      const existing = bestPerMetric.get(r.spec.short);
+      const priority = (s: string) => (s === 'club' ? 0 : s === 'region' ? 1 : 2);
+      if (!existing || priority(r.scope) < priority((existing as any).scope ?? 'global')) {
+        bestPerMetric.set(r.spec.short, { ...candidate, ...{ scope: r.scope } as any });
+      }
+    }
+    return Array.from(bestPerMetric.values());
+  }, [rankings]);
 
   const interpreted: InterpretedSnapshot[] = useMemo(() => {
     if (!metrics) return [];
