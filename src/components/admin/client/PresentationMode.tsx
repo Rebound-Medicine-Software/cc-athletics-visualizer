@@ -84,6 +84,9 @@ export const PresentationMode = ({ athleteName, snapshots, athleteSports, onClos
           <p className="text-lg md:text-xl text-muted-foreground mt-6">
             Let's walk through where you are and what comes next.
           </p>
+          {sportContext && (
+            <Badge variant="outline" className="mt-6 text-sm px-3 py-1">{sportContext}</Badge>
+          )}
         </div>
       );
     }
