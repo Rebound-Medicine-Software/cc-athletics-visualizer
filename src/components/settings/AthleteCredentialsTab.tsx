@@ -1157,6 +1157,15 @@ export const AthleteCredentialsTab = () => {
         onAthletesAdded={fetchAthletes}
       />
 
+      <BulkSportsDialog
+        open={showBulkSports}
+        onOpenChange={setShowBulkSports}
+        athleteIds={Array.from(selectedForDelete)}
+        currentSportsById={Object.fromEntries(athletes.map((a) => [a.id, a.sports]))}
+        options={sportsOptions}
+        onApplied={() => { setSelectedForDelete(new Set()); fetchAthletes(); }}
+      />
+
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
