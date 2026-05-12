@@ -142,6 +142,45 @@ export const PresentationMode = ({ athleteName, snapshots, athleteSports, rankin
         </div>
       );
     }
+    if (showCompareSlide && idx === snapshots.length + 1) {
+      return (
+        <div className="max-w-3xl px-6 w-full">
+          <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-2 text-center">How you compare</div>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-3">Where you stand</h2>
+          {sportContext && (
+            <p className="text-center text-base text-muted-foreground mb-8">{sportContext}</p>
+          )}
+          <div className="space-y-4">
+            {compareRankings.slice(0, 4).map((r) => {
+              const pct = r.percentile;
+              const headline =
+                pct != null
+                  ? pct <= 10
+                    ? `Top ${pct}% in ${r.scopeLabel}`
+                    : pct <= 50
+                    ? `Top ${pct}% in ${r.scopeLabel}`
+                    : `Above ${100 - pct}% in ${r.scopeLabel}`
+                  : `#${r.rank} in ${r.scopeLabel}`;
+              return (
+                <div key={r.label} className="rounded-2xl border p-5 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-semibold">{r.label}</div>
+                    <div className="text-sm text-muted-foreground">{headline}</div>
+                  </div>
+                  <div className="text-right tabular-nums">
+                    <div className="text-2xl font-bold">#{r.rank}</div>
+                    <div className="text-xs text-muted-foreground">of {r.totalAthletes}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-6">
+            Anonymised — we never show other athletes' names.
+          </p>
+        </div>
+      );
+    }
     const snap = snapshots[idx - 1];
     if (!snap) return null;
     const styles = tierStyles[snap.interpretation.tier];
