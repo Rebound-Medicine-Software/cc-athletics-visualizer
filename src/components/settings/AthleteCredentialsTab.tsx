@@ -18,6 +18,10 @@ import { useDirtyTracker } from "./UnsavedChangesContext";
 import { SportsSelector } from "./SportsSelector";
 import { useAthleteSportsOptions } from "@/hooks/useAthleteSportsOptions";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
+import { BulkSportsDialog } from "./BulkSportsDialog";
+import { athleteMatchesSport, ALL_CANONICAL_SPORTS } from "@/lib/sports/normalize";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Tags } from "lucide-react";
 
 interface Athlete {
   id: string;
@@ -179,10 +183,17 @@ export const AthleteCredentialsTab = () => {
     }
   };
 
-  const filteredAthletes = athletes.filter(athlete =>
-    athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    athlete.cc_athlete_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [sportFilter, setSportFilter] = useState<string>('');
+  const [showBulkSports, setShowBulkSports] = useState(false);
+
+  const filteredAthletes = athletes.filter(athlete => {
+    const matchesText =
+      athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      athlete.cc_athlete_id.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesText) return false;
+    if (sportFilter && !athleteMatchesSport(athlete.sports, sportFilter)) return false;
+    return true;
+  });
 
   const handleEdit = (athlete: Athlete) => {
     setEditingId(athlete.id);
