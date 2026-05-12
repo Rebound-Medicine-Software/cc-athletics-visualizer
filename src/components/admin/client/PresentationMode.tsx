@@ -15,11 +15,21 @@ export interface InterpretedSnapshot {
   latestDisplay: string | null;
 }
 
+export interface PresentationRanking {
+  label: string;       // e.g. "CMJ Jump Height"
+  scopeLabel: string;  // e.g. "your club (MMA Gym)"
+  rank: number | null;
+  totalAthletes: number;
+  percentile: number | null; // 1..100, lower = better
+}
+
 interface Props {
   athleteName: string;
   snapshots: InterpretedSnapshot[];
   /** Optional sports tags to ground the comparison context. */
   athleteSports?: string[] | null;
+  /** Optional anonymised rank summaries to power the "How you compare" slide. */
+  rankings?: PresentationRanking[];
   onClose: () => void;
 }
 
@@ -32,11 +42,13 @@ interface Props {
  *  - keyboard ←/→ + on-screen controls
  *  - distraction-free (covers entire screen, z-[2000])
  */
-export const PresentationMode = ({ athleteName, snapshots, athleteSports, onClose }: Props) => {
+export const PresentationMode = ({ athleteName, snapshots, athleteSports, rankings, onClose }: Props) => {
   const sportContext = sportComparisonLabel(athleteSports, '');
+  const compareRankings = (rankings ?? []).filter((r) => r.rank != null);
+  const showCompareSlide = compareRankings.length > 0;
   const [idx, setIdx] = useState(0);
-  // Slide order: title → each metric → summary
-  const totalSlides = snapshots.length + 2;
+  // Slide order: title → each metric → (optional) compare → summary
+  const totalSlides = snapshots.length + 2 + (showCompareSlide ? 1 : 0);
 
   const touchStartX = useRef<number | null>(null);
   const touchDeltaX = useRef(0);
@@ -127,6 +139,45 @@ export const PresentationMode = ({ athleteName, snapshots, athleteSports, onClos
               )}
             </div>
           </div>
+        </div>
+      );
+    }
+    if (showCompareSlide && idx === snapshots.length + 1) {
+      return (
+        <div className="max-w-3xl px-6 w-full">
+          <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-2 text-center">How you compare</div>
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-3">Where you stand</h2>
+          {sportContext && (
+            <p className="text-center text-base text-muted-foreground mb-8">{sportContext}</p>
+          )}
+          <div className="space-y-4">
+            {compareRankings.slice(0, 4).map((r) => {
+              const pct = r.percentile;
+              const headline =
+                pct != null
+                  ? pct <= 10
+                    ? `Top ${pct}% in ${r.scopeLabel}`
+                    : pct <= 50
+                    ? `Top ${pct}% in ${r.scopeLabel}`
+                    : `Above ${100 - pct}% in ${r.scopeLabel}`
+                  : `#${r.rank} in ${r.scopeLabel}`;
+              return (
+                <div key={r.label} className="rounded-2xl border p-5 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-lg font-semibold">{r.label}</div>
+                    <div className="text-sm text-muted-foreground">{headline}</div>
+                  </div>
+                  <div className="text-right tabular-nums">
+                    <div className="text-2xl font-bold">#{r.rank}</div>
+                    <div className="text-xs text-muted-foreground">of {r.totalAthletes}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-6">
+            Anonymised — we never show other athletes' names.
+          </p>
         </div>
       );
     }

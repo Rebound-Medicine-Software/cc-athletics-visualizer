@@ -109,20 +109,37 @@ export const ClientMyProgress = () => {
             <p className="text-sm text-muted-foreground">No comparison data yet.</p>
           ) : (
             <div className="space-y-3">
-              {rankings.map((r) => (
-                <div key={`${r.spec.short}-${r.scope}`} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
-                  <div>
-                    <div className="font-medium">{r.spec.label}</div>
-                    <div className="text-xs text-muted-foreground">{r.beatenByLabel}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold tabular-nums">
-                      {r.rank ? `#${r.rank}` : '—'}
-                      <span className="text-xs text-muted-foreground"> / {r.totalAthletes}</span>
+              {rankings.map((r) => {
+                const pct =
+                  r.rank && r.totalAthletes >= 5
+                    ? Math.max(1, Math.round((r.rank / r.totalAthletes) * 100))
+                    : null;
+                const percentileCopy =
+                  pct != null
+                    ? pct <= 50
+                      ? `Top ${pct}% in ${r.scopeLabel}`
+                      : `Above ${100 - pct}% in ${r.scopeLabel}`
+                    : r.totalAthletes < 5
+                    ? 'Not enough athletes for a reliable comparison yet'
+                    : null;
+                return (
+                  <div key={`${r.spec.short}-${r.scope}`} className="flex items-center justify-between text-sm border-b pb-2 last:border-0">
+                    <div>
+                      <div className="font-medium">{r.spec.label}</div>
+                      <div className="text-xs text-muted-foreground">{r.beatenByLabel}</div>
+                      {percentileCopy && (
+                        <div className="text-xs text-primary mt-0.5">{percentileCopy}</div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold tabular-nums">
+                        {r.rank ? `#${r.rank}` : '—'}
+                        <span className="text-xs text-muted-foreground"> / {r.totalAthletes}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

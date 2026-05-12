@@ -11,6 +11,8 @@ import { getMetricTypesForTest } from "./filters/filterUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEliteAthleteData } from "@/hooks/useEliteAthleteData";
+import { useSportsByAthleteName } from "@/hooks/useSportsByAthleteName";
+import { SPORT_MIN_SAMPLE } from "@/lib/sports/comparisonContext";
 
 interface LiveDataSectionProps {
   data: TestData[];
@@ -32,6 +34,8 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   const [filterSport, setFilterSport] = useState<string>("");
   const [filterAgeGroup, setFilterAgeGroup] = useState<string>("");
   const [filterWeightCategory, setFilterWeightCategory] = useState<string>("");
+  const [sportPool, setSportPool] = useState<string>("all"); // "all" | canonical sport
+  const { data: sportsLookup } = useSportsByAthleteName();
   const [exerciseConfigs, setExerciseConfigs] = useState<{ id: string; test_name: string; metrics: string[] }[]>([]);
   const [hiddenCMJColumns, setHiddenCMJColumns] = useState<string[]>(() => {
     const stored = localStorage.getItem('hiddenCMJColumns');
@@ -232,31 +236,34 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     }
   }, [currentTestName]);
 
-  // Filter data based on selected teams and sex
+  // Filter data based on selected teams, sex, and sport pool
   const filteredData = data.filter(d => {
     const teamMatch = selectedTeams.length === 0 || selectedTeams.includes(d.team_name);
     const sexMatch = selectedSex === "all" || d.gender === selectedSex;
-    
+
+    // Sport pool: match if athlete has the canonical sport tagged
+    let sportMatch = true;
+    if (sportPool !== "all" && sportsLookup) {
+      const row = sportsLookup.byName.get((d.athlete_name ?? "").trim().toLowerCase());
+      sportMatch = !!row && row.canonicalSports.includes(sportPool);
+    }
+
     // Filter for data within the last 7 days (more lenient than 24 hours for testing)
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const testDate = new Date(d.test_date);
     const dateMatch = testDate >= sevenDaysAgo;
-    
-    console.log('Filtering test:', {
-      athlete: d.athlete_name,
-      team: d.team_name,
-      test_date: d.test_date,
-      testDate: testDate.toISOString(),
-      sevenDaysAgo: sevenDaysAgo.toISOString(),
-      dateMatch,
-      teamMatch,
-      sexMatch,
-      gender: d.gender
-    });
-    
-    return teamMatch && sexMatch && dateMatch;
+
+    return teamMatch && sexMatch && sportMatch && dateMatch;
   });
+
+  // Count of distinct athletes in the active sport pool (used for "not enough data" hint)
+  const sportPoolAthleteCount = useMemo(() => {
+    if (sportPool === "all") return 0;
+    const set = new Set<string>();
+    filteredData.forEach((d) => set.add(d.athlete_name));
+    return set.size;
+  }, [filteredData, sportPool]);
 
   // Get best performance per athlete for their most recent testing date
   const getBestPerformancePerAthlete = () => {
@@ -577,7 +584,32 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
               </SelectContent>
             </Select>
           </div>
+
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 text-center">Sport pool</label>
+            <Select value={sportPool} onValueChange={setSportPool}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Sport pool" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All athletes</SelectItem>
+                {(sportsLookup?.allCanonicalSports ?? []).map((s) => (
+                  <SelectItem key={s} value={s}>Same sport · {s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+        {sportPool !== "all" && sportPoolAthleteCount > 0 && sportPoolAthleteCount < SPORT_MIN_SAMPLE && (
+          <p className="text-xs text-amber-600 text-center">
+            Only {sportPoolAthleteCount} athlete{sportPoolAthleteCount === 1 ? '' : 's'} tagged with {sportPool} — comparisons may not be reliable yet.
+          </p>
+        )}
+        {sportPool !== "all" && sportPoolAthleteCount === 0 && (
+          <p className="text-xs text-muted-foreground text-center">
+            No athletes tagged with {sportPool} yet. Tag athletes in Settings → Athlete Credentials.
+          </p>
+        )}
       </div>
 
       {/* Comparative Percentile Chart */}
