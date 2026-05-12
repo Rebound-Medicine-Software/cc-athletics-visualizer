@@ -15,11 +15,21 @@ export interface InterpretedSnapshot {
   latestDisplay: string | null;
 }
 
+export interface PresentationRanking {
+  label: string;       // e.g. "CMJ Jump Height"
+  scopeLabel: string;  // e.g. "your club (MMA Gym)"
+  rank: number | null;
+  totalAthletes: number;
+  percentile: number | null; // 1..100, lower = better
+}
+
 interface Props {
   athleteName: string;
   snapshots: InterpretedSnapshot[];
   /** Optional sports tags to ground the comparison context. */
   athleteSports?: string[] | null;
+  /** Optional anonymised rank summaries to power the "How you compare" slide. */
+  rankings?: PresentationRanking[];
   onClose: () => void;
 }
 
