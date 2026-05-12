@@ -190,7 +190,8 @@ export const AthleteCredentialsTab = () => {
       avatar_url: '',
       password: '',
       email: athlete.email || '',
-      team_logo_url: ''
+      team_logo_url: '',
+      sports: athlete.sports ?? [],
     });
   };
 
