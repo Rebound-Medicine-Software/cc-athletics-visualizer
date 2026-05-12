@@ -10,9 +10,9 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
-import { useClientMetrics } from './useClientMetrics';
+import { useClientMetrics, useClientRankings } from './useClientMetrics';
 import { interpretMetric, tierStyles } from '@/utils/metricInterpretation';
-import { PresentationMode, type InterpretedSnapshot } from './PresentationMode';
+import { PresentationMode, type InterpretedSnapshot, type PresentationRanking } from './PresentationMode';
 import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 import { EliteBenchmarkCard } from './EliteBenchmarkCard';
 
