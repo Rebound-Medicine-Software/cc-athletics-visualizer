@@ -120,13 +120,63 @@ serve(async (req) => {
     // 1. Get linked athletes (must have user_id to receive notifications)
     let athletesQ = supa
       .from('athletes')
-      .select('id, name, team_id, user_id')
+      .select('id, name, team_id, user_id, sports, sport_primary')
       .not('user_id', 'is', null)
     if (teamFilter) athletesQ = athletesQ.eq('team_id', teamFilter)
     if (athleteFilter) athletesQ = athletesQ.eq('id', athleteFilter)
     const { data: athletes, error: athletesErr } = await athletesQ
     if (athletesErr) throw athletesErr
     const linked = athletes ?? []
+
+    // 1a. Build athlete-name -> canonical sports map across the whole team set
+    // (we need this to compute sport-scoped rankings even for unlinked athletes
+    // who appear in test_data alongside our linked athletes).
+    const SPORT_ALIASES: Record<string, string[]> = {
+      MMA: ['mma', 'mixed martial arts'],
+      BJJ: ['bjj', 'brazilian jiu jitsu', 'jiu jitsu'],
+      Wrestling: ['wrestling'],
+      Kickboxing: ['kickboxing', 'k1'],
+      Boxing: ['boxing'],
+      Football: ['football', 'soccer'],
+      Rugby: ['rugby', 'rugby union', 'rugby league'],
+      Athletics: ['athletics', 'track and field'],
+      '100m': ['100m', '100 metres', '100 meters'],
+      '200m': ['200m', '200 metres', '200 meters'],
+      '400m': ['400m', '400 metres'],
+      Hurdles: ['hurdles'],
+      'Long Jump': ['long jump'],
+      'High Jump': ['high jump'],
+      Sprint: ['sprint', 'sprints'],
+      Endurance: ['endurance'],
+    }
+    const ALIAS_TO_CANON = new Map<string, string>()
+    for (const [c, aliases] of Object.entries(SPORT_ALIASES)) {
+      ALIAS_TO_CANON.set(c.toLowerCase(), c)
+      for (const a of aliases) ALIAS_TO_CANON.set(a.toLowerCase(), c)
+    }
+    const canonicalSport = (s: string | null | undefined): string => {
+      if (!s) return ''
+      const key = s.trim().toLowerCase()
+      return ALIAS_TO_CANON.get(key) ?? s.trim()
+    }
+    const SPORT_MIN_SAMPLE = 10
+
+    // For each athlete-name, the set of canonical sports tagged for them.
+    // (Joined later by name when computing ranking scopes.)
+    const sportsByAthleteName = new Map<string, Set<string>>()
+    {
+      const { data: allTeamAthletes } = await supa
+        .from('athletes')
+        .select('name, sports')
+      for (const r of allTeamAthletes ?? []) {
+        const set = new Set<string>()
+        for (const s of (r as any).sports ?? []) {
+          const c = canonicalSport(s)
+          if (c) set.add(c)
+        }
+        if (set.size > 0) sportsByAthleteName.set(r.name, set)
+      }
+    }
 
     // 1b. Load per-team retest interval (fall back to default)
     const teamIds = Array.from(new Set(linked.map((a) => a.team_id).filter(Boolean))) as string[]
@@ -264,6 +314,25 @@ serve(async (req) => {
 
         const scopes: { key: string; label: string; filter: (r: any) => boolean }[] = []
         if (teamName) scopes.push({ key: 'club', label: `your club`, filter: (r) => r.team_name === teamName })
+
+        // Sport scopes — one per canonical sport tagged for this athlete,
+        // but only emitted when the pool meets SPORT_MIN_SAMPLE so we never
+        // compare a sprinter to a rugby player by accident.
+        const mySports = sportsByAthleteName.get(ath.name) ?? new Set<string>()
+        for (const sport of mySports) {
+          const filter = (r: any) => {
+            const peerSports = sportsByAthleteName.get(r.athlete_name)
+            return !!peerSports && peerSports.has(sport)
+          }
+          // Quick sample-size pre-check on the metric's full pool
+          const allRowsForMetric = allRowsByTest.get(spec.testName) ?? []
+          const peerNames = new Set<string>()
+          for (const r of allRowsForMetric) if (filter(r)) peerNames.add(r.athlete_name)
+          if (peerNames.size >= SPORT_MIN_SAMPLE) {
+            scopes.push({ key: `sport:${sport}`, label: `${sport} athletes`, filter })
+          }
+        }
+
         if (region) scopes.push({ key: 'region', label: `your region`, filter: (r) => r.test_region === region })
         scopes.push({ key: 'global', label: 'globally', filter: () => true })
 

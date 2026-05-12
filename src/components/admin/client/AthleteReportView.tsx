@@ -13,6 +13,8 @@ import { useClientAthlete } from '@/components/programming/client/useClientAthle
 import { useClientMetrics } from './useClientMetrics';
 import { interpretMetric, tierStyles } from '@/utils/metricInterpretation';
 import { PresentationMode, type InterpretedSnapshot } from './PresentationMode';
+import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
+import { EliteBenchmarkCard } from './EliteBenchmarkCard';
 
 interface Props {
   /** When true, allow practitioners to edit & save coach notes. */
@@ -90,6 +92,9 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
   if (aLoading || mLoading) return <Skeleton className="h-96 w-full" />;
   if (!athlete) return <p className="text-sm text-muted-foreground">No athlete profile linked.</p>;
 
+  const athleteSports: string[] = (athlete as any)?.sports ?? [];
+  const sportContext = sportComparisonLabel(athleteSports, '');
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -98,11 +103,16 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
           <p className="text-sm text-muted-foreground mt-1">
             A simple summary of where you are right now and what's next.
           </p>
+          {sportContext && (
+            <Badge variant="outline" className="mt-2">{sportContext}</Badge>
+          )}
         </div>
         <Button onClick={() => setPresenting(true)} className="gap-2">
           <Presentation className="h-4 w-4" /> Present Results
         </Button>
       </div>
+
+      <EliteBenchmarkCard sports={athleteSports} />
 
       {/* 1. Performance Summary */}
       <section>
@@ -287,6 +297,7 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
         <PresentationMode
           athleteName={athlete.name}
           snapshots={interpreted}
+          athleteSports={(athlete as any)?.sports}
           onClose={() => setPresenting(false)}
         />
       )}

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, X, Sparkles, Trophy, Target } from 'lucide-react';
 import { tierStyles, type MetricInterpretation } from '@/utils/metricInterpretation';
+import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 
 export interface InterpretedSnapshot {
   spec: { testName: string; metricKey: string; label: string };
@@ -17,6 +18,8 @@ export interface InterpretedSnapshot {
 interface Props {
   athleteName: string;
   snapshots: InterpretedSnapshot[];
+  /** Optional sports tags to ground the comparison context. */
+  athleteSports?: string[] | null;
   onClose: () => void;
 }
 
@@ -29,7 +32,8 @@ interface Props {
  *  - keyboard ←/→ + on-screen controls
  *  - distraction-free (covers entire screen, z-[2000])
  */
-export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => {
+export const PresentationMode = ({ athleteName, snapshots, athleteSports, onClose }: Props) => {
+  const sportContext = sportComparisonLabel(athleteSports, '');
   const [idx, setIdx] = useState(0);
   // Slide order: title → each metric → summary
   const totalSlides = snapshots.length + 2;
@@ -80,6 +84,9 @@ export const PresentationMode = ({ athleteName, snapshots, onClose }: Props) => 
           <p className="text-lg md:text-xl text-muted-foreground mt-6">
             Let's walk through where you are and what comes next.
           </p>
+          {sportContext && (
+            <Badge variant="outline" className="mt-6 text-sm px-3 py-1">{sportContext}</Badge>
+          )}
         </div>
       );
     }

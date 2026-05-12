@@ -32,7 +32,7 @@ export const useClientAthlete = () => {
       // 1) Canonical lookup by user_id
       const primary = await supabase
         .from('athletes')
-        .select('id, name, email, team_id, avatar_url, user_id')
+        .select('id, name, email, team_id, avatar_url, user_id, sports, sport_primary')
         .eq('user_id', uid!)
         .limit(1)
         .maybeSingle();
@@ -46,7 +46,7 @@ export const useClientAthlete = () => {
       // to a global email match (RLS still constrains visibility).
       let fallbackQuery = supabase
         .from('athletes')
-        .select('id, name, email, team_id, avatar_url, user_id')
+        .select('id, name, email, team_id, avatar_url, user_id, sports, sport_primary')
         .ilike('email', email)
         .limit(2);
       if (teamId) fallbackQuery = fallbackQuery.eq('team_id', teamId);

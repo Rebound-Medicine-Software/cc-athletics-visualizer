@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
 import { useClientMetrics, useClientRankings } from './useClientMetrics';
+import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 
 const formatVal = (v: number | null, unit: string) => {
   if (v == null) return '—';
@@ -40,6 +41,9 @@ export const ClientMyProgress = () => {
         <h2 className="text-3xl font-bold tracking-tight">My Progress</h2>
         <p className="text-sm text-muted-foreground mt-1">
           A simple view of your key performance numbers and how they're trending.
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {sportComparisonLabel((athlete as any)?.sports)}
         </p>
       </div>
 
