@@ -159,13 +159,13 @@ export const ClientToday = ({ onSectionChange }: Props) => {
     <div className="space-y-5 animate-fade-in">
       {/* Greeting */}
       <header className="px-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.18em]">
           {greetingFor()}
         </p>
-        <h1 className="text-3xl font-bold tracking-tight mt-0.5">
-          {greetingName}
+        <h1 className="text-[clamp(2rem,7vw,3.25rem)] font-bold tracking-tight mt-1 leading-[1.05]">
+          {greetingName}.
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-2">
           {todaySession ? "Here's your focus for today." : "Take a moment to check in."}
         </p>
       </header>
