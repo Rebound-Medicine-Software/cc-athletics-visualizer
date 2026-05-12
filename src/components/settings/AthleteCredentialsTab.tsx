@@ -18,6 +18,10 @@ import { useDirtyTracker } from "./UnsavedChangesContext";
 import { SportsSelector } from "./SportsSelector";
 import { useAthleteSportsOptions } from "@/hooks/useAthleteSportsOptions";
 import { useViewAsWriteGuard } from "@/lib/impersonation/useViewAsWriteGuard";
+import { BulkSportsDialog } from "./BulkSportsDialog";
+import { athleteMatchesSport, ALL_CANONICAL_SPORTS } from "@/lib/sports/normalize";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Tags } from "lucide-react";
 
 interface Athlete {
   id: string;
@@ -179,10 +183,17 @@ export const AthleteCredentialsTab = () => {
     }
   };
 
-  const filteredAthletes = athletes.filter(athlete =>
-    athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    athlete.cc_athlete_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [sportFilter, setSportFilter] = useState<string>('');
+  const [showBulkSports, setShowBulkSports] = useState(false);
+
+  const filteredAthletes = athletes.filter(athlete => {
+    const matchesText =
+      athlete.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      athlete.cc_athlete_id.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesText) return false;
+    if (sportFilter && !athleteMatchesSport(athlete.sports, sportFilter)) return false;
+    return true;
+  });
 
   const handleEdit = (athlete: Athlete) => {
     setEditingId(athlete.id);
@@ -708,7 +719,7 @@ export const AthleteCredentialsTab = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Search className="w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search athletes by name or ID..."
@@ -716,6 +727,17 @@ export const AthleteCredentialsTab = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="max-w-md"
             />
+            <Select value={sportFilter || 'all'} onValueChange={(v) => setSportFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filter by sport" />
+              </SelectTrigger>
+              <SelectContent className="z-[1500] max-h-72">
+                <SelectItem value="all">All sports</SelectItem>
+                {Array.from(new Set([...ALL_CANONICAL_SPORTS, ...sportsOptions])).sort((a, b) => a.localeCompare(b)).map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               onClick={() => setShowAddDialog(true)}
               size="sm"
@@ -723,6 +745,16 @@ export const AthleteCredentialsTab = () => {
             >
               <Plus className="w-4 h-4" />
               Add Athlete
+            </Button>
+            <Button
+              onClick={() => setShowBulkSports(true)}
+              size="sm"
+              variant="outline"
+              disabled={selectedForDelete.size === 0}
+              className="flex items-center gap-2"
+            >
+              <Tags className="w-4 h-4" />
+              Bulk Sports ({selectedForDelete.size})
             </Button>
             <Button
               onClick={() => setShowDeleteConfirm(true)}
@@ -1123,6 +1155,15 @@ export const AthleteCredentialsTab = () => {
         onOpenChange={setShowAddDialog}
         existingAthleteIds={athletes.map(a => a.cc_athlete_id)}
         onAthletesAdded={fetchAthletes}
+      />
+
+      <BulkSportsDialog
+        open={showBulkSports}
+        onOpenChange={setShowBulkSports}
+        athleteIds={Array.from(selectedForDelete)}
+        currentSportsById={Object.fromEntries(athletes.map((a) => [a.id, a.sports]))}
+        options={sportsOptions}
+        onApplied={() => { setSelectedForDelete(new Set()); fetchAthletes(); }}
       />
 
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
