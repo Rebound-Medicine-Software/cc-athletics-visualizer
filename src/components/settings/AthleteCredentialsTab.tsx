@@ -959,6 +959,23 @@ export const AthleteCredentialsTab = () => {
                   <TableCell>{athlete.gender || 'N/A'}</TableCell>
                   <TableCell>{athlete.weight_kg || 'N/A'}</TableCell>
                   <TableCell>{athlete.height_cm || 'N/A'}</TableCell>
+                  <TableCell className="min-w-[220px] align-top">
+                    {editingId === athlete.id ? (
+                      <SportsSelector
+                        value={editForm.sports}
+                        onChange={(next) => setEditForm({ ...editForm, sports: next })}
+                        options={sportsOptions}
+                      />
+                    ) : (athlete.sports && athlete.sports.length > 0) ? (
+                      <div className="flex flex-wrap gap-1">
+                        {athlete.sports.map((s) => (
+                          <Badge key={s} variant="secondary" className="text-xs">{s}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {athlete.consent_status === 'confirmed' ? (
