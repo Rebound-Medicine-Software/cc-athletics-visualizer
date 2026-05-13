@@ -105,7 +105,7 @@ export const ClientMoreMenu = ({ onSectionChange }: Props) => {
                     'h-9 w-9 rounded-xl flex items-center justify-center shrink-0',
                     r.tone === 'danger' ? 'bg-destructive/10' : 'bg-primary/10 text-primary',
                   )}>
-                    <r.icon className="h-4.5 w-4.5" />
+                    <r.icon className="h-[18px] w-[18px]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium leading-tight">{r.label}</div>
