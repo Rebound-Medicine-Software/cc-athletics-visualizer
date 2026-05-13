@@ -274,18 +274,16 @@ export const ClientNotifications = () => {
   return (
     <div className="space-y-5 animate-fade-in">
       <header className="px-1">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              Updates
-              {unread > 0 && (
-                <Badge className="bg-primary text-primary-foreground animate-pop">{unread}</Badge>
-              )}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              PBs, rankings and reminders — fresh as new tests arrive.
-            </p>
-          </div>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.22em]">
+          Inbox
+        </p>
+        <div className="mt-1 flex items-end justify-between gap-3 flex-wrap">
+          <h1 className="text-[clamp(1.85rem,7vw,2.75rem)] font-bold tracking-tight leading-[1.05] flex items-center gap-3">
+            Messages
+            {unread > 0 && (
+              <Badge className="bg-primary text-primary-foreground animate-pop">{unread}</Badge>
+            )}
+          </h1>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
               <RefreshCw className={cn('h-3.5 w-3.5 mr-1', refreshing && 'animate-spin')} />
@@ -298,6 +296,9 @@ export const ClientNotifications = () => {
             )}
           </div>
         </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Coach updates, achievements and what needs your attention.
+        </p>
       </header>
 
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
