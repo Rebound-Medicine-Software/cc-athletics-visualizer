@@ -15,18 +15,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow, isToday, isThisWeek } from 'date-fns';
 import { toast } from 'sonner';
 
+// Categories aligned with the athlete app reference: Coach / Updates / Achievements / Action.
 const TYPE_META: Record<string, { Icon: any; tone: string; label: string; pinned: boolean; category: string }> = {
-  personal_best: { Icon: Award, tone: 'positive', label: 'Personal Best', pinned: true, category: 'personal_best' },
-  leader: { Icon: Crown, tone: 'positive', label: 'Leader', pinned: true, category: 'ranking' },
-  ranking: { Icon: TrendingUp, tone: 'info', label: 'Ranking', pinned: false, category: 'ranking' },
-  retest_due: { Icon: Hourglass, tone: 'attention', label: 'Retest Due', pinned: true, category: 'retest' },
-  streak: { Icon: Flame, tone: 'positive', label: 'Streak', pinned: true, category: 'milestones' },
-  adherence: { Icon: Target, tone: 'positive', label: 'Adherence', pinned: false, category: 'milestones' },
-  programme_milestone: { Icon: Trophy, tone: 'positive', label: 'Milestone', pinned: true, category: 'milestones' },
-  programme_completed: { Icon: PartyPopper, tone: 'positive', label: 'Completed', pinned: true, category: 'milestones' },
-  coach_update: { Icon: MessageSquare, tone: 'info', label: 'Coach Update', pinned: false, category: 'coach' },
-  report_available: { Icon: FileText, tone: 'info', label: 'Report', pinned: false, category: 'reports' },
-  default: { Icon: Bell, tone: 'info', label: 'Update', pinned: false, category: 'all' },
+  personal_best:       { Icon: Award,        tone: 'positive',  label: 'Personal Best', pinned: true,  category: 'achievements' },
+  leader:              { Icon: Crown,        tone: 'positive',  label: 'Leader',        pinned: true,  category: 'achievements' },
+  ranking:             { Icon: TrendingUp,   tone: 'info',      label: 'Ranking',       pinned: false, category: 'achievements' },
+  streak:              { Icon: Flame,        tone: 'positive',  label: 'Streak',        pinned: true,  category: 'achievements' },
+  adherence:           { Icon: Target,       tone: 'positive',  label: 'Adherence',     pinned: false, category: 'achievements' },
+  programme_milestone: { Icon: Trophy,       tone: 'positive',  label: 'Milestone',     pinned: true,  category: 'achievements' },
+  programme_completed: { Icon: PartyPopper,  tone: 'positive',  label: 'Completed',     pinned: true,  category: 'achievements' },
+  retest_due:          { Icon: Hourglass,    tone: 'attention', label: 'Retest Due',    pinned: true,  category: 'action' },
+  coach_update:        { Icon: MessageSquare, tone: 'info',     label: 'Coach',         pinned: false, category: 'coach' },
+  report_available:    { Icon: FileText,     tone: 'info',      label: 'Report',        pinned: false, category: 'updates' },
+  default:             { Icon: Bell,         tone: 'info',      label: 'Update',        pinned: false, category: 'updates' },
 };
 
 const toneClass = (tone: string) => {
@@ -54,13 +55,11 @@ interface Notif {
 }
 
 const CATEGORIES = [
-  { key: 'all', label: 'All' },
-  { key: 'personal_best', label: 'PBs' },
-  { key: 'ranking', label: 'Rankings' },
-  { key: 'retest', label: 'Retesting' },
-  { key: 'milestones', label: 'Milestones' },
-  { key: 'coach', label: 'Coach' },
-  { key: 'reports', label: 'Reports' },
+  { key: 'all',          label: 'All' },
+  { key: 'coach',        label: 'Coach' },
+  { key: 'updates',      label: 'Updates' },
+  { key: 'achievements', label: 'Achievements' },
+  { key: 'action',       label: 'Action' },
 ];
 
 export const ClientNotifications = () => {
@@ -212,9 +211,10 @@ export const ClientNotifications = () => {
       <Card
         key={n.id}
         className={cn(
-          'overflow-hidden transition-all animate-fade-in',
-          toneClass(tone),
-          !n.read_at && 'shadow-sm',
+          'card-premium rounded-2xl border-0 overflow-hidden transition-all animate-fade-in',
+          tone === 'positive' && 'ring-1 ring-[hsl(var(--success)/0.35)]',
+          tone === 'attention' && 'ring-1 ring-primary/35',
+          !n.read_at && 'shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.5)]',
           n.read_at && 'opacity-70',
         )}
       >
@@ -233,7 +233,7 @@ export const ClientNotifications = () => {
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.message}</p>
             )}
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground">
                 {meta.label}
               </span>
               <span className="text-[10px] text-muted-foreground">·</span>
@@ -274,18 +274,16 @@ export const ClientNotifications = () => {
   return (
     <div className="space-y-5 animate-fade-in">
       <header className="px-1">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              Updates
-              {unread > 0 && (
-                <Badge className="bg-primary text-primary-foreground animate-pop">{unread}</Badge>
-              )}
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              PBs, rankings and reminders — fresh as new tests arrive.
-            </p>
-          </div>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.22em]">
+          Inbox
+        </p>
+        <div className="mt-1 flex items-end justify-between gap-3 flex-wrap">
+          <h1 className="text-[clamp(1.85rem,7vw,2.75rem)] font-bold tracking-tight leading-[1.05] flex items-center gap-3">
+            Messages
+            {unread > 0 && (
+              <Badge className="bg-primary text-primary-foreground animate-pop">{unread}</Badge>
+            )}
+          </h1>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
               <RefreshCw className={cn('h-3.5 w-3.5 mr-1', refreshing && 'animate-spin')} />
@@ -298,6 +296,9 @@ export const ClientNotifications = () => {
             )}
           </div>
         </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Coach updates, achievements and what needs your attention.
+        </p>
       </header>
 
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -317,14 +318,14 @@ export const ClientNotifications = () => {
       {isLoading ? (
         <Skeleton className="h-40 rounded-2xl" />
       ) : filtered.length === 0 ? (
-        <Card>
+        <Card className="card-premium rounded-3xl border-0">
           <CardContent className="p-10 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
-              <Bell className="h-7 w-7 text-muted-foreground/60" />
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+              <Bell className="h-7 w-7 text-primary/70" />
             </div>
-            <p className="text-sm font-medium">All caught up</p>
+            <p className="text-sm font-semibold">All caught up</p>
             <p className="text-xs text-muted-foreground mt-1">
-              New PBs and ranking changes will appear here.
+              Coach updates, PBs and reminders will appear here.
             </p>
           </CardContent>
         </Card>

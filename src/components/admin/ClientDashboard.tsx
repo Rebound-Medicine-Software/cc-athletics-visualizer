@@ -8,6 +8,7 @@ import { ClientReports } from './client/ClientReports';
 import { ClientPrograms } from './client/ClientPrograms';
 import { ClientMyTesting } from './client/ClientMyTesting';
 import { ClientNotifications } from './client/ClientNotifications';
+import { ClientMoreMenu } from './client/ClientMoreMenu';
 import { PaymentPackages } from './client/PaymentPackages';
 import { AdminHeader } from './AdminHeader';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,9 +42,12 @@ export const ClientDashboard = () => {
       case 'testing':
         return <ClientMyTesting />;
       case 'notifications':
+      case 'messages': // new alias from bottom nav
         return <ClientNotifications />;
       case 'payment-packages':
         return <PaymentPackages />;
+      case 'more':
+        return <ClientMoreMenu onSectionChange={setActiveSection} />;
       default:
         return <ClientToday onSectionChange={setActiveSection} />;
     }

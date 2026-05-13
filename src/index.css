@@ -118,53 +118,106 @@
   /* ===========================================================
      ATHLETE THEME — premium dark, mobile-first, athlete-only.
      Scoped via .athlete-theme so practitioner UI is untouched.
-     Inspired by WHOOP / Apple Fitness / Caliber.
+     Visual north star: NEXUS HUB x MTP Sports performance app.
      =========================================================== */
   .athlete-theme {
-    /* Layered dark surfaces */
-    --background: 222 38% 7%;            /* Level 1 — deep brand navy */
-    --foreground: 210 30% 96%;
+    /* Layered dark surfaces — midnight navy */
+    --background: 222 47% 5%;            /* L0 — page */
+    --foreground: 210 30% 97%;
 
-    --card: 222 32% 10%;                 /* Level 2 — elevated card */
-    --card-foreground: 210 30% 96%;
+    --card: 222 36% 9%;                  /* L1 — base card */
+    --card-foreground: 210 30% 97%;
 
-    --popover: 222 34% 12%;
-    --popover-foreground: 210 30% 96%;
+    --popover: 222 36% 11%;
+    --popover-foreground: 210 30% 97%;
 
-    --primary: 38 92% 55%;               /* Reserved gold accent for CTAs / PBs */
-    --primary-foreground: 222 50% 8%;
-    --primary-glow: 42 96% 62%;
+    --primary: 42 95% 58%;               /* gold/amber — CTAs, PBs */
+    --primary-foreground: 222 50% 6%;
+    --primary-glow: 38 95% 65%;
 
-    --secondary: 222 24% 16%;            /* Level 3 — highlight surface */
+    --secondary: 222 28% 14%;            /* L2 — elevated surface */
     --secondary-foreground: 210 30% 96%;
 
-    --muted: 222 22% 14%;
-    --muted-foreground: 215 18% 65%;
+    --muted: 222 28% 12%;
+    --muted-foreground: 215 16% 62%;
 
-    --accent: 38 92% 55%;
-    --accent-foreground: 222 50% 8%;
+    --accent: 192 92% 56%;               /* electric teal — metrics */
+    --accent-foreground: 222 50% 6%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 210 30% 98%;
 
-    --border: 222 22% 18%;
-    --input: 222 22% 18%;
-    --ring: 38 92% 55%;
+    --border: 222 24% 16%;
+    --input: 222 24% 16%;
+    --ring: 42 95% 58%;
 
-    --success: 152 70% 45%;
-    --warning: 38 92% 55%;
+    --success: 152 72% 48%;
+    --warning: 42 95% 58%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(38 92% 55%), hsl(28 96% 52%));
-    --gradient-hero: linear-gradient(160deg, hsl(222 40% 12%) 0%, hsl(222 38% 8%) 60%, hsl(222 50% 6%) 100%);
+    /* Custom athlete tokens */
+    --athlete-l0: 222 47% 5%;
+    --athlete-l1: 222 36% 9%;
+    --athlete-l2: 222 30% 12%;
+    --athlete-l3: 222 26% 16%;
+    --athlete-edge: 222 24% 22%;
+    --athlete-electric: 192 92% 56%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(42 95% 58%), hsl(28 96% 52%));
+    --gradient-hero: radial-gradient(120% 90% at 0% 0%, hsl(222 38% 14% / 0.95), hsl(222 50% 6%) 60%);
+    --gradient-electric: linear-gradient(135deg, hsl(192 92% 56%), hsl(212 92% 56%));
+
+    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 8px 24px -12px hsl(222 60% 2% / 0.7);
+    --shadow-glow: 0 0 0 1px hsl(42 95% 58% / 0.15), 0 18px 50px -18px hsl(42 95% 58% / 0.35);
+    --shadow-electric: 0 0 0 1px hsl(192 92% 56% / 0.18), 0 18px 50px -22px hsl(192 92% 56% / 0.4);
 
     color-scheme: dark;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
   }
 
-  /* Premium card elevation rhythm inside athlete shell */
-  .athlete-theme .athlete-surface-2 { background: hsl(222 30% 11%); }
-  .athlete-theme .athlete-surface-3 { background: hsl(222 26% 14%); }
+  /* Surface elevation utilities scoped to athlete shell */
+  .athlete-theme .surface-1 { background: hsl(var(--athlete-l1)); }
+  .athlete-theme .surface-2 { background: hsl(var(--athlete-l2)); }
+  .athlete-theme .surface-3 { background: hsl(var(--athlete-l3)); }
+
+  /* Premium card — subtle gradient + inner edge for depth */
+  .athlete-theme .card-premium {
+    background:
+      linear-gradient(180deg, hsl(222 32% 12% / 1) 0%, hsl(222 36% 9% / 1) 100%);
+    border: 1px solid hsl(var(--athlete-edge) / 0.6);
+    box-shadow: var(--shadow-card);
+  }
+  .athlete-theme .card-glow {
+    border: 1px solid hsl(42 95% 58% / 0.35);
+    box-shadow: var(--shadow-glow);
+  }
+  .athlete-theme .card-electric {
+    border: 1px solid hsl(192 92% 56% / 0.28);
+    box-shadow: var(--shadow-electric);
+  }
+
+  /* Hero radial glow background */
+  .athlete-theme .hero-bg {
+    background:
+      radial-gradient(80% 60% at 100% 0%, hsl(42 95% 58% / 0.18), transparent 60%),
+      radial-gradient(70% 60% at 0% 100%, hsl(192 92% 56% / 0.12), transparent 55%),
+      linear-gradient(180deg, hsl(222 38% 12%), hsl(222 44% 7%));
+  }
+
+  /* Frosted glass — bottom nav etc */
+  .athlete-theme .glass {
+    background: hsl(222 40% 7% / 0.72);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    border-color: hsl(var(--athlete-edge) / 0.7);
+  }
+
+  /* Tabular metric numbers */
+  .athlete-theme .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum", "ss01";
+    letter-spacing: -0.02em;
+  }
 }
 
 /* Respect user motion preferences for CSS-only animations.
