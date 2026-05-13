@@ -318,14 +318,14 @@ export const ClientNotifications = () => {
       {isLoading ? (
         <Skeleton className="h-40 rounded-2xl" />
       ) : filtered.length === 0 ? (
-        <Card>
+        <Card className="card-premium rounded-3xl border-0">
           <CardContent className="p-10 text-center">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-muted flex items-center justify-center mb-3">
-              <Bell className="h-7 w-7 text-muted-foreground/60" />
+            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+              <Bell className="h-7 w-7 text-primary/70" />
             </div>
-            <p className="text-sm font-medium">All caught up</p>
+            <p className="text-sm font-semibold">All caught up</p>
             <p className="text-xs text-muted-foreground mt-1">
-              New PBs and ranking changes will appear here.
+              Coach updates, PBs and reminders will appear here.
             </p>
           </CardContent>
         </Card>
