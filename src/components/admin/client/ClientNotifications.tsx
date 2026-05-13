@@ -211,9 +211,10 @@ export const ClientNotifications = () => {
       <Card
         key={n.id}
         className={cn(
-          'overflow-hidden transition-all animate-fade-in',
-          toneClass(tone),
-          !n.read_at && 'shadow-sm',
+          'card-premium rounded-2xl border-0 overflow-hidden transition-all animate-fade-in',
+          tone === 'positive' && 'ring-1 ring-[hsl(var(--success)/0.35)]',
+          tone === 'attention' && 'ring-1 ring-primary/35',
+          !n.read_at && 'shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.5)]',
           n.read_at && 'opacity-70',
         )}
       >
@@ -232,7 +233,7 @@ export const ClientNotifications = () => {
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.message}</p>
             )}
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+              <span className="text-[10px] uppercase tracking-[0.16em] font-semibold text-muted-foreground">
                 {meta.label}
               </span>
               <span className="text-[10px] text-muted-foreground">·</span>
