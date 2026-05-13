@@ -15,18 +15,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow, isToday, isThisWeek } from 'date-fns';
 import { toast } from 'sonner';
 
+// Categories aligned with the athlete app reference: Coach / Updates / Achievements / Action.
 const TYPE_META: Record<string, { Icon: any; tone: string; label: string; pinned: boolean; category: string }> = {
-  personal_best: { Icon: Award, tone: 'positive', label: 'Personal Best', pinned: true, category: 'personal_best' },
-  leader: { Icon: Crown, tone: 'positive', label: 'Leader', pinned: true, category: 'ranking' },
-  ranking: { Icon: TrendingUp, tone: 'info', label: 'Ranking', pinned: false, category: 'ranking' },
-  retest_due: { Icon: Hourglass, tone: 'attention', label: 'Retest Due', pinned: true, category: 'retest' },
-  streak: { Icon: Flame, tone: 'positive', label: 'Streak', pinned: true, category: 'milestones' },
-  adherence: { Icon: Target, tone: 'positive', label: 'Adherence', pinned: false, category: 'milestones' },
-  programme_milestone: { Icon: Trophy, tone: 'positive', label: 'Milestone', pinned: true, category: 'milestones' },
-  programme_completed: { Icon: PartyPopper, tone: 'positive', label: 'Completed', pinned: true, category: 'milestones' },
-  coach_update: { Icon: MessageSquare, tone: 'info', label: 'Coach Update', pinned: false, category: 'coach' },
-  report_available: { Icon: FileText, tone: 'info', label: 'Report', pinned: false, category: 'reports' },
-  default: { Icon: Bell, tone: 'info', label: 'Update', pinned: false, category: 'all' },
+  personal_best:       { Icon: Award,        tone: 'positive',  label: 'Personal Best', pinned: true,  category: 'achievements' },
+  leader:              { Icon: Crown,        tone: 'positive',  label: 'Leader',        pinned: true,  category: 'achievements' },
+  ranking:             { Icon: TrendingUp,   tone: 'info',      label: 'Ranking',       pinned: false, category: 'achievements' },
+  streak:              { Icon: Flame,        tone: 'positive',  label: 'Streak',        pinned: true,  category: 'achievements' },
+  adherence:           { Icon: Target,       tone: 'positive',  label: 'Adherence',     pinned: false, category: 'achievements' },
+  programme_milestone: { Icon: Trophy,       tone: 'positive',  label: 'Milestone',     pinned: true,  category: 'achievements' },
+  programme_completed: { Icon: PartyPopper,  tone: 'positive',  label: 'Completed',     pinned: true,  category: 'achievements' },
+  retest_due:          { Icon: Hourglass,    tone: 'attention', label: 'Retest Due',    pinned: true,  category: 'action' },
+  coach_update:        { Icon: MessageSquare, tone: 'info',     label: 'Coach',         pinned: false, category: 'coach' },
+  report_available:    { Icon: FileText,     tone: 'info',      label: 'Report',        pinned: false, category: 'updates' },
+  default:             { Icon: Bell,         tone: 'info',      label: 'Update',        pinned: false, category: 'updates' },
 };
 
 const toneClass = (tone: string) => {
