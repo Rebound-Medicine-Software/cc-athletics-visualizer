@@ -55,13 +55,11 @@ interface Notif {
 }
 
 const CATEGORIES = [
-  { key: 'all', label: 'All' },
-  { key: 'personal_best', label: 'PBs' },
-  { key: 'ranking', label: 'Rankings' },
-  { key: 'retest', label: 'Retesting' },
-  { key: 'milestones', label: 'Milestones' },
-  { key: 'coach', label: 'Coach' },
-  { key: 'reports', label: 'Reports' },
+  { key: 'all',          label: 'All' },
+  { key: 'coach',        label: 'Coach' },
+  { key: 'updates',      label: 'Updates' },
+  { key: 'achievements', label: 'Achievements' },
+  { key: 'action',       label: 'Action' },
 ];
 
 export const ClientNotifications = () => {
