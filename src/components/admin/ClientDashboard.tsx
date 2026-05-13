@@ -41,9 +41,12 @@ export const ClientDashboard = () => {
       case 'testing':
         return <ClientMyTesting />;
       case 'notifications':
+      case 'messages': // new alias from bottom nav
         return <ClientNotifications />;
       case 'payment-packages':
         return <PaymentPackages />;
+      case 'more':
+        return <ClientMoreMenu onSectionChange={setActiveSection} />;
       default:
         return <ClientToday onSectionChange={setActiveSection} />;
     }
