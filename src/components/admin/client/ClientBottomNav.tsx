@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 interface Tab {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: any;
 }
 
 const TABS: Tab[] = [
