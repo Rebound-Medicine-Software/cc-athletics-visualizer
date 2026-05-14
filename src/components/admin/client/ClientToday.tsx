@@ -244,54 +244,68 @@ export const ClientToday = ({ onSectionChange }: Props) => {
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Greeting */}
-      <header className="px-1">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.22em]">
+      <header className="px-1 pt-1">
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
           {greetingFor()}
         </p>
-        <h1 className="text-[clamp(1.85rem,7vw,2.75rem)] font-bold tracking-tight mt-1 leading-[1.05]">
+        <h1 className="text-[28px] sm:text-[32px] font-extrabold tracking-[-0.04em] mt-1.5 leading-[1.02]">
           {greetingName}
         </h1>
       </header>
 
       {/* HERO — Performance readiness card */}
-      <Card className="card-premium card-glow overflow-hidden rounded-3xl border-0">
+      <Card className="card-premium overflow-hidden border-0 rounded-[34px]">
         <CardContent className="p-0">
-          <div className="hero-bg relative p-5 sm:p-6">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Readiness
+          <div className="hero-bg relative p-5 sm:p-6 min-h-[320px]">
+            {/* Top row — score label + live status pill */}
+            <div className="relative z-[1] flex items-start justify-between gap-3">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+                  Readiness
+                </div>
+                <div className="num-hero text-[72px] mt-2 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  {readiness}
+                </div>
+                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--athlete-green)/0.13)] border border-[hsl(var(--athlete-green)/0.24)] text-[hsl(var(--athlete-green))] px-2.5 py-1.5 text-[11px] font-extrabold tracking-wide">
+                  <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[hsl(var(--athlete-green))] shadow-[0_0_12px_hsl(var(--athlete-green))]" />
+                  {readiness >= 85 ? 'Peak' : readiness >= 70 ? 'Primed' : readiness >= 55 ? 'Steady' : 'Recovering'}
+                </span>
+              </div>
+              <ReadinessRing score={readiness} />
             </div>
 
-            <div className="mt-4 flex items-center gap-5">
-              <ReadinessRing score={readiness} />
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-                  Today&apos;s focus
-                </div>
-                <div className="text-[clamp(1.4rem,5vw,1.85rem)] font-bold leading-tight mt-1 truncate">
-                  {todaysFocus.title}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                  {todaysFocus.sub}
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {streak > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-semibold">
-                      <Flame className="h-3 w-3" /> {streak}d streak
-                    </span>
-                  )}
-                  {improvedMetricsCount > 0 && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2.5 py-1 text-[11px] font-semibold">
-                      <TrendingUp className="h-3 w-3" /> {improvedMetricsCount} on the rise
-                    </span>
-                  )}
-                </div>
+            {/* Today's focus copy */}
+            <div className="relative z-[1] mt-5 max-w-[280px]">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+                Today&apos;s focus
+              </div>
+              <div className="text-[20px] font-bold leading-snug mt-1 tracking-[-0.02em]">
+                {todaysFocus.title}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                {todaysFocus.sub}
               </div>
             </div>
 
+            {/* Streak / improvement chips */}
+            {(streak > 0 || improvedMetricsCount > 0) && (
+              <div className="relative z-[1] mt-4 flex flex-wrap items-center gap-2">
+                {streak > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 text-primary px-2.5 py-1 text-[11px] font-bold">
+                    <Flame className="h-3 w-3" /> {streak}d streak
+                  </span>
+                )}
+                {improvedMetricsCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2.5 py-1 text-[11px] font-bold">
+                    <TrendingUp className="h-3 w-3" /> {improvedMetricsCount} on the rise
+                  </span>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => onSectionChange?.(todaysFocus.section)}
-              className="group mt-5 w-full rounded-2xl bg-primary text-primary-foreground py-3.5 px-4 font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_10px_28px_-12px_hsl(var(--primary)/0.7)]"
+              className="group relative z-[1] mt-5 w-full rounded-2xl bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] text-[hsl(210_50%_5%)] py-3.5 px-4 font-extrabold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_14px_38px_-12px_hsl(var(--athlete-green)/0.6)]"
             >
               <todaysFocus.icon className="h-4 w-4" />
               {todaysFocus.cta}
