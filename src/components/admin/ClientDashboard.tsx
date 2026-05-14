@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { AdminSidebar } from './AdminSidebar';
 import { ClientToday } from './client/ClientToday';
 import { ClientMyProgress } from './client/ClientMyProgress';
 import { ClientBookings } from './client/ClientBookings';
@@ -23,7 +21,6 @@ export const ClientDashboard = () => {
   const { teamId: effectiveTeamId, isImpersonating } = useEffectiveTeamId();
 
   useBranding(effectiveTeamId, isImpersonating ? 'organisation' : profile?.role);
-  // Realtime: live PB / leader / retest / streak toasts and badge updates
   useRealtimeClientNotifications();
 
   const renderContent = () => {
@@ -31,7 +28,7 @@ export const ClientDashboard = () => {
       case 'home':
         return <ClientToday onSectionChange={setActiveSection} />;
       case 'progress':
-      case 'analytics': // legacy alias
+      case 'analytics':
         return <ClientMyProgress />;
       case 'programming':
         return <ClientPrograms />;
@@ -42,7 +39,7 @@ export const ClientDashboard = () => {
       case 'testing':
         return <ClientMyTesting />;
       case 'notifications':
-      case 'messages': // new alias from bottom nav
+      case 'messages':
         return <ClientNotifications />;
       case 'payment-packages':
         return <PaymentPackages />;
@@ -54,32 +51,33 @@ export const ClientDashboard = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="athlete-theme min-h-[100dvh] flex w-full bg-background text-foreground">
-        {/* Sidebar: hidden on mobile — replaced by bottom tab bar */}
-        <div className="hidden md:flex">
-          <AdminSidebar
-            role="client"
-            activeSection={activeSection}
-            onSectionChange={setActiveSection}
-          />
-        </div>
-        <main className="flex-1 flex flex-col min-w-0">
-          <div
-            className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40"
-            style={{ paddingTop: 'env(safe-area-inset-top)' }}
-          >
-            <AdminHeader role="client" />
-          </div>
-          <div
-            className="flex-1 px-4 md:px-6 pt-5 md:pt-8 max-w-3xl mx-auto w-full"
-            style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
-          >
-            {renderContent()}
-          </div>
+    <div className="athlete-theme min-h-[100dvh] w-full bg-[hsl(222_45%_4%)] flex items-center justify-center md:p-6">
+      {/* iPhone-style app shell — full-screen on mobile, centred phone frame on desktop */}
+      <div
+        className="
+          relative flex flex-col bg-background text-foreground overflow-hidden
+          w-full h-[100dvh]
+          md:h-[min(900px,calc(100dvh-3rem))] md:w-[440px]
+          md:rounded-[2.5rem] md:shadow-[0_30px_120px_-20px_rgba(0,0,0,0.8),0_0_0_10px_hsl(222_30%_10%),0_0_0_11px_hsl(45_60%_55%/0.25)]
+          md:ring-1 md:ring-white/5
+        "
+      >
+        <header
+          className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <AdminHeader role="client" />
+        </header>
+
+        <main
+          className="flex-1 overflow-y-auto px-4 pt-5"
+          style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
+        >
+          {renderContent()}
         </main>
+
         <ClientBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
       </div>
-    </SidebarProvider>
+    </div>
   );
 };

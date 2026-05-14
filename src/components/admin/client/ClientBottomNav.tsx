@@ -47,7 +47,7 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t glass"
+      className="absolute bottom-0 inset-x-0 z-40 border-t glass"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
