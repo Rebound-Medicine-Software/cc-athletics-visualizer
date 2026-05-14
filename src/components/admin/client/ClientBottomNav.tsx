@@ -47,11 +47,11 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
 
   return (
     <nav
-      className="absolute z-40 nav-float left-4 right-4 bottom-4"
+      className="absolute z-40 nav-float left-3 right-3 bottom-3"
       style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-5 p-2 gap-1">
+      <ul className="grid grid-cols-5 p-1.5 gap-0.5">
         {TABS.map((t) => {
           const active =
             activeSection === t.id ||

@@ -20,7 +20,7 @@ export const AIMatchedSessionCard = ({
   return (
     <div className="card-premium rounded-[30px] overflow-hidden border-0 relative animate-fade-in">
       {/* Image — cinematic crop */}
-      <div className="relative h-[240px] sm:h-[280px] overflow-hidden">
+      <div className="relative h-[200px] sm:h-[240px] overflow-hidden">
         <img
           src={visual.image}
           alt={visual.title}
