@@ -121,105 +121,166 @@
      Visual north star: NEXUS HUB x MTP Sports performance app.
      =========================================================== */
   .athlete-theme {
-    /* Layered dark surfaces — midnight navy */
-    --background: 222 47% 5%;            /* L0 — page */
-    --foreground: 210 30% 97%;
+    /* Cinematic midnight — inspired by NEXUS HUB luxury reference */
+    --background: 210 45% 4%;            /* L0 — deep navy near-black */
+    --foreground: 38 30% 96%;            /* warm off-white */
 
-    --card: 222 36% 9%;                  /* L1 — base card */
-    --card-foreground: 210 30% 97%;
+    --card: 210 35% 8%;
+    --card-foreground: 38 30% 96%;
 
-    --popover: 222 36% 11%;
-    --popover-foreground: 210 30% 97%;
+    --popover: 210 35% 10%;
+    --popover-foreground: 38 30% 96%;
 
-    --primary: 42 95% 58%;               /* gold/amber — CTAs, PBs */
-    --primary-foreground: 222 50% 6%;
-    --primary-glow: 38 95% 65%;
+    --primary: 42 65% 56%;               /* champagne gold */
+    --primary-foreground: 210 50% 5%;
+    --primary-glow: 38 75% 62%;
 
-    --secondary: 222 28% 14%;            /* L2 — elevated surface */
-    --secondary-foreground: 210 30% 96%;
+    --secondary: 210 30% 12%;
+    --secondary-foreground: 38 30% 96%;
 
-    --muted: 222 28% 12%;
-    --muted-foreground: 215 16% 62%;
+    --muted: 210 25% 11%;
+    --muted-foreground: 210 14% 64%;
 
-    --accent: 192 92% 56%;               /* electric teal — metrics */
-    --accent-foreground: 222 50% 6%;
+    --accent: 192 87% 65%;               /* electric cyan */
+    --accent-foreground: 210 50% 5%;
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 210 30% 98%;
+    --destructive: 4 84% 65%;
+    --destructive-foreground: 38 30% 98%;
 
-    --border: 222 24% 16%;
-    --input: 222 24% 16%;
-    --ring: 42 95% 58%;
+    --border: 210 22% 16%;
+    --input: 210 22% 16%;
+    --ring: 42 65% 56%;
 
-    --success: 152 72% 48%;
-    --warning: 42 95% 58%;
+    --success: 145 65% 60%;              /* mint green */
+    --warning: 42 65% 56%;
 
-    /* Custom athlete tokens */
-    --athlete-l0: 222 47% 5%;
-    --athlete-l1: 222 36% 9%;
-    --athlete-l2: 222 30% 12%;
-    --athlete-l3: 222 26% 16%;
-    --athlete-edge: 222 24% 22%;
-    --athlete-electric: 192 92% 56%;
+    /* Custom luxury tokens */
+    --athlete-l0: 210 45% 4%;
+    --athlete-l1: 210 35% 8%;
+    --athlete-l2: 210 30% 11%;
+    --athlete-l3: 210 28% 15%;
+    --athlete-edge: 210 20% 22%;
+    --athlete-green: 145 65% 60%;
+    --athlete-cyan: 192 87% 65%;
+    --athlete-gold: 42 65% 56%;
+    --athlete-violet: 248 68% 70%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(42 95% 58%), hsl(28 96% 52%));
-    --gradient-hero: radial-gradient(120% 90% at 0% 0%, hsl(222 38% 14% / 0.95), hsl(222 50% 6%) 60%);
-    --gradient-electric: linear-gradient(135deg, hsl(192 92% 56%), hsl(212 92% 56%));
+    --gradient-primary: linear-gradient(135deg, hsl(42 65% 56%), hsl(28 75% 50%));
+    --gradient-electric: linear-gradient(135deg, hsl(145 65% 60%), hsl(192 87% 65%));
+    --gradient-hero: radial-gradient(120% 90% at 0% 0%, hsl(210 32% 14% / 0.95), hsl(210 50% 5%) 60%);
 
-    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 8px 24px -12px hsl(222 60% 2% / 0.7);
-    --shadow-glow: 0 0 0 1px hsl(42 95% 58% / 0.15), 0 18px 50px -18px hsl(42 95% 58% / 0.35);
-    --shadow-electric: 0 0 0 1px hsl(192 92% 56% / 0.18), 0 18px 50px -22px hsl(192 92% 56% / 0.4);
+    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.05) inset, 0 14px 40px -16px hsl(210 60% 1% / 0.8);
+    --shadow-glow: 0 0 0 1px hsl(42 65% 56% / 0.18), 0 24px 60px -22px hsl(42 65% 56% / 0.4);
+    --shadow-electric: 0 0 0 1px hsl(192 87% 65% / 0.18), 0 24px 60px -22px hsl(192 87% 65% / 0.4);
+    --shadow-float: 0 30px 80px -24px hsl(0 0% 0% / 0.65);
 
     color-scheme: dark;
     background: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.011em;
   }
 
-  /* Surface elevation utilities scoped to athlete shell */
+  /* Ambient atmospheric glow inside the phone screen */
+  .athlete-theme {
+    background-image:
+      radial-gradient(circle at 76% 6%, hsl(192 87% 65% / 0.10), transparent 28%),
+      radial-gradient(circle at 18% 22%, hsl(42 65% 56% / 0.08), transparent 26%),
+      linear-gradient(180deg, hsl(210 35% 11%) 0%, hsl(210 50% 5%) 42%, hsl(210 55% 3%) 100%);
+  }
+
   .athlete-theme .surface-1 { background: hsl(var(--athlete-l1)); }
   .athlete-theme .surface-2 { background: hsl(var(--athlete-l2)); }
   .athlete-theme .surface-3 { background: hsl(var(--athlete-l3)); }
 
-  /* Premium card — subtle gradient + inner edge for depth */
+  /* Premium card — frosted glass with luminous edge */
   .athlete-theme .card-premium {
     background:
-      linear-gradient(180deg, hsl(222 32% 12% / 1) 0%, hsl(222 36% 9% / 1) 100%);
-    border: 1px solid hsl(var(--athlete-edge) / 0.6);
-    box-shadow: var(--shadow-card);
+      linear-gradient(145deg, hsl(0 0% 100% / 0.075), hsl(0 0% 100% / 0.025));
+    border: 1px solid hsl(0 0% 100% / 0.10);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.06) inset,
+      0 18px 50px -22px hsl(0 0% 0% / 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 28px;
   }
   .athlete-theme .card-glow {
-    border: 1px solid hsl(42 95% 58% / 0.35);
-    box-shadow: var(--shadow-glow);
+    border-color: hsl(42 65% 56% / 0.32);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.08) inset,
+      0 24px 70px -22px hsl(42 65% 56% / 0.35),
+      0 0 0 1px hsl(42 65% 56% / 0.18);
   }
   .athlete-theme .card-electric {
-    border: 1px solid hsl(192 92% 56% / 0.28);
-    box-shadow: var(--shadow-electric);
+    border-color: hsl(192 87% 65% / 0.28);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.08) inset,
+      0 24px 70px -22px hsl(192 87% 65% / 0.32);
   }
 
-  /* Hero radial glow background */
+  /* Cinematic hero gradient with rotating conic aurora */
   .athlete-theme .hero-bg {
     background:
-      radial-gradient(80% 60% at 100% 0%, hsl(42 95% 58% / 0.18), transparent 60%),
-      radial-gradient(70% 60% at 0% 100%, hsl(192 92% 56% / 0.12), transparent 55%),
-      linear-gradient(180deg, hsl(222 38% 12%), hsl(222 44% 7%));
+      radial-gradient(circle at 78% 38%, hsl(145 65% 60% / 0.14), transparent 32%),
+      radial-gradient(circle at 12% 88%, hsl(192 87% 65% / 0.10), transparent 36%),
+      linear-gradient(160deg, hsl(210 35% 14% / 0.95), hsl(210 50% 6%));
+    position: relative;
+    isolation: isolate;
+  }
+  .athlete-theme .hero-bg::before {
+    content: "";
+    position: absolute;
+    width: 280px; height: 280px;
+    right: -100px; top: -100px;
+    border-radius: 50%;
+    background: conic-gradient(from 180deg,
+      hsl(145 65% 60% / 0.6),
+      hsl(192 87% 65% / 0.6),
+      hsl(42 65% 56% / 0.6),
+      hsl(145 65% 60% / 0.6));
+    filter: blur(36px);
+    opacity: 0.28;
+    animation: athlete-rotate 14s linear infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+  @keyframes athlete-rotate { to { transform: rotate(360deg); } }
+
+  /* Floating frosted nav — luxury bottom pill */
+  .athlete-theme .nav-float {
+    background: hsl(210 40% 6% / 0.72);
+    backdrop-filter: blur(28px) saturate(160%);
+    -webkit-backdrop-filter: blur(28px) saturate(160%);
+    border: 1px solid hsl(0 0% 100% / 0.10);
+    box-shadow:
+      0 20px 60px -18px hsl(0 0% 0% / 0.6),
+      0 1px 0 hsl(0 0% 100% / 0.08) inset;
+    border-radius: 28px;
   }
 
-  /* Frosted glass — bottom nav etc */
   .athlete-theme .glass {
-    background: hsl(222 40% 7% / 0.72);
-    backdrop-filter: blur(22px) saturate(140%);
-    -webkit-backdrop-filter: blur(22px) saturate(140%);
-    border-color: hsl(var(--athlete-edge) / 0.7);
+    background: hsl(210 40% 6% / 0.72);
+    backdrop-filter: blur(24px) saturate(150%);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    border-color: hsl(0 0% 100% / 0.10);
   }
 
-  /* Tabular metric numbers */
+  /* Tabular metric numbers with confident negative tracking */
   .athlete-theme .num {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum", "ss01";
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
+    font-weight: 800;
+  }
+  .athlete-theme .num-hero {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.08em;
+    font-weight: 900;
+    line-height: 0.92;
   }
 
-  /* Cinematic light sweep across premium media cards */
+  /* Luxury sweep across premium media cards */
   @keyframes athlete-sheen {
     0% { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
     20% { opacity: 0.55; }
@@ -231,16 +292,15 @@
     inset: 0;
     background: linear-gradient(100deg,
       transparent 30%,
-      hsl(0 0% 100% / 0.10) 48%,
-      hsl(42 95% 70% / 0.18) 52%,
+      hsl(0 0% 100% / 0.08) 48%,
+      hsl(42 80% 70% / 0.16) 52%,
       transparent 70%);
     transform: translateX(-120%) skewX(-18deg);
-    animation: athlete-sheen 4.8s cubic-bezier(0.22,1,0.36,1) 0.6s 1 forwards;
+    animation: athlete-sheen 5.6s cubic-bezier(0.22,1,0.36,1) 0.6s infinite;
     pointer-events: none;
     mix-blend-mode: screen;
   }
 
-  /* Cinematic image reveal */
   @keyframes athlete-img-in {
     from { transform: scale(1.08); opacity: 0; filter: blur(6px); }
     to   { transform: scale(1);    opacity: 1; filter: blur(0);   }
@@ -248,6 +308,18 @@
   .athlete-theme .img-cinematic {
     animation: athlete-img-in 1100ms cubic-bezier(0.22,1,0.36,1) both;
   }
+
+  @keyframes athlete-pulse-dot {
+    0%, 100% { transform: scale(0.8); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+  .athlete-theme .pulse-dot {
+    animation: athlete-pulse-dot 1.6s ease-in-out infinite;
+  }
+
+  /* Hide scrollbars inside the phone shell */
+  .athlete-theme .scroll-clean::-webkit-scrollbar { display: none; }
+  .athlete-theme .scroll-clean { scrollbar-width: none; }
 }
 
 /* Respect user motion preferences for CSS-only animations.

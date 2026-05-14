@@ -51,32 +51,56 @@ export const ClientDashboard = () => {
   };
 
   return (
-    <div className="athlete-theme min-h-[100dvh] w-full bg-[hsl(222_45%_4%)] flex items-center justify-center md:p-6">
-      {/* iPhone-style app shell — full-screen on mobile, centred phone frame on desktop */}
+    <div
+      className="athlete-theme min-h-[100dvh] w-full flex items-center justify-center md:p-8"
+      style={{
+        background:
+          'radial-gradient(circle at 18% 4%, hsl(192 87% 65% / 0.18), transparent 32%),' +
+          'radial-gradient(circle at 86% 14%, hsl(42 65% 56% / 0.13), transparent 28%),' +
+          'radial-gradient(circle at 42% 100%, hsl(145 65% 60% / 0.12), transparent 34%),' +
+          'linear-gradient(135deg, #04080d 0%, #0c1722 48%, #071018 100%)',
+      }}
+    >
+      {/* Premium phone shell — physical device feel on desktop, edge-to-edge on mobile */}
       <div
         className="
-          relative flex flex-col bg-background text-foreground overflow-hidden
-          w-full h-[100dvh]
-          md:h-[min(900px,calc(100dvh-3rem))] md:w-[440px]
-          md:rounded-[2.5rem] md:shadow-[0_30px_120px_-20px_rgba(0,0,0,0.8),0_0_0_10px_hsl(222_30%_10%),0_0_0_11px_hsl(45_60%_55%/0.25)]
-          md:ring-1 md:ring-white/5
+          relative w-full h-[100dvh]
+          md:h-[min(932px,calc(100dvh-4rem))] md:w-[430px]
+          md:rounded-[58px] md:p-[13px]
+          md:bg-[linear-gradient(145deg,#111820,#303942_45%,#090d12_100%)]
+          md:border md:border-white/20
+          md:shadow-[0_40px_120px_rgba(0,0,0,0.72),inset_0_1px_1px_rgba(255,255,255,0.28)]
         "
       >
-        <header
-          className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/40 shrink-0"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
-        >
-          <AdminHeader role="client" />
-        </header>
+        {/* Inner bezel ring (desktop only) */}
+        <div className="hidden md:block absolute inset-[6px] rounded-[52px] border border-white/[0.08] pointer-events-none z-20" />
 
-        <main
-          className="flex-1 overflow-y-auto px-4 pt-5"
-          style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}
-        >
-          {renderContent()}
-        </main>
+        {/* Notch (desktop only) */}
+        <div className="hidden md:block absolute z-30 top-3 left-1/2 -translate-x-1/2 w-32 h-[34px] rounded-b-[20px] bg-[#020407] shadow-[inset_0_-1px_0_rgba(255,255,255,0.08)]" />
 
-        <ClientBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
+        {/* Screen */}
+        <div className="relative h-full w-full md:rounded-[46px] overflow-hidden bg-background flex flex-col">
+          {/* Header — flush, glass over content */}
+          <header
+            className="absolute top-0 inset-x-0 z-30 backdrop-blur-xl bg-background/40 md:pt-[44px]"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
+            <AdminHeader role="client" />
+          </header>
+
+          {/* Scrollable content */}
+          <main
+            className="scroll-clean flex-1 overflow-y-auto px-5"
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top) + 88px)',
+              paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+            }}
+          >
+            {renderContent()}
+          </main>
+
+          <ClientBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
+        </div>
       </div>
     </div>
   );

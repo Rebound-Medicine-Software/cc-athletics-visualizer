@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 interface Tab {
   id: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: any;
 }
 
 const TABS: Tab[] = [
@@ -47,13 +47,11 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
 
   return (
     <nav
-      className="absolute bottom-0 inset-x-0 z-40 border-t glass"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="absolute z-40 nav-float left-4 right-4 bottom-4"
+      style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      {/* Hairline gold accent at the top edge */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-      <ul className="flex items-stretch justify-around px-1 pt-2">
+      <ul className="grid grid-cols-5 p-2 gap-1">
         {TABS.map((t) => {
           const active =
             activeSection === t.id ||
@@ -61,32 +59,34 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
           const Icon = t.icon;
           const showBadge = t.id === 'notifications' && unread > 0;
           return (
-            <li key={t.id} className="flex-1">
+            <li key={t.id}>
               <button
                 onClick={() => onSectionChange(t.id)}
                 className={cn(
-                  'relative w-full h-14 flex flex-col items-center justify-center gap-1 text-[10px] font-semibold tracking-wide transition-all active:scale-[0.92]',
-                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
+                  'relative w-full h-14 flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-bold tracking-wide transition-all duration-300 active:scale-[0.94]',
+                  active
+                    ? 'text-[hsl(var(--athlete-green))] bg-[hsl(var(--athlete-green)/0.10)] shadow-[inset_0_0_0_1px_hsl(var(--athlete-green)/0.18)]'
+                    : 'text-muted-foreground hover:text-foreground/90',
                 )}
                 aria-current={active ? 'page' : undefined}
               >
-                <span
-                  className={cn(
-                    'relative flex items-center justify-center h-9 w-12 rounded-2xl transition-all',
-                    active && 'bg-primary/12 shadow-[0_0_24px_-6px_hsl(var(--primary)/0.55)]',
-                  )}
-                >
-                  <Icon className={cn('h-[22px] w-[22px] transition-transform', active && 'scale-110')} />
+                <span className="relative flex items-center justify-center">
+                  <Icon
+                    className={cn(
+                      'h-[20px] w-[20px] transition-all duration-300',
+                      active && 'drop-shadow-[0_0_10px_hsl(var(--athlete-green)/0.55)]',
+                    )}
+                    strokeWidth={active ? 2.4 : 2}
+                  />
                   {showBadge && (
-                    <span className="absolute -top-0.5 right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] leading-4 text-center font-bold ring-2 ring-background">
+                    <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] leading-4 text-center font-bold ring-2 ring-[hsl(210_40%_6%)]">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   )}
                 </span>
-                <span className="uppercase tracking-[0.12em]">{t.label}</span>
-                {active && (
-                  <span className="absolute bottom-1 h-[3px] w-6 rounded-full bg-primary" />
-                )}
+                <span className="uppercase tracking-[0.10em] text-[10px] leading-none">
+                  {t.label}
+                </span>
               </button>
             </li>
           );
