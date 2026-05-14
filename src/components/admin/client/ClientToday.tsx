@@ -17,6 +17,8 @@ import { useClientMetrics } from './useClientMetrics';
 import { useRetestInterval, DEFAULT_RETEST_INTERVAL_DAYS } from '@/hooks/useRetestInterval';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getSessionVisual } from './sessionVisuals';
+import { AIMatchedSessionCard } from './AIMatchedSessionCard';
 
 interface Props {
   onSectionChange?: (section: string) => void;
