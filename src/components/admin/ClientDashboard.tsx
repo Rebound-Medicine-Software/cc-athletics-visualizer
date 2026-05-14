@@ -8,7 +8,7 @@ import { ClientMyTesting } from './client/ClientMyTesting';
 import { ClientNotifications } from './client/ClientNotifications';
 import { ClientMoreMenu } from './client/ClientMoreMenu';
 import { PaymentPackages } from './client/PaymentPackages';
-import { AdminHeader } from './AdminHeader';
+import { ClientHeader } from './client/ClientHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/hooks/useBranding';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
@@ -82,18 +82,19 @@ export const ClientDashboard = () => {
         <div className="relative h-full w-full md:rounded-[46px] overflow-hidden bg-background flex flex-col">
           {/* Header — flush, glass over content */}
           <header
-            className="absolute top-0 inset-x-0 z-30 backdrop-blur-xl bg-background/40 md:pt-[44px]"
+            className="absolute top-0 inset-x-0 z-30 backdrop-blur-xl bg-background/55 md:pt-[40px]"
             style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
-            <AdminHeader role="client" />
+            <ClientHeader />
           </header>
 
           {/* Scrollable content */}
           <main
-            className="scroll-clean flex-1 overflow-y-auto px-5"
+            className="scroll-clean flex-1 overflow-y-auto overflow-x-hidden px-4"
             style={{
-              paddingTop: 'calc(env(safe-area-inset-top) + 88px)',
-              paddingBottom: 'calc(120px + env(safe-area-inset-bottom))',
+              paddingTop: 'calc(env(safe-area-inset-top) + 76px)',
+              paddingBottom: 'calc(124px + env(safe-area-inset-bottom))',
+              maxWidth: '100%',
             }}
           >
             {renderContent()}

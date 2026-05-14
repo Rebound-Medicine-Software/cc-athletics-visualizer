@@ -47,11 +47,11 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
 
   return (
     <nav
-      className="absolute z-40 nav-float left-4 right-4 bottom-4"
+      className="absolute z-40 nav-float left-3 right-3 bottom-3"
       style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       aria-label="Primary"
     >
-      <ul className="grid grid-cols-5 p-2 gap-1">
+      <ul className="grid grid-cols-5 p-1.5 gap-0.5">
         {TABS.map((t) => {
           const active =
             activeSection === t.id ||
@@ -63,7 +63,7 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
               <button
                 onClick={() => onSectionChange(t.id)}
                 className={cn(
-                  'relative w-full h-14 flex flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-bold tracking-wide transition-all duration-300 active:scale-[0.94]',
+                  'relative w-full h-12 flex flex-col items-center justify-center gap-0.5 rounded-2xl text-[9px] font-bold tracking-wide transition-all duration-300 active:scale-[0.94] min-w-0 px-1',
                   active
                     ? 'text-[hsl(var(--athlete-green))] bg-[hsl(var(--athlete-green)/0.10)] shadow-[inset_0_0_0_1px_hsl(var(--athlete-green)/0.18)]'
                     : 'text-muted-foreground hover:text-foreground/90',
@@ -73,18 +73,18 @@ export const ClientBottomNav = ({ activeSection, onSectionChange }: Props) => {
                 <span className="relative flex items-center justify-center">
                   <Icon
                     className={cn(
-                      'h-[20px] w-[20px] transition-all duration-300',
+                      'h-[18px] w-[18px] transition-all duration-300',
                       active && 'drop-shadow-[0_0_10px_hsl(var(--athlete-green)/0.55)]',
                     )}
                     strokeWidth={active ? 2.4 : 2}
                   />
                   {showBadge && (
-                    <span className="absolute -top-1 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[9px] leading-4 text-center font-bold ring-2 ring-[hsl(210_40%_6%)]">
+                    <span className="absolute -top-1 -right-2 min-w-[14px] h-[14px] px-1 rounded-full bg-destructive text-destructive-foreground text-[8px] leading-[14px] text-center font-bold ring-2 ring-[hsl(210_40%_6%)]">
                       {unread > 9 ? '9+' : unread}
                     </span>
                   )}
                 </span>
-                <span className="uppercase tracking-[0.10em] text-[10px] leading-none">
+                <span className="uppercase tracking-[0.08em] text-[9px] leading-none truncate max-w-full">
                   {t.label}
                 </span>
               </button>
