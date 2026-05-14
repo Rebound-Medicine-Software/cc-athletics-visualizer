@@ -80,14 +80,12 @@ export const ClientDashboard = () => {
 
         {/* Screen */}
         <div className="relative h-full w-full md:rounded-[46px] overflow-hidden bg-background flex flex-col">
-          {/* Header — flush, no border, glass over content */}
+          {/* Header — flush, glass over content */}
           <header
-            className="absolute top-0 inset-x-0 z-30 backdrop-blur-xl bg-background/40"
-            style={{ paddingTop: 'calc(env(safe-area-inset-top) + var(--phone-status-pad, 0px))' }}
+            className="absolute top-0 inset-x-0 z-30 backdrop-blur-xl bg-background/40 md:pt-[44px]"
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
           >
-            <div className="md:[--phone-status-pad:46px]" style={{ ['--phone-status-pad' as any]: '0px' }}>
-              <AdminHeader role="client" />
-            </div>
+            <AdminHeader role="client" />
           </header>
 
           {/* Scrollable content */}
