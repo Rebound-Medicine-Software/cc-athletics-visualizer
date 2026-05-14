@@ -31,36 +31,37 @@ const greetingFor = (d = new Date()) => {
   return 'Good evening';
 };
 
-/** Premium readiness gauge — gold→teal arc on a soft track. */
+/** Premium readiness gauge — gold→cyan arc on a soft track. */
 const ReadinessRing = ({ score }: { score: number }) => {
-  const r = 54;
+  const r = 62;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
   const offset = c * (1 - pct / 100);
   return (
-    <div className="relative h-[140px] w-[140px] shrink-0">
-      <svg viewBox="0 0 140 140" className="h-full w-full -rotate-90">
+    <div className="relative h-[150px] w-[150px] shrink-0">
+      <svg viewBox="0 0 150 150" className="h-full w-full -rotate-90">
         <defs>
           <linearGradient id="ringGrad" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0%" stopColor="hsl(42 95% 58%)" />
-            <stop offset="100%" stopColor="hsl(192 92% 56%)" />
+            <stop offset="0%" stopColor="hsl(145 65% 60%)" />
+            <stop offset="55%" stopColor="hsl(192 87% 65%)" />
+            <stop offset="100%" stopColor="hsl(42 65% 56%)" />
           </linearGradient>
         </defs>
-        <circle cx="70" cy="70" r={r} stroke="hsl(var(--athlete-edge))" strokeWidth="10" fill="none" />
+        <circle cx="75" cy="75" r={r} stroke="hsl(0 0% 100% / 0.06)" strokeWidth="10" fill="none" />
         <circle
-          cx="70" cy="70" r={r}
+          cx="75" cy="75" r={r}
           stroke="url(#ringGrad)"
           strokeWidth="10"
           strokeLinecap="round"
           fill="none"
           strokeDasharray={c}
           strokeDashoffset={offset}
-          style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)' }}
+          style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)' }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="text-[44px] font-bold leading-none num">{Math.round(pct)}</div>
-        <div className="text-[10px] mt-1 uppercase tracking-[0.2em] text-primary font-semibold">
+        <div className="num-hero text-[44px] text-foreground">{Math.round(pct)}</div>
+        <div className="text-[9px] mt-1.5 uppercase tracking-[0.22em] text-[hsl(var(--athlete-green))] font-bold">
           {pct >= 85 ? 'Optimal' : pct >= 70 ? 'Ready' : pct >= 55 ? 'Steady' : 'Recover'}
         </div>
       </div>
