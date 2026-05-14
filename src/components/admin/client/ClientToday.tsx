@@ -33,13 +33,13 @@ const greetingFor = (d = new Date()) => {
 
 /** Premium readiness gauge — gold→cyan arc on a soft track. */
 const ReadinessRing = ({ score }: { score: number }) => {
-  const r = 62;
+  const r = 50;
   const c = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score));
   const offset = c * (1 - pct / 100);
   return (
-    <div className="relative h-[150px] w-[150px] shrink-0">
-      <svg viewBox="0 0 150 150" className="h-full w-full -rotate-90">
+    <div className="relative h-[116px] w-[116px] shrink-0">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
         <defs>
           <linearGradient id="ringGrad" x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor="hsl(145 65% 60%)" />
@@ -47,11 +47,11 @@ const ReadinessRing = ({ score }: { score: number }) => {
             <stop offset="100%" stopColor="hsl(42 65% 56%)" />
           </linearGradient>
         </defs>
-        <circle cx="75" cy="75" r={r} stroke="hsl(0 0% 100% / 0.06)" strokeWidth="10" fill="none" />
+        <circle cx="60" cy="60" r={r} stroke="hsl(0 0% 100% / 0.06)" strokeWidth="9" fill="none" />
         <circle
-          cx="75" cy="75" r={r}
+          cx="60" cy="60" r={r}
           stroke="url(#ringGrad)"
-          strokeWidth="10"
+          strokeWidth="9"
           strokeLinecap="round"
           fill="none"
           strokeDasharray={c}
@@ -60,8 +60,8 @@ const ReadinessRing = ({ score }: { score: number }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <div className="num-hero text-[44px] text-foreground">{Math.round(pct)}</div>
-        <div className="text-[9px] mt-1.5 uppercase tracking-[0.22em] text-[hsl(var(--athlete-green))] font-bold">
+        <div className="num-hero text-[34px] text-foreground">{Math.round(pct)}</div>
+        <div className="text-[8px] mt-1 uppercase tracking-[0.2em] text-[hsl(var(--athlete-green))] font-bold">
           {pct >= 85 ? 'Optimal' : pct >= 70 ? 'Ready' : pct >= 55 ? 'Steady' : 'Recover'}
         </div>
       </div>
@@ -242,31 +242,33 @@ export const ClientToday = ({ onSectionChange }: Props) => {
   }
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-4 animate-fade-in min-w-0 max-w-full">
       {/* Greeting */}
-      <header className="px-1 pt-1">
-        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
+      <header className="px-1 pt-1 min-w-0">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
           {greetingFor()}
         </p>
-        <h1 className="text-[28px] sm:text-[32px] font-extrabold tracking-[-0.04em] mt-1.5 leading-[1.02]">
+        <h1 className="font-extrabold tracking-[-0.04em] mt-1 leading-[1.05] truncate"
+            style={{ fontSize: 'clamp(22px, 7vw, 28px)' }}>
           {greetingName}
         </h1>
       </header>
 
       {/* HERO — Performance readiness card */}
-      <Card className="card-premium overflow-hidden border-0 rounded-[34px]">
+      <Card className="card-premium overflow-hidden border-0 rounded-[28px]">
         <CardContent className="p-0">
-          <div className="hero-bg relative p-5 sm:p-6 min-h-[320px]">
+          <div className="hero-bg relative p-4 sm:p-5">
             {/* Top row — score label + live status pill */}
-            <div className="relative z-[1] flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+            <div className="relative z-[1] flex items-start justify-between gap-3 min-w-0">
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
                   Readiness
                 </div>
-                <div className="num-hero text-[72px] mt-2 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <div className="num-hero mt-1.5 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
+                     style={{ fontSize: 'clamp(44px, 14vw, 60px)' }}>
                   {readiness}
                 </div>
-                <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--athlete-green)/0.13)] border border-[hsl(var(--athlete-green)/0.24)] text-[hsl(var(--athlete-green))] px-2.5 py-1.5 text-[11px] font-extrabold tracking-wide">
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--athlete-green)/0.13)] border border-[hsl(var(--athlete-green)/0.24)] text-[hsl(var(--athlete-green))] px-2 py-1 text-[10px] font-extrabold tracking-wide">
                   <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-[hsl(var(--athlete-green))] shadow-[0_0_12px_hsl(var(--athlete-green))]" />
                   {readiness >= 85 ? 'Peak' : readiness >= 70 ? 'Primed' : readiness >= 55 ? 'Steady' : 'Recovering'}
                 </span>
@@ -275,28 +277,28 @@ export const ClientToday = ({ onSectionChange }: Props) => {
             </div>
 
             {/* Today's focus copy */}
-            <div className="relative z-[1] mt-5 max-w-[280px]">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-bold">
+            <div className="relative z-[1] mt-4 min-w-0">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
                 Today&apos;s focus
               </div>
-              <div className="text-[20px] font-bold leading-snug mt-1 tracking-[-0.02em]">
+              <div className="text-[17px] font-bold leading-snug mt-1 tracking-[-0.02em] truncate">
                 {todaysFocus.title}
               </div>
-              <div className="text-sm text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+              <div className="text-[13px] text-muted-foreground mt-0.5 leading-relaxed line-clamp-2">
                 {todaysFocus.sub}
               </div>
             </div>
 
             {/* Streak / improvement chips */}
             {(streak > 0 || improvedMetricsCount > 0) && (
-              <div className="relative z-[1] mt-4 flex flex-wrap items-center gap-2">
+              <div className="relative z-[1] mt-3 flex flex-wrap items-center gap-2">
                 {streak > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 text-primary px-2.5 py-1 text-[11px] font-bold">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/12 text-primary px-2.5 py-1 text-[10px] font-bold">
                     <Flame className="h-3 w-3" /> {streak}d streak
                   </span>
                 )}
                 {improvedMetricsCount > 0 && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2.5 py-1 text-[11px] font-bold">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2.5 py-1 text-[10px] font-bold">
                     <TrendingUp className="h-3 w-3" /> {improvedMetricsCount} on the rise
                   </span>
                 )}
@@ -305,11 +307,11 @@ export const ClientToday = ({ onSectionChange }: Props) => {
 
             <button
               onClick={() => onSectionChange?.(todaysFocus.section)}
-              className="group relative z-[1] mt-5 w-full rounded-2xl bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] text-[hsl(210_50%_5%)] py-3.5 px-4 font-extrabold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_14px_38px_-12px_hsl(var(--athlete-green)/0.6)]"
+              className="group relative z-[1] mt-4 w-full rounded-2xl bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] text-[hsl(210_50%_5%)] py-3 px-4 font-extrabold text-[13px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-[0_14px_38px_-12px_hsl(var(--athlete-green)/0.6)]"
             >
               <todaysFocus.icon className="h-4 w-4" />
-              {todaysFocus.cta}
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              <span className="truncate">{todaysFocus.cta}</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 shrink-0" />
             </button>
           </div>
         </CardContent>
