@@ -17,6 +17,8 @@ import { useClientMetrics } from './useClientMetrics';
 import { useRetestInterval, DEFAULT_RETEST_INTERVAL_DAYS } from '@/hooks/useRetestInterval';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getSessionVisual } from './sessionVisuals';
+import { AIMatchedSessionCard } from './AIMatchedSessionCard';
 
 interface Props {
   onSectionChange?: (section: string) => void;
@@ -297,6 +299,32 @@ export const ClientToday = ({ onSectionChange }: Props) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* AI-Matched Session — cinematic visual */}
+      {(() => {
+        const visual = getSessionVisual({
+          sport: (athlete as any)?.sport_primary ?? (Array.isArray((athlete as any)?.sports) ? (athlete as any).sports[0] : null),
+          sex: (athlete as any)?.sex ?? null,
+          sessionTitle: todaySession?.name ?? todaysFocus.title,
+          focusMetric: heroMetric?.spec?.label ?? null,
+          programType: active?.template_name ?? null,
+        });
+        const current = heroMetric?.latest
+          ? { label: heroMetric.spec.label, value: `${heroMetric.latest.value.toFixed(2)}${heroMetric.spec.unit ? ' ' + heroMetric.spec.unit : ''}` }
+          : null;
+        const goal = heroMetric?.latest
+          ? { label: 'Goal', value: `${(heroMetric.latest.value * (heroMetric.spec.higherIsBetter ? 1.08 : 0.92)).toFixed(2)}${heroMetric.spec.unit ? ' ' + heroMetric.spec.unit : ''}` }
+          : null;
+        return (
+          <AIMatchedSessionCard
+            visual={visual}
+            current={current}
+            goal={goal}
+            ctaLabel={todaysFocus.cta}
+            onCta={() => onSectionChange?.(todaysFocus.section)}
+          />
+        );
+      })()}
 
       {/* Recovery tiles */}
       <div className="grid grid-cols-3 gap-2.5">
