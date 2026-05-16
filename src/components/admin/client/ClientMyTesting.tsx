@@ -72,6 +72,9 @@ import { useClientMetrics, useClientRankings } from './useClientMetrics';
 import { useEliteBenchmarkForAthlete } from '@/hooks/useEliteBenchmarkForAthlete';
 import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 import { cn } from '@/lib/utils';
+import {
+  NormativeSheet, SportSheet, ClinicSheet, RegionSheet, SymmetrySheet,
+} from './ComparisonDetailSheet';
 import { toast } from 'sonner';
 
 type TabKey = 'overview' | 'comparisons' | 'history';
