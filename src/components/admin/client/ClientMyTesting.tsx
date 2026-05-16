@@ -416,6 +416,11 @@ const ComparisonCard = ({
           </div>
         </div>
       )}
+
+      <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
+        <span className="uppercase tracking-[0.18em]">View details</span>
+        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      </div>
     </CardContent>
   </Card>
 );
