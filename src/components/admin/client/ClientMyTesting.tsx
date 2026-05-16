@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Activity, ArrowUpRight, ArrowDownRight, Minus,
   CalendarClock, ChevronRight, Hourglass, Trophy, Users,
-  MapPin, Globe, Scale, Dumbbell, Star, Flame,
+  MapPin, Globe, Scale, Dumbbell, Star, Flame, Lock,
 } from 'lucide-react';
 
 /** Count-up hook for premium numeric reveal. */
