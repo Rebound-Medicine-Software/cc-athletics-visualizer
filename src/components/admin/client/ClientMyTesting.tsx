@@ -362,7 +362,7 @@ const RankBadge = ({ rank, total }: { rank: number | null; total: number }) => {
 };
 
 const ComparisonCard = ({
-  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default',
+  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen,
 }: {
   icon: any;
   label: string;
@@ -373,12 +373,16 @@ const ComparisonCard = ({
   topValue: number | null;
   unit: string;
   tone?: 'default' | 'gold' | 'electric';
+  onOpen?: () => void;
 }) => (
-  <Card className={cn(
-    'card-premium rounded-3xl border-0',
-    tone === 'gold' && 'card-glow',
-    tone === 'electric' && 'card-electric',
-  )}>
+  <Card
+    onClick={onOpen}
+    className={cn(
+      'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99]',
+      tone === 'gold' && 'card-glow',
+      tone === 'electric' && 'card-electric',
+    )}
+  >
     <CardContent className="p-4">
       <div className="flex items-start gap-3">
         <div className={cn(
