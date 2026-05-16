@@ -365,7 +365,7 @@ const RankBadge = ({ rank, total }: { rank: number | null; total: number }) => {
 };
 
 const ComparisonCard = ({
-  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen,
+  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen, locked = false, lockedHint,
 }: {
   icon: any;
   label: string;
@@ -377,35 +377,51 @@ const ComparisonCard = ({
   unit: string;
   tone?: 'default' | 'gold' | 'electric';
   onOpen?: () => void;
+  locked?: boolean;
+  lockedHint?: string;
 }) => (
   <Card
     onClick={onOpen}
     className={cn(
-      'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99]',
-      tone === 'gold' && 'card-glow',
-      tone === 'electric' && 'card-electric',
+      'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99] relative overflow-hidden',
+      tone === 'gold' && !locked && 'card-glow',
+      tone === 'electric' && !locked && 'card-electric',
+      locked && 'opacity-[0.82]',
     )}
   >
     <CardContent className="p-4">
       <div className="flex items-start gap-3">
         <div className={cn(
-          'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0',
+          'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 relative',
+          locked ? 'bg-white/[0.04] text-muted-foreground' :
           tone === 'gold' ? 'bg-primary/15 text-primary' :
           tone === 'electric' ? 'bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]' :
           'bg-muted/40 text-muted-foreground',
         )}>
           <Icon className="h-5 w-5" />
+          {locked && (
+            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[hsl(210_50%_5%)] border border-white/15 flex items-center justify-center">
+              <Lock className="h-2.5 w-2.5 text-muted-foreground" />
+            </span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-            {label}
+          <div className="flex items-center gap-2">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold truncate">
+              {label}
+            </div>
+            {locked && (
+              <span className="text-[8.5px] uppercase tracking-[0.16em] font-bold text-muted-foreground/80 bg-white/5 px-1.5 py-0.5 rounded shrink-0">
+                Locked
+              </span>
+            )}
           </div>
           <div className="text-sm font-semibold truncate mt-0.5">{sub}</div>
         </div>
-        <RankBadge rank={rank} total={total} />
+        {!locked && <RankBadge rank={rank} total={total} />}
       </div>
 
-      {(yourValue != null || topValue != null) && (
+      {!locked && (yourValue != null || topValue != null) && (
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-xl surface-2 px-3 py-2">
             <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">You</div>
@@ -424,8 +440,16 @@ const ComparisonCard = ({
         </div>
       )}
 
+      {locked && lockedHint && (
+        <p className="mt-3 text-[11.5px] text-muted-foreground leading-snug">
+          {lockedHint}
+        </p>
+      )}
+
       <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
-        <span className="uppercase tracking-[0.18em]">View details</span>
+        <span className="uppercase tracking-[0.18em]">
+          {locked ? 'See what unlocks this' : 'View details'}
+        </span>
         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </div>
     </CardContent>
