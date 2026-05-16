@@ -84,27 +84,38 @@ const Segmented = ({
   value: TabKey;
   onChange: (v: TabKey) => void;
   items: { key: TabKey; label: string }[];
-}) => (
-  <div className="glass rounded-2xl p-1 grid grid-cols-3 gap-1 sticky top-[64px] z-20">
-    {items.map((it) => {
-      const active = it.key === value;
-      return (
-        <button
-          key={it.key}
-          onClick={() => onChange(it.key)}
-          className={cn(
-            'h-9 rounded-xl text-xs font-semibold tracking-wide transition-all',
-            active
-              ? 'bg-primary text-primary-foreground shadow-[0_8px_22px_-12px_hsl(var(--primary)/0.7)]'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {it.label}
-        </button>
-      );
-    })}
-  </div>
-);
+}) => {
+  const activeIdx = Math.max(0, items.findIndex((i) => i.key === value));
+  return (
+    <div className="card-premium rounded-2xl p-1 relative overflow-hidden">
+      <div
+        className="absolute top-1 bottom-1 rounded-xl bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] shadow-[0_8px_22px_-12px_hsl(var(--athlete-green)/0.7)]"
+        style={{
+          width: `calc((100% - 0.5rem) / ${items.length})`,
+          left: `calc(0.25rem + ${activeIdx} * ((100% - 0.5rem) / ${items.length}))`,
+          transition: 'left 360ms cubic-bezier(0.22,1,0.36,1)',
+        }}
+      />
+      <div className="relative grid" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
+        {items.map((it) => {
+          const active = it.key === value;
+          return (
+            <button
+              key={it.key}
+              onClick={() => onChange(it.key)}
+              className={cn(
+                'h-9 rounded-xl text-[12px] font-bold tracking-wide transition-colors duration-300 z-[1]',
+                active ? 'text-[hsl(210_50%_5%)]' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const TrendChip = ({
   changePct, isImprovement,
