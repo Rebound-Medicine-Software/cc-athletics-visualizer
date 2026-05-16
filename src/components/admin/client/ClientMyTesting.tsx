@@ -510,10 +510,18 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
     ? Math.max(1, Math.min(99, Math.round((eliteValue - yourValue) / eliteValue * 100)))
     : null;
 
+  const sportName = eliteRow?.sport ?? sports?.[0] ?? null;
+
+  const normativeReady = !!global && global.totalAthletes > 0 && global.yourValue != null;
+  const sportReady = !!eliteRow && eliteValue != null && yourValue != null;
+  const clubReady = !!club && club.totalAthletes > 0 && club.yourValue != null;
+  const regionReady = !!region && region.totalAthletes > 0 && region.yourValue != null;
+  const symmetryReady = !!symmetry;
+
   if (isLoading) {
     return (
       <div className="space-y-3 animate-fade-in">
-        {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-3xl" />)}
+        {[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 rounded-3xl" />)}
       </div>
     );
   }
@@ -527,95 +535,119 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         <span className="text-[10px] text-muted-foreground">CMJ Jump Height</span>
       </div>
 
-      {/* Sport (elite normative) */}
-      {eliteRow && eliteValue != null && yourValue != null && (
-        <ComparisonCard
-          icon={Trophy}
-          label="Sport benchmark"
-          sub={`Elite ${eliteRow.sport} reference`}
-          rank={eliteRankPct}
-          total={100}
-          yourValue={yourValue}
-          topValue={eliteValue}
-          unit="cm"
-          tone="gold"
-          onOpen={() => setOpenSheet('sport')}
-        />
-      )}
+      {/* 1. Broad Athletic Population (Normative) */}
+      <ComparisonCard
+        icon={Globe}
+        label="Athletic population"
+        sub={normativeReady ? 'Where you sit on the curve' : 'Percentile vs broad population'}
+        rank={global?.rank ?? null}
+        total={global?.totalAthletes ?? 0}
+        yourValue={global?.yourValue ?? null}
+        topValue={global?.topValue ?? null}
+        unit="cm"
+        onOpen={() => setOpenSheet('normative')}
+        locked={!normativeReady}
+        lockedHint="Complete your first CMJ test to unlock your percentile rank vs the broad athletic population."
+      />
 
-      {/* Club / Team */}
-      {club && (
-        <ComparisonCard
-          icon={Users}
-          label="Your club"
-          sub={teamName ?? 'Club ranking'}
-          rank={club.rank}
-          total={club.totalAthletes}
-          yourValue={club.yourValue}
-          topValue={club.topValue}
-          unit="cm"
-          tone="electric"
-          onOpen={() => setOpenSheet('clinic')}
-        />
-      )}
+      {/* 2. Sport benchmark — radar */}
+      <ComparisonCard
+        icon={Trophy}
+        label="Sport benchmark"
+        sub={sportReady ? `Elite ${eliteRow!.sport} reference` : sportName ? `${sportName} elite profile` : 'Elite sport profile'}
+        rank={eliteRankPct}
+        total={100}
+        yourValue={yourValue}
+        topValue={eliteValue}
+        unit="cm"
+        tone="gold"
+        onOpen={() => setOpenSheet('sport')}
+        locked={!sportReady}
+        lockedHint={
+          !sports?.length
+            ? 'Add your sport in your profile so we can match you to elite benchmark data and reveal your radar profile.'
+            : 'Sport benchmark unavailable. Your practitioner needs to add elite benchmark data for this sport to unlock the radar profile.'
+        }
+      />
 
-      {/* Region */}
-      {region && (
-        <ComparisonCard
-          icon={MapPin}
-          label="Your region"
-          sub="Regional ranking"
-          rank={region.rank}
-          total={region.totalAthletes}
-          yourValue={region.yourValue}
-          topValue={region.topValue}
-          unit="cm"
-          onOpen={() => setOpenSheet('region')}
-        />
-      )}
+      {/* 3. Club / Clinic / Team — bar comparison */}
+      <ComparisonCard
+        icon={Users}
+        label="Your club"
+        sub={clubReady ? (teamName ?? 'Club ranking') : (teamName ?? 'Club / clinic / team')}
+        rank={club?.rank ?? null}
+        total={club?.totalAthletes ?? 0}
+        yourValue={club?.yourValue ?? null}
+        topValue={club?.topValue ?? null}
+        unit="cm"
+        tone="electric"
+        onOpen={() => setOpenSheet('clinic')}
+        locked={!clubReady}
+        lockedHint={
+          !teamName
+            ? 'Once you are linked to a club, you will see your ranking vs teammates.'
+            : 'Comparison unlocks once more teammates have completed this test.'
+        }
+      />
 
-      {/* Global / normative */}
-      {global && (
-        <ComparisonCard
-          icon={Globe}
-          label="Global pool"
-          sub="All athletes worldwide"
-          rank={global.rank}
-          total={global.totalAthletes}
-          yourValue={global.yourValue}
-          topValue={global.topValue}
-          unit="cm"
-          onOpen={() => setOpenSheet('normative')}
-        />
-      )}
+      {/* 4. Region / Country — map */}
+      <ComparisonCard
+        icon={MapPin}
+        label="Region & country"
+        sub={regionReady ? 'Regional ranking' : 'Regional & country ranking'}
+        rank={region?.rank ?? null}
+        total={region?.totalAthletes ?? 0}
+        yourValue={region?.yourValue ?? null}
+        topValue={region?.topValue ?? null}
+        unit="cm"
+        onOpen={() => setOpenSheet('region')}
+        locked={!regionReady}
+        lockedHint="Region ranking unlocks once your test location is tagged and more athletes in your region complete this test."
+      />
 
-      {/* Limb symmetry */}
+      {/* 5. Limb symmetry */}
       <Card
         onClick={() => setOpenSheet('symmetry')}
         className={cn(
           'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99]',
-          symmetry?.balanced && 'card-electric',
+          symmetryReady && symmetry?.balanced && 'card-electric',
+          !symmetryReady && 'opacity-[0.82]',
         )}
       >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] flex items-center justify-center shrink-0">
+            <div className={cn(
+              'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 relative',
+              symmetryReady ? 'bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]' : 'bg-white/[0.04] text-muted-foreground',
+            )}>
               <Scale className="h-5 w-5" />
+              {!symmetryReady && (
+                <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[hsl(210_50%_5%)] border border-white/15 flex items-center justify-center">
+                  <Lock className="h-2.5 w-2.5 text-muted-foreground" />
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-                Limb symmetry
+              <div className="flex items-center gap-2">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+                  Limb symmetry
+                </div>
+                {!symmetryReady && (
+                  <span className="text-[8.5px] uppercase tracking-[0.16em] font-bold text-muted-foreground/80 bg-white/5 px-1.5 py-0.5 rounded">
+                    Locked
+                  </span>
+                )}
               </div>
               <div className="text-sm font-semibold truncate mt-0.5">
                 {symmetry
                   ? symmetry.balanced
                     ? 'Left/right balance is strong'
                     : `${symmetry.diffPct.toFixed(1)}% asymmetry — focus area`
-                  : 'No left/right CMJ data yet'}
+                  : 'Single-leg CMJ left/right balance'}
               </div>
             </div>
           </div>
-          {symmetry && (
+          {symmetryReady && symmetry ? (
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl surface-2 px-3 py-2">
                 <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground font-semibold">Left</div>
@@ -626,21 +658,19 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
                 <div className="text-base font-bold num">{symmetry.R.toFixed(2)}<span className="text-[10px] text-muted-foreground ml-1">cm</span></div>
               </div>
             </div>
+          ) : (
+            <p className="mt-3 text-[11.5px] text-muted-foreground leading-snug">
+              Complete left- and right-side CMJ tests to reveal your limb balance map and asymmetry score.
+            </p>
           )}
           <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
-            <span className="uppercase tracking-[0.18em]">View details</span>
+            <span className="uppercase tracking-[0.18em]">
+              {symmetryReady ? 'View details' : 'See what unlocks this'}
+            </span>
             <ChevronRight className="h-4 w-4" />
           </div>
         </CardContent>
       </Card>
-
-      {!club && !region && !global && (
-        <Card className="card-premium rounded-2xl border-0">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Comparisons unlock after your first test.
-          </CardContent>
-        </Card>
-      )}
 
       {/* Premium detail sheets */}
       <NormativeSheet
