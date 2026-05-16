@@ -822,12 +822,15 @@ export const ClientMyTesting = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      <header className="px-1">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.22em]">
+    <div className="space-y-4 animate-fade-in min-w-0 max-w-full">
+      <header className="px-1 pt-1 min-w-0">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.22em]">
           Performance lab
         </p>
-        <h1 className="text-[clamp(1.85rem,7vw,2.75rem)] font-bold tracking-tight mt-1 leading-[1.05]">
+        <h1
+          className="font-extrabold tracking-[-0.04em] mt-1 leading-[1.05] truncate"
+          style={{ fontSize: 'clamp(22px, 7vw, 28px)' }}
+        >
           Testing
         </h1>
       </header>
