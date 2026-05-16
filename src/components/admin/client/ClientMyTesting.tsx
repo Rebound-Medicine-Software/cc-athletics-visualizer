@@ -72,6 +72,9 @@ import { useClientMetrics, useClientRankings } from './useClientMetrics';
 import { useEliteBenchmarkForAthlete } from '@/hooks/useEliteBenchmarkForAthlete';
 import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 import { cn } from '@/lib/utils';
+import {
+  NormativeSheet, SportSheet, ClinicSheet, RegionSheet, SymmetrySheet,
+} from './ComparisonDetailSheet';
 import { toast } from 'sonner';
 
 type TabKey = 'overview' | 'comparisons' | 'history';
@@ -362,7 +365,7 @@ const RankBadge = ({ rank, total }: { rank: number | null; total: number }) => {
 };
 
 const ComparisonCard = ({
-  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default',
+  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen,
 }: {
   icon: any;
   label: string;
@@ -373,12 +376,16 @@ const ComparisonCard = ({
   topValue: number | null;
   unit: string;
   tone?: 'default' | 'gold' | 'electric';
+  onOpen?: () => void;
 }) => (
-  <Card className={cn(
-    'card-premium rounded-3xl border-0',
-    tone === 'gold' && 'card-glow',
-    tone === 'electric' && 'card-electric',
-  )}>
+  <Card
+    onClick={onOpen}
+    className={cn(
+      'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99]',
+      tone === 'gold' && 'card-glow',
+      tone === 'electric' && 'card-electric',
+    )}
+  >
     <CardContent className="p-4">
       <div className="flex items-start gap-3">
         <div className={cn(
@@ -425,8 +432,11 @@ const ComparisonCard = ({
   </Card>
 );
 
+type SheetKey = 'normative' | 'sport' | 'clinic' | 'region' | 'symmetry' | null;
+
 const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null; teamName: string | null }) => {
   const { data: athlete } = useClientAthlete();
+  const [openSheet, setOpenSheet] = useState<SheetKey>(null);
   const { data: rankings, isLoading } = useClientRankings({
     athleteId: athlete?.id ?? null,
     athleteName,
@@ -505,6 +515,7 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
           topValue={eliteValue}
           unit="cm"
           tone="gold"
+          onOpen={() => setOpenSheet('sport')}
         />
       )}
 
@@ -520,6 +531,7 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
           topValue={club.topValue}
           unit="cm"
           tone="electric"
+          onOpen={() => setOpenSheet('clinic')}
         />
       )}
 
@@ -534,6 +546,7 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
           yourValue={region.yourValue}
           topValue={region.topValue}
           unit="cm"
+          onOpen={() => setOpenSheet('region')}
         />
       )}
 
@@ -548,11 +561,18 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
           yourValue={global.yourValue}
           topValue={global.topValue}
           unit="cm"
+          onOpen={() => setOpenSheet('normative')}
         />
       )}
 
       {/* Limb symmetry */}
-      <Card className={cn('card-premium rounded-3xl border-0', symmetry?.balanced && 'card-electric')}>
+      <Card
+        onClick={() => setOpenSheet('symmetry')}
+        className={cn(
+          'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99]',
+          symmetry?.balanced && 'card-electric',
+        )}
+      >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 rounded-2xl bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] flex items-center justify-center shrink-0">
@@ -583,6 +603,10 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
               </div>
             </div>
           )}
+          <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
+            <span className="uppercase tracking-[0.18em]">View details</span>
+            <ChevronRight className="h-4 w-4" />
+          </div>
         </CardContent>
       </Card>
 
@@ -593,6 +617,46 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
           </CardContent>
         </Card>
       )}
+
+      {/* Premium detail sheets */}
+      <NormativeSheet
+        open={openSheet === 'normative'}
+        onClose={() => setOpenSheet(null)}
+        percentile={global ? Math.max(1, 100 - Math.round((global.rank / Math.max(1, global.totalAthletes)) * 100)) : null}
+        metricLabel="CMJ jump height"
+      />
+      <SportSheet
+        open={openSheet === 'sport'}
+        onClose={() => setOpenSheet(null)}
+        sport={eliteRow?.sport ?? (sports?.[0] ?? null)}
+        level="Pro"
+        rankPct={eliteRankPct}
+        yourValue={yourValue}
+        benchValue={eliteValue}
+        unit="cm"
+      />
+      <ClinicSheet
+        open={openSheet === 'clinic'}
+        onClose={() => setOpenSheet(null)}
+        teamName={teamName}
+        rank={club?.rank ?? null}
+        total={club?.totalAthletes ?? 0}
+        yourValue={club?.yourValue ?? null}
+        topValue={club?.topValue ?? null}
+        unit="cm"
+      />
+      <RegionSheet
+        open={openSheet === 'region'}
+        onClose={() => setOpenSheet(null)}
+        rank={region?.rank ?? null}
+        total={region?.totalAthletes ?? 0}
+      />
+      <SymmetrySheet
+        open={openSheet === 'symmetry'}
+        onClose={() => setOpenSheet(null)}
+        L={symmetry?.L ?? null}
+        R={symmetry?.R ?? null}
+      />
     </div>
   );
 };
