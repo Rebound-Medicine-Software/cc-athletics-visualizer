@@ -429,8 +429,11 @@ const ComparisonCard = ({
   </Card>
 );
 
+type SheetKey = 'normative' | 'sport' | 'clinic' | 'region' | 'symmetry' | null;
+
 const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null; teamName: string | null }) => {
   const { data: athlete } = useClientAthlete();
+  const [openSheet, setOpenSheet] = useState<SheetKey>(null);
   const { data: rankings, isLoading } = useClientRankings({
     athleteId: athlete?.id ?? null,
     athleteName,
