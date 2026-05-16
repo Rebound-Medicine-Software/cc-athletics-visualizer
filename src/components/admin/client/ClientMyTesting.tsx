@@ -184,25 +184,40 @@ const OverviewTab = ({
   const biggestWin = sortedByImprovement.find((m) => m.isImprovement && (m.changePct ?? 0) > 0) ?? null;
   const strongest = (metrics ?? []).find((m) => m.latest) ?? null;
 
+  // Derive a 0–100 performance status — improvement weight + fresh test weight
+  const improvedCount = (metrics ?? []).filter((m: any) => m.isImprovement).length;
+  const totalWithChange = (metrics ?? []).filter((m: any) => m.changePct != null).length;
+  const improvementRatio = totalWithChange > 0 ? improvedCount / totalWithChange : 0.6;
+  const freshness = retestStatus?.due ? 0.5 : retestStatus?.dueSoon ? 0.75 : 1;
+  const perfPct = Math.round(Math.max(28, Math.min(99, 55 + improvementRatio * 35 + (freshness - 0.5) * 10)));
+  const status =
+    perfPct >= 80 ? { label: 'Peak', tone: 'text-[hsl(var(--athlete-green))]' } :
+    perfPct >= 65 ? { label: 'Ready', tone: 'text-[hsl(var(--athlete-cyan))]' } :
+    perfPct >= 50 ? { label: 'Improving', tone: 'text-primary' } :
+    { label: 'Needs Focus', tone: 'text-destructive' };
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Performance status hero */}
       <Card className="card-premium card-glow rounded-3xl border-0 overflow-hidden">
         <CardContent className="p-0">
-          <div className="hero-bg p-5 sm:p-6">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Performance status
+          <div className="hero-bg p-5">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  Performance status
+                </div>
+                <div className={cn('text-[11px] uppercase tracking-[0.2em] font-bold mt-2.5', status.tone)}>
+                  {status.label}
+                </div>
+                <h2 className="mt-1 text-[clamp(1.15rem,5.2vw,1.5rem)] font-bold leading-[1.1] tracking-[-0.02em]">
+                  {biggestWin ? `You're trending up.` : strongest ? `Holding the line.` : `Ready to test.`}
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{sportLabel}</p>
+              </div>
+              <PerformanceArc pct={perfPct} label={status.label} />
             </div>
-
-            <h2 className="mt-3 text-[clamp(1.5rem,5vw,2rem)] font-bold leading-tight">
-              {biggestWin
-                ? `You're trending up.`
-                : strongest
-                  ? `Holding the line.`
-                  : `Ready to test.`}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{sportLabel}</p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-2xl surface-2 px-3 py-2.5">
