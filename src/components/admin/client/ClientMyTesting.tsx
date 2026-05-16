@@ -1,12 +1,68 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Activity, ArrowUpRight, ArrowDownRight, Minus,
   CalendarClock, ChevronRight, Hourglass, Trophy, Users,
-  MapPin, Globe, Scale, Dumbbell, Star,
+  MapPin, Globe, Scale, Dumbbell, Star, Sparkles, Flame, TrendingUp,
 } from 'lucide-react';
+
+/** Count-up hook for premium numeric reveal. */
+const useCountUp = (target: number, duration = 900) => {
+  const [val, setVal] = useState(0);
+  const startRef = useRef<number | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = (t: number) => {
+      if (startRef.current == null) startRef.current = t;
+      const p = Math.min(1, (t - startRef.current) / duration);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    startRef.current = null;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+};
+
+/** Performance status arc — gold→cyan→green sweep, matches Home ring language. */
+const PerformanceArc = ({ pct, label }: { pct: number; label: string }) => {
+  const r = 46;
+  const c = 2 * Math.PI * r;
+  const safe = Math.max(0, Math.min(100, pct));
+  const offset = c * (1 - safe / 100);
+  const animated = useCountUp(safe);
+  return (
+    <div className="relative h-[108px] w-[108px] shrink-0">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <defs>
+          <linearGradient id="perfArc" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="hsl(145 65% 60%)" />
+            <stop offset="55%" stopColor="hsl(192 87% 65%)" />
+            <stop offset="100%" stopColor="hsl(42 65% 56%)" />
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r={r} stroke="hsl(0 0% 100% / 0.06)" strokeWidth="9" fill="none" />
+        <circle
+          cx="60" cy="60" r={r}
+          stroke="url(#perfArc)" strokeWidth="9" strokeLinecap="round" fill="none"
+          strokeDasharray={c} strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="num-hero text-[30px] leading-none">{Math.round(animated)}</div>
+        <div className="text-[8px] mt-1 uppercase tracking-[0.2em] text-[hsl(var(--athlete-green))] font-bold">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+};
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
