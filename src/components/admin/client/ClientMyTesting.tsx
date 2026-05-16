@@ -1,12 +1,68 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Activity, ArrowUpRight, ArrowDownRight, Minus,
   CalendarClock, ChevronRight, Hourglass, Trophy, Users,
-  MapPin, Globe, Scale, Dumbbell, Star,
+  MapPin, Globe, Scale, Dumbbell, Star, Flame,
 } from 'lucide-react';
+
+/** Count-up hook for premium numeric reveal. */
+const useCountUp = (target: number, duration = 900) => {
+  const [val, setVal] = useState(0);
+  const startRef = useRef<number | null>(null);
+  useEffect(() => {
+    let raf = 0;
+    const tick = (t: number) => {
+      if (startRef.current == null) startRef.current = t;
+      const p = Math.min(1, (t - startRef.current) / duration);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(target * eased);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    startRef.current = null;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+};
+
+/** Performance status arc — gold→cyan→green sweep, matches Home ring language. */
+const PerformanceArc = ({ pct, label }: { pct: number; label: string }) => {
+  const r = 46;
+  const c = 2 * Math.PI * r;
+  const safe = Math.max(0, Math.min(100, pct));
+  const offset = c * (1 - safe / 100);
+  const animated = useCountUp(safe);
+  return (
+    <div className="relative h-[108px] w-[108px] shrink-0">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <defs>
+          <linearGradient id="perfArc" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="hsl(145 65% 60%)" />
+            <stop offset="55%" stopColor="hsl(192 87% 65%)" />
+            <stop offset="100%" stopColor="hsl(42 65% 56%)" />
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r={r} stroke="hsl(0 0% 100% / 0.06)" strokeWidth="9" fill="none" />
+        <circle
+          cx="60" cy="60" r={r}
+          stroke="url(#perfArc)" strokeWidth="9" strokeLinecap="round" fill="none"
+          strokeDasharray={c} strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="num-hero text-[30px] leading-none">{Math.round(animated)}</div>
+        <div className="text-[8px] mt-1 uppercase tracking-[0.2em] text-[hsl(var(--athlete-green))] font-bold">
+          {label}
+        </div>
+      </div>
+    </div>
+  );
+};
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,27 +84,38 @@ const Segmented = ({
   value: TabKey;
   onChange: (v: TabKey) => void;
   items: { key: TabKey; label: string }[];
-}) => (
-  <div className="glass rounded-2xl p-1 grid grid-cols-3 gap-1 sticky top-[64px] z-20">
-    {items.map((it) => {
-      const active = it.key === value;
-      return (
-        <button
-          key={it.key}
-          onClick={() => onChange(it.key)}
-          className={cn(
-            'h-9 rounded-xl text-xs font-semibold tracking-wide transition-all',
-            active
-              ? 'bg-primary text-primary-foreground shadow-[0_8px_22px_-12px_hsl(var(--primary)/0.7)]'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {it.label}
-        </button>
-      );
-    })}
-  </div>
-);
+}) => {
+  const activeIdx = Math.max(0, items.findIndex((i) => i.key === value));
+  return (
+    <div className="card-premium rounded-2xl p-1 relative overflow-hidden">
+      <div
+        className="absolute top-1 bottom-1 rounded-xl bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] shadow-[0_8px_22px_-12px_hsl(var(--athlete-green)/0.7)]"
+        style={{
+          width: `calc((100% - 0.5rem) / ${items.length})`,
+          left: `calc(0.25rem + ${activeIdx} * ((100% - 0.5rem) / ${items.length}))`,
+          transition: 'left 360ms cubic-bezier(0.22,1,0.36,1)',
+        }}
+      />
+      <div className="relative grid" style={{ gridTemplateColumns: `repeat(${items.length}, 1fr)` }}>
+        {items.map((it) => {
+          const active = it.key === value;
+          return (
+            <button
+              key={it.key}
+              onClick={() => onChange(it.key)}
+              className={cn(
+                'h-9 rounded-xl text-[12px] font-bold tracking-wide transition-colors duration-300 z-[1]',
+                active ? 'text-[hsl(210_50%_5%)]' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {it.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const TrendChip = ({
   changePct, isImprovement,
@@ -117,25 +184,40 @@ const OverviewTab = ({
   const biggestWin = sortedByImprovement.find((m) => m.isImprovement && (m.changePct ?? 0) > 0) ?? null;
   const strongest = (metrics ?? []).find((m) => m.latest) ?? null;
 
+  // Derive a 0–100 performance status — improvement weight + fresh test weight
+  const improvedCount = (metrics ?? []).filter((m: any) => m.isImprovement).length;
+  const totalWithChange = (metrics ?? []).filter((m: any) => m.changePct != null).length;
+  const improvementRatio = totalWithChange > 0 ? improvedCount / totalWithChange : 0.6;
+  const freshness = retestStatus?.due ? 0.5 : retestStatus?.dueSoon ? 0.75 : 1;
+  const perfPct = Math.round(Math.max(28, Math.min(99, 55 + improvementRatio * 35 + (freshness - 0.5) * 10)));
+  const status =
+    perfPct >= 80 ? { label: 'Peak', tone: 'text-[hsl(var(--athlete-green))]' } :
+    perfPct >= 65 ? { label: 'Ready', tone: 'text-[hsl(var(--athlete-cyan))]' } :
+    perfPct >= 50 ? { label: 'Improving', tone: 'text-primary' } :
+    { label: 'Needs Focus', tone: 'text-destructive' };
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Performance status hero */}
       <Card className="card-premium card-glow rounded-3xl border-0 overflow-hidden">
         <CardContent className="p-0">
-          <div className="hero-bg p-5 sm:p-6">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              Performance status
+          <div className="hero-bg p-5">
+            <div className="flex items-start gap-4 min-w-0">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-primary font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  Performance status
+                </div>
+                <div className={cn('text-[11px] uppercase tracking-[0.2em] font-bold mt-2.5', status.tone)}>
+                  {status.label}
+                </div>
+                <h2 className="mt-1 text-[clamp(1.15rem,5.2vw,1.5rem)] font-bold leading-[1.1] tracking-[-0.02em]">
+                  {biggestWin ? `You're trending up.` : strongest ? `Holding the line.` : `Ready to test.`}
+                </h2>
+                <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{sportLabel}</p>
+              </div>
+              <PerformanceArc pct={perfPct} label={status.label} />
             </div>
-
-            <h2 className="mt-3 text-[clamp(1.5rem,5vw,2rem)] font-bold leading-tight">
-              {biggestWin
-                ? `You're trending up.`
-                : strongest
-                  ? `Holding the line.`
-                  : `Ready to test.`}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">{sportLabel}</p>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
               <div className="rounded-2xl surface-2 px-3 py-2.5">
@@ -334,6 +416,11 @@ const ComparisonCard = ({
           </div>
         </div>
       )}
+
+      <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
+        <span className="uppercase tracking-[0.18em]">View details</span>
+        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      </div>
     </CardContent>
   </Card>
 );
@@ -586,6 +673,10 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
           ? ((s.metrics.cmj - prev.metrics.cmj) / Math.abs(prev.metrics.cmj)) * 100
           : null;
         const isLatest = idx === 0;
+        // Personal best in CMJ across the timeline
+        const isPB = s.metrics.cmj != null &&
+          sessions.every((o, i) => i === idx || o.metrics.cmj == null || o.metrics.cmj <= s.metrics.cmj!);
+        const isImproving = cmjDelta != null && cmjDelta > 0.5;
         return (
           <Card key={s.date} className={cn(
             'card-premium rounded-3xl border-0 relative overflow-hidden',
@@ -595,9 +686,11 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
               <div className="flex items-start gap-3">
                 <div className={cn(
                   'h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 font-bold num',
-                  isLatest ? 'bg-primary/15 text-primary' : 'bg-muted/40 text-muted-foreground',
+                  isLatest ? 'bg-primary/15 text-primary' :
+                  isPB ? 'bg-[hsl(var(--athlete-green)/0.15)] text-[hsl(var(--athlete-green))]' :
+                  'bg-muted/40 text-muted-foreground',
                 )}>
-                  {isLatest ? <Star className="h-5 w-5" /> : <Dumbbell className="h-5 w-5" />}
+                  {isLatest ? <Star className="h-5 w-5" /> : isPB ? <Trophy className="h-5 w-5" /> : <Dumbbell className="h-5 w-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -615,6 +708,21 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
                     {s.tests.length} test{s.tests.length === 1 ? '' : 's'} · {s.tests.slice(0, 2).join(' · ')}
                     {s.tests.length > 2 ? ` +${s.tests.length - 2}` : ''}
                   </p>
+                  {/* Achievement chips */}
+                  {(isPB || isImproving) && (
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      {isPB && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--athlete-green)/0.14)] text-[hsl(var(--athlete-green))] px-2 py-0.5 text-[10px] font-bold">
+                          <Trophy className="h-3 w-3" /> Personal best
+                        </span>
+                      )}
+                      {isImproving && !isPB && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2 py-0.5 text-[10px] font-bold">
+                          <Flame className="h-3 w-3" /> Improving
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {(s.metrics.cmj != null || s.metrics.imtp != null) && (
                     <div className="mt-2.5 flex gap-2 flex-wrap">
                       {s.metrics.cmj != null && (
@@ -714,12 +822,15 @@ export const ClientMyTesting = () => {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      <header className="px-1">
-        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.22em]">
+    <div className="space-y-4 animate-fade-in min-w-0 max-w-full">
+      <header className="px-1 pt-1 min-w-0">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.22em]">
           Performance lab
         </p>
-        <h1 className="text-[clamp(1.85rem,7vw,2.75rem)] font-bold tracking-tight mt-1 leading-[1.05]">
+        <h1
+          className="font-extrabold tracking-[-0.04em] mt-1 leading-[1.05] truncate"
+          style={{ fontSize: 'clamp(22px, 7vw, 28px)' }}
+        >
           Testing
         </h1>
       </header>
