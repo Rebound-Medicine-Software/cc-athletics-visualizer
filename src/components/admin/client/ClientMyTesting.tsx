@@ -673,6 +673,10 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
           ? ((s.metrics.cmj - prev.metrics.cmj) / Math.abs(prev.metrics.cmj)) * 100
           : null;
         const isLatest = idx === 0;
+        // Personal best in CMJ across the timeline
+        const isPB = s.metrics.cmj != null &&
+          sessions.every((o, i) => i === idx || o.metrics.cmj == null || o.metrics.cmj <= s.metrics.cmj!);
+        const isImproving = cmjDelta != null && cmjDelta > 0.5;
         return (
           <Card key={s.date} className={cn(
             'card-premium rounded-3xl border-0 relative overflow-hidden',
@@ -682,9 +686,11 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
               <div className="flex items-start gap-3">
                 <div className={cn(
                   'h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 font-bold num',
-                  isLatest ? 'bg-primary/15 text-primary' : 'bg-muted/40 text-muted-foreground',
+                  isLatest ? 'bg-primary/15 text-primary' :
+                  isPB ? 'bg-[hsl(var(--athlete-green)/0.15)] text-[hsl(var(--athlete-green))]' :
+                  'bg-muted/40 text-muted-foreground',
                 )}>
-                  {isLatest ? <Star className="h-5 w-5" /> : <Dumbbell className="h-5 w-5" />}
+                  {isLatest ? <Star className="h-5 w-5" /> : isPB ? <Trophy className="h-5 w-5" /> : <Dumbbell className="h-5 w-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -702,6 +708,21 @@ const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
                     {s.tests.length} test{s.tests.length === 1 ? '' : 's'} · {s.tests.slice(0, 2).join(' · ')}
                     {s.tests.length > 2 ? ` +${s.tests.length - 2}` : ''}
                   </p>
+                  {/* Achievement chips */}
+                  {(isPB || isImproving) && (
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      {isPB && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--athlete-green)/0.14)] text-[hsl(var(--athlete-green))] px-2 py-0.5 text-[10px] font-bold">
+                          <Trophy className="h-3 w-3" /> Personal best
+                        </span>
+                      )}
+                      {isImproving && !isPB && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] px-2 py-0.5 text-[10px] font-bold">
+                          <Flame className="h-3 w-3" /> Improving
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {(s.metrics.cmj != null || s.metrics.imtp != null) && (
                     <div className="mt-2.5 flex gap-2 flex-wrap">
                       {s.metrics.cmj != null && (
