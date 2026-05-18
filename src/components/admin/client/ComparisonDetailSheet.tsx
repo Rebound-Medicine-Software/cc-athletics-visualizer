@@ -469,7 +469,21 @@ export const SportSheet = ({ open, onClose, sport, level, rankPct, yourValue, be
       title={`Vs ${sport ?? 'sport'} athletes`}
       subtitle={`${level} reference profile across the core performance qualities.`}>
       {yourValue == null || benchValue == null ? (
-        <Empty msg="Not enough sport benchmark data yet. Your practitioner will add benchmark data soon." />
+        <LockedState
+          what={`See where you sit against elite ${sport ?? 'sport'} athletes across power, speed, symmetry, explosive, strength and mobility.`}
+          why={
+            sport
+              ? `No matching elite benchmark data exists for ${sport} yet, so we can't build your radar profile.`
+              : `Your sport isn't tagged on your athlete profile yet, so we can't match you to an elite benchmark.`
+          }
+          needs={[
+            sport ? `Your sport tag is set (${sport})` : 'Add your sport in your athlete profile',
+            `Elite benchmark row for ${sport ?? 'your sport'} in the Elite Athlete Data table`,
+            'At least one of your test metrics that matches a benchmark metric',
+          ]}
+          actor={sport ? 'practitioner' : 'athlete'}
+          ctaLabel={sport ? 'Ask practitioner to add benchmark' : 'Add your sport to unlock'}
+        />
       ) : (
         <>
           <Hero value={rankPct ?? 50} suffix="%" label={`Top ${rankPct ?? '—'}% • ${sport ?? 'Sport'} — ${level}`} tone="gold" />
