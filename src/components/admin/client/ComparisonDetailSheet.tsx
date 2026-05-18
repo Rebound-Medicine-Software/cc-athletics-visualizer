@@ -645,7 +645,17 @@ export const RegionSheet = ({ open, onClose, rank, total }: {
       title="Vs your region"
       subtitle="How you compare to other athletes in your country and region.">
       {regionPct == null ? (
-        <Empty msg="Regional comparison unlocks once more athletes in your region have results." />
+        <LockedState
+          what="See how you compare to other athletes in your country and region, plotted on a geographic benchmark."
+          why="Your latest test isn't tagged with a region, or not enough nearby athletes have completed this test yet."
+          needs={[
+            'Test session tagged with a country / region on capture',
+            'At least 3 other athletes in your region with the same test',
+            'A recent personal result for the same metric',
+          ]}
+          actor="practitioner"
+          ctaLabel="Request region tagging on next test"
+        />
       ) : (
         <>
           <Hero value={countryPct ?? regionPct} suffix="%" label={`Top ${countryPct}% in country`} tone="green" />
