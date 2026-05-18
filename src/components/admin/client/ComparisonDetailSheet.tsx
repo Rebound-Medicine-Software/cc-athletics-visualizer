@@ -558,7 +558,21 @@ export const ClinicSheet = ({ open, onClose, teamName, rank, total, yourValue, t
       title={teamName ? `Vs ${teamName}` : 'Vs your team'}
       subtitle="How you stack against your team average and top performers.">
       {yourValue == null || topValue == null || avg == null ? (
-        <Empty msg="Not enough team data yet. Comparisons unlock once your team has more results." />
+        <LockedState
+          what={`See how you stack against your ${teamName ? teamName + ' ' : ''}teammates — average, top 10% and your position in the squad.`}
+          why={
+            teamName
+              ? `Your team only has a small data set for this test, so a ranking would not be meaningful yet.`
+              : `You are not linked to a club or team yet, so we have no squad to compare you against.`
+          }
+          needs={[
+            teamName ? `You are linked to a team (${teamName})` : 'Get linked to a club or team',
+            'At least 3 teammates with results on the same test',
+            'A recent personal result for the same metric',
+          ]}
+          actor={teamName ? 'practitioner' : 'admin'}
+          ctaLabel={teamName ? 'More teammate results needed' : 'Ask admin to link your team'}
+        />
       ) : (
         <>
           <Hero value={pct ?? 50} suffix="%" label={`Top ${pct ?? '—'}% of ${total} teammates`} tone="cyan" />
