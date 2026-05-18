@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowUpRight, Sparkles, Target, ChevronRight } from 'lucide-react';
+import { X, ArrowUpRight, Sparkles, Target, ChevronRight, Lock, Check, UserCog, Stethoscope, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
