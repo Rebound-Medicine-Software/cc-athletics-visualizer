@@ -550,7 +550,7 @@ export const ClientPrograms = () => {
   const { data: logs = [] } = useClientCompletionLogs(active?.id ?? null);
   const { data: metrics } = useClientMetrics({
     athleteId: athlete?.id ?? null,
-    athleteName: athlete?.athlete_name ?? null,
+    athleteName: athlete?.name ?? null,
     teamName: null,
   });
 
