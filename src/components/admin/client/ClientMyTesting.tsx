@@ -592,7 +592,9 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         unit="cm"
         onOpen={() => setOpenSheet('normative')}
         locked={!normativeReady}
-        lockedHint="Complete your first CMJ test to unlock your percentile rank vs the broad athletic population."
+        lockedHint="Complete a CMJ test to plot your percentile on the population curve."
+        lockedNeeds={['CMJ test on file', 'Synced to profile']}
+        lockedActor="athlete"
       />
 
       {/* 2. Sport benchmark — radar */}
@@ -610,9 +612,15 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         locked={!sportReady}
         lockedHint={
           !sports?.length
-            ? 'Add your sport in your profile so we can match you to elite benchmark data and reveal your radar profile.'
-            : 'Sport benchmark unavailable. Your practitioner needs to add elite benchmark data for this sport to unlock the radar profile.'
+            ? 'Tag your sport so we can match you to elite benchmark data.'
+            : `No elite benchmark on file for ${sportName ?? 'this sport'} yet.`
         }
+        lockedNeeds={
+          !sports?.length
+            ? ['Sport tag', 'Elite benchmark row']
+            : ['Elite benchmark row', 'Matching metrics']
+        }
+        lockedActor={sports?.length ? 'practitioner' : 'athlete'}
       />
 
       {/* 3. Club / Clinic / Team — bar comparison */}
@@ -630,9 +638,15 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         locked={!clubReady}
         lockedHint={
           !teamName
-            ? 'Once you are linked to a club, you will see your ranking vs teammates.'
-            : 'Comparison unlocks once more teammates have completed this test.'
+            ? 'Get linked to a club to see your ranking vs teammates.'
+            : 'Unlocks once more teammates complete this test.'
         }
+        lockedNeeds={
+          !teamName
+            ? ['Team link', '3+ teammates']
+            : ['3+ teammate results', 'Recent personal result']
+        }
+        lockedActor={teamName ? 'practitioner' : 'admin'}
       />
 
       {/* 4. Region / Country — map */}
@@ -647,7 +661,9 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         unit="cm"
         onOpen={() => setOpenSheet('region')}
         locked={!regionReady}
-        lockedHint="Region ranking unlocks once your test location is tagged and more athletes in your region complete this test."
+        lockedHint="Tag your test location and add more athletes in your region to unlock."
+        lockedNeeds={['Region tag on test', '3+ regional athletes']}
+        lockedActor="practitioner"
       />
 
       {/* 5. Limb symmetry */}
