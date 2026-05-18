@@ -741,7 +741,17 @@ export const SymmetrySheet = ({ open, onClose, L, R }: {
       title="Limb symmetry"
       subtitle="Side-to-side balance between your left and right lower limbs.">
       {sym == null || L == null || R == null ? (
-        <Empty msg="Complete a left- and right-side jump test to unlock symmetry analysis." />
+        <LockedState
+          what="See your left vs right limb balance on a premium body map, with a symmetry score and focus side."
+          why="We need both a left-side and right-side single-leg CMJ on file to calculate your symmetry."
+          needs={[
+            'One Left-Side Countermovement Jump test result',
+            'One Right-Side Countermovement Jump test result',
+            'Tests captured within the same training block (for relevance)',
+          ]}
+          actor="athlete"
+          ctaLabel="Complete L/R CMJ to unlock"
+        />
       ) : (
         <>
           <Hero value={sym} suffix="%" label={sym >= 90 ? 'Excellent balance' : sym >= 80 ? 'Good balance' : 'Needs focus'} tone="green" />
