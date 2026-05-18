@@ -364,8 +364,15 @@ const RankBadge = ({ rank, total }: { rank: number | null; total: number }) => {
   );
 };
 
+const ACTOR_LABEL: Record<UnlockActor, string> = {
+  athlete: 'You',
+  practitioner: 'Practitioner',
+  admin: 'Org admin',
+};
+
 const ComparisonCard = ({
-  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen, locked = false, lockedHint,
+  icon: Icon, label, sub, rank, total, yourValue, topValue, unit, tone = 'default', onOpen,
+  locked = false, lockedHint, lockedNeeds, lockedActor,
 }: {
   icon: any;
   label: string;
@@ -379,6 +386,8 @@ const ComparisonCard = ({
   onOpen?: () => void;
   locked?: boolean;
   lockedHint?: string;
+  lockedNeeds?: string[];
+  lockedActor?: UnlockActor;
 }) => (
   <Card
     onClick={onOpen}
@@ -386,10 +395,20 @@ const ComparisonCard = ({
       'card-premium rounded-3xl border-0 cursor-pointer transition-transform active:scale-[0.99] relative overflow-hidden',
       tone === 'gold' && !locked && 'card-glow',
       tone === 'electric' && !locked && 'card-electric',
-      locked && 'opacity-[0.82]',
+      locked && 'opacity-[0.92]',
     )}
   >
-    <CardContent className="p-4">
+    {locked && (
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-50"
+        style={{
+          background:
+            'radial-gradient(120% 60% at 100% 0%, hsl(42 65% 56% / 0.07), transparent 60%)',
+        }}
+      />
+    )}
+    <CardContent className="p-4 relative">
       <div className="flex items-start gap-3">
         <div className={cn(
           'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 relative',
@@ -400,8 +419,8 @@ const ComparisonCard = ({
         )}>
           <Icon className="h-5 w-5" />
           {locked && (
-            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[hsl(210_50%_5%)] border border-white/15 flex items-center justify-center">
-              <Lock className="h-2.5 w-2.5 text-muted-foreground" />
+            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-[hsl(210_50%_5%)] border border-primary/30 flex items-center justify-center">
+              <Lock className="h-2.5 w-2.5 text-primary/80" />
             </span>
           )}
         </div>
@@ -411,8 +430,8 @@ const ComparisonCard = ({
               {label}
             </div>
             {locked && (
-              <span className="text-[8.5px] uppercase tracking-[0.16em] font-bold text-muted-foreground/80 bg-white/5 px-1.5 py-0.5 rounded shrink-0">
-                Locked
+              <span className="text-[8.5px] uppercase tracking-[0.16em] font-bold text-primary/90 bg-primary/10 border border-primary/25 px-1.5 py-0.5 rounded shrink-0">
+                Data needed
               </span>
             )}
           </div>
@@ -440,15 +459,41 @@ const ComparisonCard = ({
         </div>
       )}
 
-      {locked && lockedHint && (
-        <p className="mt-3 text-[11.5px] text-muted-foreground leading-snug">
-          {lockedHint}
-        </p>
+      {locked && (lockedHint || lockedNeeds?.length) && (
+        <div className="mt-3 space-y-2">
+          {lockedHint && (
+            <p className="text-[11.5px] text-muted-foreground leading-snug">
+              {lockedHint}
+            </p>
+          )}
+          {lockedNeeds && lockedNeeds.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {lockedNeeds.slice(0, 2).map((n) => (
+                <span
+                  key={n}
+                  className="text-[9.5px] uppercase tracking-[0.14em] font-semibold text-muted-foreground/90 bg-white/[0.04] border border-white/10 rounded-full px-2 py-0.5"
+                >
+                  {n}
+                </span>
+              ))}
+              {lockedNeeds.length > 2 && (
+                <span className="text-[9.5px] uppercase tracking-[0.14em] font-semibold text-muted-foreground/70 px-1">
+                  +{lockedNeeds.length - 2} more
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors group cursor-pointer">
-        <span className="uppercase tracking-[0.18em]">
+        <span className="uppercase tracking-[0.18em] flex items-center gap-2">
           {locked ? 'See what unlocks this' : 'View details'}
+          {locked && lockedActor && (
+            <span className="text-primary/80 normal-case tracking-normal text-[10px]">
+              · {ACTOR_LABEL[lockedActor]}
+            </span>
+          )}
         </span>
         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </div>
