@@ -216,6 +216,100 @@ const Empty = ({ msg }: { msg: string }) => (
 );
 
 /* ──────────────────────────────────────────────────────────── */
+/* LockedState — premium "data needed" UX                       */
+/* ──────────────────────────────────────────────────────────── */
+
+export type UnlockActor = 'athlete' | 'practitioner' | 'admin';
+
+const ACTOR_META: Record<UnlockActor, { icon: any; label: string }> = {
+  athlete:      { icon: User,        label: 'You can unlock this' },
+  practitioner: { icon: Stethoscope, label: 'Your practitioner can unlock this' },
+  admin:        { icon: UserCog,     label: 'Org admin can unlock this' },
+};
+
+export const LockedState = ({
+  what, why, needs, actor, ctaLabel = 'Coming soon',
+}: {
+  what: string;
+  why: string;
+  needs: string[];
+  actor: UnlockActor;
+  ctaLabel?: string;
+}) => {
+  const ActorIcon = ACTOR_META[actor].icon;
+  return (
+    <div className="space-y-3 animate-fade-in">
+      {/* Hero — luxe muted */}
+      <div className="rounded-3xl card-premium p-5 text-center relative overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-50 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(70% 100% at 50% 0%, hsl(42 65% 56% / 0.10), transparent 70%)',
+          }}
+        />
+        <div className="relative">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 border border-primary/20">
+            <Lock className="h-6 w-6" />
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-primary">
+            Data needed
+          </div>
+          <p className="text-[13px] text-foreground/85 mt-2 leading-snug max-w-[280px] mx-auto">
+            {what}
+          </p>
+        </div>
+      </div>
+
+      {/* Why */}
+      <Section title="Why it's locked">
+        <div className="rounded-2xl card-premium p-4 text-[13px] leading-snug text-foreground/85">
+          {why}
+        </div>
+      </Section>
+
+      {/* Needs checklist */}
+      <Section title="What's needed">
+        <div className="rounded-2xl card-premium p-4 space-y-2.5">
+          {needs.map((n) => (
+            <div key={n} className="flex items-start gap-3">
+              <div className="mt-0.5 h-5 w-5 rounded-full border border-primary/40 bg-primary/10 flex items-center justify-center shrink-0">
+                <Check className="h-3 w-3 text-primary/80" />
+              </div>
+              <span className="text-[13px] leading-snug text-foreground/85">{n}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Who unlocks */}
+      <div className="rounded-2xl card-premium p-4 flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] flex items-center justify-center shrink-0">
+          <ActorIcon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground">
+            Next step
+          </div>
+          <p className="text-[13px] mt-0.5 leading-snug">{ACTOR_META[actor].label}</p>
+        </div>
+      </div>
+
+      {/* Soft CTA — muted, not action-promising */}
+      <button
+        type="button"
+        disabled
+        className="w-full h-12 rounded-2xl border border-primary/30 bg-primary/5 text-primary/80 font-bold text-[12px] tracking-[0.18em] uppercase cursor-default flex items-center justify-center gap-2"
+      >
+        <Lock className="h-3.5 w-3.5" />
+        {ctaLabel}
+      </button>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────────────────────── */
 /* A) NORMATIVE / GEN POP — percentile distribution curve       */
 /* ──────────────────────────────────────────────────────────── */
 
