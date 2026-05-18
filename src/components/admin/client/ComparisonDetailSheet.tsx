@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ArrowUpRight, Sparkles, Target, ChevronRight } from 'lucide-react';
+import { X, ArrowUpRight, Sparkles, Target, ChevronRight, Lock, Check, UserCog, Stethoscope, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -216,6 +216,100 @@ const Empty = ({ msg }: { msg: string }) => (
 );
 
 /* ──────────────────────────────────────────────────────────── */
+/* LockedState — premium "data needed" UX                       */
+/* ──────────────────────────────────────────────────────────── */
+
+export type UnlockActor = 'athlete' | 'practitioner' | 'admin';
+
+const ACTOR_META: Record<UnlockActor, { icon: any; label: string }> = {
+  athlete:      { icon: User,        label: 'You can unlock this' },
+  practitioner: { icon: Stethoscope, label: 'Your practitioner can unlock this' },
+  admin:        { icon: UserCog,     label: 'Org admin can unlock this' },
+};
+
+export const LockedState = ({
+  what, why, needs, actor, ctaLabel = 'Coming soon',
+}: {
+  what: string;
+  why: string;
+  needs: string[];
+  actor: UnlockActor;
+  ctaLabel?: string;
+}) => {
+  const ActorIcon = ACTOR_META[actor].icon;
+  return (
+    <div className="space-y-3 animate-fade-in">
+      {/* Hero — luxe muted */}
+      <div className="rounded-3xl card-premium p-5 text-center relative overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 opacity-50 pointer-events-none"
+          style={{
+            background:
+              'radial-gradient(70% 100% at 50% 0%, hsl(42 65% 56% / 0.10), transparent 70%)',
+          }}
+        />
+        <div className="relative">
+          <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-3 border border-primary/20">
+            <Lock className="h-6 w-6" />
+          </div>
+          <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-primary">
+            Data needed
+          </div>
+          <p className="text-[13px] text-foreground/85 mt-2 leading-snug max-w-[280px] mx-auto">
+            {what}
+          </p>
+        </div>
+      </div>
+
+      {/* Why */}
+      <Section title="Why it's locked">
+        <div className="rounded-2xl card-premium p-4 text-[13px] leading-snug text-foreground/85">
+          {why}
+        </div>
+      </Section>
+
+      {/* Needs checklist */}
+      <Section title="What's needed">
+        <div className="rounded-2xl card-premium p-4 space-y-2.5">
+          {needs.map((n) => (
+            <div key={n} className="flex items-start gap-3">
+              <div className="mt-0.5 h-5 w-5 rounded-full border border-primary/40 bg-primary/10 flex items-center justify-center shrink-0">
+                <Check className="h-3 w-3 text-primary/80" />
+              </div>
+              <span className="text-[13px] leading-snug text-foreground/85">{n}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {/* Who unlocks */}
+      <div className="rounded-2xl card-premium p-4 flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))] flex items-center justify-center shrink-0">
+          <ActorIcon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.18em] font-bold text-muted-foreground">
+            Next step
+          </div>
+          <p className="text-[13px] mt-0.5 leading-snug">{ACTOR_META[actor].label}</p>
+        </div>
+      </div>
+
+      {/* Soft CTA — muted, not action-promising */}
+      <button
+        type="button"
+        disabled
+        className="w-full h-12 rounded-2xl border border-primary/30 bg-primary/5 text-primary/80 font-bold text-[12px] tracking-[0.18em] uppercase cursor-default flex items-center justify-center gap-2"
+      >
+        <Lock className="h-3.5 w-3.5" />
+        {ctaLabel}
+      </button>
+    </div>
+  );
+};
+
+/* ──────────────────────────────────────────────────────────── */
 /* A) NORMATIVE / GEN POP — percentile distribution curve       */
 /* ──────────────────────────────────────────────────────────── */
 
@@ -268,7 +362,16 @@ export const NormativeSheet = ({ open, onClose, percentile, metricLabel }: {
       title="Vs general population"
       subtitle={`How your ${metricLabel} compares to a broad athletic population.`}>
       {percentile == null ? (
-        <Empty msg="Not enough benchmark data yet. Complete another test to unlock this comparison." />
+        <LockedState
+          what="See your percentile rank against a broad athletic population, plotted on the distribution curve."
+          why="We don't yet have a recent CMJ result on file for you, so we can't position you on the curve."
+          needs={[
+            'At least one completed Countermovement Jump test',
+            'Test results synced to your athlete profile',
+          ]}
+          actor="athlete"
+          ctaLabel="Complete a CMJ test to unlock"
+        />
       ) : (
         <>
           <Hero value={p} suffix="th" label={`${tier} • Percentile rank`} tone="cyan" />
@@ -366,7 +469,21 @@ export const SportSheet = ({ open, onClose, sport, level, rankPct, yourValue, be
       title={`Vs ${sport ?? 'sport'} athletes`}
       subtitle={`${level} reference profile across the core performance qualities.`}>
       {yourValue == null || benchValue == null ? (
-        <Empty msg="Not enough sport benchmark data yet. Your practitioner will add benchmark data soon." />
+        <LockedState
+          what={`See where you sit against elite ${sport ?? 'sport'} athletes across power, speed, symmetry, explosive, strength and mobility.`}
+          why={
+            sport
+              ? `No matching elite benchmark data exists for ${sport} yet, so we can't build your radar profile.`
+              : `Your sport isn't tagged on your athlete profile yet, so we can't match you to an elite benchmark.`
+          }
+          needs={[
+            sport ? `Your sport tag is set (${sport})` : 'Add your sport in your athlete profile',
+            `Elite benchmark row for ${sport ?? 'your sport'} in the Elite Athlete Data table`,
+            'At least one of your test metrics that matches a benchmark metric',
+          ]}
+          actor={sport ? 'practitioner' : 'athlete'}
+          ctaLabel={sport ? 'Ask practitioner to add benchmark' : 'Add your sport to unlock'}
+        />
       ) : (
         <>
           <Hero value={rankPct ?? 50} suffix="%" label={`Top ${rankPct ?? '—'}% • ${sport ?? 'Sport'} — ${level}`} tone="gold" />
@@ -441,7 +558,21 @@ export const ClinicSheet = ({ open, onClose, teamName, rank, total, yourValue, t
       title={teamName ? `Vs ${teamName}` : 'Vs your team'}
       subtitle="How you stack against your team average and top performers.">
       {yourValue == null || topValue == null || avg == null ? (
-        <Empty msg="Not enough team data yet. Comparisons unlock once your team has more results." />
+        <LockedState
+          what={`See how you stack against your ${teamName ? teamName + ' ' : ''}teammates — average, top 10% and your position in the squad.`}
+          why={
+            teamName
+              ? `Your team only has a small data set for this test, so a ranking would not be meaningful yet.`
+              : `You are not linked to a club or team yet, so we have no squad to compare you against.`
+          }
+          needs={[
+            teamName ? `You are linked to a team (${teamName})` : 'Get linked to a club or team',
+            'At least 3 teammates with results on the same test',
+            'A recent personal result for the same metric',
+          ]}
+          actor={teamName ? 'practitioner' : 'admin'}
+          ctaLabel={teamName ? 'More teammate results needed' : 'Ask admin to link your team'}
+        />
       ) : (
         <>
           <Hero value={pct ?? 50} suffix="%" label={`Top ${pct ?? '—'}% of ${total} teammates`} tone="cyan" />
@@ -514,7 +645,17 @@ export const RegionSheet = ({ open, onClose, rank, total }: {
       title="Vs your region"
       subtitle="How you compare to other athletes in your country and region.">
       {regionPct == null ? (
-        <Empty msg="Regional comparison unlocks once more athletes in your region have results." />
+        <LockedState
+          what="See how you compare to other athletes in your country and region, plotted on a geographic benchmark."
+          why="Your latest test isn't tagged with a region, or not enough nearby athletes have completed this test yet."
+          needs={[
+            'Test session tagged with a country / region on capture',
+            'At least 3 other athletes in your region with the same test',
+            'A recent personal result for the same metric',
+          ]}
+          actor="practitioner"
+          ctaLabel="Request region tagging on next test"
+        />
       ) : (
         <>
           <Hero value={countryPct ?? regionPct} suffix="%" label={`Top ${countryPct}% in country`} tone="green" />
@@ -600,7 +741,17 @@ export const SymmetrySheet = ({ open, onClose, L, R }: {
       title="Limb symmetry"
       subtitle="Side-to-side balance between your left and right lower limbs.">
       {sym == null || L == null || R == null ? (
-        <Empty msg="Complete a left- and right-side jump test to unlock symmetry analysis." />
+        <LockedState
+          what="See your left vs right limb balance on a premium body map, with a symmetry score and focus side."
+          why="We need both a left-side and right-side single-leg CMJ on file to calculate your symmetry."
+          needs={[
+            'One Left-Side Countermovement Jump test result',
+            'One Right-Side Countermovement Jump test result',
+            'Tests captured within the same training block (for relevance)',
+          ]}
+          actor="athlete"
+          ctaLabel="Complete L/R CMJ to unlock"
+        />
       ) : (
         <>
           <Hero value={sym} suffix="%" label={sym >= 90 ? 'Excellent balance' : sym >= 80 ? 'Good balance' : 'Needs focus'} tone="green" />
