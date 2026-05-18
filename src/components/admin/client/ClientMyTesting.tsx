@@ -73,7 +73,7 @@ import { useEliteBenchmarkForAthlete } from '@/hooks/useEliteBenchmarkForAthlete
 import { sportComparisonLabel } from '@/lib/sports/comparisonContext';
 import { cn } from '@/lib/utils';
 import {
-  NormativeSheet, SportSheet, ClinicSheet, RegionSheet, SymmetrySheet,
+  NormativeSheet, SportSheet, ClinicSheet, RegionSheet, SymmetrySheet, UnlockActor,
 } from './ComparisonDetailSheet';
 import { toast } from 'sonner';
 
