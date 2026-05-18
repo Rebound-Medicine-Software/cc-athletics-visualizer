@@ -362,7 +362,16 @@ export const NormativeSheet = ({ open, onClose, percentile, metricLabel }: {
       title="Vs general population"
       subtitle={`How your ${metricLabel} compares to a broad athletic population.`}>
       {percentile == null ? (
-        <Empty msg="Not enough benchmark data yet. Complete another test to unlock this comparison." />
+        <LockedState
+          what="See your percentile rank against a broad athletic population, plotted on the distribution curve."
+          why="We don't yet have a recent CMJ result on file for you, so we can't position you on the curve."
+          needs={[
+            'At least one completed Countermovement Jump test',
+            'Test results synced to your athlete profile',
+          ]}
+          actor="athlete"
+          ctaLabel="Complete a CMJ test to unlock"
+        />
       ) : (
         <>
           <Hero value={p} suffix="th" label={`${tier} • Percentile rank`} tone="cyan" />
