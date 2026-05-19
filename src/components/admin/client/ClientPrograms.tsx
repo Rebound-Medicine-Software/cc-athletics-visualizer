@@ -999,15 +999,26 @@ export const ClientPrograms = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Completion logging dialog */}
+      {/* Premium exercise logging sheet */}
       {active && athlete && (
-        <ClientLogCompletionDialog
-          open={logOpen}
-          onOpenChange={setLogOpen}
+        <ClientExerciseSheet
+          open={exerciseSheetOpen}
+          onOpenChange={setExerciseSheetOpen}
           assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
           athleteId={athlete.id}
           exercise={selectedExercise}
+          readOnly={isViewAs}
+        />
+      )}
+      {/* Premium session feedback sheet */}
+      {active && athlete && (
+        <ClientSessionFeedbackSheet
+          open={sessionSheetOpen}
+          onOpenChange={setSessionSheetOpen}
+          assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+          athleteId={athlete.id}
           session={selectedSessionForLog}
+          exerciseCount={detailSession?.exercises?.length}
         />
       )}
     </div>
