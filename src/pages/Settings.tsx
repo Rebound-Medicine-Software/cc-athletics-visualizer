@@ -81,6 +81,7 @@ const GROUPS: Group[] = [
       { id: "staff-credentials", label: "Staff Credentials", description: "Practitioner accounts and access." },
       { id: "athlete-credentials", label: "Athlete Credentials", description: "Athlete login credentials." },
       { id: "athlete-linking", label: "Account Linking", description: "Link athletes to client accounts." },
+      { id: "athlete-duplicates", label: "Duplicate Athletes", description: "Find & resolve duplicate athlete records." },
     ],
   },
   {
