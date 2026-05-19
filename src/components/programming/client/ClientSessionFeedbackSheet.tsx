@@ -49,6 +49,7 @@ export const ClientSessionFeedbackSheet = ({
   athleteId,
   session,
   exerciseCount,
+  existingLog,
 }: Props) => {
   const [rpe, setRpe] = useState(7);
   const [pain, setPain] = useState(0);
@@ -58,13 +59,21 @@ export const ClientSessionFeedbackSheet = ({
 
   useEffect(() => {
     if (open) {
-      setRpe(7);
-      setPain(0);
-      setFeeling('Solid');
-      setNotes('');
+      if (existingLog) {
+        setRpe(existingLog.rpe != null ? Number(existingLog.rpe) : 7);
+        const parsed = parseSessionMeta(existingLog.notes);
+        setFeeling(parsed.feeling);
+        setPain(parsed.pain);
+        setNotes(parsed.clean);
+      } else {
+        setRpe(7);
+        setPain(0);
+        setFeeling('Solid');
+        setNotes('');
+      }
       setDone(false);
     }
-  }, [open, session?.id]);
+  }, [open, session?.id, existingLog?.id]);
 
   const mut = useClientLogCompletion();
   if (!session) return null;
