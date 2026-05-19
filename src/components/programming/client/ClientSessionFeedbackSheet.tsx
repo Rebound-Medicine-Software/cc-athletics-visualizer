@@ -23,7 +23,24 @@ interface Props {
   athleteId: string;
   session: { id: string; name: string } | null;
   exerciseCount?: number;
+  existingLog?: any | null;
 }
+
+const parseSessionMeta = (raw: string | null | undefined): {
+  feeling: Feeling;
+  pain: number;
+  clean: string;
+} => {
+  if (!raw) return { feeling: 'Solid', pain: 0, clean: '' };
+  const feelMatch = raw.match(/Feeling:\s*(Strong|Solid|Average|Tired|Beat up)/i);
+  const painMatch = raw.match(/Pain\s+(\d+)\/10/i);
+  const feeling = (feelMatch?.[1] as Feeling) ?? 'Solid';
+  const pain = painMatch ? Number(painMatch[1]) : 0;
+  const clean = raw.includes(' — ')
+    ? raw.split(' — ').slice(1).join(' — ').trim()
+    : (feelMatch || painMatch ? '' : raw);
+  return { feeling, pain: Number.isFinite(pain) ? pain : 0, clean };
+};
 
 export const ClientSessionFeedbackSheet = ({
   open,
