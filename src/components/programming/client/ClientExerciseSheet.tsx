@@ -39,7 +39,21 @@ interface Props {
   athleteId: string;
   exercise: PrescribedExercise | null;
   readOnly?: boolean;
+  existingLog?: any | null;
 }
+
+const parsePainFromNotes = (raw: string | null | undefined): { pain: number; clean: string } => {
+  if (!raw) return { pain: 0, clean: '' };
+  // Look for "Pain N/10" anywhere; remove only that token and " — " joiner if present.
+  const match = raw.match(/Pain\s+(\d+)\/10/i);
+  if (!match) return { pain: 0, clean: raw };
+  const pain = Number(match[1]);
+  // Strip the meta prefix produced by the sheet, leaving athlete-typed notes.
+  const cleaned = raw
+    .replace(/^.*?(?: — |$)/, (m) => (m.includes('Pain') ? '' : m))
+    .trim();
+  return { pain: Number.isFinite(pain) ? pain : 0, clean: cleaned };
+};
 
 const StatCard = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
   <div
