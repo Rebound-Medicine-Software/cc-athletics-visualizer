@@ -10,7 +10,8 @@ import { useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { useClientAthlete } from './useClientAthlete';
 import { useClientAssignments, useClientCompletionLogs } from './useClientAssignments';
 import { useTemplateStructure } from '../assignments/useAssignments';
-import { ClientLogCompletionDialog } from './ClientLogCompletionDialog';
+import { ClientExerciseSheet } from './ClientExerciseSheet';
+import { ClientSessionFeedbackSheet } from './ClientSessionFeedbackSheet';
 import type { ExerciseOverride } from '../assignments/types';
 import { computeAdherence } from '../assignments/adherence';
 import { AdherencePanel } from '../assignments/AdherencePanel';
@@ -149,7 +150,7 @@ export const ClientPrograms = () => {
   };
   const openSessionLog = (s: any) => {
     setSelectedExercise(null);
-    setSelectedSession(s ? { id: s.id, name: s.name } : null);
+    setSelectedSession(s ? { id: s.id, name: s.name, exerciseCount: s.exercises?.length ?? 0 } : null);
     setLogOpen(true);
   };
 
@@ -238,7 +239,8 @@ export const ClientPrograms = () => {
                 </div>
                 {variant === 'today' && (
                   <Button size="sm" variant="ghost" disabled={isViewAs}
-                    onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
+                    onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', category: lib.category, video_url: lib.video_url, instructions: lib.instructions, primary_muscles: lib.primary_muscles, equipment: lib.equipment, sets: m.sets, reps: m.reps, load: m.load, rpe: m.rpe, rest_seconds: m.rest_seconds, tempo: m.tempo, notes: m.notes })}>
+
                     <CheckCircle2 className="mr-1 h-4 w-4" /> Log
                   </Button>
                 )}
@@ -389,7 +391,7 @@ export const ClientPrograms = () => {
                                   <PrescriptionChips m={m} />
                                 </div>
                                 <Button size="sm" variant="ghost" disabled={isViewAs}
-                                  onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
+                                  onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', category: lib.category, video_url: lib.video_url, instructions: lib.instructions, primary_muscles: lib.primary_muscles, equipment: lib.equipment, sets: m.sets, reps: m.reps, load: m.load, rpe: m.rpe, rest_seconds: m.rest_seconds, tempo: m.tempo, notes: m.notes })}>
                                   <CheckCircle2 className="mr-1 h-4 w-4" /> Log
                                 </Button>
                               </div>
@@ -471,14 +473,24 @@ export const ClientPrograms = () => {
       )}
 
       {active && athlete && (
-        <ClientLogCompletionDialog
-          open={logOpen}
-          onOpenChange={setLogOpen}
-          assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
-          athleteId={athlete.id}
-          exercise={selectedExercise}
-          session={selectedSession}
-        />
+        <>
+          <ClientExerciseSheet
+            open={logOpen && !!selectedExercise}
+            onOpenChange={(o) => { if (!o) setLogOpen(false); }}
+            assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+            athleteId={athlete.id}
+            exercise={selectedExercise}
+            readOnly={isViewAs}
+          />
+          <ClientSessionFeedbackSheet
+            open={logOpen && !!selectedSession && !selectedExercise}
+            onOpenChange={(o) => { if (!o) setLogOpen(false); }}
+            assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+            athleteId={athlete.id}
+            session={selectedSession}
+            exerciseCount={selectedSession?.exerciseCount}
+          />
+        </>
       )}
     </div>
   );
