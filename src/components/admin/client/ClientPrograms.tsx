@@ -1049,6 +1049,14 @@ export const ClientPrograms = () => {
         onStartExercise={openLogForExercise}
         onLogSession={() => openLogForSession(detailSession)}
         isViewAs={isViewAs}
+        logs={logs as any[]}
+        sessionLogged={
+          !!detailSession &&
+          !!findExistingLog(logs as any[], {
+            exerciseId: null,
+            sessionId: detailSession.id,
+          })
+        }
       />
 
       {/* Why this session sheet */}
@@ -1084,6 +1092,14 @@ export const ClientPrograms = () => {
           athleteId={athlete.id}
           exercise={selectedExercise}
           readOnly={isViewAs}
+          existingLog={
+            selectedExercise
+              ? findExistingLog(logs as any[], {
+                  exerciseId: selectedExercise.id,
+                  sessionId: selectedExercise.sessionId ?? null,
+                })
+              : null
+          }
         />
       )}
       {/* Premium session feedback sheet */}
@@ -1095,8 +1111,17 @@ export const ClientPrograms = () => {
           athleteId={athlete.id}
           session={selectedSessionForLog}
           exerciseCount={detailSession?.exercises?.length}
+          existingLog={
+            selectedSessionForLog
+              ? findExistingLog(logs as any[], {
+                  exerciseId: null,
+                  sessionId: selectedSessionForLog.id,
+                })
+              : null
+          }
         />
       )}
+
     </div>
   );
 };
