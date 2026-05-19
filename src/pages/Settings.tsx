@@ -150,6 +150,7 @@ const SettingsInner = () => {
       case "staff-credentials": return <StaffCredentialsTab />;
       case "athlete-credentials": return <AthleteCredentialsTab />;
       case "athlete-linking": return <AthleteAccountLinkingTab />;
+      case "athlete-duplicates": return <AthleteDuplicatesPanel />;
       case "data-housing": return <DataHousingTab />;
       case "tier-management": return <TierManagementTab />;
     }
