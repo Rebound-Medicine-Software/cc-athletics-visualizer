@@ -625,12 +625,12 @@ export const ClientPrograms = () => {
     setDetailOpen(false);
     setSelectedExercise(null);
     setSelectedSessionForLog(s ? { id: s.id, name: s.name } : null);
-    setLogOpen(true);
+    setSessionSheetOpen(true);
   };
   const openLogForExercise = (ex: any) => {
     setSelectedSessionForLog(null);
     setSelectedExercise(ex);
-    setLogOpen(true);
+    setExerciseSheetOpen(true);
   };
 
   /* ───── loading & empty ───── */
