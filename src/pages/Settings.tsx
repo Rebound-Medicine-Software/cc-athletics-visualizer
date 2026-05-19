@@ -40,6 +40,7 @@ type SectionId =
   | "athlete-credentials"
   | "athlete-linking"
   | "data-housing"
+  | "athlete-duplicates"
   | "tier-management";
 
 type Group = {
