@@ -128,6 +128,7 @@ export const ClientExerciseSheet = ({
   athleteId,
   exercise,
   readOnly,
+  existingLog,
 }: Props) => {
   const today = new Date().toISOString().slice(0, 10);
   const [sets, setSets] = useState('');
@@ -140,15 +141,25 @@ export const ClientExerciseSheet = ({
 
   useEffect(() => {
     if (open && exercise) {
-      setSets(exercise.sets ? String(exercise.sets) : '');
-      setReps(exercise.reps ?? '');
-      setLoad(exercise.load ?? '');
-      setRpe(exercise.rpe ?? 7);
-      setPain(0);
-      setNotes('');
+      if (existingLog) {
+        setSets(existingLog.sets_completed != null ? String(existingLog.sets_completed) : (exercise.sets ? String(exercise.sets) : ''));
+        setReps(existingLog.reps_completed ?? exercise.reps ?? '');
+        setLoad(existingLog.load_used ?? exercise.load ?? '');
+        setRpe(existingLog.rpe != null ? Number(existingLog.rpe) : (exercise.rpe ?? 7));
+        const parsed = parsePainFromNotes(existingLog.notes);
+        setPain(parsed.pain);
+        setNotes(parsed.clean ?? '');
+      } else {
+        setSets(exercise.sets ? String(exercise.sets) : '');
+        setReps(exercise.reps ?? '');
+        setLoad(exercise.load ?? '');
+        setRpe(exercise.rpe ?? 7);
+        setPain(0);
+        setNotes('');
+      }
       setJustLogged(false);
     }
-  }, [open, exercise?.id]);
+  }, [open, exercise?.id, existingLog?.id]);
 
   const mut = useClientLogCompletion();
   const embed = useMemo(() => (exercise?.video_url ? toEmbedUrl(exercise.video_url) : null), [exercise?.video_url]);
