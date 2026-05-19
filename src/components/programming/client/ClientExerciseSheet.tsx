@@ -403,12 +403,12 @@ export const ClientExerciseSheet = ({
                 >
                   {justLogged ? (
                     <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" /> Exercise logged
+                      <CheckCircle2 className="h-5 w-5 mr-2" /> {existingLog ? 'Feedback updated' : 'Exercise logged'}
                     </>
                   ) : mut.isPending ? (
                     'Saving…'
                   ) : (
-                    'Log exercise'
+                    existingLog ? 'Update feedback' : 'Log exercise'
                   )}
                 </Button>
               </div>
