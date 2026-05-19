@@ -252,7 +252,7 @@ export const useTemplateStructure = (templateId: string | null) => {
         if (exIds.length) {
           const { data: lib } = await supabase
             .from('exercises')
-            .select('id, name, category')
+            .select('id, name, category, video_url, instructions, primary_muscles, equipment')
             .in('id', exIds);
           library = Object.fromEntries((lib ?? []).map((x) => [x.id, x]));
         }
