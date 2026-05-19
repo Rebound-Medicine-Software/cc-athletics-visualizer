@@ -19,7 +19,8 @@ import {
   useClientAssignments, useClientCompletionLogs,
 } from '@/components/programming/client/useClientAssignments';
 import { useTemplateStructure } from '@/components/programming/assignments/useAssignments';
-import { ClientLogCompletionDialog } from '@/components/programming/client/ClientLogCompletionDialog';
+import { ClientExerciseSheet } from '@/components/programming/client/ClientExerciseSheet';
+import { ClientSessionFeedbackSheet } from '@/components/programming/client/ClientSessionFeedbackSheet';
 import { computeAdherence } from '@/components/programming/assignments/adherence';
 import { useClientMetrics } from './useClientMetrics';
 import { getSessionVisual } from './sessionVisuals';
