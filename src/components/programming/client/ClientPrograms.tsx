@@ -150,7 +150,7 @@ export const ClientPrograms = () => {
   };
   const openSessionLog = (s: any) => {
     setSelectedExercise(null);
-    setSelectedSession(s ? { id: s.id, name: s.name } : null);
+    setSelectedSession(s ? { id: s.id, name: s.name, exerciseCount: s.exercises?.length ?? 0 } : null);
     setLogOpen(true);
   };
 
