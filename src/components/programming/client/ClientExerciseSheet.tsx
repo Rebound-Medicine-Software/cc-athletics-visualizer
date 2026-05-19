@@ -39,7 +39,21 @@ interface Props {
   athleteId: string;
   exercise: PrescribedExercise | null;
   readOnly?: boolean;
+  existingLog?: any | null;
 }
+
+const parsePainFromNotes = (raw: string | null | undefined): { pain: number; clean: string } => {
+  if (!raw) return { pain: 0, clean: '' };
+  // Look for "Pain N/10" anywhere; remove only that token and " — " joiner if present.
+  const match = raw.match(/Pain\s+(\d+)\/10/i);
+  if (!match) return { pain: 0, clean: raw };
+  const pain = Number(match[1]);
+  // Strip the meta prefix produced by the sheet, leaving athlete-typed notes.
+  const cleaned = raw
+    .replace(/^.*?(?: — |$)/, (m) => (m.includes('Pain') ? '' : m))
+    .trim();
+  return { pain: Number.isFinite(pain) ? pain : 0, clean: cleaned };
+};
 
 const StatCard = ({ label, value, accent }: { label: string; value: string; accent?: boolean }) => (
   <div
@@ -114,6 +128,7 @@ export const ClientExerciseSheet = ({
   athleteId,
   exercise,
   readOnly,
+  existingLog,
 }: Props) => {
   const today = new Date().toISOString().slice(0, 10);
   const [sets, setSets] = useState('');
@@ -126,15 +141,25 @@ export const ClientExerciseSheet = ({
 
   useEffect(() => {
     if (open && exercise) {
-      setSets(exercise.sets ? String(exercise.sets) : '');
-      setReps(exercise.reps ?? '');
-      setLoad(exercise.load ?? '');
-      setRpe(exercise.rpe ?? 7);
-      setPain(0);
-      setNotes('');
+      if (existingLog) {
+        setSets(existingLog.sets_completed != null ? String(existingLog.sets_completed) : (exercise.sets ? String(exercise.sets) : ''));
+        setReps(existingLog.reps_completed ?? exercise.reps ?? '');
+        setLoad(existingLog.load_used ?? exercise.load ?? '');
+        setRpe(existingLog.rpe != null ? Number(existingLog.rpe) : (exercise.rpe ?? 7));
+        const parsed = parsePainFromNotes(existingLog.notes);
+        setPain(parsed.pain);
+        setNotes(parsed.clean ?? '');
+      } else {
+        setSets(exercise.sets ? String(exercise.sets) : '');
+        setReps(exercise.reps ?? '');
+        setLoad(exercise.load ?? '');
+        setRpe(exercise.rpe ?? 7);
+        setPain(0);
+        setNotes('');
+      }
       setJustLogged(false);
     }
-  }, [open, exercise?.id]);
+  }, [open, exercise?.id, existingLog?.id]);
 
   const mut = useClientLogCompletion();
   const embed = useMemo(() => (exercise?.video_url ? toEmbedUrl(exercise.video_url) : null), [exercise?.video_url]);
@@ -378,12 +403,12 @@ export const ClientExerciseSheet = ({
                 >
                   {justLogged ? (
                     <>
-                      <CheckCircle2 className="h-5 w-5 mr-2" /> Exercise logged
+                      <CheckCircle2 className="h-5 w-5 mr-2" /> {existingLog ? 'Feedback updated' : 'Exercise logged'}
                     </>
                   ) : mut.isPending ? (
                     'Saving…'
                   ) : (
-                    'Log exercise'
+                    existingLog ? 'Update feedback' : 'Log exercise'
                   )}
                 </Button>
               </div>

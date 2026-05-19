@@ -23,7 +23,24 @@ interface Props {
   athleteId: string;
   session: { id: string; name: string } | null;
   exerciseCount?: number;
+  existingLog?: any | null;
 }
+
+const parseSessionMeta = (raw: string | null | undefined): {
+  feeling: Feeling;
+  pain: number;
+  clean: string;
+} => {
+  if (!raw) return { feeling: 'Solid', pain: 0, clean: '' };
+  const feelMatch = raw.match(/Feeling:\s*(Strong|Solid|Average|Tired|Beat up)/i);
+  const painMatch = raw.match(/Pain\s+(\d+)\/10/i);
+  const feeling = (feelMatch?.[1] as Feeling) ?? 'Solid';
+  const pain = painMatch ? Number(painMatch[1]) : 0;
+  const clean = raw.includes(' — ')
+    ? raw.split(' — ').slice(1).join(' — ').trim()
+    : (feelMatch || painMatch ? '' : raw);
+  return { feeling, pain: Number.isFinite(pain) ? pain : 0, clean };
+};
 
 export const ClientSessionFeedbackSheet = ({
   open,
@@ -32,6 +49,7 @@ export const ClientSessionFeedbackSheet = ({
   athleteId,
   session,
   exerciseCount,
+  existingLog,
 }: Props) => {
   const [rpe, setRpe] = useState(7);
   const [pain, setPain] = useState(0);
@@ -41,13 +59,21 @@ export const ClientSessionFeedbackSheet = ({
 
   useEffect(() => {
     if (open) {
-      setRpe(7);
-      setPain(0);
-      setFeeling('Solid');
-      setNotes('');
+      if (existingLog) {
+        setRpe(existingLog.rpe != null ? Number(existingLog.rpe) : 7);
+        const parsed = parseSessionMeta(existingLog.notes);
+        setFeeling(parsed.feeling);
+        setPain(parsed.pain);
+        setNotes(parsed.clean);
+      } else {
+        setRpe(7);
+        setPain(0);
+        setFeeling('Solid');
+        setNotes('');
+      }
       setDone(false);
     }
-  }, [open, session?.id]);
+  }, [open, session?.id, existingLog?.id]);
 
   const mut = useClientLogCompletion();
   if (!session) return null;
@@ -170,12 +196,12 @@ export const ClientSessionFeedbackSheet = ({
             >
               {done ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 mr-2" /> Session marked complete
+                  <CheckCircle2 className="h-5 w-5 mr-2" /> {existingLog ? 'Feedback updated' : 'Session marked complete'}
                 </>
               ) : mut.isPending ? (
                 'Saving…'
               ) : (
-                'Mark session complete'
+                existingLog ? 'Update session feedback' : 'Mark session complete'
               )}
             </Button>
           </div>

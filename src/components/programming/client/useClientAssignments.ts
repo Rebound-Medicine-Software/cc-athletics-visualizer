@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
 import { toast } from 'sonner';
 import type { CompletionLogInput } from '../assignments/types';
 
@@ -63,66 +62,107 @@ export const useClientCompletionLogs = (assignmentId: string | null) => {
         .eq('assignment_id', assignmentId!)
         .order('performed_on', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return data ?? [];
     },
   });
 };
 
-/* ---------------- Client log completion ---------------- */
+/* ---------------- Client log completion (upsert) ---------------- */
 
 export const useClientLogCompletion = () => {
   const qc = useQueryClient();
-  const { teamId } = useEffectiveTeamId();
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (
       input: CompletionLogInput & { athleteId: string; assignmentTeamId: string; assignmentAthleteId: string }
     ) => {
-      // Defensive: ensure the assignment belongs to this client's athlete record.
       if (input.assignmentAthleteId !== input.athleteId) {
         throw new Error('You can only log completion for your own programme.');
       }
-      const { data, error } = await supabase
+
+      // Find an existing log for this assignment/exercise|session/date to update.
+      let query = supabase
         .from('programme_completion_logs')
-        .insert({
-          team_id: input.assignmentTeamId,
-          assignment_id: input.assignmentId,
-          programming_exercise_id: input.programmingExerciseId ?? null,
-          programming_session_id: input.programmingSessionId ?? null,
-          performed_on: input.performedOn,
-          sets_completed: input.setsCompleted ?? null,
-          reps_completed: input.repsCompleted ?? null,
-          load_used: input.loadUsed ?? null,
-          rpe: input.rpe ?? null,
-          notes: input.notes ?? null,
-          logged_by: user?.id ?? null,
-        })
         .select('id')
+        .eq('assignment_id', input.assignmentId)
+        .eq('performed_on', input.performedOn);
+
+      if (input.programmingExerciseId) {
+        query = query.eq('programming_exercise_id', input.programmingExerciseId);
+      } else {
+        query = query.is('programming_exercise_id', null);
+      }
+      if (input.programmingSessionId) {
+        query = query.eq('programming_session_id', input.programmingSessionId);
+      } else {
+        query = query.is('programming_session_id', null);
+      }
+
+      const { data: existing, error: findErr } = await query
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
-      if (error) throw error;
+      if (findErr) throw findErr;
+
+      const payload = {
+        team_id: input.assignmentTeamId,
+        assignment_id: input.assignmentId,
+        programming_exercise_id: input.programmingExerciseId ?? null,
+        programming_session_id: input.programmingSessionId ?? null,
+        performed_on: input.performedOn,
+        sets_completed: input.setsCompleted ?? null,
+        reps_completed: input.repsCompleted ?? null,
+        load_used: input.loadUsed ?? null,
+        rpe: input.rpe ?? null,
+        notes: input.notes ?? null,
+        logged_by: user?.id ?? null,
+      };
+
+      let resultId: string | null = null;
+      let wasUpdate = false;
+      if (existing?.id) {
+        const { data, error } = await supabase
+          .from('programme_completion_logs')
+          .update(payload)
+          .eq('id', existing.id)
+          .select('id')
+          .maybeSingle();
+        if (error) throw error;
+        resultId = data?.id ?? existing.id;
+        wasUpdate = true;
+      } else {
+        const { data, error } = await supabase
+          .from('programme_completion_logs')
+          .insert(payload)
+          .select('id')
+          .maybeSingle();
+        if (error) throw error;
+        resultId = data?.id ?? null;
+      }
+
       await logActivity({
         teamId: input.assignmentTeamId,
         userId: user?.id ?? null,
         athleteId: input.athleteId,
         eventType: input.programmingSessionId && !input.programmingExerciseId
-          ? 'programme_session_completed'
-          : 'programme_client_completion_logged',
+          ? (wasUpdate ? 'programme_session_feedback_updated' : 'programme_session_completed')
+          : (wasUpdate ? 'programme_client_completion_updated' : 'programme_client_completion_logged'),
         metadata: {
           assignment_id: input.assignmentId,
           programming_exercise_id: input.programmingExerciseId ?? null,
           programming_session_id: input.programmingSessionId ?? null,
           performed_on: input.performedOn,
-          log_id: data?.id ?? null,
+          log_id: resultId,
         },
       });
-      return data;
+      return { id: resultId, updated: wasUpdate };
     },
-    onSuccess: (_d, vars) => {
+    onSuccess: (res, vars) => {
       qc.invalidateQueries({ queryKey: ['client-assignment-logs', vars.assignmentId] });
-      toast.success('Session logged');
+      toast.success(res?.updated ? 'Feedback updated' : 'Saved');
     },
-    onError: (err: any) => toast.error(err.message ?? 'Failed to log session'),
+    onError: (err: any) => toast.error(err?.message ?? 'Failed to save. Try again.'),
   });
 };
