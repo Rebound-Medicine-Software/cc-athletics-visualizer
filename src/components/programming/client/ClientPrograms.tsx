@@ -473,14 +473,24 @@ export const ClientPrograms = () => {
       )}
 
       {active && athlete && (
-        <ClientLogCompletionDialog
-          open={logOpen}
-          onOpenChange={setLogOpen}
-          assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
-          athleteId={athlete.id}
-          exercise={selectedExercise}
-          session={selectedSession}
-        />
+        <>
+          <ClientExerciseSheet
+            open={logOpen && !!selectedExercise}
+            onOpenChange={(o) => { if (!o) setLogOpen(false); }}
+            assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+            athleteId={athlete.id}
+            exercise={selectedExercise}
+            readOnly={isViewAs}
+          />
+          <ClientSessionFeedbackSheet
+            open={logOpen && !!selectedSession && !selectedExercise}
+            onOpenChange={(o) => { if (!o) setLogOpen(false); }}
+            assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+            athleteId={athlete.id}
+            session={selectedSession}
+            exerciseCount={selectedSession?.exerciseCount}
+          />
+        </>
       )}
     </div>
   );
