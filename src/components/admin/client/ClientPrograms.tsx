@@ -473,8 +473,28 @@ const SessionDetailSheet = ({
             session.exercises.map((ex: any, idx: number) => {
               const m = merge(ex);
               const lib = structure?.library?.[ex.exercise_id] ?? {};
+              const payload = {
+                id: ex.id,
+                name: lib.name ?? 'Exercise',
+                category: lib.category ?? null,
+                video_url: lib.video_url ?? null,
+                instructions: lib.instructions ?? null,
+                primary_muscles: lib.primary_muscles ?? null,
+                equipment: lib.equipment ?? null,
+                sets: m.sets,
+                reps: m.reps,
+                load: m.load,
+                rpe: m.rpe,
+                rest_seconds: m.rest_seconds,
+                tempo: m.tempo,
+                notes: m.notes,
+              };
               return (
-                <Card key={ex.id} className="card-premium rounded-2xl border-0">
+                <Card
+                  key={ex.id}
+                  onClick={() => !isViewAs && onStartExercise(payload)}
+                  className="card-premium rounded-2xl border-0 cursor-pointer transition active:scale-[0.99] hover:bg-white/[0.02]"
+                >
                   <CardContent className="p-3.5 space-y-2.5">
                     <div className="flex items-start gap-3">
                       <div className="h-9 w-9 rounded-xl bg-[hsl(var(--athlete-green)/0.14)] text-[hsl(var(--athlete-green))] flex items-center justify-center font-bold text-sm num shrink-0">
@@ -489,6 +509,7 @@ const SessionDetailSheet = ({
                           <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{lib.category}</div>
                         )}
                       </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
                     </div>
                     <PrescriptionChips m={m} />
                     {m.notes && (
@@ -499,10 +520,10 @@ const SessionDetailSheet = ({
                     )}
                     <Button
                       size="sm" variant="ghost" disabled={isViewAs}
-                      onClick={() => onStartExercise({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}
+                      onClick={(e) => { e.stopPropagation(); onStartExercise(payload); }}
                       className="w-full justify-between h-9 rounded-xl text-[12px] font-bold"
                     >
-                      Log exercise <ChevronRight className="h-4 w-4" />
+                      View &amp; log exercise <ChevronRight className="h-4 w-4" />
                     </Button>
                   </CardContent>
                 </Card>
