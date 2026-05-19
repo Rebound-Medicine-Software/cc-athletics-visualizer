@@ -431,7 +431,7 @@ const SessionCard = ({
 /* ───────────────────── Session detail sheet ───────────────────── */
 
 const SessionDetailSheet = ({
-  open, onOpenChange, session, structure, overrides, onStartExercise, onLogSession, isViewAs,
+  open, onOpenChange, session, structure, overrides, onStartExercise, onLogSession, isViewAs, logs, sessionLogged,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -441,6 +441,8 @@ const SessionDetailSheet = ({
   onStartExercise: (ex: any) => void;
   onLogSession: () => void;
   isViewAs: boolean;
+  logs: any[];
+  sessionLogged: boolean;
 }) => {
   if (!session) return null;
   const visual = getSessionVisual({ sessionTitle: session.name });
@@ -457,111 +459,145 @@ const SessionDetailSheet = ({
       hasOverride: !!overrides[ex.id],
     };
   };
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="h-[90vh] p-0 rounded-t-[28px] border-0 bg-[hsl(var(--athlete-l1))] overflow-hidden flex flex-col"
-      >
-        <div className="relative h-[160px] shrink-0">
-          <img src={visual.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-[hsl(var(--athlete-l1))]" />
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-white/30" />
-          <SheetHeader className="absolute bottom-3 left-4 right-4 text-left space-y-1">
-            <div className="text-[10px] uppercase tracking-[0.22em] text-white/80 font-bold">
-              {session.block?.name ?? 'Session'} · {session.exercises.length} exercises
-            </div>
-            <SheetTitle className="text-white text-[20px] font-bold leading-tight">{session.name}</SheetTitle>
-          </SheetHeader>
-        </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-24 pt-2 space-y-4">
-          <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-3">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary font-bold">
-              <Lightbulb className="h-3.5 w-3.5" /> Why this session
+  return (
+    <Vaul.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
+      <Vaul.Portal>
+        <Vaul.Overlay className="fixed inset-0 z-[1500] bg-black/70" />
+        <Vaul.Content
+          className="fixed inset-x-0 bottom-0 z-[1500] h-[92vh] rounded-t-[28px] border-0 bg-[hsl(var(--athlete-l1))] overflow-hidden flex flex-col outline-none"
+        >
+          {/* Drag handle (draggable area lives at the top by default in vaul) */}
+          <div className="relative h-[160px] shrink-0">
+            <img src={visual.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-[hsl(var(--athlete-l1))]" />
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 h-1.5 w-12 rounded-full bg-white/40" />
+            <div className="absolute bottom-3 left-4 right-4 text-left space-y-1">
+              <div className="text-[10px] uppercase tracking-[0.22em] text-white/80 font-bold flex items-center gap-2">
+                <span>{session.block?.name ?? 'Session'} · {session.exercises.length} exercises</span>
+                {sessionLogged && (
+                  <span className="rounded-full bg-[hsl(var(--athlete-green)/0.2)] text-[hsl(var(--athlete-green))] border border-[hsl(var(--athlete-green)/0.4)] px-2 py-0.5 text-[9px]">
+                    Completed
+                  </span>
+                )}
+              </div>
+              <Vaul.Title className="text-white text-[20px] font-bold leading-tight">{session.name}</Vaul.Title>
             </div>
-            <p className="text-[13px] font-medium leading-snug mt-1">{visual.blurb}</p>
           </div>
 
-          <SectionLabel>Exercises</SectionLabel>
-          {session.exercises.length === 0 ? (
-            <div className="rounded-2xl card-premium p-5 text-center text-sm text-muted-foreground">
-              No exercises in this session.
+          {/* Scrollable content — vaul auto-detects scroll vs drag */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-28 pt-2 space-y-4" data-vaul-no-drag>
+            <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-3">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-primary font-bold">
+                <Lightbulb className="h-3.5 w-3.5" /> Why this session
+              </div>
+              <p className="text-[13px] font-medium leading-snug mt-1">{visual.blurb}</p>
             </div>
-          ) : (
-            session.exercises.map((ex: any, idx: number) => {
-              const m = merge(ex);
-              const lib = structure?.library?.[ex.exercise_id] ?? {};
-              const payload = {
-                id: ex.id,
-                name: lib.name ?? 'Exercise',
-                category: lib.category ?? null,
-                video_url: lib.video_url ?? null,
-                instructions: lib.instructions ?? null,
-                primary_muscles: lib.primary_muscles ?? null,
-                equipment: lib.equipment ?? null,
-                sets: m.sets,
-                reps: m.reps,
-                load: m.load,
-                rpe: m.rpe,
-                rest_seconds: m.rest_seconds,
-                tempo: m.tempo,
-                notes: m.notes,
-              };
-              return (
-                <Card
-                  key={ex.id}
-                  onClick={() => !isViewAs && onStartExercise(payload)}
-                  className="card-premium rounded-2xl border-0 cursor-pointer transition active:scale-[0.99] hover:bg-white/[0.02]"
-                >
-                  <CardContent className="p-3.5 space-y-2.5">
-                    <div className="flex items-start gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-[hsl(var(--athlete-green)/0.14)] text-[hsl(var(--athlete-green))] flex items-center justify-center font-bold text-sm num shrink-0">
-                        {idx + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <h4 className="text-sm font-bold leading-tight truncate">{lib.name ?? 'Exercise'}</h4>
-                          {m.hasOverride && <Pill tone="gold">Adjusted</Pill>}
-                        </div>
-                        {lib.category && (
-                          <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{lib.category}</div>
-                        )}
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                    </div>
-                    <PrescriptionChips m={m} />
-                    {m.notes && (
-                      <div className="rounded-xl bg-white/[0.04] border border-white/10 px-2.5 py-1.5">
-                        <div className="text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--athlete-cyan))] font-bold mb-0.5">Coach note</div>
-                        <p className="text-[11px] italic text-muted-foreground leading-snug">{m.notes}</p>
-                      </div>
-                    )}
-                    <Button
-                      size="sm" variant="ghost" disabled={isViewAs}
-                      onClick={(e) => { e.stopPropagation(); onStartExercise(payload); }}
-                      className="w-full justify-between h-9 rounded-xl text-[12px] font-bold"
-                    >
-                      View &amp; log exercise <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )}
-        </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[hsl(var(--athlete-l1))] to-transparent">
-          <Button
-            disabled={isViewAs}
-            onClick={onLogSession}
-            className="w-full h-12 rounded-2xl text-sm font-bold bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] text-[hsl(210_50%_5%)] shadow-[0_10px_30px_-12px_hsl(var(--athlete-green)/0.7)]"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark session complete
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+            <SectionLabel>Exercises</SectionLabel>
+            {session.exercises.length === 0 ? (
+              <div className="rounded-2xl card-premium p-5 text-center text-sm text-muted-foreground">
+                No exercises in this session.
+              </div>
+            ) : (
+              session.exercises.map((ex: any, idx: number) => {
+                const m = merge(ex);
+                const lib = structure?.library?.[ex.exercise_id] ?? {};
+                const existing = findExistingLog(logs, {
+                  exerciseId: ex.id,
+                  sessionId: session.id,
+                });
+                const isLogged = !!existing;
+                const payload = {
+                  id: ex.id,
+                  sessionId: session.id,
+                  name: lib.name ?? 'Exercise',
+                  category: lib.category ?? null,
+                  video_url: lib.video_url ?? null,
+                  instructions: lib.instructions ?? null,
+                  primary_muscles: lib.primary_muscles ?? null,
+                  equipment: lib.equipment ?? null,
+                  sets: m.sets,
+                  reps: m.reps,
+                  load: m.load,
+                  rpe: m.rpe,
+                  rest_seconds: m.rest_seconds,
+                  tempo: m.tempo,
+                  notes: m.notes,
+                };
+                return (
+                  <Card
+                    key={ex.id}
+                    onClick={() => !isViewAs && onStartExercise(payload)}
+                    className={cn(
+                      'card-premium rounded-2xl border-0 cursor-pointer transition active:scale-[0.99] hover:bg-white/[0.02]',
+                      isLogged && 'ring-1 ring-[hsl(var(--athlete-green)/0.4)]',
+                    )}
+                  >
+                    <CardContent className="p-3.5 space-y-2.5">
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          'h-9 w-9 rounded-xl flex items-center justify-center font-bold text-sm num shrink-0',
+                          isLogged
+                            ? 'bg-[hsl(var(--athlete-green)/0.2)] text-[hsl(var(--athlete-green))]'
+                            : 'bg-[hsl(var(--athlete-green)/0.14)] text-[hsl(var(--athlete-green))]',
+                        )}>
+                          {isLogged ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className="text-sm font-bold leading-tight truncate">{lib.name ?? 'Exercise'}</h4>
+                            {m.hasOverride && <Pill tone="gold">Adjusted</Pill>}
+                            {isLogged && <Pill icon={CheckCircle2} tone="green">Logged</Pill>}
+                          </div>
+                          {lib.category && (
+                            <div className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground mt-0.5">{lib.category}</div>
+                          )}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                      </div>
+                      <PrescriptionChips m={m} />
+                      {m.notes && (
+                        <div className="rounded-xl bg-white/[0.04] border border-white/10 px-2.5 py-1.5">
+                          <div className="text-[9px] uppercase tracking-[0.16em] text-[hsl(var(--athlete-cyan))] font-bold mb-0.5">Coach note</div>
+                          <p className="text-[11px] italic text-muted-foreground leading-snug">{m.notes}</p>
+                        </div>
+                      )}
+                      <Button
+                        size="sm" variant="ghost" disabled={isViewAs}
+                        onClick={(e) => { e.stopPropagation(); onStartExercise(payload); }}
+                        className="w-full justify-between h-9 rounded-xl text-[12px] font-bold"
+                      >
+                        {isLogged ? (
+                          <span className="flex items-center gap-1.5"><Pencil className="h-3.5 w-3.5" /> Edit feedback</span>
+                        ) : (
+                          <span>View &amp; log exercise</span>
+                        )}
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )}
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-[hsl(var(--athlete-l1))] to-transparent" data-vaul-no-drag>
+            <Button
+              disabled={isViewAs}
+              onClick={onLogSession}
+              className="w-full h-12 rounded-2xl text-sm font-bold bg-gradient-to-br from-[hsl(var(--athlete-green))] to-[hsl(var(--athlete-cyan))] text-[hsl(210_50%_5%)] shadow-[0_10px_30px_-12px_hsl(var(--athlete-green)/0.7)]"
+            >
+              {sessionLogged ? (
+                <><Pencil className="h-4 w-4 mr-1.5" /> Edit session feedback</>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark session complete</>
+              )}
+            </Button>
+          </div>
+        </Vaul.Content>
+      </Vaul.Portal>
+    </Vaul.Root>
   );
 };
 
