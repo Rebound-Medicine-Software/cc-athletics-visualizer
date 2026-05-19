@@ -155,6 +155,12 @@ export const useAssignment = (id: string | null) => {
 
 /* ---------------- Athletes (lookup) ---------------- */
 
+/**
+ * Returns team athletes enriched with duplicate-detection metadata.
+ * - Archived athletes are excluded from pickers (audit-only).
+ * - Each row is annotated with isCanonical / duplicateCount / isLinked
+ *   so UI can surface warnings and steer assignment to the canonical row.
+ */
 export const useTeamAthletes = () => {
   const { teamId } = useEffectiveTeamId();
   return useQuery({
@@ -163,11 +169,34 @@ export const useTeamAthletes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('athletes')
-        .select('id, name, email')
+        .select('id, name, email, user_id, activity_status, team_id, last_test_at, updated_at, created_at')
         .eq('team_id', teamId!)
         .order('name', { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      const rows = (data ?? []).filter(
+        (r: any) => (r.activity_status ?? 'active') !== 'archived'
+      );
+
+      // Best-effort: fetch active assignment counts to feed canonical scoring.
+      let countByAthlete: Record<string, number> = {};
+      if (rows.length) {
+        const { data: assignRows } = await supabase
+          .from('athlete_program_assignments')
+          .select('athlete_id, status')
+          .eq('team_id', teamId!)
+          .in('athlete_id', rows.map((r: any) => r.id));
+        for (const a of assignRows ?? []) {
+          countByAthlete[a.athlete_id] = (countByAthlete[a.athlete_id] ?? 0) + 1;
+        }
+      }
+
+      const withCounts = rows.map((r: any) => ({
+        ...r,
+        assignment_count: countByAthlete[r.id] ?? 0,
+      }));
+
+      const { annotateAthletes } = await import('@/lib/athletes/duplicateDetection');
+      return annotateAthletes(withCounts);
     },
   });
 };

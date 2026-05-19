@@ -20,6 +20,7 @@ import { DemonstrationsTab } from "@/components/settings/DemonstrationsTab";
 import { DataHousingTab } from "@/components/settings/DataHousingTab";
 import { AthleteCredentialsTab } from "@/components/settings/AthleteCredentialsTab";
 import { AthleteAccountLinkingTab } from "@/components/settings/AthleteAccountLinkingTab";
+import { AthleteDuplicatesPanel } from "@/components/settings/AthleteDuplicatesPanel";
 import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
@@ -39,6 +40,7 @@ type SectionId =
   | "athlete-credentials"
   | "athlete-linking"
   | "data-housing"
+  | "athlete-duplicates"
   | "tier-management";
 
 type Group = {
@@ -79,6 +81,7 @@ const GROUPS: Group[] = [
       { id: "staff-credentials", label: "Staff Credentials", description: "Practitioner accounts and access." },
       { id: "athlete-credentials", label: "Athlete Credentials", description: "Athlete login credentials." },
       { id: "athlete-linking", label: "Account Linking", description: "Link athletes to client accounts." },
+      { id: "athlete-duplicates", label: "Duplicate Athletes", description: "Find & resolve duplicate athlete records." },
     ],
   },
   {
@@ -147,6 +150,7 @@ const SettingsInner = () => {
       case "staff-credentials": return <StaffCredentialsTab />;
       case "athlete-credentials": return <AthleteCredentialsTab />;
       case "athlete-linking": return <AthleteAccountLinkingTab />;
+      case "athlete-duplicates": return <AthleteDuplicatesPanel />;
       case "data-housing": return <DataHousingTab />;
       case "tier-management": return <TierManagementTab />;
     }
