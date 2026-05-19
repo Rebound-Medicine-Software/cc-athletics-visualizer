@@ -573,8 +573,10 @@ export const ClientPrograms = () => {
     if (!structure) return { today: [], upcoming: [], past: [] as any[] };
     const blockMap = Object.fromEntries((structure.blocks ?? []).map((b: any) => [b.id, b]));
     const exBySession: Record<string, any[]> = {};
+    const blockLevelByBlock: Record<string, any[]> = {};
     (structure.exercises ?? []).forEach((ex: any) => {
       if (ex.session_id) (exBySession[ex.session_id] = exBySession[ex.session_id] ?? []).push(ex);
+      else (blockLevelByBlock[ex.block_id] = blockLevelByBlock[ex.block_id] ?? []).push(ex);
     });
     const completedIds = new Set(
       (logs ?? []).map((l: any) => l.programming_session_id).filter(Boolean)
@@ -582,7 +584,8 @@ export const ClientPrograms = () => {
     const enriched = (structure.sessions ?? []).map((s: any) => ({
       ...s,
       block: blockMap[s.block_id],
-      exercises: exBySession[s.id] ?? [],
+      // Session-scoped exercises + block-level (unscheduled) exercises inherited from the parent block
+      exercises: [...(exBySession[s.id] ?? []), ...(blockLevelByBlock[s.block_id] ?? [])],
       completed: completedIds.has(s.id),
     }));
     return {
