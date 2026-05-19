@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   format, parseISO, startOfWeek, isAfter, subDays, differenceInCalendarDays, addDays,
 } from 'date-fns';
+import { Drawer as Vaul } from 'vaul';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +12,7 @@ import {
 import {
   Sparkles, Target, ChevronRight, Flame, Trophy, Zap, ShieldCheck,
   Activity, CheckCircle2, Clock, PlayCircle, Lock, Lightbulb, Wand2,
-  ArrowUpRight, CalendarDays, Dumbbell, HeartPulse, Info, Brain,
+  ArrowUpRight, CalendarDays, Dumbbell, HeartPulse, Info, Brain, Pencil,
 } from 'lucide-react';
 import { useIsViewAsMode } from '@/lib/impersonation/useEffectiveTeamId';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
@@ -26,6 +27,24 @@ import { useClientMetrics } from './useClientMetrics';
 import { getSessionVisual } from './sessionVisuals';
 import type { ExerciseOverride } from '@/components/programming/assignments/types';
 import { cn } from '@/lib/utils';
+
+/** Find most-recent existing log for a given exercise/session combo. */
+const findExistingLog = (
+  logs: any[],
+  opts: { exerciseId?: string | null; sessionId?: string | null },
+) => {
+  return (
+    logs.find(
+      (l) =>
+        (opts.exerciseId
+          ? l.programming_exercise_id === opts.exerciseId
+          : l.programming_exercise_id == null) &&
+        (opts.sessionId
+          ? l.programming_session_id === opts.sessionId
+          : l.programming_session_id == null),
+    ) ?? null
+  );
+};
 
 type TabKey = 'overview' | 'sessions' | 'progress';
 
