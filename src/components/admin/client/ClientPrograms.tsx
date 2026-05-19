@@ -19,7 +19,8 @@ import {
   useClientAssignments, useClientCompletionLogs,
 } from '@/components/programming/client/useClientAssignments';
 import { useTemplateStructure } from '@/components/programming/assignments/useAssignments';
-import { ClientLogCompletionDialog } from '@/components/programming/client/ClientLogCompletionDialog';
+import { ClientExerciseSheet } from '@/components/programming/client/ClientExerciseSheet';
+import { ClientSessionFeedbackSheet } from '@/components/programming/client/ClientSessionFeedbackSheet';
 import { computeAdherence } from '@/components/programming/assignments/adherence';
 import { useClientMetrics } from './useClientMetrics';
 import { getSessionVisual } from './sessionVisuals';
@@ -555,7 +556,8 @@ export const ClientPrograms = () => {
   });
 
   const [tab, setTab] = useState<TabKey>('overview');
-  const [logOpen, setLogOpen] = useState(false);
+  const [exerciseSheetOpen, setExerciseSheetOpen] = useState(false);
+  const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [selectedSessionForLog, setSelectedSessionForLog] = useState<any>(null);
   const [detailSession, setDetailSession] = useState<any>(null);
@@ -623,12 +625,12 @@ export const ClientPrograms = () => {
     setDetailOpen(false);
     setSelectedExercise(null);
     setSelectedSessionForLog(s ? { id: s.id, name: s.name } : null);
-    setLogOpen(true);
+    setSessionSheetOpen(true);
   };
   const openLogForExercise = (ex: any) => {
     setSelectedSessionForLog(null);
     setSelectedExercise(ex);
-    setLogOpen(true);
+    setExerciseSheetOpen(true);
   };
 
   /* ───── loading & empty ───── */
@@ -997,15 +999,26 @@ export const ClientPrograms = () => {
         </SheetContent>
       </Sheet>
 
-      {/* Completion logging dialog */}
+      {/* Premium exercise logging sheet */}
       {active && athlete && (
-        <ClientLogCompletionDialog
-          open={logOpen}
-          onOpenChange={setLogOpen}
+        <ClientExerciseSheet
+          open={exerciseSheetOpen}
+          onOpenChange={setExerciseSheetOpen}
           assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
           athleteId={athlete.id}
           exercise={selectedExercise}
+          readOnly={isViewAs}
+        />
+      )}
+      {/* Premium session feedback sheet */}
+      {active && athlete && (
+        <ClientSessionFeedbackSheet
+          open={sessionSheetOpen}
+          onOpenChange={setSessionSheetOpen}
+          assignment={{ id: active.id, team_id: active.team_id, athlete_id: active.athlete_id }}
+          athleteId={athlete.id}
           session={selectedSessionForLog}
+          exerciseCount={detailSession?.exercises?.length}
         />
       )}
     </div>
