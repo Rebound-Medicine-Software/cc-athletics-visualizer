@@ -391,7 +391,7 @@ export const ClientPrograms = () => {
                                   <PrescriptionChips m={m} />
                                 </div>
                                 <Button size="sm" variant="ghost" disabled={isViewAs}
-                                  onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', sets: m.sets, reps: m.reps, load: m.load })}>
+                                  onClick={() => openExerciseLog({ id: ex.id, name: lib.name ?? 'Exercise', category: lib.category, video_url: lib.video_url, instructions: lib.instructions, primary_muscles: lib.primary_muscles, equipment: lib.equipment, sets: m.sets, reps: m.reps, load: m.load, rpe: m.rpe, rest_seconds: m.rest_seconds, tempo: m.tempo, notes: m.notes })}>
                                   <CheckCircle2 className="mr-1 h-4 w-4" /> Log
                                 </Button>
                               </div>
