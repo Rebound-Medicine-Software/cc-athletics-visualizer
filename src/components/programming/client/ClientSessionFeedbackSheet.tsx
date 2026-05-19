@@ -196,12 +196,12 @@ export const ClientSessionFeedbackSheet = ({
             >
               {done ? (
                 <>
-                  <CheckCircle2 className="h-5 w-5 mr-2" /> Session marked complete
+                  <CheckCircle2 className="h-5 w-5 mr-2" /> {existingLog ? 'Feedback updated' : 'Session marked complete'}
                 </>
               ) : mut.isPending ? (
                 'Saving…'
               ) : (
-                'Mark session complete'
+                existingLog ? 'Update session feedback' : 'Mark session complete'
               )}
             </Button>
           </div>
