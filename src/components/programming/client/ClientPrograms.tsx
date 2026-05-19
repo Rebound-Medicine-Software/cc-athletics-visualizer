@@ -113,6 +113,12 @@ export const ClientPrograms = () => {
     const enriched = (structure.sessions ?? []).map((s: any) => ({
       ...s,
       block: blockMap[s.block_id],
+      // Session-scoped + block-level (unscheduled) exercises inherited from the parent block
+      exercises: [...(exBySession[s.id] ?? []), ...(unscheduledByBlock[s.block_id] ?? [])],
+      completed: completedSessionIds.has(s.id),
+    }));
+      ...s,
+      block: blockMap[s.block_id],
       exercises: exBySession[s.id] ?? [],
       completed: completedSessionIds.has(s.id),
     }));
