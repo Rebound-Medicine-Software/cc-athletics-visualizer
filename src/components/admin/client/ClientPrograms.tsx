@@ -556,7 +556,8 @@ export const ClientPrograms = () => {
   });
 
   const [tab, setTab] = useState<TabKey>('overview');
-  const [logOpen, setLogOpen] = useState(false);
+  const [exerciseSheetOpen, setExerciseSheetOpen] = useState(false);
+  const [sessionSheetOpen, setSessionSheetOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [selectedSessionForLog, setSelectedSessionForLog] = useState<any>(null);
   const [detailSession, setDetailSession] = useState<any>(null);
