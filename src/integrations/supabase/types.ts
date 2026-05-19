@@ -1950,6 +1950,18 @@ export type Database = {
       }
       can_access_team_row: { Args: { row_team_id: string }; Returns: boolean }
       claim_athlete_for_current_user: { Args: never; Returns: string }
+      client_can_view_assignment_block: {
+        Args: { _block_id: string }
+        Returns: boolean
+      }
+      client_can_view_assignment_template: {
+        Args: { _template_id: string }
+        Returns: boolean
+      }
+      client_can_view_library_exercise: {
+        Args: { _exercise_id: string }
+        Returns: boolean
+      }
       count_active_webhook_endpoints: { Args: never; Returns: number }
       count_unread_in_app_notifications: { Args: never; Returns: number }
       create_notification_campaign: {
