@@ -117,11 +117,6 @@ export const ClientPrograms = () => {
       exercises: [...(exBySession[s.id] ?? []), ...(unscheduledByBlock[s.block_id] ?? [])],
       completed: completedSessionIds.has(s.id),
     }));
-      ...s,
-      block: blockMap[s.block_id],
-      exercises: exBySession[s.id] ?? [],
-      completed: completedSessionIds.has(s.id),
-    }));
 
     const todayList = enriched.filter((s) => s.day_offset === daysSinceStart);
     const upcoming = enriched
