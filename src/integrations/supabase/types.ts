@@ -397,6 +397,122 @@ export type Database = {
           },
         ]
       }
+      csv_import_batches: {
+        Row: {
+          athlete_id: string
+          created_at: string
+          duplicate_conflicts: number
+          file_hashes: string[]
+          file_names: string[]
+          id: string
+          notes: string | null
+          rows_imported: number
+          rows_parsed: number
+          rows_skipped: number
+          status: string
+          team_id: string
+          test_subtype: string | null
+          test_type: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          athlete_id: string
+          created_at?: string
+          duplicate_conflicts?: number
+          file_hashes?: string[]
+          file_names?: string[]
+          id?: string
+          notes?: string | null
+          rows_imported?: number
+          rows_parsed?: number
+          rows_skipped?: number
+          status?: string
+          team_id: string
+          test_subtype?: string | null
+          test_type: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          athlete_id?: string
+          created_at?: string
+          duplicate_conflicts?: number
+          file_hashes?: string[]
+          file_names?: string[]
+          id?: string
+          notes?: string | null
+          rows_imported?: number
+          rows_parsed?: number
+          rows_skipped?: number
+          status?: string
+          team_id?: string
+          test_subtype?: string | null
+          test_type?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      csv_import_files: {
+        Row: {
+          athlete_id: string
+          batch_id: string
+          created_at: string
+          error: string | null
+          file_hash: string
+          file_last_modified: string | null
+          file_name: string
+          file_size: number | null
+          id: string
+          rows_imported: number
+          rows_parsed: number
+          rows_skipped: number
+          status: string
+          team_id: string
+          test_type: string
+        }
+        Insert: {
+          athlete_id: string
+          batch_id: string
+          created_at?: string
+          error?: string | null
+          file_hash: string
+          file_last_modified?: string | null
+          file_name: string
+          file_size?: number | null
+          id?: string
+          rows_imported?: number
+          rows_parsed?: number
+          rows_skipped?: number
+          status?: string
+          team_id: string
+          test_type: string
+        }
+        Update: {
+          athlete_id?: string
+          batch_id?: string
+          created_at?: string
+          error?: string | null
+          file_hash?: string
+          file_last_modified?: string | null
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          rows_imported?: number
+          rows_parsed?: number
+          rows_skipped?: number
+          status?: string
+          team_id?: string
+          test_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "csv_import_files_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "csv_import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       elite_athlete_data: {
         Row: {
           age_group: number | null
@@ -1733,51 +1849,72 @@ export type Database = {
           athlete_name: string
           cc_athlete_id: string
           created_at: string | null
+          file_hash: string | null
           id: string
+          import_batch_id: string | null
           metrics: Json
+          original_file_name: string | null
           repetition_number: number
+          source: string
+          team_id: string | null
           team_name: string
           test_city: string | null
           test_date: string
           test_location: string | null
           test_name: string
           test_region: string | null
+          test_subtype: string | null
           test_type: string
           updated_at: string | null
+          uploaded_by: string | null
         }
         Insert: {
           athlete_id?: string | null
           athlete_name: string
           cc_athlete_id: string
           created_at?: string | null
+          file_hash?: string | null
           id?: string
+          import_batch_id?: string | null
           metrics: Json
+          original_file_name?: string | null
           repetition_number: number
+          source?: string
+          team_id?: string | null
           team_name: string
           test_city?: string | null
           test_date: string
           test_location?: string | null
           test_name: string
           test_region?: string | null
+          test_subtype?: string | null
           test_type: string
           updated_at?: string | null
+          uploaded_by?: string | null
         }
         Update: {
           athlete_id?: string | null
           athlete_name?: string
           cc_athlete_id?: string
           created_at?: string | null
+          file_hash?: string | null
           id?: string
+          import_batch_id?: string | null
           metrics?: Json
+          original_file_name?: string | null
           repetition_number?: number
+          source?: string
+          team_id?: string | null
           team_name?: string
           test_city?: string | null
           test_date?: string
           test_location?: string | null
           test_name?: string
           test_region?: string | null
+          test_subtype?: string | null
           test_type?: string
           updated_at?: string | null
+          uploaded_by?: string | null
         }
         Relationships: [
           {
