@@ -165,6 +165,7 @@ export const CsvUploadWizard = () => {
   }, [state, importMutation, user]);
 
   if (summary) {
+    const exploreUrl = `/dashboard?section=performance-data${state.athleteId ? `&athleteId=${state.athleteId}` : ''}${state.testType ? `&testType=${state.testType}` : ''}${state.testSubtypeId ? `&testSubtype=${state.testSubtypeId}` : ''}&source=manual_csv`;
     return (
       <Card className="p-8 text-center space-y-4">
         <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
@@ -175,22 +176,28 @@ export const CsvUploadWizard = () => {
           <div>{summary.rowsSkipped} row(s) skipped</div>
           <div>{summary.duplicateConflicts} duplicate conflict(s) detected</div>
         </div>
-        <Button
-          onClick={() => {
-            setSummary(null);
-            setStep(0);
-            setCompleted(new Set());
-            setState({
-              files: [],
-              testType: null,
-              testSubtypeId: null,
-              teamId: defaultTeamId,
-              athleteId: null,
-            });
-          }}
-        >
-          Upload more files
-        </Button>
+        <div className="flex gap-2 justify-center">
+          <Button variant="default" onClick={() => { window.location.href = exploreUrl; }}>
+            View in Performance Data
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSummary(null);
+              setStep(0);
+              setCompleted(new Set());
+              setState({
+                files: [],
+                testType: null,
+                testSubtypeId: null,
+                teamId: defaultTeamId,
+                athleteId: null,
+              });
+            }}
+          >
+            Upload more files
+          </Button>
+        </div>
       </Card>
     );
   }
