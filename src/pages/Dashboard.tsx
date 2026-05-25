@@ -129,6 +129,7 @@ const Dashboard = () => {
       items: [
         { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
         { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
+        { id: "performance-data", label: "Performance Data", icon: Activity, description: "Test Data Explorer" },
         { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
       ],
     },
