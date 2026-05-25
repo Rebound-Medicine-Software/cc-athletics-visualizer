@@ -22,6 +22,9 @@ export interface ImportSummary {
   rowsImported: number;
   rowsSkipped: number;
   duplicateConflicts: number;
+  rowsParsed: number;
+  rowsAttempted: number;
+  errors: { fileName: string; message: string }[];
 }
 
 /** Look up duplicate files by content hash for an athlete+test type combo. */
