@@ -69,7 +69,9 @@ export function useCsvImport() {
       let totalRowsImported = 0;
       let totalRowsSkipped = 0;
       let totalConflicts = 0;
+      let totalRowsAttempted = 0;
       let filesImported = 0;
+      const errors: { fileName: string; message: string }[] = [];
 
       for (const f of args.files) {
         if (!f.parsed || !f.fingerprint) continue;
