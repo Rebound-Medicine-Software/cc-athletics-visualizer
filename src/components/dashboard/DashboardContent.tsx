@@ -130,6 +130,8 @@ export const DashboardContent = ({
         );
       case "reports":
         return <ReportsSection />;
+      case "performance-data":
+        return <PerformanceDataExplorer />;
       case "programming":
         return <ProgrammingSection />;
       case "payment":
