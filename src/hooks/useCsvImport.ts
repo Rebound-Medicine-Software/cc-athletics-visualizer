@@ -22,6 +22,9 @@ export interface ImportSummary {
   rowsImported: number;
   rowsSkipped: number;
   duplicateConflicts: number;
+  rowsParsed: number;
+  rowsAttempted: number;
+  errors: { fileName: string; message: string }[];
 }
 
 /** Look up duplicate files by content hash for an athlete+test type combo. */
@@ -66,7 +69,9 @@ export function useCsvImport() {
       let totalRowsImported = 0;
       let totalRowsSkipped = 0;
       let totalConflicts = 0;
+      let totalRowsAttempted = 0;
       let filesImported = 0;
+      const errors: { fileName: string; message: string }[] = [];
 
       for (const f of args.files) {
         if (!f.parsed || !f.fingerprint) continue;
@@ -132,12 +137,15 @@ export function useCsvImport() {
         let insertedCount = 0;
 
         if (rowsToInsert.length > 0) {
+          totalRowsAttempted += rowsToInsert.length;
           const { error: insErr, count } = await supabase
             .from('test_data')
             .insert(rowsToInsert, { count: 'exact' });
           if (insErr) {
             fileStatus = 'failed';
             fileError = insErr.message;
+            errors.push({ fileName: f.file.name, message: insErr.message });
+            console.error('[CSV import] test_data insert failed', insErr, { sampleRow: rowsToInsert[0] });
           } else {
             insertedCount = count ?? rowsToInsert.length;
             totalRowsImported += insertedCount;
@@ -185,6 +193,9 @@ export function useCsvImport() {
         rowsImported: totalRowsImported,
         rowsSkipped: totalRowsSkipped,
         duplicateConflicts: totalConflicts,
+        rowsParsed: totalRowsParsed,
+        rowsAttempted: totalRowsAttempted,
+        errors,
       };
     },
   });

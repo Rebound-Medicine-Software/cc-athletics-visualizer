@@ -158,7 +158,13 @@ export const CsvUploadWizard = () => {
         uploadedBy: user?.id ?? null,
       });
       setSummary(result);
-      toast.success(`Imported ${result.rowsImported} test rows`);
+      if (result.errors.length > 0) {
+        toast.error(`Import finished with ${result.errors.length} error(s)`);
+      } else if (result.rowsImported === 0) {
+        toast.warning('No rows imported — check duplicate settings');
+      } else {
+        toast.success(`Imported ${result.rowsImported} test rows`);
+      }
     } catch (err: any) {
       toast.error(err.message ?? 'Import failed');
     }
@@ -166,18 +172,33 @@ export const CsvUploadWizard = () => {
 
   if (summary) {
     const exploreUrl = `/dashboard?section=performance-data${state.athleteId ? `&athleteId=${state.athleteId}` : ''}${state.testType ? `&testType=${state.testType}` : ''}${state.testSubtypeId ? `&testSubtype=${state.testSubtypeId}` : ''}&source=manual_csv`;
+    const hasErrors = summary.errors.length > 0;
+    const ok = summary.rowsImported > 0 && !hasErrors;
     return (
       <Card className="p-8 text-center space-y-4">
-        <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-        <h3 className="text-xl font-semibold">Import complete</h3>
+        <CheckCircle2 className={`w-12 h-12 mx-auto ${ok ? 'text-emerald-500' : 'text-amber-500'}`} />
+        <h3 className="text-xl font-semibold">
+          {ok ? 'Import complete' : hasErrors ? 'Import failed' : 'Nothing imported'}
+        </h3>
         <div className="text-sm text-muted-foreground space-y-1">
           <div>{summary.filesImported} file(s) imported</div>
+          <div>{summary.rowsParsed} row(s) parsed · {summary.rowsAttempted} attempted</div>
           <div>{summary.rowsImported} new test rows added</div>
           <div>{summary.rowsSkipped} row(s) skipped</div>
           <div>{summary.duplicateConflicts} duplicate conflict(s) detected</div>
         </div>
+        {hasErrors && (
+          <div className="text-left text-sm bg-destructive/10 border border-destructive/30 rounded p-3 space-y-1">
+            <div className="font-semibold text-destructive">Insert errors</div>
+            {summary.errors.map((e, i) => (
+              <div key={i} className="text-destructive/90">
+                <span className="font-mono text-xs">{e.fileName}:</span> {e.message}
+              </div>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2 justify-center">
-          <Button variant="default" onClick={() => { window.location.href = exploreUrl; }}>
+          <Button variant="default" onClick={() => { window.location.href = exploreUrl; }} disabled={!ok}>
             View in Performance Data
           </Button>
           <Button
