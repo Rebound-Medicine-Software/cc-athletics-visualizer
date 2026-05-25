@@ -12,6 +12,7 @@ import { HomeOverview } from "./home/HomeOverview";
 import { ComingSoonSection } from "./ComingSoonSection";
 import { ProgrammingSection } from "@/components/programming/ProgrammingSection";
 import { ReportsSection } from "./reports/ReportsSection";
+import { PerformanceDataExplorer } from "./performance-data/PerformanceDataExplorer";
 import { SectionHeader } from "./SectionHeader";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
