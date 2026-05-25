@@ -137,12 +137,15 @@ export function useCsvImport() {
         let insertedCount = 0;
 
         if (rowsToInsert.length > 0) {
+          totalRowsAttempted += rowsToInsert.length;
           const { error: insErr, count } = await supabase
             .from('test_data')
             .insert(rowsToInsert, { count: 'exact' });
           if (insErr) {
             fileStatus = 'failed';
             fileError = insErr.message;
+            errors.push({ fileName: f.file.name, message: insErr.message });
+            console.error('[CSV import] test_data insert failed', insErr, { sampleRow: rowsToInsert[0] });
           } else {
             insertedCount = count ?? rowsToInsert.length;
             totalRowsImported += insertedCount;
