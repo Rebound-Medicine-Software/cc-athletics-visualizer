@@ -193,6 +193,9 @@ export function useCsvImport() {
         rowsImported: totalRowsImported,
         rowsSkipped: totalRowsSkipped,
         duplicateConflicts: totalConflicts,
+        rowsParsed: totalRowsParsed,
+        rowsAttempted: totalRowsAttempted,
+        errors,
       };
     },
   });
