@@ -158,7 +158,13 @@ export const CsvUploadWizard = () => {
         uploadedBy: user?.id ?? null,
       });
       setSummary(result);
-      toast.success(`Imported ${result.rowsImported} test rows`);
+      if (result.errors.length > 0) {
+        toast.error(`Import finished with ${result.errors.length} error(s)`);
+      } else if (result.rowsImported === 0) {
+        toast.warning('No rows imported — check duplicate settings');
+      } else {
+        toast.success(`Imported ${result.rowsImported} test rows`);
+      }
     } catch (err: any) {
       toast.error(err.message ?? 'Import failed');
     }
