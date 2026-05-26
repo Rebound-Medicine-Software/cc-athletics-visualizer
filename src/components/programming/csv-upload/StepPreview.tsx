@@ -49,13 +49,6 @@ export const StepPreview = ({ files, testType, subtypeId, onResolutionChange }: 
         </div>
       )}
 
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Preview & confirm</h3>
-        <p className="text-sm text-muted-foreground">
-          Review parsed rows and resolve any duplicates before importing.
-        </p>
-      </div>
 
       {files.map((f, i) => {
         const dupCount = (f.rowDuplicates ?? []).filter((r) => r.isDuplicate).length;
