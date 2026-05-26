@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { UploadedFileState } from '@/components/programming/csv-upload/types';
 import type { TestType } from '@/lib/csv/testTypeConfig';
-import { getSubtype } from '@/lib/csv/testTypeConfig';
+import { getSubtype, toDbTestType } from '@/lib/csv/testTypeConfig';
 
 interface ImportArgs {
   teamId: string;
