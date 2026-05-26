@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { UploadedFileState } from '@/components/programming/csv-upload/types';
 import type { TestType } from '@/lib/csv/testTypeConfig';
-import { getSubtype } from '@/lib/csv/testTypeConfig';
+import { getSubtype, toDbTestType } from '@/lib/csv/testTypeConfig';
 
 interface ImportArgs {
   teamId: string;
@@ -44,6 +44,10 @@ export function useCsvImport() {
     mutationFn: async (args: ImportArgs): Promise<ImportSummary> => {
       const subtype = getSubtype(args.testType, args.testSubtypeId);
       const testName = subtype?.testName ?? args.testType;
+      const { test_type: dbTestType, test_subtype: dbTestSubtype } = toDbTestType(
+        args.testType,
+        args.testSubtypeId,
+      );
 
       // 1. Create batch
       const fileNames = args.files.map((f) => f.file.name);
@@ -117,8 +121,8 @@ export function useCsvImport() {
             team_id: args.teamId,
             test_date: row.testDate ?? new Date().toISOString().split('T')[0],
             test_name: testName,
-            test_type: args.testType,
-            test_subtype: args.testSubtypeId,
+            test_type: dbTestType,
+            test_subtype: dbTestSubtype,
             repetition_number: row.repetitionNumber,
             metrics: row.metrics,
             source: 'manual_csv',

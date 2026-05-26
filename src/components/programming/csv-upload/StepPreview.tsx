@@ -7,14 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
 import type { UploadedFileState } from './types';
 
 interface Props {
   files: UploadedFileState[];
+  testType: TestType | null;
+  subtypeId: string | null;
   onResolutionChange: (idx: number, resolution: UploadedFileState['resolution']) => void;
 }
 
-export const StepPreview = ({ files, onResolutionChange }: Props) => {
+export const StepPreview = ({ files, testType, subtypeId, onResolutionChange }: Props) => {
+  const mapping = testType ? toDbTestType(testType, subtypeId) : null;
   return (
     <div className="space-y-4">
       <div>
@@ -23,6 +27,28 @@ export const StepPreview = ({ files, onResolutionChange }: Props) => {
           Review parsed rows and resolve any duplicates before importing.
         </p>
       </div>
+
+      {mapping && (
+        <div className="rounded-lg border bg-muted/30 p-3 text-xs grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <div className="text-muted-foreground">UI test type</div>
+            <div className="font-semibold">{testType}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">UI subtype</div>
+            <div className="font-semibold">{subtypeId ?? '—'}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">DB test_type</div>
+            <div className="font-mono font-semibold">{mapping.test_type}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">DB test_subtype</div>
+            <div className="font-mono font-semibold">{mapping.test_subtype ?? '—'}</div>
+          </div>
+        </div>
+      )}
+
 
       {files.map((f, i) => {
         const dupCount = (f.rowDuplicates ?? []).filter((r) => r.isDuplicate).length;
