@@ -122,6 +122,11 @@ export function mapRowToMetrics(
       metrics[canonical] = value;
     } else {
       raw[origKey] = value;
+      // Also surface as a top-level normalized key so Explorer/metric pickers can find it.
+      // Don't overwrite a canonical key if one already exists.
+      if (key && metrics[key] === undefined) {
+        metrics[key] = value;
+      }
     }
   }
 

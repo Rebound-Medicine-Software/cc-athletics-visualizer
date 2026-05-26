@@ -9,7 +9,7 @@ import {
 import { format, subDays } from 'date-fns';
 import {
   Activity, Database, FileSpreadsheet, AlertTriangle,
-  TrendingUp, ExternalLink, X,
+  TrendingUp, ExternalLink, X, Sparkles,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { TEST_TYPES } from '@/lib/csv/testTypeConfig';
+import { TEST_TYPES, toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
 import { cn } from '@/lib/utils';
 
 type Source = 'all' | 'api' | 'manual_csv';
@@ -50,6 +50,30 @@ interface TestRow {
 const numeric = (v: any) => {
   const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
   return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Flatten metrics for display: merges top-level numeric keys with anything
+ * inside `_raw` (where CSV imports park unknown headers). Top-level wins.
+ */
+const flattenMetrics = (m: Record<string, any> | null | undefined): Record<string, any> => {
+  if (!m) return {};
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(m)) {
+    if (k === '_raw') continue;
+    out[k] = v;
+  }
+  const raw = m._raw;
+  if (raw && typeof raw === 'object') {
+    for (const [k, v] of Object.entries(raw)) {
+      const nk = k
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      if (nk && out[nk] === undefined) out[nk] = v;
+    }
+  }
+  return out;
 };
 
 const metricLabel = (k: string) =>
@@ -129,8 +153,13 @@ export const PerformanceDataExplorer = () => {
 
       if (filters.teamId) q = q.eq('team_id', filters.teamId);
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
-      if (filters.testType) q = q.eq('test_type', filters.testType);
-      if (filters.testSubtype) q = q.eq('test_subtype', filters.testSubtype);
+      if (filters.testType) {
+        const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
+        q = q.eq('test_type', mapped.test_type);
+        if (filters.testSubtype && mapped.test_subtype) {
+          q = q.eq('test_subtype', mapped.test_subtype);
+        }
+      }
       if (filters.source !== 'all') q = q.eq('source', filters.source);
 
       const { data, error } = await q;
@@ -141,16 +170,26 @@ export const PerformanceDataExplorer = () => {
 
   const rows = dataQuery.data ?? [];
 
+  // Precompute flattened metrics per row (handles legacy `_raw` payloads from CSV).
+  const flatMetricsById = useMemo(() => {
+    const map = new Map<string, Record<string, any>>();
+    for (const r of rows) map.set(r.id, flattenMetrics(r.metrics));
+    return map;
+  }, [rows]);
+  const getMetric = (row: TestRow, key: string | null) =>
+    key ? numeric(flatMetricsById.get(row.id)?.[key]) : null;
+
   // Available metrics from data
   const metricKeys = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows) {
-      Object.entries(r.metrics ?? {}).forEach(([k, v]) => {
+      const flat = flatMetricsById.get(r.id) ?? {};
+      Object.entries(flat).forEach(([k, v]) => {
         if (numeric(v) !== null) set.add(k);
       });
     }
     return Array.from(set).sort();
-  }, [rows]);
+  }, [rows, flatMetricsById]);
 
   const activeMetric = filters.metric ?? metricKeys[0] ?? null;
 
@@ -175,14 +214,14 @@ export const PerformanceDataExplorer = () => {
       const byAthlete = new Map<string, TestRow[]>();
       for (const r of rows) {
         if (!r.athlete_id) continue;
-        if (numeric(r.metrics?.[activeMetric]) === null) continue;
+        if (getMetric(r, activeMetric) === null) continue;
         if (!byAthlete.has(r.athlete_id)) byAthlete.set(r.athlete_id, []);
         byAthlete.get(r.athlete_id)!.push(r);
       }
       for (const arr of byAthlete.values()) {
         const sorted = arr.slice().sort((a, b) => a.test_date.localeCompare(b.test_date));
-        const first = numeric(sorted[0].metrics?.[activeMetric]);
-        const last = numeric(sorted[sorted.length - 1].metrics?.[activeMetric]);
+        const first = getMetric(sorted[0], activeMetric);
+        const last = getMetric(sorted[sorted.length - 1], activeMetric);
         if (first && last && first > 0) {
           const pct = ((last - first) / first) * 100;
           if (!bestDelta || pct > bestDelta.pct) bestDelta = { pct, metric: activeMetric };
@@ -198,7 +237,7 @@ export const PerformanceDataExplorer = () => {
     if (!activeMetric) return [];
     return rows
       .map((r) => {
-        const v = numeric(r.metrics?.[activeMetric]);
+        const v = getMetric(r, activeMetric);
         if (v === null) return null;
         return {
           date: r.test_date,
@@ -216,7 +255,7 @@ export const PerformanceDataExplorer = () => {
     if (!activeMetric) return [];
     const byKey = new Map<string, { date: string; api?: number; csv?: number; row?: TestRow }>();
     for (const r of rows) {
-      const v = numeric(r.metrics?.[activeMetric]);
+      const v = getMetric(r, activeMetric);
       if (v === null) continue;
       const k = `${r.athlete_name}|${r.test_name}|${r.test_date}|${r.repetition_number}`;
       const entry = byKey.get(k) ?? { date: r.test_date, row: r };
@@ -440,7 +479,7 @@ export const PerformanceDataExplorer = () => {
             <TableBody>
               <AnimatePresence>
                 {rows.slice(0, 100).map((r) => {
-                  const v = activeMetric ? numeric(r.metrics?.[activeMetric]) : null;
+                  const v = activeMetric ? getMetric(r, activeMetric) : null;
                   const isConflict = rows.some(
                     (other) =>
                       other.id !== r.id &&
@@ -597,7 +636,62 @@ const TestDetail = ({
       r.repetition_number === row.repetition_number,
   );
 
-  const metricEntries = Object.entries(row.metrics ?? {}).filter(([, v]) => v !== null && v !== '');
+  const flat = useMemo(() => flattenMetrics(row.metrics), [row]);
+  const metricEntries = Object.entries(flat).filter(([, v]) => v !== null && v !== '');
+  const numericEntries = metricEntries.filter(([, v]) => numeric(v) !== null);
+
+  const [prescribeMetric, setPrescribeMetric] = useState<string | null>(null);
+
+  // Build trend series for selected prescribe metric across the same athlete + test_name
+  const trend = useMemo(() => {
+    if (!prescribeMetric) return [];
+    return allRows
+      .filter((r) => r.athlete_id === row.athlete_id && r.test_name === row.test_name)
+      .map((r) => ({ date: r.test_date, value: numeric(flattenMetrics(r.metrics)[prescribeMetric]) }))
+      .filter((p) => p.value !== null)
+      .sort((a, b) => a.date.localeCompare(b.date)) as { date: string; value: number }[];
+  }, [allRows, row, prescribeMetric]);
+
+  const prescription = useMemo(() => {
+    if (!prescribeMetric) return null;
+    const current = numeric(flat[prescribeMetric]);
+    const first = trend[0]?.value ?? null;
+    const last = trend[trend.length - 1]?.value ?? null;
+    const deltaPct = first && last && first !== 0 ? ((last - first) / Math.abs(first)) * 100 : null;
+
+    // Look for asymmetry pairs (left/right or l/r prefix/suffix)
+    const findPair = (base: string) => {
+      const left = numeric(flat[`left_${base}`] ?? flat[`l_${base}`] ?? flat[`${base}_l`] ?? flat[`${base}_left`]);
+      const right = numeric(flat[`right_${base}`] ?? flat[`r_${base}`] ?? flat[`${base}_r`] ?? flat[`${base}_right`]);
+      if (left !== null && right !== null && Math.max(left, right) > 0) {
+        return { left, right, asymmetry: ((Math.abs(left - right) / Math.max(left, right)) * 100) };
+      }
+      return null;
+    };
+    const base = prescribeMetric.replace(/^(left|right|l|r)_/, '').replace(/_(left|right|l|r)$/, '');
+    const pair = findPair(base);
+
+    // Naive interpretation based on common metric names
+    const k = prescribeMetric.toLowerCase();
+    let interpretation = `Current ${metricLabel(prescribeMetric)} = ${current?.toFixed(2) ?? '—'}.`;
+    let focus = 'Review with practitioner — no automated rule for this metric yet.';
+    if (k.includes('rsi')) {
+      focus = 'Reactive strength, landing stiffness, eccentric braking. Plyometric ladder + drop-jump progression.';
+      interpretation += ' RSI reflects ground contact efficiency. Aim for <0.25s contact with rising jump height.';
+    } else if (k.includes('jump_height') || k.includes('height')) {
+      focus = 'Concentric power: trap-bar jumps, hex-bar deadlift, squat jumps with load wave.';
+    } else if (k.includes('peak_force') || k.includes('force_peak') || k.includes('imtp')) {
+      focus = 'Maximum strength block: heavy isometric mid-thigh pulls, 3–5RM compounds, RFD primers.';
+    } else if (k.includes('peak_power') || k.includes('power')) {
+      focus = 'Power development: Olympic derivatives, ballistic throws, banded jump squats.';
+    } else if (k.includes('contact_time')) {
+      focus = 'Stiffness and reactivity: ankle hops, pogo series, depth-jump volume control.';
+    } else if (k.includes('balance') || k.includes('sway') || k.includes('stability')) {
+      focus = 'Postural control: tandem-stance progressions, single-leg RDL with eyes closed, perturbation drills.';
+    }
+
+    return { current, first, last, deltaPct, pair, interpretation, focus };
+  }, [prescribeMetric, flat, trend]);
 
   return (
     <div className="space-y-5">
@@ -636,17 +730,90 @@ const TestDetail = ({
       <div>
         <h4 className="text-sm font-semibold mb-2">Metrics ({metricEntries.length})</h4>
         <div className="grid grid-cols-2 gap-2">
-          {metricEntries.map(([k, v]) => (
-            <div key={k} className="rounded-md border p-2">
-              <div className="text-[10px] uppercase text-muted-foreground">{metricLabel(k)}</div>
-              <div className="font-mono text-sm">{String(v)}</div>
-            </div>
-          ))}
+          {metricEntries.map(([k, v]) => {
+            const canPrescribe = numeric(v) !== null;
+            return (
+              <div key={k} className="rounded-md border p-2 flex flex-col gap-1">
+                <div className="text-[10px] uppercase text-muted-foreground">{metricLabel(k)}</div>
+                <div className="font-mono text-sm">{String(v)}</div>
+                {canPrescribe && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px] mt-1"
+                    onClick={() => setPrescribeMetric(k)}
+                  >
+                    <Sparkles className="w-3 h-3 mr-1" /> Use for prescription
+                  </Button>
+                )}
+              </div>
+            );
+          })}
           {metricEntries.length === 0 && (
-            <div className="text-xs text-muted-foreground col-span-2">No metrics captured.</div>
+            <div className="text-xs text-muted-foreground col-span-2">
+              No metrics captured. Raw CSV headers did not match the canonical alias map for this test type.
+            </div>
           )}
         </div>
+        {numericEntries.length === 0 && metricEntries.length > 0 && (
+          <p className="text-[11px] text-muted-foreground mt-2">
+            No numeric metrics detected — only string values were captured.
+          </p>
+        )}
       </div>
+
+      {/* Prescription insight drawer (inline) */}
+      {prescription && prescribeMetric && (
+        <Card className="p-4 border-primary/40 bg-primary/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Sparkles className="w-4 h-4 text-primary" />
+              Prescription insight · {metricLabel(prescribeMetric)}
+            </div>
+            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setPrescribeMetric(null)}>
+              <X className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <Field label="Current" value={<span className="font-mono">{prescription.current?.toFixed(2) ?? '—'}</span>} />
+            <Field
+              label="Trend Δ"
+              value={
+                prescription.deltaPct === null
+                  ? '—'
+                  : <span className={cn('font-mono', prescription.deltaPct >= 0 ? 'text-emerald-600' : 'text-amber-600')}>
+                      {prescription.deltaPct >= 0 ? '+' : ''}{prescription.deltaPct.toFixed(1)}%
+                    </span>
+              }
+            />
+            <Field
+              label="Asymmetry"
+              value={prescription.pair ? <span className="font-mono">{prescription.pair.asymmetry.toFixed(1)}%</span> : '—'}
+            />
+          </div>
+          {trend.length > 1 && (
+            <ResponsiveContainer width="100%" height={120}>
+              <LineChart data={trend}>
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} width={32} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+          <div className="text-xs">
+            <div className="font-medium mb-1">Interpretation</div>
+            <p className="text-muted-foreground">{prescription.interpretation}</p>
+          </div>
+          <div className="text-xs">
+            <div className="font-medium mb-1">Suggested programming focus</div>
+            <p className="text-muted-foreground">{prescription.focus}</p>
+          </div>
+          <p className="text-[10px] text-muted-foreground italic">
+            Suggestion only — does not auto-generate a programme. Use Programming → New template to build one.
+          </p>
+        </Card>
+      )}
     </div>
   );
 };
