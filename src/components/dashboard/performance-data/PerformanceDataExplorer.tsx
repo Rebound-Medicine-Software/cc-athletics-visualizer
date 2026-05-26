@@ -209,14 +209,14 @@ export const PerformanceDataExplorer = () => {
       const byAthlete = new Map<string, TestRow[]>();
       for (const r of rows) {
         if (!r.athlete_id) continue;
-        if (numeric(r.metrics?.[activeMetric]) === null) continue;
+        if (getMetric(r, activeMetric) === null) continue;
         if (!byAthlete.has(r.athlete_id)) byAthlete.set(r.athlete_id, []);
         byAthlete.get(r.athlete_id)!.push(r);
       }
       for (const arr of byAthlete.values()) {
         const sorted = arr.slice().sort((a, b) => a.test_date.localeCompare(b.test_date));
-        const first = numeric(sorted[0].metrics?.[activeMetric]);
-        const last = numeric(sorted[sorted.length - 1].metrics?.[activeMetric]);
+        const first = getMetric(sorted[0], activeMetric);
+        const last = getMetric(sorted[sorted.length - 1], activeMetric);
         if (first && last && first > 0) {
           const pct = ((last - first) / first) * 100;
           if (!bestDelta || pct > bestDelta.pct) bestDelta = { pct, metric: activeMetric };
@@ -232,7 +232,7 @@ export const PerformanceDataExplorer = () => {
     if (!activeMetric) return [];
     return rows
       .map((r) => {
-        const v = numeric(r.metrics?.[activeMetric]);
+        const v = getMetric(r, activeMetric);
         if (v === null) return null;
         return {
           date: r.test_date,
@@ -250,7 +250,7 @@ export const PerformanceDataExplorer = () => {
     if (!activeMetric) return [];
     const byKey = new Map<string, { date: string; api?: number; csv?: number; row?: TestRow }>();
     for (const r of rows) {
-      const v = numeric(r.metrics?.[activeMetric]);
+      const v = getMetric(r, activeMetric);
       if (v === null) continue;
       const k = `${r.athlete_name}|${r.test_name}|${r.test_date}|${r.repetition_number}`;
       const entry = byKey.get(k) ?? { date: r.test_date, row: r };
@@ -474,7 +474,7 @@ export const PerformanceDataExplorer = () => {
             <TableBody>
               <AnimatePresence>
                 {rows.slice(0, 100).map((r) => {
-                  const v = activeMetric ? numeric(r.metrics?.[activeMetric]) : null;
+                  const v = activeMetric ? getMetric(r, activeMetric) : null;
                   const isConflict = rows.some(
                     (other) =>
                       other.id !== r.id &&
