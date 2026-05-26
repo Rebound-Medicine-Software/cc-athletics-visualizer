@@ -165,16 +165,26 @@ export const PerformanceDataExplorer = () => {
 
   const rows = dataQuery.data ?? [];
 
+  // Precompute flattened metrics per row (handles legacy `_raw` payloads from CSV).
+  const flatMetricsById = useMemo(() => {
+    const map = new Map<string, Record<string, any>>();
+    for (const r of rows) map.set(r.id, flattenMetrics(r.metrics));
+    return map;
+  }, [rows]);
+  const getMetric = (row: TestRow, key: string | null) =>
+    key ? numeric(flatMetricsById.get(row.id)?.[key]) : null;
+
   // Available metrics from data
   const metricKeys = useMemo(() => {
     const set = new Set<string>();
     for (const r of rows) {
-      Object.entries(r.metrics ?? {}).forEach(([k, v]) => {
+      const flat = flatMetricsById.get(r.id) ?? {};
+      Object.entries(flat).forEach(([k, v]) => {
         if (numeric(v) !== null) set.add(k);
       });
     }
     return Array.from(set).sort();
-  }, [rows]);
+  }, [rows, flatMetricsById]);
 
   const activeMetric = filters.metric ?? metricKeys[0] ?? null;
 
