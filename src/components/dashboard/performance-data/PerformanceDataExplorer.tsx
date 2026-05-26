@@ -52,6 +52,30 @@ const numeric = (v: any) => {
   return Number.isFinite(n) ? n : null;
 };
 
+/**
+ * Flatten metrics for display: merges top-level numeric keys with anything
+ * inside `_raw` (where CSV imports park unknown headers). Top-level wins.
+ */
+const flattenMetrics = (m: Record<string, any> | null | undefined): Record<string, any> => {
+  if (!m) return {};
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(m)) {
+    if (k === '_raw') continue;
+    out[k] = v;
+  }
+  const raw = m._raw;
+  if (raw && typeof raw === 'object') {
+    for (const [k, v] of Object.entries(raw)) {
+      const nk = k
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      if (nk && out[nk] === undefined) out[nk] = v;
+    }
+  }
+  return out;
+};
+
 const metricLabel = (k: string) =>
   k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
