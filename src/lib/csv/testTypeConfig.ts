@@ -61,3 +61,30 @@ export function getSubtype(typeId: TestType, subtypeId: string | null): TestSubt
   const t = TEST_TYPES.find((x) => x.id === typeId);
   return t?.subtypes?.find((s) => s.id === subtypeId) ?? null;
 }
+
+/** Canonical DB values allowed by test_data.test_type CHECK constraint. */
+export type DbTestType = 'movement' | 'balance' | 'jump' | 'isometric' | 'pogo';
+
+/**
+ * Map UI test type + subtype to the canonical DB { test_type, test_subtype } pair.
+ * Pogos subtype is special-cased to test_type = 'pogo' to match API-synced rows.
+ */
+export function toDbTestType(
+  uiTestType: TestType,
+  uiSubtypeId: string | null,
+): { test_type: DbTestType; test_subtype: string | null } {
+  const sub = uiSubtypeId ? uiSubtypeId.toLowerCase() : null;
+  switch (uiTestType) {
+    case 'Movement':
+      return { test_type: 'movement', test_subtype: sub };
+    case 'Balance':
+      return { test_type: 'balance', test_subtype: sub };
+    case 'Isometrics':
+      return { test_type: 'isometric', test_subtype: sub };
+    case 'Jumps':
+      if (sub === 'pogos' || sub === 'pogo') return { test_type: 'pogo', test_subtype: 'pogo' };
+      return { test_type: 'jump', test_subtype: sub };
+    default:
+      return { test_type: 'jump', test_subtype: sub };
+  }
+}
