@@ -1,0 +1,2 @@
+ALTER TABLE public.test_data DROP CONSTRAINT IF EXISTS test_data_test_type_check;
+ALTER TABLE public.test_data ADD CONSTRAINT test_data_test_type_check CHECK (test_type IN ('jump','isometric','pogo','movement','balance'));
