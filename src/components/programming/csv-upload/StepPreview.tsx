@@ -7,14 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
 import type { UploadedFileState } from './types';
 
 interface Props {
   files: UploadedFileState[];
+  testType: TestType | null;
+  subtypeId: string | null;
   onResolutionChange: (idx: number, resolution: UploadedFileState['resolution']) => void;
 }
 
-export const StepPreview = ({ files, onResolutionChange }: Props) => {
+export const StepPreview = ({ files, testType, subtypeId, onResolutionChange }: Props) => {
+  const mapping = testType ? toDbTestType(testType, subtypeId) : null;
   return (
     <div className="space-y-4">
       <div>
