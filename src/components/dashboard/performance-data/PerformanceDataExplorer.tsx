@@ -24,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { TEST_TYPES } from '@/lib/csv/testTypeConfig';
+import { TEST_TYPES, toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
 import { cn } from '@/lib/utils';
 
 type Source = 'all' | 'api' | 'manual_csv';
