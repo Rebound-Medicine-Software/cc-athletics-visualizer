@@ -44,6 +44,10 @@ export function useCsvImport() {
     mutationFn: async (args: ImportArgs): Promise<ImportSummary> => {
       const subtype = getSubtype(args.testType, args.testSubtypeId);
       const testName = subtype?.testName ?? args.testType;
+      const { test_type: dbTestType, test_subtype: dbTestSubtype } = toDbTestType(
+        args.testType,
+        args.testSubtypeId,
+      );
 
       // 1. Create batch
       const fileNames = args.files.map((f) => f.file.name);
