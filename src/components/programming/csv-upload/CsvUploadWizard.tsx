@@ -255,7 +255,12 @@ export const CsvUploadWizard = () => {
           />
         )}
         {STEPS[step].id === 'preview' && (
-          <StepPreview files={state.files} onResolutionChange={handleSetResolution} />
+          <StepPreview
+            files={state.files}
+            testType={state.testType}
+            subtypeId={state.testSubtypeId}
+            onResolutionChange={handleSetResolution}
+          />
         )}
       </Card>
 
