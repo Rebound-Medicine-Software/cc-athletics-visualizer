@@ -9,7 +9,7 @@ import {
 import { format, subDays } from 'date-fns';
 import {
   Activity, Database, FileSpreadsheet, AlertTriangle,
-  TrendingUp, ExternalLink, X,
+  TrendingUp, ExternalLink, X, Sparkles,
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
