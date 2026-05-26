@@ -153,8 +153,13 @@ export const PerformanceDataExplorer = () => {
 
       if (filters.teamId) q = q.eq('team_id', filters.teamId);
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
-      if (filters.testType) q = q.eq('test_type', filters.testType);
-      if (filters.testSubtype) q = q.eq('test_subtype', filters.testSubtype);
+      if (filters.testType) {
+        const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
+        q = q.eq('test_type', mapped.test_type);
+        if (filters.testSubtype && mapped.test_subtype) {
+          q = q.eq('test_subtype', mapped.test_subtype);
+        }
+      }
       if (filters.source !== 'all') q = q.eq('source', filters.source);
 
       const { data, error } = await q;
