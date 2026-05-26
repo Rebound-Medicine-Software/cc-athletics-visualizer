@@ -28,6 +28,35 @@ export const StepPreview = ({ files, testType, subtypeId, onResolutionChange }: 
         </p>
       </div>
 
+      {mapping && (
+        <div className="rounded-lg border bg-muted/30 p-3 text-xs grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div>
+            <div className="text-muted-foreground">UI test type</div>
+            <div className="font-semibold">{testType}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">UI subtype</div>
+            <div className="font-semibold">{subtypeId ?? '—'}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">DB test_type</div>
+            <div className="font-mono font-semibold">{mapping.test_type}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">DB test_subtype</div>
+            <div className="font-mono font-semibold">{mapping.test_subtype ?? '—'}</div>
+          </div>
+        </div>
+      )}
+
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold">Preview & confirm</h3>
+        <p className="text-sm text-muted-foreground">
+          Review parsed rows and resolve any duplicates before importing.
+        </p>
+      </div>
+
       {files.map((f, i) => {
         const dupCount = (f.rowDuplicates ?? []).filter((r) => r.isDuplicate).length;
         const importable =
