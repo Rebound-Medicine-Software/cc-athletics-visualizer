@@ -22,9 +22,13 @@ import {
 } from '@/lib/golf/swingAnalysis';
 
 interface Props {
-  batchId: string;
+  batchId: string | null;
+  athleteId?: string | null;
   athleteName: string;
   testDate: string;
+  fileHash?: string | null;
+  originalFileName?: string | null;
+  row?: any;
 }
 
 const PHASE_COLORS: Record<string, string> = {
@@ -40,28 +44,68 @@ const PHASE_COLORS: Record<string, string> = {
 
 const SAMPLE_RATE = 1000;
 
-export const GolfSwingAnalysis = ({ batchId, athleteName, testDate }: Props) => {
+export const GolfSwingAnalysis = ({
+  batchId, athleteId, athleteName, testDate, fileHash, originalFileName, row,
+}: Props) => {
   const samplesQuery = useQuery({
-    queryKey: ['golf-swing-batch', batchId],
+    queryKey: ['golf-swing-batch', batchId, athleteId, testDate, fileHash, originalFileName],
     queryFn: async () => {
-      // Pull all samples for this batch in chunks (Supabase max 1000/req).
       const chunkSize = 1000;
-      let from = 0;
-      const all: any[] = [];
-      while (true) {
-        const { data, error } = await supabase
-          .from('test_data')
-          .select('repetition_number, metrics')
-          .eq('import_batch_id', batchId)
-          .order('repetition_number', { ascending: true })
-          .range(from, from + chunkSize - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        all.push(...data);
-        if (data.length < chunkSize) break;
-        from += chunkSize;
+      const fetchAll = async (
+        build: (from: number, to: number) => any,
+      ) => {
+        let from = 0;
+        const all: any[] = [];
+        while (true) {
+          const { data, error } = await build(from, from + chunkSize - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          all.push(...data);
+          if (data.length < chunkSize) break;
+          from += chunkSize;
+        }
+        return all;
+      };
+
+      // 1. Prefer import_batch_id
+      if (batchId) {
+        return await fetchAll((from, to) =>
+          supabase
+            .from('test_data')
+            .select('repetition_number, metrics, created_at')
+            .eq('import_batch_id', batchId)
+            .order('repetition_number', { ascending: true })
+            .range(from, to),
+        );
       }
-      return all;
+
+      // 2. Fallback: file_hash
+      if (fileHash) {
+        return await fetchAll((from, to) =>
+          supabase
+            .from('test_data')
+            .select('repetition_number, metrics, created_at')
+            .eq('file_hash', fileHash)
+            .order('repetition_number', { ascending: true })
+            .range(from, to),
+        );
+      }
+
+      // 3. Fallback: athlete + date + test_type
+      if (athleteId && testDate) {
+        return await fetchAll((from, to) =>
+          supabase
+            .from('test_data')
+            .select('repetition_number, metrics, created_at')
+            .eq('athlete_id', athleteId)
+            .eq('test_date', testDate)
+            .eq('test_type', 'movement')
+            .order('repetition_number', { ascending: true })
+            .range(from, to),
+        );
+      }
+
+      return [];
     },
   });
 
