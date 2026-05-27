@@ -575,16 +575,20 @@ export const PerformanceDataExplorer = () => {
         <SheetContent
           className={cn(
             'overflow-y-auto',
-            detailRow?.test_type === 'movement' && detailRow?.test_subtype === 'golf_swing'
+            detailRow && isGolfSwingRow(detailRow)
               ? 'w-full sm:max-w-5xl'
               : 'w-full sm:max-w-xl',
           )}
         >
-          {detailRow && detailRow.test_type === 'movement' && detailRow.test_subtype === 'golf_swing' && detailRow.import_batch_id ? (
+          {detailRow && isGolfSwingRow(detailRow) ? (
             <GolfSwingAnalysis
               batchId={detailRow.import_batch_id}
+              athleteId={detailRow.athlete_id}
               athleteName={detailRow.athlete_name}
               testDate={detailRow.test_date}
+              fileHash={detailRow.file_hash}
+              originalFileName={detailRow.original_file_name}
+              row={detailRow}
             />
           ) : detailRow && (
             <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
