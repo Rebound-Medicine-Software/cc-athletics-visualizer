@@ -553,8 +553,23 @@ export const PerformanceDataExplorer = () => {
 
       {/* Detail drawer */}
       <Sheet open={!!detailRow} onOpenChange={(o) => !o && setDetailRow(null)}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          {detailRow && <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />}
+        <SheetContent
+          className={cn(
+            'overflow-y-auto',
+            detailRow?.test_type === 'movement' && detailRow?.test_subtype === 'golf_swing'
+              ? 'w-full sm:max-w-5xl'
+              : 'w-full sm:max-w-xl',
+          )}
+        >
+          {detailRow && detailRow.test_type === 'movement' && detailRow.test_subtype === 'golf_swing' && detailRow.import_batch_id ? (
+            <GolfSwingAnalysis
+              batchId={detailRow.import_batch_id}
+              athleteName={detailRow.athlete_name}
+              testDate={detailRow.test_date}
+            />
+          ) : detailRow && (
+            <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
+          )}
         </SheetContent>
       </Sheet>
     </div>
