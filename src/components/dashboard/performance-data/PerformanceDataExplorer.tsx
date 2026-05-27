@@ -80,6 +80,25 @@ const flattenMetrics = (m: Record<string, any> | null | undefined): Record<strin
 const metricLabel = (k: string) =>
   k.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+const GOLF_CHANNELS = ['fp1_bl', 'fp1_br', 'fp1_fr', 'fp1_fl', 'fp2_bl', 'fp2_br', 'fp2_fr', 'fp2_fl'];
+
+/** True if row is (or looks like) a golf-swing force trace sample. */
+export const isGolfSwingRow = (row: {
+  test_type?: string | null;
+  test_subtype?: string | null;
+  test_name?: string | null;
+  metrics?: Record<string, any> | null;
+}): boolean => {
+  const tt = (row.test_type ?? '').toString().toLowerCase().replace(/[\s-]+/g, '_');
+  const st = (row.test_subtype ?? '').toString().toLowerCase().replace(/[\s-]+/g, '_');
+  const tn = (row.test_name ?? '').toString().toLowerCase();
+  const flat = flattenMetrics(row.metrics ?? {});
+  const hasChannels = GOLF_CHANNELS.some((k) => k in flat);
+  const subtypeMatches = st === 'golf_swing' || st === 'golfswing' || tn.includes('golf');
+  if (tt === 'movement') return subtypeMatches || hasChannels;
+  return hasChannels && subtypeMatches;
+};
+
 export const PerformanceDataExplorer = () => {
   const { teamId } = useEffectiveTeamId();
   const [searchParams, setSearchParams] = useSearchParams();
