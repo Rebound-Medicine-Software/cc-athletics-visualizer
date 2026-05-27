@@ -125,8 +125,37 @@ export const GolfSwingAnalysis = ({
   if (samplesQuery.isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading force trace…</div>;
   }
+  if (samplesQuery.error) {
+    return (
+      <div className="p-8 text-sm text-destructive space-y-1">
+        <div className="font-medium">Could not load swing batch.</div>
+        <div className="text-xs text-muted-foreground">{(samplesQuery.error as Error).message}</div>
+      </div>
+    );
+  }
+  const rawRows = samplesQuery.data ?? [];
   if (!analysis || analysis.samples.length === 0) {
-    return <div className="p-8 text-sm text-muted-foreground">No force samples found for this swing session.</div>;
+    const reasons: string[] = [];
+    if (!batchId && !fileHash && !athleteId) reasons.push('No import_batch_id, file_hash, or athlete_id available on the selected row.');
+    if (rawRows.length === 0) reasons.push('No rows returned for this batch / athlete+date / file_hash.');
+    if (rawRows.length > 0) {
+      const sample = rawRows[0]?.metrics ?? {};
+      const flat = { ...(sample as any), ...((sample as any)?._raw ?? {}) };
+      const has = ['fp1_bl','fp1_br','fp1_fr','fp1_fl','fp2_bl','fp2_br','fp2_fr','fp2_fl']
+        .filter((k) => k in flat);
+      if (has.length === 0) reasons.push('Force plate channels (fp1_*/fp2_*) not present in metrics payload.');
+    }
+    return (
+      <div className="p-8 space-y-3">
+        <div className="text-sm font-medium">Golf Swing Analysis unavailable</div>
+        <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+          {reasons.length === 0 ? <li>Insufficient samples to detect a swing window.</li> : reasons.map((r, i) => <li key={i}>{r}</li>)}
+        </ul>
+        <div className="text-[10px] text-muted-foreground pt-2 border-t">
+          batchId: {batchId ?? '—'} · athleteId: {athleteId ?? '—'} · date: {testDate} · rows: {rawRows.length}
+        </div>
+      </div>
+    );
   }
 
   const swing = analysis.swings[selectedSwing];
