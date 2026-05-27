@@ -61,7 +61,7 @@ export interface DetectionResult {
   sampleRate: number;
 }
 
-/** Build samples from raw rows. Rows must contain numeric fp1_*/fp2_* channels. */
+/** Build samples from raw rows. Rows must contain numeric fp1/fp2 quadrant channels. */
 export function buildSamples(
   rows: { repetition_number: number; metrics: Record<string, any> }[],
   sampleRate: number,
