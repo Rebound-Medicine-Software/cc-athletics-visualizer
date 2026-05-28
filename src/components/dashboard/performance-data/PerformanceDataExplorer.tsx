@@ -91,7 +91,7 @@ const hasGolfForceChannels = (row: { metrics?: Record<string, any> | null }) => 
 };
 
 /** True if row is (or looks like) a golf-swing force trace sample. */
-export const isGolfSwingRow = (row: {
+const isGolfSwingRow = (row: {
   test_type?: string | null;
   test_subtype?: string | null;
   test_name?: string | null;
