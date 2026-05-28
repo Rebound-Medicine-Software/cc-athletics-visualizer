@@ -306,6 +306,16 @@ export const PerformanceDataExplorer = () => {
     ? TEST_TYPES.find((t) => t.id === filters.testType)?.subtypes ?? []
     : [];
 
+  const openDetail = (row: TestRow) => {
+    setDrawerMode('auto');
+    setDetailRow(row);
+  };
+
+  const detailIsGolfSwing = detailRow ? isGolfSwingRow(detailRow) : false;
+  const detailHasGolfChannels = detailRow ? hasGolfForceChannels(detailRow) : false;
+  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || (drawerMode === 'auto' && detailIsGolfSwing));
+  const renderedComponent = renderGolfAnalysis ? 'GolfSwingAnalysis' : 'Generic TestDetail';
+
   // -------- render --------
   return (
     <div className="space-y-6">
@@ -434,7 +444,7 @@ export const PerformanceDataExplorer = () => {
                       fill={isCsv ? 'hsl(var(--accent-foreground, var(--primary)))' : 'hsl(var(--primary))'}
                       stroke={isCsv ? 'hsl(var(--accent))' : 'hsl(var(--background))'}
                       strokeWidth={2}
-                      onClick={() => setDetailRow(props.payload.row)}
+                      onClick={() => openDetail(props.payload.row)}
                       style={{ cursor: 'pointer' }}
                     />
                   );
@@ -526,7 +536,7 @@ export const PerformanceDataExplorer = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="hover:bg-muted/40 cursor-pointer"
-                      onClick={() => setDetailRow(r)}
+                      onClick={() => openDetail(r)}
                     >
                       <TableCell>{format(new Date(r.test_date), 'PP')}</TableCell>
                       <TableCell className="font-medium">{r.athlete_name}</TableCell>
@@ -580,27 +590,43 @@ export const PerformanceDataExplorer = () => {
       </Card>
 
       {/* Detail drawer */}
-      <Sheet open={!!detailRow} onOpenChange={(o) => !o && setDetailRow(null)}>
+      <Sheet open={!!detailRow} onOpenChange={(o) => {
+        if (!o) {
+          setDetailRow(null);
+          setDrawerMode('auto');
+        }
+      }}>
         <SheetContent
           className={cn(
             'overflow-y-auto',
-            detailRow && isGolfSwingRow(detailRow)
+            renderGolfAnalysis
               ? 'w-full sm:max-w-5xl'
               : 'w-full sm:max-w-xl',
           )}
         >
-          {detailRow && isGolfSwingRow(detailRow) ? (
-            <GolfSwingAnalysis
-              batchId={detailRow.import_batch_id}
-              athleteId={detailRow.athlete_id}
-              athleteName={detailRow.athlete_name}
-              testDate={detailRow.test_date}
-              fileHash={detailRow.file_hash}
-              originalFileName={detailRow.original_file_name}
-              row={detailRow}
-            />
-          ) : detailRow && (
-            <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
+          {detailRow && (
+            <div className="space-y-4">
+              <DrawerDebugPanel
+                row={detailRow}
+                isGolfSwing={detailIsGolfSwing}
+                renderedComponent={renderedComponent}
+                hasGolfChannels={detailHasGolfChannels}
+                onOpenGolfAnalysis={() => setDrawerMode('golf_analysis')}
+              />
+              {renderGolfAnalysis ? (
+                <GolfSwingAnalysis
+                  batchId={detailRow.import_batch_id}
+                  athleteId={detailRow.athlete_id}
+                  athleteName={detailRow.athlete_name}
+                  testDate={detailRow.test_date}
+                  fileHash={detailRow.file_hash}
+                  originalFileName={detailRow.original_file_name}
+                  row={detailRow}
+                />
+              ) : (
+                <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
+              )}
+            </div>
           )}
         </SheetContent>
       </Sheet>
