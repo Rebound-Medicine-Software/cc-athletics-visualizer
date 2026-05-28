@@ -82,6 +82,14 @@ const metricLabel = (k: string) =>
 
 const GOLF_CHANNELS = ['fp1_bl', 'fp1_br', 'fp1_fr', 'fp1_fl', 'fp2_bl', 'fp2_br', 'fp2_fr', 'fp2_fl'];
 
+const getDetectedMetricKeys = (row: { metrics?: Record<string, any> | null }) =>
+  Object.keys(flattenMetrics(row.metrics ?? {})).sort();
+
+const hasGolfForceChannels = (row: { metrics?: Record<string, any> | null }) => {
+  const keys = new Set(getDetectedMetricKeys(row));
+  return GOLF_CHANNELS.some((k) => keys.has(k));
+};
+
 /** True if row is (or looks like) a golf-swing force trace sample. */
 export const isGolfSwingRow = (row: {
   test_type?: string | null;
@@ -124,6 +132,7 @@ export const PerformanceDataExplorer = () => {
   }));
 
   const [detailRow, setDetailRow] = useState<TestRow | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'auto' | 'golf_analysis'>('auto');
 
   // Sync ?athleteId/testType params once on mount handled above; clear them now.
   useEffect(() => {
