@@ -311,9 +311,20 @@ export const PerformanceDataExplorer = () => {
     setDetailRow(row);
   };
 
+  const openGolfAnalysis = (row: TestRow) => {
+    setDrawerMode('golf_analysis');
+    setDetailRow(row);
+  };
+
+  const golfRows = useMemo(
+    () => rows.filter((r) => isGolfSwingRow(r) || hasGolfForceChannels(r)),
+    [rows],
+  );
+  const latestGolfRow = golfRows[0] ?? null;
+
   const detailIsGolfSwing = detailRow ? isGolfSwingRow(detailRow) : false;
   const detailHasGolfChannels = detailRow ? hasGolfForceChannels(detailRow) : false;
-  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || (drawerMode === 'auto' && detailIsGolfSwing));
+  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || detailIsGolfSwing || detailHasGolfChannels);
   const renderedComponent = renderGolfAnalysis ? 'GolfSwingAnalysis' : 'Generic TestDetail';
 
   // -------- render --------
@@ -381,6 +392,30 @@ export const PerformanceDataExplorer = () => {
           />
         </div>
       </Card>
+
+      {latestGolfRow && (
+        <Card className="p-4 border-primary/40 bg-primary/5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge>Golf Swing force trace detected</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {golfRows.length.toLocaleString()} row{golfRows.length === 1 ? '' : 's'} match the current filters
+                </span>
+              </div>
+              <div className="text-sm font-semibold">
+                {latestGolfRow.athlete_name} · {latestGolfRow.test_name} · {format(new Date(latestGolfRow.test_date), 'PP')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                This opens a right-side Sheet drawer with the Golf Swing Analysis dashboard.
+              </div>
+            </div>
+            <Button size="lg" className="h-11 shrink-0" onClick={() => openGolfAnalysis(latestGolfRow)}>
+              <Activity className="w-4 h-4" /> Open Golf Swing Analysis
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -600,18 +635,19 @@ export const PerformanceDataExplorer = () => {
           className={cn(
             'overflow-y-auto',
             renderGolfAnalysis
-              ? 'w-full sm:max-w-5xl'
+              ? '!w-full !max-w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]'
               : 'w-full sm:max-w-xl',
           )}
         >
           {detailRow && (
             <div className="space-y-4">
+              {renderGolfAnalysis && <GolfDrawerProofHeader row={detailRow} />}
               <DrawerDebugPanel
                 row={detailRow}
                 isGolfSwing={detailIsGolfSwing}
                 renderedComponent={renderedComponent}
                 hasGolfChannels={detailHasGolfChannels}
-                onOpenGolfAnalysis={() => setDrawerMode('golf_analysis')}
+                onOpenGolfAnalysis={() => openGolfAnalysis(detailRow)}
               />
               {renderGolfAnalysis ? (
                 <GolfSwingAnalysis
