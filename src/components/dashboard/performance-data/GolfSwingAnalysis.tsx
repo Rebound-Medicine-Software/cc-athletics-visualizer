@@ -123,13 +123,21 @@ export const GolfSwingAnalysis = ({
   }, [analysis?.bestSwingIndex]);
 
   if (samplesQuery.isLoading) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading force trace…</div>;
+    return (
+      <div className="space-y-4">
+        <GolfActiveHeader />
+        <div className="p-8 text-sm text-muted-foreground">Loading force trace…</div>
+      </div>
+    );
   }
   if (samplesQuery.error) {
     return (
-      <div className="p-8 text-sm text-destructive space-y-1">
-        <div className="font-medium">Could not load swing batch.</div>
-        <div className="text-xs text-muted-foreground">{(samplesQuery.error as Error).message}</div>
+      <div className="space-y-4">
+        <GolfActiveHeader />
+        <div className="p-8 text-sm text-destructive space-y-1">
+          <div className="font-medium">Could not load swing batch.</div>
+          <div className="text-xs text-muted-foreground">{(samplesQuery.error as Error).message}</div>
+        </div>
       </div>
     );
   }
@@ -146,13 +154,16 @@ export const GolfSwingAnalysis = ({
       if (has.length === 0) reasons.push('Force plate channels (fp1_*/fp2_*) not present in metrics payload.');
     }
     return (
-      <div className="p-8 space-y-3">
-        <div className="text-sm font-medium">Golf Swing Analysis unavailable</div>
-        <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
-          {reasons.length === 0 ? <li>Insufficient samples to detect a swing window.</li> : reasons.map((r, i) => <li key={i}>{r}</li>)}
-        </ul>
-        <div className="text-[10px] text-muted-foreground pt-2 border-t">
-          batchId: {batchId ?? '—'} · athleteId: {athleteId ?? '—'} · date: {testDate} · rows: {rawRows.length}
+      <div className="space-y-4">
+        <GolfActiveHeader />
+        <div className="p-8 space-y-3">
+          <div className="text-sm font-medium">Golf Swing Analysis unavailable</div>
+          <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">
+            {reasons.length === 0 ? <li>Insufficient samples to detect a swing window.</li> : reasons.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+          <div className="text-[10px] text-muted-foreground pt-2 border-t">
+            batchId: {batchId ?? '—'} · athleteId: {athleteId ?? '—'} · date: {testDate} · rows: {rawRows.length}
+          </div>
         </div>
       </div>
     );
@@ -163,6 +174,7 @@ export const GolfSwingAnalysis = ({
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-4">
+        <GolfActiveHeader />
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
