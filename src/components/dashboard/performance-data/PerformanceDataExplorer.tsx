@@ -91,7 +91,7 @@ const hasGolfForceChannels = (row: { metrics?: Record<string, any> | null }) => 
 };
 
 /** True if row is (or looks like) a golf-swing force trace sample. */
-export const isGolfSwingRow = (row: {
+const isGolfSwingRow = (row: {
   test_type?: string | null;
   test_subtype?: string | null;
   test_name?: string | null;
@@ -311,9 +311,20 @@ export const PerformanceDataExplorer = () => {
     setDetailRow(row);
   };
 
+  const openGolfAnalysis = (row: TestRow) => {
+    setDrawerMode('golf_analysis');
+    setDetailRow(row);
+  };
+
+  const golfRows = useMemo(
+    () => rows.filter((r) => isGolfSwingRow(r) || hasGolfForceChannels(r)),
+    [rows],
+  );
+  const latestGolfRow = golfRows[0] ?? null;
+
   const detailIsGolfSwing = detailRow ? isGolfSwingRow(detailRow) : false;
   const detailHasGolfChannels = detailRow ? hasGolfForceChannels(detailRow) : false;
-  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || (drawerMode === 'auto' && detailIsGolfSwing));
+  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || detailIsGolfSwing || detailHasGolfChannels);
   const renderedComponent = renderGolfAnalysis ? 'GolfSwingAnalysis' : 'Generic TestDetail';
 
   // -------- render --------
@@ -381,6 +392,30 @@ export const PerformanceDataExplorer = () => {
           />
         </div>
       </Card>
+
+      {latestGolfRow && (
+        <Card className="p-4 border-primary/40 bg-primary/5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge>Golf Swing force trace detected</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {golfRows.length.toLocaleString()} row{golfRows.length === 1 ? '' : 's'} match the current filters
+                </span>
+              </div>
+              <div className="text-sm font-semibold">
+                {latestGolfRow.athlete_name} · {latestGolfRow.test_name} · {format(new Date(latestGolfRow.test_date), 'PP')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                This opens a right-side Sheet drawer with the Golf Swing Analysis dashboard.
+              </div>
+            </div>
+            <Button size="lg" className="h-11 shrink-0" onClick={() => openGolfAnalysis(latestGolfRow)}>
+              <Activity className="w-4 h-4" /> Open Golf Swing Analysis
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -519,6 +554,7 @@ export const PerformanceDataExplorer = () => {
               <AnimatePresence>
                 {rows.slice(0, 100).map((r) => {
                   const v = activeMetric ? getMetric(r, activeMetric) : null;
+                  const rowIsGolf = isGolfSwingRow(r) || hasGolfForceChannels(r);
                   const isConflict = rows.some(
                     (other) =>
                       other.id !== r.id &&
@@ -543,6 +579,7 @@ export const PerformanceDataExplorer = () => {
                       <TableCell>
                         {r.test_name}
                         {r.test_subtype && <span className="text-muted-foreground"> · {r.test_subtype}</span>}
+                        {rowIsGolf && <Badge variant="secondary" className="ml-2">Golf analysis ready</Badge>}
                       </TableCell>
                       <TableCell>
                         {activeMetric && v !== null ? (
@@ -569,8 +606,16 @@ export const PerformanceDataExplorer = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="w-3.5 h-3.5" />
+                        <Button
+                          variant={rowIsGolf ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            rowIsGolf ? openGolfAnalysis(r) : openDetail(r);
+                          }}
+                        >
+                          {rowIsGolf ? <Activity className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                          {rowIsGolf && <span>Open Golf Analysis</span>}
                         </Button>
                       </TableCell>
                     </motion.tr>
@@ -600,18 +645,19 @@ export const PerformanceDataExplorer = () => {
           className={cn(
             'overflow-y-auto',
             renderGolfAnalysis
-              ? 'w-full sm:max-w-5xl'
+              ? '!w-full !max-w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]'
               : 'w-full sm:max-w-xl',
           )}
         >
           {detailRow && (
             <div className="space-y-4">
+              {renderGolfAnalysis && <GolfDrawerProofHeader row={detailRow} />}
               <DrawerDebugPanel
                 row={detailRow}
                 isGolfSwing={detailIsGolfSwing}
                 renderedComponent={renderedComponent}
                 hasGolfChannels={detailHasGolfChannels}
-                onOpenGolfAnalysis={() => setDrawerMode('golf_analysis')}
+                onOpenGolfAnalysis={() => openGolfAnalysis(detailRow)}
               />
               {renderGolfAnalysis ? (
                 <GolfSwingAnalysis
@@ -695,6 +741,24 @@ const KpiCard = ({
 const EmptyChart = ({ message }: { message: string }) => (
   <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground border border-dashed rounded-md">
     {message}
+  </div>
+);
+
+const GolfDrawerProofHeader = ({ row }: { row: TestRow }) => (
+  <div className="sticky top-0 z-10 -mx-6 -mt-6 border-b border-primary/40 bg-background/95 px-6 py-4 shadow-sm backdrop-blur">
+    <div className="rounded-md border border-primary/40 bg-primary/10 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary">
+            <Activity className="w-4 h-4" /> GOLF SWING ANALYSIS ACTIVE
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Right-side Sheet drawer · {row.athlete_name} · {row.test_name} · {format(new Date(row.test_date), 'PP')}
+          </div>
+        </div>
+        <Badge variant="secondary">Golf dashboard mounted</Badge>
+      </div>
+    </div>
   </div>
 );
 
