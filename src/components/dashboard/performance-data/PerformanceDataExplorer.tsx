@@ -734,6 +734,24 @@ const EmptyChart = ({ message }: { message: string }) => (
   </div>
 );
 
+const GolfDrawerProofHeader = ({ row }: { row: TestRow }) => (
+  <div className="sticky top-0 z-10 -mx-6 -mt-6 border-b border-primary/40 bg-background/95 px-6 py-4 shadow-sm backdrop-blur">
+    <div className="rounded-md border border-primary/40 bg-primary/10 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary">
+            <Activity className="w-4 h-4" /> GOLF SWING ANALYSIS ACTIVE
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Right-side Sheet drawer · {row.athlete_name} · {row.test_name} · {format(new Date(row.test_date), 'PP')}
+          </div>
+        </div>
+        <Badge variant="secondary">Golf dashboard mounted</Badge>
+      </div>
+    </div>
+  </div>
+);
+
 const DrawerDebugPanel = ({
   row, isGolfSwing, renderedComponent, hasGolfChannels, onOpenGolfAnalysis,
 }: {
