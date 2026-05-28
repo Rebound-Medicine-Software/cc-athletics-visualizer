@@ -698,6 +698,67 @@ const EmptyChart = ({ message }: { message: string }) => (
   </div>
 );
 
+const DrawerDebugPanel = ({
+  row, isGolfSwing, renderedComponent, hasGolfChannels, onOpenGolfAnalysis,
+}: {
+  row: TestRow;
+  isGolfSwing: boolean;
+  renderedComponent: 'Generic TestDetail' | 'GolfSwingAnalysis';
+  hasGolfChannels: boolean;
+  onOpenGolfAnalysis: () => void;
+}) => {
+  const metricKeys = getDetectedMetricKeys(row);
+  const shownKeys = metricKeys.slice(0, 48);
+
+  return (
+    <Card className="p-3 border-primary/40 bg-primary/5 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold">
+            Performance Data Drawer Diagnostics
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Rendering: <span className="font-semibold text-foreground">{renderedComponent}</span> · isGolfSwingRow: <span className="font-mono">{String(isGolfSwing)}</span>
+          </div>
+        </div>
+        {hasGolfChannels && (
+          <Button size="lg" className="h-11 text-sm" onClick={onOpenGolfAnalysis}>
+            <Activity className="w-4 h-4" /> Open Golf Swing Analysis
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        <DebugField label="selected row id" value={row.id} mono />
+        <DebugField label="test_type" value={row.test_type ?? '—'} mono />
+        <DebugField label="test_subtype" value={row.test_subtype ?? '—'} mono />
+        <DebugField label="test_name" value={row.test_name ?? '—'} />
+        <DebugField label="import_batch_id" value={row.import_batch_id ?? '—'} mono />
+        <DebugField label="file_hash" value={row.file_hash ?? '—'} mono />
+        <DebugField label="original_file_name" value={row.original_file_name ?? '—'} />
+        <DebugField label="golf force channels" value={hasGolfChannels ? 'detected' : 'not detected'} mono />
+      </div>
+
+      <div className="text-xs">
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+          metric keys detected ({metricKeys.length})
+        </div>
+        <div className="max-h-24 overflow-auto rounded-md border bg-background/60 p-2 font-mono text-[10px] leading-relaxed break-all">
+          {shownKeys.length ? shownKeys.join(', ') : '—'}
+          {metricKeys.length > shownKeys.length && ` … +${metricKeys.length - shownKeys.length} more`}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const DebugField = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
+  <div className="rounded-md border bg-background/60 p-2 min-w-0">
+    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className={cn('mt-0.5 break-all', mono && 'font-mono')}>{value}</div>
+  </div>
+);
+
 const TestDetail = ({
   row, allRows, onClose,
 }: { row: TestRow; allRows: TestRow[]; onClose: () => void }) => {
