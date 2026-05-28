@@ -408,6 +408,14 @@ export const GolfSwingAnalysis = ({
 
 // ---------- Subcomponents ----------
 
+const GolfActiveHeader = () => (
+  <div className="rounded-md border border-primary/40 bg-primary/10 p-3">
+    <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-primary">
+      <Activity className="w-4 h-4" /> GOLF SWING ANALYSIS ACTIVE
+    </div>
+  </div>
+);
+
 const Metric = ({ label, value, hint }: { label: string; value: string; hint?: string }) => {
   const inner = (
     <div className="space-y-0.5">
