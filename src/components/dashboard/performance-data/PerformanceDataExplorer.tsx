@@ -554,6 +554,7 @@ export const PerformanceDataExplorer = () => {
               <AnimatePresence>
                 {rows.slice(0, 100).map((r) => {
                   const v = activeMetric ? getMetric(r, activeMetric) : null;
+                  const rowIsGolf = isGolfSwingRow(r) || hasGolfForceChannels(r);
                   const isConflict = rows.some(
                     (other) =>
                       other.id !== r.id &&
@@ -578,6 +579,7 @@ export const PerformanceDataExplorer = () => {
                       <TableCell>
                         {r.test_name}
                         {r.test_subtype && <span className="text-muted-foreground"> · {r.test_subtype}</span>}
+                        {rowIsGolf && <Badge variant="secondary" className="ml-2">Golf analysis ready</Badge>}
                       </TableCell>
                       <TableCell>
                         {activeMetric && v !== null ? (
@@ -604,8 +606,16 @@ export const PerformanceDataExplorer = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="w-3.5 h-3.5" />
+                        <Button
+                          variant={rowIsGolf ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            rowIsGolf ? openGolfAnalysis(r) : openDetail(r);
+                          }}
+                        >
+                          {rowIsGolf ? <Activity className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                          {rowIsGolf && <span>Open Golf Analysis</span>}
                         </Button>
                       </TableCell>
                     </motion.tr>
