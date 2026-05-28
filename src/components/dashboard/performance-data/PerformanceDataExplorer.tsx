@@ -82,6 +82,14 @@ const metricLabel = (k: string) =>
 
 const GOLF_CHANNELS = ['fp1_bl', 'fp1_br', 'fp1_fr', 'fp1_fl', 'fp2_bl', 'fp2_br', 'fp2_fr', 'fp2_fl'];
 
+const getDetectedMetricKeys = (row: { metrics?: Record<string, any> | null }) =>
+  Object.keys(flattenMetrics(row.metrics ?? {})).sort();
+
+const hasGolfForceChannels = (row: { metrics?: Record<string, any> | null }) => {
+  const keys = new Set(getDetectedMetricKeys(row));
+  return GOLF_CHANNELS.some((k) => keys.has(k));
+};
+
 /** True if row is (or looks like) a golf-swing force trace sample. */
 export const isGolfSwingRow = (row: {
   test_type?: string | null;
@@ -124,6 +132,7 @@ export const PerformanceDataExplorer = () => {
   }));
 
   const [detailRow, setDetailRow] = useState<TestRow | null>(null);
+  const [drawerMode, setDrawerMode] = useState<'auto' | 'golf_analysis'>('auto');
 
   // Sync ?athleteId/testType params once on mount handled above; clear them now.
   useEffect(() => {
@@ -297,6 +306,16 @@ export const PerformanceDataExplorer = () => {
     ? TEST_TYPES.find((t) => t.id === filters.testType)?.subtypes ?? []
     : [];
 
+  const openDetail = (row: TestRow) => {
+    setDrawerMode('auto');
+    setDetailRow(row);
+  };
+
+  const detailIsGolfSwing = detailRow ? isGolfSwingRow(detailRow) : false;
+  const detailHasGolfChannels = detailRow ? hasGolfForceChannels(detailRow) : false;
+  const renderGolfAnalysis = !!detailRow && (drawerMode === 'golf_analysis' || (drawerMode === 'auto' && detailIsGolfSwing));
+  const renderedComponent = renderGolfAnalysis ? 'GolfSwingAnalysis' : 'Generic TestDetail';
+
   // -------- render --------
   return (
     <div className="space-y-6">
@@ -425,7 +444,7 @@ export const PerformanceDataExplorer = () => {
                       fill={isCsv ? 'hsl(var(--accent-foreground, var(--primary)))' : 'hsl(var(--primary))'}
                       stroke={isCsv ? 'hsl(var(--accent))' : 'hsl(var(--background))'}
                       strokeWidth={2}
-                      onClick={() => setDetailRow(props.payload.row)}
+                      onClick={() => openDetail(props.payload.row)}
                       style={{ cursor: 'pointer' }}
                     />
                   );
@@ -517,7 +536,7 @@ export const PerformanceDataExplorer = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       className="hover:bg-muted/40 cursor-pointer"
-                      onClick={() => setDetailRow(r)}
+                      onClick={() => openDetail(r)}
                     >
                       <TableCell>{format(new Date(r.test_date), 'PP')}</TableCell>
                       <TableCell className="font-medium">{r.athlete_name}</TableCell>
@@ -571,27 +590,43 @@ export const PerformanceDataExplorer = () => {
       </Card>
 
       {/* Detail drawer */}
-      <Sheet open={!!detailRow} onOpenChange={(o) => !o && setDetailRow(null)}>
+      <Sheet open={!!detailRow} onOpenChange={(o) => {
+        if (!o) {
+          setDetailRow(null);
+          setDrawerMode('auto');
+        }
+      }}>
         <SheetContent
           className={cn(
             'overflow-y-auto',
-            detailRow && isGolfSwingRow(detailRow)
+            renderGolfAnalysis
               ? 'w-full sm:max-w-5xl'
               : 'w-full sm:max-w-xl',
           )}
         >
-          {detailRow && isGolfSwingRow(detailRow) ? (
-            <GolfSwingAnalysis
-              batchId={detailRow.import_batch_id}
-              athleteId={detailRow.athlete_id}
-              athleteName={detailRow.athlete_name}
-              testDate={detailRow.test_date}
-              fileHash={detailRow.file_hash}
-              originalFileName={detailRow.original_file_name}
-              row={detailRow}
-            />
-          ) : detailRow && (
-            <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
+          {detailRow && (
+            <div className="space-y-4">
+              <DrawerDebugPanel
+                row={detailRow}
+                isGolfSwing={detailIsGolfSwing}
+                renderedComponent={renderedComponent}
+                hasGolfChannels={detailHasGolfChannels}
+                onOpenGolfAnalysis={() => setDrawerMode('golf_analysis')}
+              />
+              {renderGolfAnalysis ? (
+                <GolfSwingAnalysis
+                  batchId={detailRow.import_batch_id}
+                  athleteId={detailRow.athlete_id}
+                  athleteName={detailRow.athlete_name}
+                  testDate={detailRow.test_date}
+                  fileHash={detailRow.file_hash}
+                  originalFileName={detailRow.original_file_name}
+                  row={detailRow}
+                />
+              ) : (
+                <TestDetail row={detailRow} allRows={rows} onClose={() => setDetailRow(null)} />
+              )}
+            </div>
           )}
         </SheetContent>
       </Sheet>
@@ -660,6 +695,67 @@ const KpiCard = ({
 const EmptyChart = ({ message }: { message: string }) => (
   <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground border border-dashed rounded-md">
     {message}
+  </div>
+);
+
+const DrawerDebugPanel = ({
+  row, isGolfSwing, renderedComponent, hasGolfChannels, onOpenGolfAnalysis,
+}: {
+  row: TestRow;
+  isGolfSwing: boolean;
+  renderedComponent: 'Generic TestDetail' | 'GolfSwingAnalysis';
+  hasGolfChannels: boolean;
+  onOpenGolfAnalysis: () => void;
+}) => {
+  const metricKeys = getDetectedMetricKeys(row);
+  const shownKeys = metricKeys.slice(0, 48);
+
+  return (
+    <Card className="p-3 border-primary/40 bg-primary/5 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold">
+            Performance Data Drawer Diagnostics
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            Rendering: <span className="font-semibold text-foreground">{renderedComponent}</span> · isGolfSwingRow: <span className="font-mono">{String(isGolfSwing)}</span>
+          </div>
+        </div>
+        {hasGolfChannels && (
+          <Button size="lg" className="h-11 text-sm" onClick={onOpenGolfAnalysis}>
+            <Activity className="w-4 h-4" /> Open Golf Swing Analysis
+          </Button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        <DebugField label="selected row id" value={row.id} mono />
+        <DebugField label="test_type" value={row.test_type ?? '—'} mono />
+        <DebugField label="test_subtype" value={row.test_subtype ?? '—'} mono />
+        <DebugField label="test_name" value={row.test_name ?? '—'} />
+        <DebugField label="import_batch_id" value={row.import_batch_id ?? '—'} mono />
+        <DebugField label="file_hash" value={row.file_hash ?? '—'} mono />
+        <DebugField label="original_file_name" value={row.original_file_name ?? '—'} />
+        <DebugField label="golf force channels" value={hasGolfChannels ? 'detected' : 'not detected'} mono />
+      </div>
+
+      <div className="text-xs">
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+          metric keys detected ({metricKeys.length})
+        </div>
+        <div className="max-h-24 overflow-auto rounded-md border bg-background/60 p-2 font-mono text-[10px] leading-relaxed break-all">
+          {shownKeys.length ? shownKeys.join(', ') : '—'}
+          {metricKeys.length > shownKeys.length && ` … +${metricKeys.length - shownKeys.length} more`}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
+const DebugField = ({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) => (
+  <div className="rounded-md border bg-background/60 p-2 min-w-0">
+    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div className={cn('mt-0.5 break-all', mono && 'font-mono')}>{value}</div>
   </div>
 );
 
