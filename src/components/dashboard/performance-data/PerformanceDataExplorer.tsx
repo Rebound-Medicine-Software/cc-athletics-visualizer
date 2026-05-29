@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, ReferenceDot, BarChart, Bar, Legend,
+  Tooltip, BarChart, Bar, Legend,
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 import {
