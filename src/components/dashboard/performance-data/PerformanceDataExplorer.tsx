@@ -26,6 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
 import { TEST_TYPES, toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
+import { TestAnalysisRouter } from './TestAnalysisRouter';
 import { cn } from '@/lib/utils';
 
 type Source = 'all' | 'api' | 'manual_csv';
@@ -431,80 +432,14 @@ export const PerformanceDataExplorer = () => {
         />
       </div>
 
-      {/* Timeline chart */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-base font-semibold">Athlete test timeline</h3>
-            <p className="text-xs text-muted-foreground">
-              {activeMetric ? metricLabel(activeMetric) : 'Select a metric to plot'}
-              {kpis.latest && <> · Latest test {format(new Date(kpis.latest), 'PP')}</>}
-            </p>
-          </div>
-        </div>
-        {timeline.length === 0 ? (
-          <EmptyChart message="No measurements for the selected filters." />
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={timeline}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip
-                content={({ active, payload }: any) => {
-                  if (!active || !payload?.length) return null;
-                  const p = payload[0].payload;
-                  return (
-                    <div className="rounded-md border bg-background/95 backdrop-blur p-2 text-xs shadow-md">
-                      <div className="font-medium">{format(new Date(p.date), 'PP')}</div>
-                      <div>{metricLabel(activeMetric!)}: <b>{p.value.toFixed(2)}</b></div>
-                      <div className="text-muted-foreground capitalize">{p.source.replace('_', ' ')}</div>
-                    </div>
-                  );
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2.5}
-                dot={(props: any) => {
-                  const isCsv = props.payload.source === 'manual_csv';
-                  return (
-                    <circle
-                      key={props.index}
-                      cx={props.cx}
-                      cy={props.cy}
-                      r={4}
-                      fill={isCsv ? 'hsl(var(--accent-foreground, var(--primary)))' : 'hsl(var(--primary))'}
-                      stroke={isCsv ? 'hsl(var(--accent))' : 'hsl(var(--background))'}
-                      strokeWidth={2}
-                      onClick={() => openDetail(props.payload.row)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  );
-                }}
-                isAnimationActive
-                animationDuration={700}
-              />
-              {timeline.length > 0 && (
-                <ReferenceDot
-                  x={timeline[timeline.length - 1].date}
-                  y={timeline[timeline.length - 1].value}
-                  r={7}
-                  fill="hsl(var(--primary))"
-                  stroke="hsl(var(--background))"
-                  strokeWidth={3}
-                />
-              )}
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-        <div className="flex gap-3 mt-2 text-xs text-muted-foreground">
-          <Badge variant="outline">API</Badge>
-          <Badge variant="secondary">Manual CSV</Badge>
-        </div>
-      </Card>
+      {/* Test-specific analysis dashboard (replaces generic timeline) */}
+      <TestAnalysisRouter
+        rows={rows as any}
+        selectedTestType={filters.testType}
+        selectedSubtype={filters.testSubtype}
+        onOpenGolfRow={(r) => openGolfAnalysis(r as any as TestRow)}
+      />
+
 
       {/* Source comparison */}
       <Card className="p-4">
