@@ -182,7 +182,16 @@ export const PerformanceDataExplorer = () => {
         .order('test_date', { ascending: false })
         .limit(1000);
 
-      if (filters.teamId) q = q.eq('team_id', filters.teamId);
+      // Legacy API rows often have team_id = NULL (no team linkage at sync time).
+      // When source filter is "all" or "api", include team_id IS NULL rows so
+      // historic API data stays visible. Manual CSV is always scoped strictly.
+      if (filters.teamId) {
+        if (filters.source === 'manual_csv') {
+          q = q.eq('team_id', filters.teamId);
+        } else {
+          q = q.or(`team_id.eq.${filters.teamId},team_id.is.null`);
+        }
+      }
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
       if (filters.testType) {
         const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
