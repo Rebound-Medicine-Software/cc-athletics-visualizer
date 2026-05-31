@@ -29,6 +29,64 @@ import { GolfSwingAnalysis } from './GolfSwingAnalysis';
 import { TestAnalysisRouter } from './TestAnalysisRouter';
 import { cn } from '@/lib/utils';
 
+// ----------------------------------------------------------------------------
+// Diagnostics — visible counts to prove API rows reach the UI
+// ----------------------------------------------------------------------------
+const DataDiagnostics = ({
+  rows, fromDate, toDate, loading,
+}: { rows: any[]; fromDate: string; toDate: string; loading: boolean }) => {
+  const stats = useMemo(() => {
+    const api = rows.filter((r) => r.source === 'api');
+    const csv = rows.filter((r) => r.source === 'manual_csv');
+    const nullSource = rows.filter((r) => r.source == null);
+    const nullTeam = rows.filter((r) => r.team_id == null).length;
+    const nullAthlete = rows.filter((r) => r.athlete_id == null).length;
+    const byType = new Map<string, number>();
+    for (const r of rows) byType.set(r.test_type ?? '∅', (byType.get(r.test_type ?? '∅') ?? 0) + 1);
+    const dates = rows.map((r) => r.test_date).filter(Boolean).sort();
+    const apiDates = api.map((r) => r.test_date).filter(Boolean).sort();
+    return {
+      total: rows.length, api: api.length, csv: csv.length, nullSource: nullSource.length,
+      nullTeam, nullAthlete,
+      byType: Array.from(byType.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      min: dates[0] ?? null, max: dates[dates.length - 1] ?? null,
+      apiMin: apiDates[0] ?? null, apiMax: apiDates[apiDates.length - 1] ?? null,
+    };
+  }, [rows]);
+
+  const apiOutsideRange =
+    stats.api === 0 && (stats.apiMin || stats.apiMax) ||
+    (stats.apiMin && stats.apiMin < fromDate) || (stats.apiMax && stats.apiMax > toDate);
+
+  return (
+    <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline">Diagnostics</Badge>
+        {loading && <span className="text-muted-foreground">loading…</span>}
+        <span>Total rows: <strong>{stats.total}</strong></span>
+        <span>API: <strong>{stats.api}</strong></span>
+        <span>Manual CSV: <strong>{stats.csv}</strong></span>
+        <span>source NULL: <strong>{stats.nullSource}</strong></span>
+        <span>team_id NULL: <strong>{stats.nullTeam}</strong></span>
+        <span>athlete_id NULL: <strong>{stats.nullAthlete}</strong></span>
+        <span>Date range: <strong>{stats.min ?? '—'} → {stats.max ?? '—'}</strong></span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {stats.byType.map(([t, c]) => (
+          <Badge key={t} variant="secondary">{t}: {c}</Badge>
+        ))}
+      </div>
+      {apiOutsideRange && (
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          API rows exist but may be outside the selected date range — click "All time" to include them.
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 type Source = 'all' | 'api' | 'manual_csv';
 
 interface TestRow {
@@ -127,7 +185,8 @@ export const PerformanceDataExplorer = () => {
     testType: searchParams.get('testType'),
     testSubtype: searchParams.get('testSubtype'),
     source: (searchParams.get('source') as Source) || 'all',
-    fromDate: format(subDays(new Date(), 180), 'yyyy-MM-dd'),
+    // 2 years back so legacy API rows (some pre-date 6mo window) are visible by default.
+    fromDate: format(subDays(new Date(), 730), 'yyyy-MM-dd'),
     toDate: format(new Date(), 'yyyy-MM-dd'),
     metric: null,
   }));
@@ -181,7 +240,16 @@ export const PerformanceDataExplorer = () => {
         .order('test_date', { ascending: false })
         .limit(1000);
 
-      if (filters.teamId) q = q.eq('team_id', filters.teamId);
+      // Legacy API rows often have team_id = NULL (no team linkage at sync time).
+      // When source filter is "all" or "api", include team_id IS NULL rows so
+      // historic API data stays visible. Manual CSV is always scoped strictly.
+      if (filters.teamId) {
+        if (filters.source === 'manual_csv') {
+          q = q.eq('team_id', filters.teamId);
+        } else {
+          q = q.or(`team_id.eq.${filters.teamId},team_id.is.null`);
+        }
+      }
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
       if (filters.testType) {
         const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
@@ -392,6 +460,36 @@ export const PerformanceDataExplorer = () => {
             disabled={!metricKeys.length}
           />
         </div>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setFilters((f) => ({ ...f, fromDate: '2000-01-01', toDate: format(new Date(), 'yyyy-MM-dd') }))
+            }
+          >
+            All time
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setFilters((f) => ({ ...f, fromDate: format(subDays(new Date(), 180), 'yyyy-MM-dd'), toDate: format(new Date(), 'yyyy-MM-dd') }))
+            }
+          >
+            Last 180 days
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              setFilters((f) => ({ ...f, teamId: null, athleteId: null, testType: null, testSubtype: null, source: 'all', metric: null }))
+            }
+          >
+            Reset filters
+          </Button>
+        </div>
+        <DataDiagnostics rows={rows} fromDate={filters.fromDate} toDate={filters.toDate} loading={dataQuery.isLoading} />
       </Card>
 
       {latestGolfRow && (
