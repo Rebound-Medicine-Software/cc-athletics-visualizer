@@ -402,6 +402,36 @@ export const PerformanceDataExplorer = () => {
             disabled={!metricKeys.length}
           />
         </div>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setFilters((f) => ({ ...f, fromDate: '2000-01-01', toDate: format(new Date(), 'yyyy-MM-dd') }))
+            }
+          >
+            All time
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setFilters((f) => ({ ...f, fromDate: format(subDays(new Date(), 180), 'yyyy-MM-dd'), toDate: format(new Date(), 'yyyy-MM-dd') }))
+            }
+          >
+            Last 180 days
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              setFilters((f) => ({ ...f, teamId: null, athleteId: null, testType: null, testSubtype: null, source: 'all', metric: null }))
+            }
+          >
+            Reset filters
+          </Button>
+        </div>
+        <DataDiagnostics rows={rows} fromDate={filters.fromDate} toDate={filters.toDate} loading={dataQuery.isLoading} />
       </Card>
 
       {latestGolfRow && (
