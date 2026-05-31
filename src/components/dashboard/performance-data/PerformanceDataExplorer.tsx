@@ -127,7 +127,8 @@ export const PerformanceDataExplorer = () => {
     testType: searchParams.get('testType'),
     testSubtype: searchParams.get('testSubtype'),
     source: (searchParams.get('source') as Source) || 'all',
-    fromDate: format(subDays(new Date(), 180), 'yyyy-MM-dd'),
+    // 2 years back so legacy API rows (some pre-date 6mo window) are visible by default.
+    fromDate: format(subDays(new Date(), 730), 'yyyy-MM-dd'),
     toDate: format(new Date(), 'yyyy-MM-dd'),
     metric: null,
   }));
