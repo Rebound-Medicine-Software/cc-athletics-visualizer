@@ -29,6 +29,64 @@ import { GolfSwingAnalysis } from './GolfSwingAnalysis';
 import { TestAnalysisRouter } from './TestAnalysisRouter';
 import { cn } from '@/lib/utils';
 
+// ----------------------------------------------------------------------------
+// Diagnostics — visible counts to prove API rows reach the UI
+// ----------------------------------------------------------------------------
+const DataDiagnostics = ({
+  rows, fromDate, toDate, loading,
+}: { rows: any[]; fromDate: string; toDate: string; loading: boolean }) => {
+  const stats = useMemo(() => {
+    const api = rows.filter((r) => r.source === 'api');
+    const csv = rows.filter((r) => r.source === 'manual_csv');
+    const nullSource = rows.filter((r) => r.source == null);
+    const nullTeam = rows.filter((r) => r.team_id == null).length;
+    const nullAthlete = rows.filter((r) => r.athlete_id == null).length;
+    const byType = new Map<string, number>();
+    for (const r of rows) byType.set(r.test_type ?? '∅', (byType.get(r.test_type ?? '∅') ?? 0) + 1);
+    const dates = rows.map((r) => r.test_date).filter(Boolean).sort();
+    const apiDates = api.map((r) => r.test_date).filter(Boolean).sort();
+    return {
+      total: rows.length, api: api.length, csv: csv.length, nullSource: nullSource.length,
+      nullTeam, nullAthlete,
+      byType: Array.from(byType.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8),
+      min: dates[0] ?? null, max: dates[dates.length - 1] ?? null,
+      apiMin: apiDates[0] ?? null, apiMax: apiDates[apiDates.length - 1] ?? null,
+    };
+  }, [rows]);
+
+  const apiOutsideRange =
+    stats.api === 0 && (stats.apiMin || stats.apiMax) ||
+    (stats.apiMin && stats.apiMin < fromDate) || (stats.apiMax && stats.apiMax > toDate);
+
+  return (
+    <div className="mt-3 rounded-md border bg-muted/30 p-3 text-xs space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant="outline">Diagnostics</Badge>
+        {loading && <span className="text-muted-foreground">loading…</span>}
+        <span>Total rows: <strong>{stats.total}</strong></span>
+        <span>API: <strong>{stats.api}</strong></span>
+        <span>Manual CSV: <strong>{stats.csv}</strong></span>
+        <span>source NULL: <strong>{stats.nullSource}</strong></span>
+        <span>team_id NULL: <strong>{stats.nullTeam}</strong></span>
+        <span>athlete_id NULL: <strong>{stats.nullAthlete}</strong></span>
+        <span>Date range: <strong>{stats.min ?? '—'} → {stats.max ?? '—'}</strong></span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {stats.byType.map(([t, c]) => (
+          <Badge key={t} variant="secondary">{t}: {c}</Badge>
+        ))}
+      </div>
+      {apiOutsideRange && (
+        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="w-3.5 h-3.5" />
+          API rows exist but may be outside the selected date range — click "All time" to include them.
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 type Source = 'all' | 'api' | 'manual_csv';
 
 interface TestRow {
