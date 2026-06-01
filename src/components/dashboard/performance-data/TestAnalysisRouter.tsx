@@ -20,6 +20,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
+import {
+  analyseSummary, analyseTrace, inferTestKind,
+  type PhaseAnalysis, type TraceSample,
+} from '@/lib/movement/phaseEngine';
 
 export interface AnalysisRow {
   id: string;
