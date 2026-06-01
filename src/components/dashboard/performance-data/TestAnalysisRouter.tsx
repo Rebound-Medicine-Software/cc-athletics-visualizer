@@ -464,6 +464,7 @@ const JumpAnalysisInline = ({ rows }: { rows: AnalysisRow[] }) => {
           )}
         </Card>
       </div>
+      <PhasePanel rows={rows} />
     </Card>
   );
 };
