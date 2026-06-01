@@ -20,6 +20,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
+import {
+  analyseSummary, analyseTrace, inferTestKind,
+  type PhaseAnalysis, type TraceSample,
+} from '@/lib/movement/phaseEngine';
 
 export interface AnalysisRow {
   id: string;
@@ -191,6 +195,154 @@ const NoCurveNote = ({ message }: { message: string }) => (
   </div>
 );
 
+// ----------------------------------------------------------------------------
+// Phase Panel (movement phase engine, Pedley et al. 2023)
+// ----------------------------------------------------------------------------
+
+const SSC_TONE: Record<string, string> = {
+  good: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  moderate: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+  poor: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+  unknown: 'bg-muted text-muted-foreground border-border',
+};
+
+const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
+  // Best-effort: try to build a trace from rows that share an athlete/date/batch
+  // and contain a `force` / `force_n` sample per repetition. If not present,
+  // fall back to per-row summary analysis using the first representative row.
+  const analysis = useMemo<PhaseAnalysis | null>(() => {
+    if (rows.length === 0) return null;
+    const head = rows[0];
+    const kind = inferTestKind(head.test_type, head.test_subtype, head.test_name);
+
+    // Attempt trace assembly (CSV with sample-level rows)
+    const sameGroup = rows.filter(
+      (r) =>
+        r.athlete_id === head.athlete_id &&
+        r.test_date === head.test_date &&
+        (r.import_batch_id ?? r.file_hash) === (head.import_batch_id ?? head.file_hash),
+    );
+    const sampleRate = 1000; // assume 1 kHz when t missing
+    const samples: TraceSample[] = [];
+    for (const r of sameGroup) {
+      const f = (r.metrics as any) ?? {};
+      const force = Number(f.force ?? f.force_n ?? f.fz ?? NaN);
+      if (!Number.isFinite(force)) continue;
+      const t = Number.isFinite(Number(f.time ?? f.t))
+        ? Number(f.time ?? f.t)
+        : r.repetition_number / sampleRate;
+      const com = Number.isFinite(Number(f.com ?? f.com_disp)) ? Number(f.com ?? f.com_disp) : undefined;
+      samples.push({ t, f: force, com });
+    }
+    const bodyMassKg = Number((head.metrics as any)?.body_mass) || undefined;
+    if (samples.length > 32) {
+      samples.sort((a, b) => a.t - b.t);
+      return analyseTrace(samples, { test: kind, bodyMassKg });
+    }
+    return analyseSummary(kind, head.metrics ?? {});
+  }, [rows]);
+
+  if (!analysis) return null;
+
+  const sl = analysis.springLike;
+  const slR = sl.r === null ? '—' : sl.r.toFixed(2);
+  const sscLabel = analysis.sscCategory === 'unknown' ? 'SSC: unknown (no trace)' : `SSC: ${analysis.sscCategory.toUpperCase()}`;
+
+  return (
+    <Card className="p-4 space-y-3 border-primary/30">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold">Movement phase analysis</h4>
+          <p className="text-xs text-muted-foreground">
+            Phase detection {analysis.hasTrace ? 'from force-time trace' : 'from summary metrics (no curve in source)'} · Pedley et al. (2023) spring-like correlation
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge className={SSC_TONE[analysis.sscCategory]} variant="outline">{sscLabel}</Badge>
+          <Badge variant="outline">Spring-like r: {slR}</Badge>
+          <Badge variant="outline">
+            Spring-like: {sl.isSpringLike === null ? '—' : sl.isSpringLike ? 'Yes' : 'No'}
+          </Badge>
+        </div>
+      </div>
+
+      {analysis.bands.length > 0 && (
+        <div>
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Detected phases</div>
+          <div className="flex flex-wrap gap-1.5">
+            {analysis.bands.map((b, i) => (
+              <Badge key={i} variant="secondary">
+                {b.label} · {((b.endT - b.startT) * 1000).toFixed(0)} ms
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {analysis.derived.contactTimeMs !== undefined && (
+          <Stat label="Contact time" value={`${fmt(analysis.derived.contactTimeMs, 0)} ms`} />
+        )}
+        {analysis.derived.flightTimeMs !== undefined && (
+          <Stat label="Flight time" value={`${fmt(analysis.derived.flightTimeMs, 0)} ms`} />
+        )}
+        {analysis.derived.brakingImpulseNs !== undefined && (
+          <Stat label="Braking impulse" value={`${fmt(analysis.derived.brakingImpulseNs, 1)} N·s`} />
+        )}
+        {analysis.derived.propulsiveImpulseNs !== undefined && (
+          <Stat label="Propulsive impulse" value={`${fmt(analysis.derived.propulsiveImpulseNs, 1)} N·s`} />
+        )}
+        {analysis.derived.rsiModified !== undefined && (
+          <Stat label="RSI modified" value={fmt(analysis.derived.rsiModified, 2)} />
+        )}
+        {analysis.derived.impactPeakF !== undefined && (
+          <Stat label="Impact peak" value={`${fmt(analysis.derived.impactPeakF, 0)} N`} hint="early braking peak" />
+        )}
+      </div>
+
+      {analysis.modelled && (
+        <Card className="p-3">
+          <h5 className="text-xs font-semibold text-muted-foreground mb-2">Modelled (half-sine) vs actual force</h5>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={analysis.modelled.actual.map((a, i) => ({
+              t: a.tNorm, actual: a.f, model: analysis.modelled!.model[i].f,
+            }))}>
+              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="t" tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Line type="monotone" dataKey="actual" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="model" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+          <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 list-disc pl-4">
+            {analysis.modelled.insights.map((i, idx) => <li key={idx}>{i}</li>)}
+          </ul>
+        </Card>
+      )}
+
+      {analysis.prescriptions.length > 0 && (
+        <div className="rounded-md border bg-muted/30 p-3">
+          <div className="text-xs font-semibold mb-1.5">Suggested training focus</div>
+          <ul className="text-xs space-y-1">
+            {analysis.prescriptions.map((p, i) => (
+              <li key={i}><span className="font-medium">{p.issue}:</span> <span className="text-muted-foreground">{p.focus}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {!analysis.hasTrace && (
+        <p className="text-[11px] text-muted-foreground italic">
+          No force-time curve available for phase analysis — showing summary-derived phases only.
+        </p>
+      )}
+    </Card>
+  );
+};
+
+
 const fmt = (v: number | null, digits = 1) =>
   v === null || !Number.isFinite(v) ? '—' : v.toFixed(digits);
 
@@ -312,6 +464,7 @@ const JumpAnalysisInline = ({ rows }: { rows: AnalysisRow[] }) => {
           )}
         </Card>
       </div>
+      <PhasePanel rows={rows} />
     </Card>
   );
 };
@@ -406,6 +559,7 @@ const IsometricAnalysisInline = ({ rows }: { rows: AnalysisRow[] }) => {
           </ResponsiveContainer>
         </Card>
       )}
+      <PhasePanel rows={rows} />
     </Card>
   );
 };
