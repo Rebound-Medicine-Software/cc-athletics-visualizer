@@ -559,6 +559,7 @@ const IsometricAnalysisInline = ({ rows }: { rows: AnalysisRow[] }) => {
           </ResponsiveContainer>
         </Card>
       )}
+      <PhasePanel rows={rows} />
     </Card>
   );
 };
