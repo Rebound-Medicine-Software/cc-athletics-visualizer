@@ -342,10 +342,11 @@ export const PerformanceDataExplorer = () => {
     // Athlete-id filter applies to live rows too (cc_athlete_id vs db UUID
     // mismatch — only filter when teamId/athleteId set on DB rows).
     if (filters.athleteId) {
-      return merged.filter((r) => r.athlete_id === filters.athleteId || r.source === 'api' && !r.team_id);
+      return merged.filter((r) => r.athlete_id === filters.athleteId);
     }
     return merged.sort((a, b) => b.test_date.localeCompare(a.test_date));
   }, [dataQuery.data, liveRows, filters.athleteId]);
+
 
 
   // Precompute flattened metrics per row (handles legacy `_raw` payloads from CSV).
