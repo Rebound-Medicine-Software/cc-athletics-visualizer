@@ -292,6 +292,7 @@ export const PerformanceDataExplorer = () => {
 
   const liveRows = useMemo<TestRow[]>(() => {
     if (filters.source === 'manual_csv') return [];
+    if (filters.athleteId) return []; // athleteId is a UUID; live rows use cc_athlete_id
     const live = liveQuery.data ?? [];
     return live
       .filter((r: any) => {
