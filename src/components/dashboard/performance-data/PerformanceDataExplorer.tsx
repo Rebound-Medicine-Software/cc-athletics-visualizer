@@ -14,6 +14,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { TEST_TYPES, toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
+import { TEST_TYPES, type TestType } from '@/lib/csv/testTypeConfig';
+import {
+  dbTestTypesFor, namePatternsFor, rowMatchesUiSelection, inferTestTypeFromName,
+} from '@/lib/tests/testNameMatching';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
 import { TestAnalysisRouter } from './TestAnalysisRouter';
 import { cn } from '@/lib/utils';
+
 
 // ----------------------------------------------------------------------------
 // Diagnostics — visible counts to prove API rows reach the UI
@@ -238,7 +243,7 @@ export const PerformanceDataExplorer = () => {
         .gte('test_date', filters.fromDate)
         .lte('test_date', filters.toDate)
         .order('test_date', { ascending: false })
-        .limit(1000);
+        .limit(5000);
 
       // Legacy API rows often have team_id = NULL (no team linkage at sync time).
       // When source filter is "all" or "api", include team_id IS NULL rows so
@@ -252,21 +257,97 @@ export const PerformanceDataExplorer = () => {
       }
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
       if (filters.testType) {
-        const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
-        q = q.eq('test_type', mapped.test_type);
-        if (filters.testSubtype && mapped.test_subtype) {
-          q = q.eq('test_subtype', mapped.test_subtype);
-        }
+        const allowedTypes = dbTestTypesFor(filters.testType as TestType, filters.testSubtype);
+        // Use `in` so DJ (jump + isometric for Single-Leg DJ) and Pogo (jump+pogo) work.
+        q = q.in('test_type', allowedTypes);
+        // Do NOT filter by test_subtype — API rows have test_subtype = NULL.
+        // Subtype is enforced client-side via name patterns below.
       }
-      if (filters.source !== 'all') q = q.eq('source', filters.source);
+      if (filters.source !== 'all' && filters.source !== 'api') {
+        // 'manual_csv' only — strict. 'api' includes both DB-persisted api rows
+        // AND live CC rows (merged below) so we don't filter here.
+        q = q.eq('source', filters.source);
+      } else if (filters.source === 'api') {
+        q = q.eq('source', 'api');
+      }
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as TestRow[];
+      let out = (data ?? []) as TestRow[];
+
+      // Subtype name-pattern filter (client-side) — works for both API and CSV
+      // rows regardless of whether test_subtype was persisted.
+      if (filters.testType) {
+        out = out.filter((r) =>
+          rowMatchesUiSelection(r, filters.testType as TestType, filters.testSubtype),
+        );
+      }
+      return out;
     },
   });
 
-  const rows = dataQuery.data ?? [];
+  // Live CC Athletics rows — same source the Analytics dashboard uses.
+  // Merging here guarantees: anything Analytics shows, Performance Data shows.
+  const liveQuery = useSupabaseData();
+
+  const liveRows = useMemo<TestRow[]>(() => {
+    if (filters.source === 'manual_csv') return [];
+    if (filters.athleteId) return []; // athleteId is a UUID; live rows use cc_athlete_id
+    const live = liveQuery.data ?? [];
+    return live
+      .filter((r: any) => {
+        if (!r?.test_date) return false;
+        if (r.test_date < filters.fromDate || r.test_date > filters.toDate) return false;
+        if (filters.testType) {
+          const inferredType = inferTestTypeFromName(r.test_name);
+          const row = { test_type: inferredType, test_subtype: null, test_name: r.test_name };
+          if (!rowMatchesUiSelection(row, filters.testType as TestType, filters.testSubtype)) return false;
+        }
+        return true;
+      })
+      .map((r: any): TestRow => ({
+        id: `live-${r.athlete_id}-${r.test_date}-${r.test_name}-${r.repetition_number ?? 0}`,
+        athlete_id: r.athlete_id ?? null,
+        athlete_name: r.athlete_name ?? '',
+        team_id: null,
+        team_name: r.team_name ?? '',
+        test_date: r.test_date,
+        test_type: inferTestTypeFromName(r.test_name),
+        test_subtype: null,
+        test_name: r.test_name ?? '',
+        metrics: r.metrics ?? {},
+        source: 'api',
+        original_file_name: null,
+        import_batch_id: null,
+        file_hash: null,
+        repetition_number: r.repetition_number ?? 0,
+      }));
+  }, [liveQuery.data, filters]);
+
+  // Merge DB rows + live rows, deduping on athlete|test_name|test_date|rep
+  // (prefer DB row when both exist so file/batch metadata is kept).
+  const rows = useMemo<TestRow[]>(() => {
+    const db = dataQuery.data ?? [];
+    const seen = new Set(
+      db.map((r) => `${r.athlete_name}|${r.test_name}|${r.test_date}|${r.repetition_number}`),
+    );
+    const merged = [...db];
+    for (const lr of liveRows) {
+      const k = `${lr.athlete_name}|${lr.test_name}|${lr.test_date}|${lr.repetition_number}`;
+      if (!seen.has(k)) {
+        merged.push(lr);
+        seen.add(k);
+      }
+    }
+    // Athlete-id filter applies to live rows too (cc_athlete_id vs db UUID
+    // mismatch — only filter when teamId/athleteId set on DB rows).
+    if (filters.athleteId) {
+      return merged.filter((r) => r.athlete_id === filters.athleteId);
+    }
+    return merged.sort((a, b) => b.test_date.localeCompare(a.test_date));
+  }, [dataQuery.data, liveRows, filters.athleteId]);
+
+
 
   // Precompute flattened metrics per row (handles legacy `_raw` payloads from CSV).
   const flatMetricsById = useMemo(() => {
