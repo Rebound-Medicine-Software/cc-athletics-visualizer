@@ -286,8 +286,66 @@ export const PerformanceDataExplorer = () => {
     },
   });
 
+  // Live CC Athletics rows — same source the Analytics dashboard uses.
+  // Merging here guarantees: anything Analytics shows, Performance Data shows.
+  const liveQuery = useSupabaseData();
 
-  const rows = dataQuery.data ?? [];
+  const liveRows = useMemo<TestRow[]>(() => {
+    if (filters.source === 'manual_csv') return [];
+    const live = liveQuery.data ?? [];
+    return live
+      .filter((r: any) => {
+        if (!r?.test_date) return false;
+        if (r.test_date < filters.fromDate || r.test_date > filters.toDate) return false;
+        if (filters.testType) {
+          const inferredType = inferTestTypeFromName(r.test_name);
+          const row = { test_type: inferredType, test_subtype: null, test_name: r.test_name };
+          if (!rowMatchesUiSelection(row, filters.testType as TestType, filters.testSubtype)) return false;
+        }
+        return true;
+      })
+      .map((r: any): TestRow => ({
+        id: `live-${r.athlete_id}-${r.test_date}-${r.test_name}-${r.repetition_number ?? 0}`,
+        athlete_id: r.athlete_id ?? null,
+        athlete_name: r.athlete_name ?? '',
+        team_id: null,
+        team_name: r.team_name ?? '',
+        test_date: r.test_date,
+        test_type: inferTestTypeFromName(r.test_name),
+        test_subtype: null,
+        test_name: r.test_name ?? '',
+        metrics: r.metrics ?? {},
+        source: 'api',
+        original_file_name: null,
+        import_batch_id: null,
+        file_hash: null,
+        repetition_number: r.repetition_number ?? 0,
+      }));
+  }, [liveQuery.data, filters]);
+
+  // Merge DB rows + live rows, deduping on athlete|test_name|test_date|rep
+  // (prefer DB row when both exist so file/batch metadata is kept).
+  const rows = useMemo<TestRow[]>(() => {
+    const db = dataQuery.data ?? [];
+    const seen = new Set(
+      db.map((r) => `${r.athlete_name}|${r.test_name}|${r.test_date}|${r.repetition_number}`),
+    );
+    const merged = [...db];
+    for (const lr of liveRows) {
+      const k = `${lr.athlete_name}|${lr.test_name}|${lr.test_date}|${lr.repetition_number}`;
+      if (!seen.has(k)) {
+        merged.push(lr);
+        seen.add(k);
+      }
+    }
+    // Athlete-id filter applies to live rows too (cc_athlete_id vs db UUID
+    // mismatch — only filter when teamId/athleteId set on DB rows).
+    if (filters.athleteId) {
+      return merged.filter((r) => r.athlete_id === filters.athleteId || r.source === 'api' && !r.team_id);
+    }
+    return merged.sort((a, b) => b.test_date.localeCompare(a.test_date));
+  }, [dataQuery.data, liveRows, filters.athleteId]);
+
 
   // Precompute flattened metrics per row (handles legacy `_raw` payloads from CSV).
   const flatMetricsById = useMemo(() => {
