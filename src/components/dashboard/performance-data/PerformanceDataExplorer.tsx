@@ -14,6 +14,7 @@ import {
 
 import { supabase } from '@/integrations/supabase/client';
 import { useEffectiveTeamId } from '@/lib/impersonation/useEffectiveTeamId';
+import { useSupabaseData } from '@/hooks/useSupabaseData';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { TEST_TYPES, toDbTestType, type TestType } from '@/lib/csv/testTypeConfig';
+import { TEST_TYPES, type TestType } from '@/lib/csv/testTypeConfig';
+import {
+  dbTestTypesFor, namePatternsFor, rowMatchesUiSelection, inferTestTypeFromName,
+} from '@/lib/tests/testNameMatching';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
 import { TestAnalysisRouter } from './TestAnalysisRouter';
 import { cn } from '@/lib/utils';
+
 
 // ----------------------------------------------------------------------------
 // Diagnostics — visible counts to prove API rows reach the UI
