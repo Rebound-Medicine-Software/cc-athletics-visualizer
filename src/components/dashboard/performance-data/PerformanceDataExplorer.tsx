@@ -243,7 +243,7 @@ export const PerformanceDataExplorer = () => {
         .gte('test_date', filters.fromDate)
         .lte('test_date', filters.toDate)
         .order('test_date', { ascending: false })
-        .limit(1000);
+        .limit(5000);
 
       // Legacy API rows often have team_id = NULL (no team linkage at sync time).
       // When source filter is "all" or "api", include team_id IS NULL rows so
@@ -257,19 +257,35 @@ export const PerformanceDataExplorer = () => {
       }
       if (filters.athleteId) q = q.eq('athlete_id', filters.athleteId);
       if (filters.testType) {
-        const mapped = toDbTestType(filters.testType as TestType, filters.testSubtype);
-        q = q.eq('test_type', mapped.test_type);
-        if (filters.testSubtype && mapped.test_subtype) {
-          q = q.eq('test_subtype', mapped.test_subtype);
-        }
+        const allowedTypes = dbTestTypesFor(filters.testType as TestType, filters.testSubtype);
+        // Use `in` so DJ (jump + isometric for Single-Leg DJ) and Pogo (jump+pogo) work.
+        q = q.in('test_type', allowedTypes);
+        // Do NOT filter by test_subtype — API rows have test_subtype = NULL.
+        // Subtype is enforced client-side via name patterns below.
       }
-      if (filters.source !== 'all') q = q.eq('source', filters.source);
+      if (filters.source !== 'all' && filters.source !== 'api') {
+        // 'manual_csv' only — strict. 'api' includes both DB-persisted api rows
+        // AND live CC rows (merged below) so we don't filter here.
+        q = q.eq('source', filters.source);
+      } else if (filters.source === 'api') {
+        q = q.eq('source', 'api');
+      }
 
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as TestRow[];
+      let out = (data ?? []) as TestRow[];
+
+      // Subtype name-pattern filter (client-side) — works for both API and CSV
+      // rows regardless of whether test_subtype was persisted.
+      if (filters.testType) {
+        out = out.filter((r) =>
+          rowMatchesUiSelection(r, filters.testType as TestType, filters.testSubtype),
+        );
+      }
+      return out;
     },
   });
+
 
   const rows = dataQuery.data ?? [];
 
