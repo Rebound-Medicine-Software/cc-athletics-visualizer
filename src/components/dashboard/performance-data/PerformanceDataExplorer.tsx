@@ -320,37 +320,45 @@ export const PerformanceDataExplorer = () => {
 
   const liveRows = useMemo<TestRow[]>(() => {
     if (filters.source === 'manual_csv') return [];
-    if (filters.athleteId) return []; // athleteId is a UUID; live rows use cc_athlete_id
     const live = liveQuery.data ?? [];
     return live
       .filter((r: any) => {
         if (!r?.test_date) return false;
-        if (r.test_date < filters.fromDate || r.test_date > filters.toDate) return false;
+        const d = r.test_date.slice(0, 10);
+        if (d < filters.fromDate || d > filters.toDate) return false;
         if (filters.testType) {
           const inferredType = inferTestTypeFromName(r.test_name);
           const row = { test_type: inferredType, test_subtype: null, test_name: r.test_name };
           if (!rowMatchesUiSelection(row, filters.testType as TestType, filters.testSubtype)) return false;
         }
+        // Athlete filter: live rows use cc_athlete_id — match by that.
+        if (filters.athleteId) {
+          if (!selectedAthleteCcId) return false;
+          if (r.athlete_id !== selectedAthleteCcId) return false;
+        }
         return true;
       })
-      .map((r: any): TestRow => ({
-        id: `live-${r.athlete_id}-${r.test_date}-${r.test_name}-${r.repetition_number ?? 0}`,
-        athlete_id: r.athlete_id ?? null,
-        athlete_name: r.athlete_name ?? '',
-        team_id: null,
-        team_name: r.team_name ?? '',
-        test_date: r.test_date,
-        test_type: inferTestTypeFromName(r.test_name),
-        test_subtype: null,
-        test_name: r.test_name ?? '',
-        metrics: r.metrics ?? {},
-        source: 'api',
-        original_file_name: null,
-        import_batch_id: null,
-        file_hash: null,
-        repetition_number: r.repetition_number ?? 0,
-      }));
-  }, [liveQuery.data, filters]);
+      .map((r: any): TestRow => {
+        const mapped = ccIdToAthlete.get(r.athlete_id);
+        return {
+          id: `live-${r.athlete_id}-${r.test_date}-${r.test_name}-${r.repetition_number ?? 0}`,
+          athlete_id: mapped?.id ?? r.athlete_id ?? null,
+          athlete_name: r.athlete_name ?? '',
+          team_id: mapped?.team_id ?? null,
+          team_name: r.team_name ?? '',
+          test_date: r.test_date,
+          test_type: inferTestTypeFromName(r.test_name),
+          test_subtype: null,
+          test_name: r.test_name ?? '',
+          metrics: r.metrics ?? {},
+          source: 'api',
+          original_file_name: null,
+          import_batch_id: null,
+          file_hash: null,
+          repetition_number: r.repetition_number ?? 0,
+        };
+      });
+  }, [liveQuery.data, filters, selectedAthleteCcId, ccIdToAthlete]);
 
   // Merge DB rows + live rows, deduping on athlete|test_name|test_date|rep
   // (prefer DB row when both exist so file/batch metadata is kept).
@@ -367,13 +375,8 @@ export const PerformanceDataExplorer = () => {
         seen.add(k);
       }
     }
-    // Athlete-id filter applies to live rows too (cc_athlete_id vs db UUID
-    // mismatch — only filter when teamId/athleteId set on DB rows).
-    if (filters.athleteId) {
-      return merged.filter((r) => r.athlete_id === filters.athleteId);
-    }
     return merged.sort((a, b) => b.test_date.localeCompare(a.test_date));
-  }, [dataQuery.data, liveRows, filters.athleteId]);
+  }, [dataQuery.data, liveRows]);
 
 
 
