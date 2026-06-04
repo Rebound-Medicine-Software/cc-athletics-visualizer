@@ -224,13 +224,41 @@ export const PerformanceDataExplorer = () => {
   const athletesQuery = useQuery({
     queryKey: ['perf-explorer:athletes', filters.teamId],
     queryFn: async () => {
-      let q = supabase.from('athletes').select('id, name, team_id').order('name');
+      let q = supabase.from('athletes').select('id, name, team_id, cc_athlete_id').order('name');
       if (filters.teamId) q = q.eq('team_id', filters.teamId);
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  // Full athlete roster (workspace-wide) for mapping live CC rows
+  // (cc_athlete_id → internal UUID) regardless of team scope.
+  const allAthletesQuery = useQuery({
+    queryKey: ['perf-explorer:all-athletes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('athletes')
+        .select('id, name, team_id, cc_athlete_id');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const ccIdToAthlete = useMemo(() => {
+    const m = new Map<string, { id: string; team_id: string | null }>();
+    for (const a of allAthletesQuery.data ?? []) {
+      if (a.cc_athlete_id) m.set(a.cc_athlete_id, { id: a.id, team_id: a.team_id ?? null });
+    }
+    return m;
+  }, [allAthletesQuery.data]);
+
+  // When an athlete is selected, find their cc_athlete_id so we can match live rows.
+  const selectedAthleteCcId = useMemo(() => {
+    if (!filters.athleteId) return null;
+    const a = (allAthletesQuery.data ?? []).find((x) => x.id === filters.athleteId);
+    return a?.cc_athlete_id ?? null;
+  }, [filters.athleteId, allAthletesQuery.data]);
 
   const dataQuery = useQuery({
     queryKey: ['perf-explorer:tests', filters],
