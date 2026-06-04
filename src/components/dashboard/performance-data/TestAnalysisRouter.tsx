@@ -247,6 +247,7 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
   const sl = analysis.springLike;
   const slR = sl.r === null ? '—' : sl.r.toFixed(2);
   const sscLabel = analysis.sscCategory === 'unknown' ? 'SSC: unknown (no trace)' : `SSC: ${analysis.sscCategory.toUpperCase()}`;
+  const traceLocked = !analysis.hasTrace;
 
   return (
     <Card className="p-4 space-y-3 border-primary/30">
@@ -265,6 +266,25 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
           </Badge>
         </div>
       </div>
+
+      {traceLocked && (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
+          <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-300">
+            <span className="uppercase tracking-wide text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20">Locked</span>
+            Pedley spring-like correlation unavailable
+          </div>
+          <p className="text-muted-foreground">
+            Requires raw vertical force-time samples (with body mass &amp; landing/take-off detection)
+            to compute the Pearson r between CoM displacement and absolute vertical force during ground
+            contact. The current source only provides summary metrics — no force-time curve.
+          </p>
+          <p className="text-muted-foreground">
+            To unlock: import a raw force-trace CSV for this rep, or enable raw force-trace sync on the
+            CC Athletics API.
+          </p>
+        </div>
+      )}
+
 
       {analysis.bands.length > 0 && (
         <div>
