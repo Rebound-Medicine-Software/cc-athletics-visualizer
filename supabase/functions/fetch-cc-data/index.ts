@@ -190,6 +190,7 @@ serve(async (req) => {
         // For isometric tests, create one record per recording (not per trial)
         // and include the full isometric_analysis structure for limb symmetry calculations
         const exerciseName = recording.exercise_name || 'Isometric Test'
+        const isoRawPath = recording.path_to_raw_csv ?? analysis.path_to_raw_csv ?? null;
         allTestData.push({
           athlete_id: athlete.id,
           athlete_name: athlete.name,
@@ -202,7 +203,9 @@ serve(async (req) => {
           height_cm: demographics.height_cm,
           weight_kg: demographics.weight_kg,
           metrics: {
-            isometric_analysis: analysis
+            isometric_analysis: analysis,
+            ...(isoRawPath ? { raw_csv_path: isoRawPath } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
           },
         })
 
@@ -210,6 +213,7 @@ serve(async (req) => {
         const baseExercise = exerciseName.replace(/[\s_]*(Left|Right)[\s_]*Leg/gi, '').trim()
         analysis.trials.forEach((trial, tIndex) => {
           const tm = trial.total_metrics || {}
+          const trialRawPath = trial.path_to_raw_csv ?? trial.path_to_this_jump_raw_csv ?? isoRawPath;
           const hasLR = tm.force_50ms_left !== undefined || tm.force_peak_left !== undefined ||
                         tm.force_50ms_right !== undefined || tm.force_peak_right !== undefined
 
@@ -232,6 +236,8 @@ serve(async (req) => {
                 force_250ms: tm.force_250ms_left,
                 force_peak: tm.force_peak_left,
                 steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+                ...(trialRawPath ? { raw_csv_path: trialRawPath } : {}),
+                ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
               },
             })
             // Right leg entry
@@ -252,6 +258,8 @@ serve(async (req) => {
                 force_250ms: tm.force_250ms_right,
                 force_peak: tm.force_peak_right,
                 steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+                ...(trialRawPath ? { raw_csv_path: trialRawPath } : {}),
+                ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
               },
             })
           }
