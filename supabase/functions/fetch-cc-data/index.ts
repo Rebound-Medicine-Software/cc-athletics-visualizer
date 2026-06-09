@@ -172,7 +172,7 @@ serve(async (req) => {
               height_cm: demographics.height_cm,
               weight_kg: demographics.weight_kg,
               leg_stance: legStance,
-              metrics: jump.metric_table,
+              metrics: metricsWithPath,
             })
           }
         })
