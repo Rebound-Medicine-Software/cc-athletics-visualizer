@@ -9,13 +9,13 @@
  *   replaced by a clear note: "No force/time curve available for this result"
  *   and the summary metrics are shown instead.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis,
 } from 'recharts';
 import { format } from 'date-fns';
-import { Activity, TrendingUp, Scale, Move, Target } from 'lucide-react';
+import { Activity, TrendingUp, Scale, Move, Target, Loader2, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
   analyseSummary, analyseTrace, inferTestKind,
   type PhaseAnalysis, type TraceSample,
 } from '@/lib/movement/phaseEngine';
+import { fetchRawTrace, pickRawCsvPath } from '@/lib/movement/rawTraceFetch';
 
 export interface AnalysisRow {
   id: string;
