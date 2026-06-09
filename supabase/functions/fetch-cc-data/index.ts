@@ -323,6 +323,15 @@ serve(async (req) => {
 
         // Add individual jump data
         (analysis.jumps || []).forEach((jump, index) => {
+          const pogoRawPath = jump.path_to_this_jump_raw_csv
+            ?? jump.path_to_raw_csv
+            ?? recording.path_to_raw_csv
+            ?? null;
+          const pogoMetrics = {
+            ...jump,
+            ...(pogoRawPath ? { raw_csv_path: pogoRawPath } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
+          };
           allTestData.push({
             athlete_id: athlete.id,
             athlete_name: athlete.name,
@@ -335,7 +344,7 @@ serve(async (req) => {
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
             leg_stance: pogoLegStance || undefined,
-            metrics: jump,
+            metrics: pogoMetrics,
           })
 
           // Create Left/Right Side individual jump entries
@@ -353,7 +362,7 @@ serve(async (req) => {
               height_cm: demographics.height_cm,
               weight_kg: demographics.weight_kg,
               leg_stance: pogoLegStance,
-              metrics: jump,
+              metrics: pogoMetrics,
             })
           }
         })
