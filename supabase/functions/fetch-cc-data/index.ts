@@ -131,6 +131,17 @@ serve(async (req) => {
           const legStance = (jump.plot_annotations?.leg_stance || jump.metric_table?.leg_stance || '').toLowerCase()
           const isSingleLeg = legStance === 'left_leg' || legStance === 'right_leg'
 
+          const rawCsvPath = jump.path_to_this_jump_raw_csv
+            ?? jump.path_to_raw_csv
+            ?? recording.path_to_raw_csv
+            ?? null;
+          const metricsWithPath = {
+            ...(jump.metric_table || {}),
+            ...(rawCsvPath ? { raw_csv_path: rawCsvPath } : {}),
+            ...(jump.sampling_frequency ? { sampling_frequency: jump.sampling_frequency } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
+          };
+
           allTestData.push({
             athlete_id: athlete.id,
             athlete_name: athlete.name,
@@ -143,7 +154,7 @@ serve(async (req) => {
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
             leg_stance: isSingleLeg ? legStance : 'dual_leg',
-            metrics: jump.metric_table,
+            metrics: metricsWithPath,
           })
 
           // Create additional Left Side / Right Side entries when leg_stance is left_leg or right_leg
