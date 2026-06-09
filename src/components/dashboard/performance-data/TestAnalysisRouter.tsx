@@ -9,13 +9,13 @@
  *   replaced by a clear note: "No force/time curve available for this result"
  *   and the summary metrics are shown instead.
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis,
   CartesianGrid, Tooltip, Legend, ReferenceLine, ScatterChart, Scatter, ZAxis,
 } from 'recharts';
 import { format } from 'date-fns';
-import { Activity, TrendingUp, Scale, Move, Target } from 'lucide-react';
+import { Activity, TrendingUp, Scale, Move, Target, Loader2, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
   analyseSummary, analyseTrace, inferTestKind,
   type PhaseAnalysis, type TraceSample,
 } from '@/lib/movement/phaseEngine';
+import { fetchRawTrace, pickRawCsvPath } from '@/lib/movement/rawTraceFetch';
 
 export interface AnalysisRow {
   id: string;
@@ -207,22 +208,31 @@ const SSC_TONE: Record<string, string> = {
 };
 
 const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
-  // Best-effort: try to build a trace from rows that share an athlete/date/batch
-  // and contain a `force` / `force_n` sample per repetition. If not present,
-  // fall back to per-row summary analysis using the first representative row.
-  const analysis = useMemo<PhaseAnalysis | null>(() => {
-    if (rows.length === 0) return null;
-    const head = rows[0];
-    const kind = inferTestKind(head.test_type, head.test_subtype, head.test_name);
+  const head = rows[0];
+  const kind = useMemo(
+    () => (head ? inferTestKind(head.test_type, head.test_subtype, head.test_name) : 'unknown'),
+    [head],
+  );
+  const rawCsvPath = useMemo(() => (head ? pickRawCsvPath(head.metrics) : null), [head]);
+  const bodyMassKg = head ? Number((head.metrics as any)?.body_mass) || undefined : undefined;
+  const samplingFrequency = head
+    ? Number((head.metrics as any)?.sampling_frequency) || undefined
+    : undefined;
 
-    // Attempt trace assembly (CSV with sample-level rows)
+  const [loadedSamples, setLoadedSamples] = useState<TraceSample[] | null>(null);
+  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const baseAnalysis = useMemo<PhaseAnalysis | null>(() => {
+    if (!head) return null;
+    // Attempt trace assembly from CSV-derived sample rows (existing behaviour)
     const sameGroup = rows.filter(
       (r) =>
         r.athlete_id === head.athlete_id &&
         r.test_date === head.test_date &&
         (r.import_batch_id ?? r.file_hash) === (head.import_batch_id ?? head.file_hash),
     );
-    const sampleRate = 1000; // assume 1 kHz when t missing
+    const sampleRate = 1000;
     const samples: TraceSample[] = [];
     for (const r of sameGroup) {
       const f = (r.metrics as any) ?? {};
@@ -234,15 +244,36 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
       const com = Number.isFinite(Number(f.com ?? f.com_disp)) ? Number(f.com ?? f.com_disp) : undefined;
       samples.push({ t, f: force, com });
     }
-    const bodyMassKg = Number((head.metrics as any)?.body_mass) || undefined;
     if (samples.length > 32) {
       samples.sort((a, b) => a.t - b.t);
       return analyseTrace(samples, { test: kind, bodyMassKg });
     }
     return analyseSummary(kind, head.metrics ?? {});
-  }, [rows]);
+  }, [rows, head, kind, bodyMassKg]);
+
+  const analysis = useMemo<PhaseAnalysis | null>(() => {
+    if (loadedSamples && loadedSamples.length > 32) {
+      return analyseTrace(loadedSamples, { test: kind, bodyMassKg });
+    }
+    return baseAnalysis;
+  }, [loadedSamples, baseAnalysis, kind, bodyMassKg]);
 
   if (!analysis) return null;
+
+  const handleLoadRawTrace = async () => {
+    if (!rawCsvPath) return;
+    setLoadState('loading');
+    setLoadError(null);
+    try {
+      const res = await fetchRawTrace(rawCsvPath, { bodyMassKg, samplingFrequency });
+      if (!res.samples.length) throw new Error('No samples parsed from raw CSV');
+      setLoadedSamples(res.samples);
+      setLoadState('success');
+    } catch (e) {
+      setLoadError((e as Error).message);
+      setLoadState('error');
+    }
+  };
 
   const sl = analysis.springLike;
   const slR = sl.r === null ? '—' : sl.r.toFixed(2);
@@ -267,23 +298,46 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
         </div>
       </div>
 
-      {traceLocked && (
+      {traceLocked && rawCsvPath && loadState !== 'success' && (
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="font-semibold">Raw force-trace available from CC Athletics API</div>
+              <p className="text-muted-foreground mt-0.5">
+                Loading the raw CSV unlocks phase detection, Pedley spring-like correlation,
+                modelled vs actual force, and SSC classification for this rep.
+              </p>
+            </div>
+            <Button size="sm" onClick={handleLoadRawTrace} disabled={loadState === 'loading'}>
+              {loadState === 'loading'
+                ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Loading…</>
+                : <><Download className="h-3.5 w-3.5 mr-1.5" />Load raw force trace</>}
+            </Button>
+          </div>
+          {loadState === 'error' && loadError && (
+            <div className="text-rose-600 dark:text-rose-400">Failed: {loadError}</div>
+          )}
+        </div>
+      )}
+
+      {traceLocked && !rawCsvPath && (
         <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
           <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-300">
             <span className="uppercase tracking-wide text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20">Locked</span>
             Pedley spring-like correlation unavailable
           </div>
           <p className="text-muted-foreground">
-            Requires raw vertical force-time samples (with body mass &amp; landing/take-off detection)
-            to compute the Pearson r between CoM displacement and absolute vertical force during ground
-            contact. The current source only provides summary metrics — no force-time curve.
+            Raw CSV path unavailable in this API payload. The result contains only summary metrics
+            (no <code>raw_csv_path</code> / <code>path_to_this_jump_raw_csv</code>), so the Pearson
+            r between CoM displacement and vertical force cannot be computed.
           </p>
           <p className="text-muted-foreground">
-            To unlock: import a raw force-trace CSV for this rep, or enable raw force-trace sync on the
-            CC Athletics API.
+            To unlock: import a raw force-trace CSV for this rep, or re-sync CC Athletics data so
+            the raw path is propagated.
           </p>
         </div>
       )}
+
 
 
       {analysis.bands.length > 0 && (

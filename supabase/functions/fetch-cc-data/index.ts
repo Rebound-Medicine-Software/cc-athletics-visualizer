@@ -131,6 +131,17 @@ serve(async (req) => {
           const legStance = (jump.plot_annotations?.leg_stance || jump.metric_table?.leg_stance || '').toLowerCase()
           const isSingleLeg = legStance === 'left_leg' || legStance === 'right_leg'
 
+          const rawCsvPath = jump.path_to_this_jump_raw_csv
+            ?? jump.path_to_raw_csv
+            ?? recording.path_to_raw_csv
+            ?? null;
+          const metricsWithPath = {
+            ...(jump.metric_table || {}),
+            ...(rawCsvPath ? { raw_csv_path: rawCsvPath } : {}),
+            ...(jump.sampling_frequency ? { sampling_frequency: jump.sampling_frequency } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
+          };
+
           allTestData.push({
             athlete_id: athlete.id,
             athlete_name: athlete.name,
@@ -143,7 +154,7 @@ serve(async (req) => {
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
             leg_stance: isSingleLeg ? legStance : 'dual_leg',
-            metrics: jump.metric_table,
+            metrics: metricsWithPath,
           })
 
           // Create additional Left Side / Right Side entries when leg_stance is left_leg or right_leg
@@ -161,7 +172,7 @@ serve(async (req) => {
               height_cm: demographics.height_cm,
               weight_kg: demographics.weight_kg,
               leg_stance: legStance,
-              metrics: jump.metric_table,
+              metrics: metricsWithPath,
             })
           }
         })
@@ -179,6 +190,7 @@ serve(async (req) => {
         // For isometric tests, create one record per recording (not per trial)
         // and include the full isometric_analysis structure for limb symmetry calculations
         const exerciseName = recording.exercise_name || 'Isometric Test'
+        const isoRawPath = recording.path_to_raw_csv ?? analysis.path_to_raw_csv ?? null;
         allTestData.push({
           athlete_id: athlete.id,
           athlete_name: athlete.name,
@@ -191,7 +203,9 @@ serve(async (req) => {
           height_cm: demographics.height_cm,
           weight_kg: demographics.weight_kg,
           metrics: {
-            isometric_analysis: analysis
+            isometric_analysis: analysis,
+            ...(isoRawPath ? { raw_csv_path: isoRawPath } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
           },
         })
 
@@ -199,6 +213,7 @@ serve(async (req) => {
         const baseExercise = exerciseName.replace(/[\s_]*(Left|Right)[\s_]*Leg/gi, '').trim()
         analysis.trials.forEach((trial, tIndex) => {
           const tm = trial.total_metrics || {}
+          const trialRawPath = trial.path_to_raw_csv ?? trial.path_to_this_jump_raw_csv ?? isoRawPath;
           const hasLR = tm.force_50ms_left !== undefined || tm.force_peak_left !== undefined ||
                         tm.force_50ms_right !== undefined || tm.force_peak_right !== undefined
 
@@ -221,6 +236,8 @@ serve(async (req) => {
                 force_250ms: tm.force_250ms_left,
                 force_peak: tm.force_peak_left,
                 steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+                ...(trialRawPath ? { raw_csv_path: trialRawPath } : {}),
+                ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
               },
             })
             // Right leg entry
@@ -241,6 +258,8 @@ serve(async (req) => {
                 force_250ms: tm.force_250ms_right,
                 force_peak: tm.force_peak_right,
                 steadiness_force_n: (tm.steadiness_rsme_force || 0) * 9.81,
+                ...(trialRawPath ? { raw_csv_path: trialRawPath } : {}),
+                ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
               },
             })
           }
@@ -304,6 +323,15 @@ serve(async (req) => {
 
         // Add individual jump data
         (analysis.jumps || []).forEach((jump, index) => {
+          const pogoRawPath = jump.path_to_this_jump_raw_csv
+            ?? jump.path_to_raw_csv
+            ?? recording.path_to_raw_csv
+            ?? null;
+          const pogoMetrics = {
+            ...jump,
+            ...(pogoRawPath ? { raw_csv_path: pogoRawPath } : {}),
+            ...(demographics.weight_kg ? { body_mass: demographics.weight_kg } : {}),
+          };
           allTestData.push({
             athlete_id: athlete.id,
             athlete_name: athlete.name,
@@ -316,7 +344,7 @@ serve(async (req) => {
             height_cm: demographics.height_cm,
             weight_kg: demographics.weight_kg,
             leg_stance: pogoLegStance || undefined,
-            metrics: jump,
+            metrics: pogoMetrics,
           })
 
           // Create Left/Right Side individual jump entries
@@ -334,7 +362,7 @@ serve(async (req) => {
               height_cm: demographics.height_cm,
               weight_kg: demographics.weight_kg,
               leg_stance: pogoLegStance,
-              metrics: jump,
+              metrics: pogoMetrics,
             })
           }
         })
