@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { GolfSwingAnalysis } from './GolfSwingAnalysis';
 import {
   analyseSummary, analyseTrace, inferTestKind,
-  type PhaseAnalysis, type TraceSample,
+  type PhaseAnalysis, type TraceSample, type TestKind, type SSCCategory,
 } from '@/lib/movement/phaseEngine';
 import { fetchRawTrace, pickRawCsvPath } from '@/lib/movement/rawTraceFetch';
 
