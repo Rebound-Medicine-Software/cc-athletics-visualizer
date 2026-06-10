@@ -207,6 +207,177 @@ const SSC_TONE: Record<string, string> = {
   unknown: 'bg-muted text-muted-foreground border-border',
 };
 
+// Test kinds where Pedley spring-like correlation is meaningful
+const SPRING_LIKE_KINDS = new Set([
+  'cmj', 'cmj_sl', 'dj', 'dj_sl', 'pogo', 'pogo_sl',
+]);
+const SPRING_LIKE_NA_KINDS = new Set([
+  'imtp', 'isometric', 'isometric_squat', 'isometric_calf',
+  'balance', 'balance_sl', 'golf_swing', 'sit_to_stand',
+]);
+
+type SpringLikeStatus = 'spring' | 'not_spring' | 'locked' | 'unavailable' | 'na';
+
+const STATUS_STYLES: Record<SpringLikeStatus, { wrap: string; chip: string; label: string }> = {
+  spring:      { wrap: 'border-emerald-500/40 bg-emerald-500/5', chip: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30', label: 'Spring-like behaviour present' },
+  not_spring:  { wrap: 'border-rose-500/40 bg-rose-500/5',       chip: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',          label: 'Not spring-like' },
+  locked:      { wrap: 'border-amber-500/40 bg-amber-500/5',     chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',     label: 'Locked — raw trace required' },
+  unavailable: { wrap: 'border-amber-500/40 bg-amber-500/5',     chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',     label: 'Unavailable' },
+  na:          { wrap: 'border-border bg-muted/30',              chip: 'bg-muted text-muted-foreground border-border',                                label: 'Not applicable for this test' },
+};
+
+const SSC_STYLES: Record<SSCCategory | 'unknown', string> = {
+  good:     'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  moderate: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+  poor:     'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
+  unknown:  'bg-muted text-muted-foreground border-border',
+};
+
+/** Card: Pedley spring-like correlation, always visible for applicable tests. */
+const SpringLikeCard = ({
+  kind, analysis, hasTraceLoaded, rawCsvPath,
+  onLoadRawTrace, loadState, loadError,
+  scatter,
+}: {
+  kind: TestKind;
+  analysis: PhaseAnalysis | null;
+  hasTraceLoaded: boolean;
+  rawCsvPath: string | null;
+  onLoadRawTrace: () => void;
+  loadState: 'idle' | 'loading' | 'error' | 'success';
+  loadError: string | null;
+  scatter: { disp: number; force: number }[];
+}) => {
+  const applicable = SPRING_LIKE_KINDS.has(kind);
+  const notApplicable = SPRING_LIKE_NA_KINDS.has(kind) || !applicable;
+
+  let status: SpringLikeStatus;
+  if (notApplicable) status = 'na';
+  else if (!analysis?.hasTrace && !rawCsvPath) status = 'unavailable';
+  else if (!analysis?.hasTrace) status = 'locked';
+  else if (analysis.springLike.r === null) status = 'unavailable';
+  else status = analysis.springLike.isSpringLike ? 'spring' : 'not_spring';
+
+  const s = STATUS_STYLES[status];
+  const r = analysis?.springLike.r;
+  const rText = r === null || r === undefined ? '—' : r.toFixed(2);
+  const ssc = analysis?.sscCategory ?? 'unknown';
+  const impactText = !analysis?.hasTrace
+    ? 'Awaiting raw trace'
+    : analysis.derived.impactPeakF !== undefined
+      ? `Impact peak present (${Math.round(analysis.derived.impactPeakF)} N)`
+      : 'No impact peak detected';
+
+  return (
+    <Card className={`p-4 space-y-3 border ${s.wrap}`}>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            Spring-Like Correlation
+            <Badge variant="outline" className={s.chip}>{s.label}</Badge>
+          </h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Pedley et al. (2023) · Pearson r between CoM displacement and vertical force during ground contact.
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Analysis mode</div>
+          <Badge variant="secondary" className="text-[10px]">
+            {hasTraceLoaded ? 'Trace-loaded' : 'Summary-only'}
+          </Badge>
+        </div>
+      </div>
+
+      {status === 'na' ? (
+        <div className="text-xs text-muted-foreground">
+          Spring-like correlation is not applicable to this test type. It is reported for DJ,
+          Single-leg DJ, Pogo, Single-leg Pogo, CMJ and Single-leg CMJ only.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Stat label="Pearson r" value={rText} hint="lower (more negative) = more spring-like" />
+            <Stat label="Threshold" value="r ≤ −0.80" hint="Pedley et al. 2023" />
+            <div className="rounded-md border bg-card/40 p-3">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">SSC Category</div>
+              <div className="mt-1">
+                <Badge variant="outline" className={SSC_STYLES[ssc]}>
+                  {ssc === 'unknown' ? 'Unknown' : ssc.charAt(0).toUpperCase() + ssc.slice(1)}
+                </Badge>
+              </div>
+            </div>
+            <div className="rounded-md border bg-card/40 p-3">
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Impact peak</div>
+              <div className="text-xs font-medium mt-1">{impactText}</div>
+            </div>
+          </div>
+
+          {status === 'locked' && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs flex items-center justify-between gap-2">
+              <div>
+                <div className="font-semibold">Raw force-time trace required</div>
+                <p className="text-muted-foreground mt-0.5">
+                  Load the CC Athletics raw CSV for this rep to unlock Pearson r,
+                  spring-like classification and SSC category.
+                </p>
+              </div>
+              <Button size="sm" onClick={onLoadRawTrace} disabled={loadState === 'loading'}>
+                {loadState === 'loading'
+                  ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Loading…</>
+                  : <><Download className="h-3.5 w-3.5 mr-1.5" />Load raw force trace</>}
+              </Button>
+            </div>
+          )}
+
+          {status === 'unavailable' && !rawCsvPath && (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
+              <div className="font-semibold text-amber-700 dark:text-amber-300">Raw CSV path unavailable from API payload</div>
+              <p className="text-muted-foreground">
+                This result only contains summary metrics — no <code>raw_csv_path</code> was returned
+                by the CC Athletics API, so the Pearson r cannot be computed.
+              </p>
+              <Button size="sm" variant="outline" disabled className="mt-1">
+                <Download className="h-3.5 w-3.5 mr-1.5" />Load raw force trace
+              </Button>
+            </div>
+          )}
+
+          {loadState === 'error' && loadError && (
+            <div className="text-xs text-rose-600 dark:text-rose-400">
+              Failed to load raw trace: {loadError}
+            </div>
+          )}
+
+          <Card className="p-3">
+            <h5 className="text-xs font-semibold text-muted-foreground mb-2">Force vs CoM Displacement</h5>
+            {scatter.length > 4 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <ScatterChart margin={{ top: 8, right: 12, left: 0, bottom: 8 }}>
+                  <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
+                  <XAxis type="number" dataKey="disp" name="CoM disp"
+                    tick={{ fontSize: 10 }} label={{ value: 'CoM displacement (m)', position: 'insideBottom', offset: -2, fontSize: 10 }} />
+                  <YAxis type="number" dataKey="force" name="Force"
+                    tick={{ fontSize: 10 }} label={{ value: 'Force (N)', angle: -90, position: 'insideLeft', fontSize: 10 }} />
+                  <ZAxis range={[20, 20]} />
+                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                  <Scatter data={scatter} fill="hsl(var(--primary))" />
+                </ScatterChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[160px] flex items-center justify-center text-center text-xs text-muted-foreground border border-dashed rounded-md px-4">
+                Force-displacement relationship will appear after raw trace is loaded.
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground mt-1">
+              A clean inverse (negatively-sloped) cluster indicates spring-like behaviour.
+            </p>
+          </Card>
+        </>
+      )}
+    </Card>
+  );
+};
+
 const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
   const head = rows[0];
   const kind = useMemo(
@@ -223,9 +394,9 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const baseAnalysis = useMemo<PhaseAnalysis | null>(() => {
+  // Assemble samples from CSV-style rows (existing behaviour) — used when no raw API trace loaded
+  const assembledSamples = useMemo<TraceSample[] | null>(() => {
     if (!head) return null;
-    // Attempt trace assembly from CSV-derived sample rows (existing behaviour)
     const sameGroup = rows.filter(
       (r) =>
         r.athlete_id === head.athlete_id &&
@@ -246,17 +417,50 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
     }
     if (samples.length > 32) {
       samples.sort((a, b) => a.t - b.t);
-      return analyseTrace(samples, { test: kind, bodyMassKg });
+      return samples;
     }
-    return analyseSummary(kind, head.metrics ?? {});
-  }, [rows, head, kind, bodyMassKg]);
+    return null;
+  }, [rows, head]);
+
+  const activeSamples = loadedSamples ?? assembledSamples;
+  const hasTraceLoaded = !!loadedSamples;
 
   const analysis = useMemo<PhaseAnalysis | null>(() => {
-    if (loadedSamples && loadedSamples.length > 32) {
-      return analyseTrace(loadedSamples, { test: kind, bodyMassKg });
+    if (!head) return null;
+    if (activeSamples && activeSamples.length > 32) {
+      return analyseTrace(activeSamples, { test: kind, bodyMassKg });
     }
-    return baseAnalysis;
-  }, [loadedSamples, baseAnalysis, kind, bodyMassKg]);
+    return analyseSummary(kind, head.metrics ?? {});
+  }, [activeSamples, head, kind, bodyMassKg]);
+
+  // Build Force vs CoM Displacement scatter from the active trace
+  const scatter = useMemo<{ disp: number; force: number }[]>(() => {
+    if (!analysis?.hasTrace || !activeSamples || !activeSamples.length) return [];
+    const c = analysis.contacts[0];
+    if (!c) return [];
+    const inContact = activeSamples.filter((s) => s.t >= c.startT && s.t <= c.endT);
+    const hasCom = inContact.some((s) => s.com !== undefined);
+    if (hasCom) {
+      return inContact
+        .filter((s) => s.com !== undefined)
+        .map((s) => ({ disp: s.com as number, force: Math.abs(s.f) }));
+    }
+    // No CoM channel — fall back to integrated displacement only if we have body mass
+    if (!bodyMassKg) return [];
+    const g = 9.81;
+    let v = 0, d = 0;
+    const out: { disp: number; force: number }[] = [];
+    for (let i = 1; i < inContact.length; i++) {
+      const dt = inContact[i].t - inContact[i - 1].t;
+      const a = (inContact[i].f - bodyMassKg * g) / bodyMassKg;
+      v += a * dt;
+      d += v * dt;
+      out.push({ disp: d, force: Math.abs(inContact[i].f) });
+    }
+    // Subsample for chart readability
+    const step = Math.max(1, Math.floor(out.length / 200));
+    return out.filter((_, i) => i % step === 0);
+  }, [analysis, activeSamples, bodyMassKg]);
 
   if (!analysis) return null;
 
@@ -275,70 +479,64 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
     }
   };
 
-  const sl = analysis.springLike;
-  const slR = sl.r === null ? '—' : sl.r.toFixed(2);
-  const sscLabel = analysis.sscCategory === 'unknown' ? 'SSC: unknown (no trace)' : `SSC: ${analysis.sscCategory.toUpperCase()}`;
-  const traceLocked = !analysis.hasTrace;
-
   return (
-    <Card className="p-4 space-y-3 border-primary/30">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h4 className="text-sm font-semibold">Movement phase analysis</h4>
-          <p className="text-xs text-muted-foreground">
-            Phase detection {analysis.hasTrace ? 'from force-time trace' : 'from summary metrics (no curve in source)'} · Pedley et al. (2023) spring-like correlation
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Badge className={SSC_TONE[analysis.sscCategory]} variant="outline">{sscLabel}</Badge>
-          <Badge variant="outline">Spring-like r: {slR}</Badge>
-          <Badge variant="outline">
-            Spring-like: {sl.isSpringLike === null ? '—' : sl.isSpringLike ? 'Yes' : 'No'}
-          </Badge>
-        </div>
+    <Card className="p-4 space-y-4 border-primary/30">
+      <div>
+        <h4 className="text-sm font-semibold">Movement phase analysis</h4>
+        <p className="text-xs text-muted-foreground">
+          Phase detection {analysis.hasTrace ? 'from force-time trace' : 'from summary metrics (no curve in source)'} · Pedley et al. (2023) spring-like correlation
+        </p>
       </div>
 
-      {traceLocked && rawCsvPath && loadState !== 'success' && (
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="font-semibold">Raw force-trace available from CC Athletics API</div>
-              <p className="text-muted-foreground mt-0.5">
-                Loading the raw CSV unlocks phase detection, Pedley spring-like correlation,
-                modelled vs actual force, and SSC classification for this rep.
-              </p>
-            </div>
-            <Button size="sm" onClick={handleLoadRawTrace} disabled={loadState === 'loading'}>
-              {loadState === 'loading'
-                ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Loading…</>
-                : <><Download className="h-3.5 w-3.5 mr-1.5" />Load raw force trace</>}
-            </Button>
+      {/* Prominent first-class Spring-Like Correlation card */}
+      <SpringLikeCard
+        kind={kind}
+        analysis={analysis}
+        hasTraceLoaded={hasTraceLoaded}
+        rawCsvPath={rawCsvPath}
+        onLoadRawTrace={handleLoadRawTrace}
+        loadState={loadState}
+        loadError={loadError}
+        scatter={scatter}
+      />
+
+      {/* Modelled vs actual force, placed directly under the spring-like card */}
+      {analysis.modelled && (
+        <Card className="p-3">
+          <h5 className="text-xs font-semibold text-muted-foreground mb-2">Modelled (half-sine) vs actual force</h5>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={analysis.modelled.actual.map((a, i) => ({
+              t: a.tNorm, actual: a.f, model: analysis.modelled!.model[i].f,
+            }))}>
+              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="t" tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Legend wrapperStyle={{ fontSize: 10 }} />
+              <Line type="monotone" dataKey="actual" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="model" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="mt-2 grid grid-cols-5 gap-1.5">
+            {analysis.modelled.quintileDelta.map((q) => {
+              const tone = q.pct > 15 ? 'text-rose-600 dark:text-rose-300'
+                : q.pct < -10 ? 'text-amber-600 dark:text-amber-300'
+                : 'text-emerald-600 dark:text-emerald-300';
+              return (
+                <div key={q.quintile} className="rounded border p-1.5 text-center">
+                  <div className="text-[9px] uppercase tracking-wide text-muted-foreground">Q{q.quintile}</div>
+                  <div className={`text-xs font-semibold tabular-nums ${tone}`}>
+                    {q.pct >= 0 ? '+' : ''}{q.pct.toFixed(0)}%
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          {loadState === 'error' && loadError && (
-            <div className="text-rose-600 dark:text-rose-400">Failed: {loadError}</div>
-          )}
-        </div>
+          <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 list-disc pl-4">
+            {analysis.modelled.insights.map((i, idx) => <li key={idx}>{i}</li>)}
+          </ul>
+        </Card>
       )}
-
-      {traceLocked && !rawCsvPath && (
-        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
-          <div className="flex items-center gap-2 font-semibold text-amber-700 dark:text-amber-300">
-            <span className="uppercase tracking-wide text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20">Locked</span>
-            Pedley spring-like correlation unavailable
-          </div>
-          <p className="text-muted-foreground">
-            Raw CSV path unavailable in this API payload. The result contains only summary metrics
-            (no <code>raw_csv_path</code> / <code>path_to_this_jump_raw_csv</code>), so the Pearson
-            r between CoM displacement and vertical force cannot be computed.
-          </p>
-          <p className="text-muted-foreground">
-            To unlock: import a raw force-trace CSV for this rep, or re-sync CC Athletics data so
-            the raw path is propagated.
-          </p>
-        </div>
-      )}
-
-
 
       {analysis.bands.length > 0 && (
         <div>
@@ -374,28 +572,6 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
         )}
       </div>
 
-      {analysis.modelled && (
-        <Card className="p-3">
-          <h5 className="text-xs font-semibold text-muted-foreground mb-2">Modelled (half-sine) vs actual force</h5>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={analysis.modelled.actual.map((a, i) => ({
-              t: a.tNorm, actual: a.f, model: analysis.modelled!.model[i].f,
-            }))}>
-              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="t" tick={{ fontSize: 10 }} tickFormatter={(v) => `${Math.round(v * 100)}%`} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 10 }} />
-              <Line type="monotone" dataKey="actual" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="model" stroke="hsl(var(--muted-foreground))" strokeWidth={1.5} strokeDasharray="4 4" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-          <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 list-disc pl-4">
-            {analysis.modelled.insights.map((i, idx) => <li key={idx}>{i}</li>)}
-          </ul>
-        </Card>
-      )}
-
       {analysis.prescriptions.length > 0 && (
         <div className="rounded-md border bg-muted/30 p-3">
           <div className="text-xs font-semibold mb-1.5">Suggested training focus</div>
@@ -405,12 +581,6 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
             ))}
           </ul>
         </div>
-      )}
-
-      {!analysis.hasTrace && (
-        <p className="text-[11px] text-muted-foreground italic">
-          No force-time curve available for phase analysis — showing summary-derived phases only.
-        </p>
       )}
     </Card>
   );
