@@ -495,19 +495,20 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
   if (!analysis) return null;
 
   const handleLoadRawTrace = async () => {
-    if (!rawCsvPath) return;
+    if (!rawCsvPath || !head) return;
     setLoadState('loading');
     setLoadError(null);
     try {
       const res = await fetchRawTrace(rawCsvPath, { bodyMassKg, samplingFrequency });
       if (!res.samples.length) throw new Error('No samples parsed from raw CSV');
-      setLoadedSamples(res.samples);
+      setLoadedSamplesByTrial((prev) => ({ ...prev, [head.id]: res.samples }));
       setLoadState('success');
     } catch (e) {
       setLoadError((e as Error).message);
       setLoadState('error');
     }
   };
+
 
   return (
     <Card className="p-4 space-y-4 border-primary/30">
