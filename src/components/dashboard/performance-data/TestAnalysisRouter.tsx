@@ -106,8 +106,17 @@ export const TestAnalysisRouter = ({
 }: TestAnalysisRouterProps) => {
   // Pick a primary type to specialise on. If user picked one, use it.
   // Otherwise infer from the dominant test_type in the visible rows.
+  // Single-Leg DJ rows are mis-typed as 'isometric' by the CC API — when the user
+  // explicitly selected Jumps (or any Jump subtype), force the jump pipeline.
   const primaryType = useMemo(() => {
-    if (selectedTestType) return selectedTestType.toLowerCase();
+    if (selectedTestType) {
+      const t = selectedTestType.toLowerCase();
+      if (t === 'jumps' || t === 'jump') return 'jump';
+      if (t === 'isometrics') return 'isometric';
+      if (t === 'movement') return 'movement';
+      if (t === 'balance') return 'balance';
+      return t;
+    }
     const counts = new Map<string, number>();
     for (const r of rows) {
       const t = (r.test_type ?? '').toLowerCase();
@@ -152,6 +161,7 @@ export const TestAnalysisRouter = ({
       return <GenericTimeline rows={rows} />;
   }
 };
+
 
 // ----------------------------------------------------------------------------
 // Shared building blocks
