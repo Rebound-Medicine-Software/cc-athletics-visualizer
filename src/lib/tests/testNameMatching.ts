@@ -90,16 +90,9 @@ export function dbTestTypesFor(
 }
 
 
-/** Subtype IDs that explicitly target a unilateral variant. */
-const UNILATERAL_SUBTYPES = new Set([
-  'SL_CMJ', 'LEFT_CMJ', 'RIGHT_CMJ',
-  'SL_DJ', 'LEFT_DJ', 'RIGHT_DJ',
-  'SL_SJ', 'LEFT_SJ', 'RIGHT_SJ',
-  'SL_POGOS', 'LEFT_POGOS', 'RIGHT_POGOS',
-]);
-
 /** Subtype IDs that target the bilateral / dual-leg variant only. */
 const BILATERAL_ONLY = new Set(['CMJ', 'DJ', 'SJ', 'POGOS', 'POGO']);
+
 
 /** True if a row matches the UI (testType, subtype) selection. */
 export function rowMatchesUiSelection(
