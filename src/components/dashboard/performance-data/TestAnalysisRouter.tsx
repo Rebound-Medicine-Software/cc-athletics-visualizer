@@ -389,7 +389,25 @@ const SpringLikeCard = ({
 };
 
 const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
-  const head = rows[0];
+  // Distinct trials available: one entry per (athlete, date, test_name, rep).
+  const trials = useMemo(() => {
+    const seen = new Map<string, AnalysisRow>();
+    for (const r of rows) {
+      const k = `${r.athlete_id}|${r.test_date}|${r.test_name}|${r.repetition_number}`;
+      if (!seen.has(k)) seen.set(k, r);
+    }
+    return Array.from(seen.values()).sort((a, b) => b.test_date.localeCompare(a.test_date));
+  }, [rows]);
+
+  const [trialKey, setTrialKey] = useState<string | null>(null);
+  const head = useMemo(() => {
+    if (trialKey) {
+      const found = trials.find((t) => `${t.id}` === trialKey);
+      if (found) return found;
+    }
+    return trials[0] ?? rows[0];
+  }, [trialKey, trials, rows]);
+
   const kind = useMemo(
     () => (head ? inferTestKind(head.test_type, head.test_subtype, head.test_name) : 'unknown'),
     [head],
@@ -400,9 +418,11 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
     ? Number((head.metrics as any)?.sampling_frequency) || undefined
     : undefined;
 
-  const [loadedSamples, setLoadedSamples] = useState<TraceSample[] | null>(null);
+  const [loadedSamplesByTrial, setLoadedSamplesByTrial] = useState<Record<string, TraceSample[]>>({});
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error' | 'success'>('idle');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const loadedSamples = head ? loadedSamplesByTrial[head.id] ?? null : null;
+
 
   // Assemble samples from CSV-style rows (existing behaviour) — used when no raw API trace loaded
   const assembledSamples = useMemo<TraceSample[] | null>(() => {
