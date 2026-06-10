@@ -90,6 +90,17 @@ export function dbTestTypesFor(
 }
 
 
+/** Subtype IDs that explicitly target a unilateral variant. */
+const UNILATERAL_SUBTYPES = new Set([
+  'SL_CMJ', 'LEFT_CMJ', 'RIGHT_CMJ',
+  'SL_DJ', 'LEFT_DJ', 'RIGHT_DJ',
+  'SL_SJ', 'LEFT_SJ', 'RIGHT_SJ',
+  'SL_POGOS', 'LEFT_POGOS', 'RIGHT_POGOS',
+]);
+
+/** Subtype IDs that target the bilateral / dual-leg variant only. */
+const BILATERAL_ONLY = new Set(['CMJ', 'DJ', 'SJ', 'POGOS', 'POGO']);
+
 /** True if a row matches the UI (testType, subtype) selection. */
 export function rowMatchesUiSelection(
   row: TestRowLike,
@@ -101,14 +112,22 @@ export function rowMatchesUiSelection(
   const tn = (row.test_name || '').toLowerCase();
 
   const allowedTypes = dbTestTypesFor(testType, subtypeId);
-  // For DJ we may also accept rows where test_type isn't set yet but the name matches.
   const typeOk = !tt || allowedTypes.includes(tt) || (testType === 'Jumps' && /jump|pogo/.test(tt));
   if (!typeOk && tt) return false;
 
   const patterns = namePatternsFor(testType, subtypeId);
   if (!patterns) return true;
-  return patterns.some((p) => tn.includes(p));
+  if (!patterns.some((p) => tn.includes(p))) return false;
+
+  // For "plain" bilateral subtypes (CMJ/DJ/SJ/POGOS), exclude unilateral rows
+  // so that a Drop Jump selection doesn't pull in Single Leg / Left / Right.
+  const id = (subtypeId || '').toUpperCase();
+  if (BILATERAL_ONLY.has(id) && /(single[- ]leg|left side|right side|\bleft\b|\bright\b|\bsl\b)/.test(tn)) {
+    return false;
+  }
+  return true;
 }
+
 
 /** Infer a canonical test_type from a free-form test_name (for live API rows). */
 export function inferTestTypeFromName(name: string | null | undefined): string {
