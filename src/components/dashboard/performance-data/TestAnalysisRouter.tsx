@@ -512,12 +512,60 @@ const PhasePanel = ({ rows }: { rows: AnalysisRow[] }) => {
 
   return (
     <Card className="p-4 space-y-4 border-primary/30">
-      <div>
-        <h4 className="text-sm font-semibold">Movement phase analysis</h4>
-        <p className="text-xs text-muted-foreground">
-          Phase detection {analysis.hasTrace ? 'from force-time trace' : 'from summary metrics (no curve in source)'} · Pedley et al. (2023) spring-like correlation
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-semibold">Movement phase analysis</h4>
+          <p className="text-xs text-muted-foreground">
+            Phase detection {analysis.hasTrace ? 'from force-time trace' : 'from summary metrics (no curve in source)'} · Pedley et al. (2023) spring-like correlation
+          </p>
+        </div>
+        {trials.length > 1 && (
+          <div className="min-w-[280px]">
+            <label className="text-[10px] uppercase tracking-wide text-muted-foreground block mb-1">Trial</label>
+            <select
+              className="w-full text-xs rounded-md border bg-background px-2 py-1.5"
+              value={head?.id ?? ''}
+              onChange={(e) => setTrialKey(e.target.value)}
+            >
+              {trials.map((t) => {
+                const hasRaw = !!pickRawCsvPath(t.metrics);
+                const hasLoaded = !!loadedSamplesByTrial[t.id];
+                return (
+                  <option key={t.id} value={t.id}>
+                    {t.test_date} · {t.test_name} · Rep {t.repetition_number} · {t.source === 'api' ? 'API' : 'CSV'}
+                    {hasLoaded ? ' · trace loaded' : hasRaw ? ' · raw available' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* Force–time curve (visible whenever a trace is available or has been loaded) */}
+      {activeSamples && activeSamples.length > 32 && (
+        <Card className="p-3">
+          <h5 className="text-xs font-semibold text-muted-foreground mb-2">Force / time trace</h5>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={activeSamples
+              .filter((_, i) => i % Math.max(1, Math.floor(activeSamples.length / 600)) === 0)
+              .map((s) => ({ t: s.t, f: s.f }))}>
+              <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="t" tick={{ fontSize: 10 }} tickFormatter={(v) => `${v.toFixed(2)}s`} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip formatter={(v: any) => [`${Number(v).toFixed(0)} N`, 'Force']} labelFormatter={(v) => `t=${Number(v).toFixed(3)}s`} />
+              {analysis.contacts.map((c, i) => (
+                <ReferenceLine key={`s${i}`} x={c.startT} stroke="hsl(var(--primary))" strokeDasharray="2 2" />
+              ))}
+              {analysis.contacts.map((c, i) => (
+                <ReferenceLine key={`e${i}`} x={c.endT} stroke="hsl(var(--primary))" strokeDasharray="2 2" />
+              ))}
+              <Line type="monotone" dataKey="f" stroke="hsl(var(--primary))" strokeWidth={1.5} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
 
       {/* Prominent first-class Spring-Like Correlation card */}
       <SpringLikeCard
