@@ -31,11 +31,27 @@ export function namePatternsFor(
   const id = subtypeId.toUpperCase();
   if (testType === 'Jumps') {
     switch (id) {
-      case 'CMJ': return ['countermovement jump'];
-      case 'DJ': return ['drop jump'];
-      case 'SJ': return ['squat jump'];
+      // CMJ family
+      case 'CMJ':        return ['countermovement jump'];
+      case 'SL_CMJ':     return ['single leg countermovement', 'single-leg countermovement', 'sl cmj'];
+      case 'LEFT_CMJ':   return ['left side countermovement', 'left countermovement', 'left cmj'];
+      case 'RIGHT_CMJ':  return ['right side countermovement', 'right countermovement', 'right cmj'];
+      // DJ family
+      case 'DJ':         return ['drop jump', 'drop vertical jump'];
+      case 'SL_DJ':      return ['single leg drop', 'single-leg drop', 'sl dj'];
+      case 'LEFT_DJ':    return ['left side drop', 'left drop jump', 'left dj'];
+      case 'RIGHT_DJ':   return ['right side drop', 'right drop jump', 'right dj'];
+      // SJ family
+      case 'SJ':         return ['squat jump'];
+      case 'SL_SJ':      return ['single leg squat jump', 'single-leg squat jump', 'sl sj'];
+      case 'LEFT_SJ':    return ['left side squat jump', 'left squat jump'];
+      case 'RIGHT_SJ':   return ['right side squat jump', 'right squat jump'];
+      // Pogo family
       case 'POGOS':
-      case 'POGO': return ['pogo'];
+      case 'POGO':       return ['pogo'];
+      case 'SL_POGOS':   return ['single leg pogo', 'single-leg pogo', 'sl pogo'];
+      case 'LEFT_POGOS': return ['left side pogo', 'left pogo'];
+      case 'RIGHT_POGOS':return ['right side pogo', 'right pogo'];
     }
   }
   if (testType === 'Isometrics') {
@@ -57,6 +73,7 @@ export function namePatternsFor(
 /**
  * Acceptable test_type values for a UI selection. Pogos are special-cased
  * (stored as test_type='pogo' in DB, surfaced under "Jumps" in the UI).
+ * Single-Leg DJ rows are mis-typed as 'isometric' by the CC API.
  */
 export function dbTestTypesFor(
   testType: TestType,
@@ -64,13 +81,14 @@ export function dbTestTypesFor(
 ): string[] {
   if (testType === 'Jumps') {
     const id = (subtypeId || '').toUpperCase();
-    if (id === 'POGOS' || id === 'POGO') return ['pogo'];
-    if (id === 'DJ') return ['jump', 'isometric']; // Single Leg DJ is mis-typed as 'isometric'
-    if (!subtypeId) return ['jump', 'pogo'];
+    if (id === 'POGOS' || id === 'POGO' || id === 'SL_POGOS' || id === 'LEFT_POGOS' || id === 'RIGHT_POGOS') return ['pogo'];
+    if (id === 'DJ' || id === 'SL_DJ' || id === 'LEFT_DJ' || id === 'RIGHT_DJ') return ['jump', 'isometric'];
+    if (!subtypeId) return ['jump', 'pogo', 'isometric'];
     return ['jump'];
   }
   return [DB_TEST_TYPE[testType]];
 }
+
 
 /** True if a row matches the UI (testType, subtype) selection. */
 export function rowMatchesUiSelection(
