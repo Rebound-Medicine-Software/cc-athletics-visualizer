@@ -13,7 +13,6 @@ import { getModule } from '@/lib/movement-engine/core/moduleRegistry';
 import type { MovementSession, MovementEvent } from '@/lib/movement-engine/core/types';
 import { computeGolfKpis, type GolfKpis } from '@/lib/movement-engine/modules/golf/kpis';
 import { computeGolfCop } from '@/lib/movement-engine/modules/golf/cop';
-import { detectGolfPhases } from '@/lib/movement-engine/modules/golf/phases';
 import { deriveGolfInsights, type GolfFindings } from '@/lib/movement-engine/modules/golf/insights';
 
 import { GolfKpiStrip } from './GolfKpiStrip';
