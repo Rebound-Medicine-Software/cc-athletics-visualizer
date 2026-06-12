@@ -76,9 +76,14 @@ export function GolfPerformanceDashboard({ onBack }: Props) {
   }, [session, events]);
 
   const currentKpis: GolfKpis = useMemo(() => {
-    if (!kpisList.length) return computeGolfKpis({ index: 0, startTime: 0, endTime: 0, phaseMarkers: [] }, session as any);
+    if (!kpisList.length) {
+      return {
+        peak_force: 0, lead_load_pct: 0, trail_load_pct: 0, weight_transfer_pct: 0,
+        tempo_ratio: 0, cop_quality: 0, transition_ms: 0, peak_impact_force: 0, cop_efficiency: 0,
+      };
+    }
     return kpisList[Math.max(0, Math.min(selectedIndex - 1, kpisList.length - 1))];
-  }, [kpisList, selectedIndex, session]);
+  }, [kpisList, selectedIndex]);
 
   const findings: GolfFindings = useMemo(() => deriveGolfInsights(kpisList), [kpisList]);
 
