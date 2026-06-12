@@ -27,7 +27,7 @@ export function detectGolfPhases(event: MovementEvent, session: MovementSession)
   let maxRate = -Infinity;
   for (let i = topIdx + 1; i <= impactIdx; i++) {
     const dt = slice[i].t - slice[i - 1].t || 1e-3;
-    const rate = (slice[i].total - slice[i - 1].t) / dt;
+    const rate = (slice[i].total - slice[i - 1].total) / dt;
     if (rate > maxRate) { maxRate = rate; transitionIdx = i; }
   }
 
