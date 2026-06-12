@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.compute-client-rank-events]
 verify_jwt = false
+
+[functions.generate-golf-summary]
+verify_jwt = false
