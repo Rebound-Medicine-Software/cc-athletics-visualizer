@@ -1,4 +1,5 @@
-import type { GolfKpis } from './kpis';
+import type { GolfKpis, GolfKpiScores } from './kpis';
+import { scoreGolfKpis } from './kpis';
 
 export interface GolfFindings {
   technical: Finding[];
@@ -74,4 +75,124 @@ export function deriveGolfInsights(kpisList: GolfKpis[]): GolfFindings {
 
 function tag(id: string, label: string, severity: Finding['severity'] = 'good'): Finding {
   return { id, label, severity };
+}
+
+// ---------------------------------------------------------------------------
+// Athlete-facing narrative — plain-English Q&A matched to KPI weaknesses
+// ---------------------------------------------------------------------------
+
+export interface NarrativeItem {
+  icon:     string;
+  question: string;
+  answer:   string;
+}
+
+export interface GolfNarrative {
+  headline: string;
+  items:    NarrativeItem[];
+  overall:  number; // 0-100
+}
+
+/**
+ * Builds an athlete-friendly narrative from a list of swing KPIs.
+ * Uses the average across all swings so the message represents the full session.
+ */
+export function buildGolfNarrative(kpisList: GolfKpis[]): GolfNarrative {
+  if (!kpisList.length) {
+    return { headline: 'Upload a session to see your personalised insights.', items: [], overall: 0 };
+  }
+
+  const avg = (k: keyof GolfKpis) =>
+    kpisList.reduce((a, b) => a + (b[k] as number), 0) / kpisList.length;
+
+  const avgKpis: GolfKpis = {
+    peak_force:         avg('peak_force'),
+    lead_load_pct:      avg('lead_load_pct'),
+    trail_load_pct:     avg('trail_load_pct'),
+    weight_transfer_pct: avg('weight_transfer_pct'),
+    tempo_ratio:        avg('tempo_ratio'),
+    cop_quality:        avg('cop_quality'),
+    transition_ms:      avg('transition_ms'),
+    peak_impact_force:  avg('peak_impact_force'),
+    cop_efficiency:     avg('cop_efficiency'),
+  };
+
+  const scores: GolfKpiScores = scoreGolfKpis(avgKpis);
+  const items: NarrativeItem[] = [];
+
+  if (scores.lead_load < 58) {
+    items.push({
+      icon: '⚡',
+      question: 'Why am I losing distance?',
+      answer:
+        `Your lead side is only absorbing ${avgKpis.lead_load_pct.toFixed(0)}% of your weight at impact — ` +
+        `the target is 75%+. This means you're not driving through the ball; you're flipping at it instead. ` +
+        `Lead-leg strength and "feel the ground push back" drills will unlock extra metres.`,
+    });
+  }
+
+  if (scores.weight_transfer < 58) {
+    items.push({
+      icon: '🔄',
+      question: 'Why do I slice or come over the top?',
+      answer:
+        `Your pressure only shifted ${avgKpis.weight_transfer_pct.toFixed(0)}% from trail to lead during the swing ` +
+        `(target: 20%+). Without that ground-force transfer your upper body compensates — creating the over-the-top ` +
+        `move that causes slices and pulls. Rotational power work and pressure-shift drills are the fix.`,
+    });
+  }
+
+  if (scores.tempo < 58) {
+    const desc = avgKpis.tempo_ratio < 2.5 ? 'rushing your backswing' : 'swinging too slowly';
+    items.push({
+      icon: '🎵',
+      question: 'Why is my timing off?',
+      answer:
+        `Your tempo ratio is ${avgKpis.tempo_ratio.toFixed(2)} — the ideal is 2.5–3.2. You're ${desc}. ` +
+        `A good swing takes roughly 3× longer on the way up than the way down. ` +
+        `Try counting "one-two-three" on the backswing and "one" on the downswing until it becomes automatic.`,
+    });
+  }
+
+  if (scores.transition < 58) {
+    items.push({
+      icon: '💥',
+      question: 'Why do I lack pop at impact?',
+      answer:
+        `Your downswing acceleration starts ${avgKpis.transition_ms.toFixed(0)} ms after the top ` +
+        `(target: ≤180 ms). That lag means you run out of room to build clubhead speed. ` +
+        `Reactive strength drills — explosive hip hinges, jump squats — train the fast-twitch fibres that fire this.`,
+    });
+  }
+
+  if (scores.cop_quality < 58) {
+    items.push({
+      icon: '⚖️',
+      question: 'Why am I inconsistent shot to shot?',
+      answer:
+        `Your centre of pressure path shows instability through impact (${avgKpis.cop_efficiency.toFixed(0)}% score). ` +
+        `Balance is breaking down at the exact moment you need it most. ` +
+        `Single-leg balance and proprioception exercises will make your base rock-solid.`,
+    });
+  }
+
+  if (items.length === 0) {
+    items.push({
+      icon: '✅',
+      question: 'What\'s working well?',
+      answer:
+        'Your ground-force metrics are solid across the board. Keep reinforcing these patterns with ' +
+        'consistent practice, and look at your CoP and benchmark panels for fine-tuning opportunities.',
+    });
+  }
+
+  const o = scores.overall;
+  const headline =
+    o >= 80
+      ? `Excellent mechanics — your swing is ${o}% efficient. You're generating force the way the data wants to see.`
+      : o >= 58
+      ? `Solid foundations with clear opportunities to unlock more distance — ${o}% efficient. The data shows exactly where.`
+      : `Your swing has significant room for improvement right now — ${o}% efficient. The good news: the data shows exactly what to fix.`;
+
+  return { headline, items, overall: o };
 }

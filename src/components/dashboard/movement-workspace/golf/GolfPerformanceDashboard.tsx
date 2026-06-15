@@ -12,13 +12,15 @@ import { supabase } from '@/integrations/supabase/client';
 import '@/lib/movement-engine/modules/golf'; // self-register
 import { getModule } from '@/lib/movement-engine/core/moduleRegistry';
 import type { MovementSession, MovementEvent } from '@/lib/movement-engine/core/types';
-import { computeGolfKpis, type GolfKpis } from '@/lib/movement-engine/modules/golf/kpis';
+import { computeGolfKpis, scoreGolfKpis, type GolfKpis } from '@/lib/movement-engine/modules/golf/kpis';
 import { computeGolfCop } from '@/lib/movement-engine/modules/golf/cop';
-import { deriveGolfInsights, type GolfFindings } from '@/lib/movement-engine/modules/golf/insights';
+import { deriveGolfInsights, buildGolfNarrative, type GolfFindings } from '@/lib/movement-engine/modules/golf/insights';
 import { saveGolfMetrics, createGolfSessionRow } from '@/lib/movement-engine/modules/golf/persist';
 import { useAthletes } from '@/hooks/useAthletes';
 
 import { GolfKpiStrip } from './GolfKpiStrip';
+import { GolfScoreOverview } from './GolfScoreOverview';
+import { GolfTrainingPrescription } from './GolfTrainingPrescription';
 import { GolfForceTraceChart } from './GolfForceTraceChart';
 import { GolfSwingSelector } from './GolfSwingSelector';
 import { GolfInsightsPanel } from './GolfInsightsPanel';
@@ -124,6 +126,8 @@ export function GolfPerformanceDashboard({ onBack }: Props) {
   }, [kpisList, selectedIndex]);
 
   const findings: GolfFindings = useMemo(() => deriveGolfInsights(kpisList), [kpisList]);
+  const narrative = useMemo(() => buildGolfNarrative(kpisList), [kpisList]);
+  const kpiScores = useMemo(() => scoreGolfKpis(currentKpis), [currentKpis]);
 
   const cop = useMemo(() => {
     if (!session || !events[selectedIndex - 1]) return null;
@@ -318,8 +322,9 @@ export function GolfPerformanceDashboard({ onBack }: Props) {
               />
 
               <Tabs defaultValue="overview">
-                <TabsList className="bg-slate-900 border border-slate-800">
+                <TabsList className="bg-slate-900 border border-slate-800 flex-wrap h-auto gap-0.5">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="training">Training</TabsTrigger>
                   <TabsTrigger value="cop">CoP</TabsTrigger>
                   <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
                   <TabsTrigger value="insights">Insights</TabsTrigger>
@@ -329,6 +334,7 @@ export function GolfPerformanceDashboard({ onBack }: Props) {
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-3 mt-3">
+                  <GolfScoreOverview narrative={narrative} />
                   <GolfSwingSelector
                     count={events.length}
                     selectedIndex={selectedIndex}
@@ -346,6 +352,10 @@ export function GolfPerformanceDashboard({ onBack }: Props) {
                     overlayIndices={overlayMode !== 'off' ? overlayIndices : undefined}
                   />
                   <GolfCoachTagsPanel tags={coachTags} onChange={updateCoachTags} />
+                </TabsContent>
+
+                <TabsContent value="training" className="mt-3">
+                  <GolfTrainingPrescription scores={kpiScores} />
                 </TabsContent>
 
                 <TabsContent value="cop" className="mt-3">

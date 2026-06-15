@@ -56,6 +56,62 @@ export function computeGolfKpis(event: MovementEvent, session: MovementSession):
   };
 }
 
+// ---------------------------------------------------------------------------
+// 0-100 Scoring — converts raw KPI values to athlete-friendly scores
+// Traffic light: ≥80 good (green), ≥58 developing (amber), <58 needs work (red)
+// ---------------------------------------------------------------------------
+
+export interface GolfKpiScores {
+  lead_load:       number; // 0-100
+  weight_transfer: number; // 0-100
+  tempo:           number; // 0-100
+  transition:      number; // 0-100
+  cop_quality:     number; // 0-100
+  overall:         number; // 0-100 weighted
+}
+
+export function scoreGolfKpis(kpis: GolfKpis): GolfKpiScores {
+  if (!kpis.peak_force) {
+    return { lead_load: 0, weight_transfer: 0, tempo: 0, transition: 0, cop_quality: 0, overall: 0 };
+  }
+
+  // Lead load: 50% → 0,  82% → 100
+  const leadLoad = clamp01((kpis.lead_load_pct - 50) / 32) * 100;
+
+  // Weight transfer: 5% → 0,  28% → 100
+  const wtPct = clamp01((kpis.weight_transfer_pct - 5) / 23) * 100;
+
+  // Tempo: bell curve centred at 2.8 (ideal 2.5–3.2)
+  const tempoScore = kpis.tempo_ratio > 0
+    ? Math.max(0, 100 - Math.abs(kpis.tempo_ratio - 2.8) * 45)
+    : 50;
+
+  // Transition: 130 ms → 100,  380 ms → 0
+  const tranScore = kpis.transition_ms > 0
+    ? clamp01(1 - (kpis.transition_ms - 130) / 250) * 100
+    : 50;
+
+  // CoP quality: already 0-1 from computation
+  const copScore = kpis.cop_quality * 100;
+
+  // Weighted overall
+  const overall = leadLoad * 0.30 + wtPct * 0.25 + tempoScore * 0.20 + tranScore * 0.15 + copScore * 0.10;
+
+  return {
+    lead_load:       cap(leadLoad),
+    weight_transfer: cap(wtPct),
+    tempo:           cap(tempoScore),
+    transition:      cap(tranScore),
+    cop_quality:     cap(copScore),
+    overall:         cap(overall),
+  };
+}
+
+function clamp01(x: number): number { return Math.max(0, Math.min(1, x)); }
+function cap(x: number): number { return Math.round(Math.max(0, Math.min(100, x))); }
+
+// ---------------------------------------------------------------------------
+
 function blank(): GolfKpis {
   return {
     peak_force: 0, lead_load_pct: 0, trail_load_pct: 0, weight_transfer_pct: 0,
