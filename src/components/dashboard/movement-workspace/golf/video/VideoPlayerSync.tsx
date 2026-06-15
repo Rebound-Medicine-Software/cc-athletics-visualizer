@@ -35,7 +35,7 @@ export function VideoPlayerSync({ src, offsetMs, onDuration, className }: Props)
         // phase carries no time directly here; rely on `time` from caller
       }
     });
-    return off;
+    return () => { off(); };
   }, [offsetMs]);
 
   return (
