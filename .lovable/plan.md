@@ -1,340 +1,168 @@
+# Movement Workspace v1.1 — Practitioner Workflow
 
-# Movement Workspace v1.0 — Golf Swing as First Module
-
-A reusable **Movement Workspace** with a generic engine and a Golf Swing module as the first implementation. Built natively in React/Tailwind/Supabase. The supplied HTML is used only as algorithm/UX reference; no embedding or iframes.
-
----
-
-## 1. Navigation & Hierarchy
-
-**Sidebar (Insights group):** add `movement-workspace` item.
-
-```text
-Insights
-└── Movement Workspace
-    ├── Golf Swing            (active)
-    ├── Squat                 (Coming Soon)
-    ├── Sit to Stand          (Coming Soon)
-    ├── Balance               (Coming Soon)
-    ├── CMJ / DJ / Pogo       (Coming Soon)
-    ├── Single Leg CMJ / DJ   (Coming Soon)
-    ├── Running / Gait        (Coming Soon)
-```
-
-Also reachable from **Performance Data → Movement → Golf Swing → "Open Golf Dashboard"** (full workspace, not a drawer).
-
-**Test hierarchy preserved:** `test_type = 'movement'`, `test_subtype = 'golf_swing'`. No new `test_type='golf'`.
+Transforms the Golf Dashboard from a one-shot analysis tool into a persistent practitioner workspace. Additive only — no rebuild of v1.0.
 
 ---
 
-## 2. Movement Analysis Engine
+## Priority 1 — Database Hydration
 
-Folder layout:
+Replace the "redirect to Performance Data" behaviour in `GolfPerformanceDashboard` Database mode with a native loader.
 
-```text
-src/lib/movement-engine/
-  core/
-    types.ts            // MovementModule<TSession,TEvent,TKpi,TInsight>
-    moduleRegistry.ts
-    formatRegistry.ts
-    phaseEngine.ts      // (extends existing src/lib/movement/phaseEngine.ts)
-    syncBus.ts          // pub/sub: time | phase | impact | swingIndex
-    scoring.ts          // generic best/worst/consistency helpers
-  modules/
-    golf/
-      parse.ts
-      detectFormat.ts
-      detectSwings.ts
-      phases.ts
-      kpis.ts
-      cop.ts
-      scoring.ts
-      insights.ts
-      prescription.ts
-      benchmarks.ts
-      report/
-        buildReportData.ts
-      index.ts          // export const golfModule: MovementModule
-```
+New components under `src/components/dashboard/movement-workspace/golf/database/`:
 
-`MovementModule` interface — core knows nothing about golf:
+- `GolfDatabasePicker.tsx` — Team → Athlete → Session (date) → File cascading selectors. Reuses `useWorkspaceTeams`, `useAthletes`, and queries `test_data` filtered by `test_type='movement'` + `test_subtype='golf_swing'`. Joins `csv_import_files` / `csv_import_batches` when source is CSV import.
+- `useGolfSessionHydration.ts` — given a `test_data.id`, returns `{ session, swings, phaseMarkers, kpis, coachTags, aiSummary, video, raw_csv_path }` from `metrics.golf`. If `metrics.golf.swings` is missing but `raw_csv_path` exists, calls existing `rawTraceFetch` and re-runs the golf module pipeline in-memory (lazy backfill, not written back unless user clicks Save).
+- `GolfDatabaseHeader.tsx` — sticky bar showing Athlete · Session date · File name · last-updated badge.
 
-```ts
-export interface MovementModule<TSession, TEvent, TKpi, TInsight> {
-  id: string;                 // 'golf_swing'
-  testSubtype: string;        // 'golf_swing'
-  label: string;              // 'Golf Swing'
-  formats: FormatDetector[];
-  parse(file: File | string): Promise<TSession>;
-  detectEvents(s: TSession): TEvent[];               // swings / reps
-  detectPhases(e: TEvent): PhaseMarker[];
-  computeKpis(e: TEvent): TKpi;
-  scoreEvents(es: TEvent[]): { best: number; worst: number; consistency: number };
-  deriveInsights(s: TSession, es: TEvent[]): TInsight;
-  benchmarkKeys: string[];
-}
-```
+`GolfPerformanceDashboard` accepts `{ mode: 'quick' | 'database' | 'batch', sessionId? }`. Database mode renders the picker until a session is chosen, then mounts the same KPI strip / force chart / CoP / insights / coach tags / AI summary components against the hydrated session.
 
-Future modules (Squat, STS, CMJ, DJ, Pogo, Balance, Running, Gait) plug into `moduleRegistry` without touching core.
+Persistence write helper `src/lib/movement-engine/modules/golf/persist.ts` provides `saveGolfMetrics(testDataId, partial)` — merges into `metrics.golf` via a single `update test_data set metrics = metrics || $1`. Used by Coach Tags add/remove, AI Summary generation, Phase Marker edits, and prescription notes.
 
 ---
 
-## 3. Golf Performance Dashboard
+## Priority 2 — Video Synchronisation
 
-Files (new):
+New storage bucket `movement-videos` (private) created via storage tool. RLS: authenticated users can read/write objects whose first path segment matches a team they belong to (`team_id/athlete_id/filename`).
 
-```text
-src/components/dashboard/movement-workspace/
-  MovementWorkspace.tsx                  // shell + module grid
-  ModuleCard.tsx                         // active / coming-soon tile
-  golf/
-    GolfPerformanceDashboard.tsx         // full workspace
-    GolfModeSwitcher.tsx                 // Database | Quick | Batch
-    GolfKpiStrip.tsx                     // 9 premium KPI cards
-    GolfForceTraceChart.tsx              // L/R/combined + swing windows + phase markers
-    GolfSwingSelector.tsx                // 1..N | Avg | Best | Worst | Overlay
-    GolfPhaseTimeline.tsx                // interactive markers (click = sync)
-    GolfInsightsPanel.tsx                // Technical | Physical | Programming
-    GolfCoachTagsPanel.tsx               // tag chips + add/remove
-    GolfAiSummaryCard.tsx                // session summary
-    GolfBenchmarkPanel.tsx               // percentile bands (club→global)
-    GolfRawTraceButton.tsx               // existing rawTraceFetch
-    tabs/
-      OverviewTab.tsx
-      ForceTab.tsx
-      WeightDistributionTab.tsx
-      CopPathTab.tsx
-      TorqueRotationTab.tsx
-      ConsistencyTab.tsx
-      VideoSyncTab.tsx
-      SwingCompareTab.tsx
-      BenchmarksTab.tsx
-      ReportTab.tsx
-    video/
-      VideoPlayerSync.tsx
-      VideoUploadOrPick.tsx
-      PhaseTimelineScrubber.tsx
-    cop/
-      CopPlayback.tsx                    // play/pause/scrub, arrows, markers
-    report/
-      GolfReportTemplate.tsx             // luxury template (preview + PDF)
-```
+Files:
 
-Full page (route via `activeSection = 'movement-workspace'` with sub-route state).
+- `src/components/dashboard/movement-workspace/golf/video/VideoSyncTab.tsx` — replaces the v1.0 placeholder. Two entry paths: **Upload Video** (sanitises filename per project memory, uploads to `movement-videos/{teamId}/{athleteId}/{ts}_{name}`) and **Pick Existing** (lists prior videos for the athlete).
+- `VideoPlayerSync.tsx` — wraps native `<video>`, publishes `syncBus.emit('time', { ms })` on `timeupdate`, subscribes to `time`/`phase`/`impact`/`swingIndex` events and seeks accordingly. `videoOffsetMs` applied bidirectionally.
+- `VideoOffsetCalibrator.tsx` — drag-the-video-to-impact UI; on confirm writes `metrics.golf.video = { storage_path, offset_ms, duration_ms, synchronised_at }` via `saveGolfMetrics`.
+- `PhaseTimelineScrubber.tsx` — thin horizontal phase ribbon under the video, clickable phase pills emit `syncBus.emit('phase', ...)`.
+
+`GolfForceTraceChart` and `GolfCopPlayback` already use a cursor index — extend both to subscribe to `syncBus.on('time', ...)` and (already) emit `time` events on click/hover, so any view drives the others.
 
 ---
 
-## 4. Three Analysis Modes
+## Priority 3 — Session Compare
 
-1. **Database Analysis** — reuses existing Performance Data flow (athlete/team filters, `test_data`, `csv_import_*`, API). Filters `test_type='movement'` + `test_subtype='golf_swing'`.
-2. **Quick Golf Analysis** — drop a CSV/TXT → `detectFormat` (ForceMate, CC Athletics, Swing Catalyst, Smart2Move, generic) → parse → detect swings → render dashboard. Footer CTA **Save to athlete?** → [Yes opens Batch Import pre-filled] / [No discards].
-3. **Batch Import** — multi-file with Team/Athlete assignment, writes `csv_import_batches`, `csv_import_files`, `test_data` (existing duplicate protection from `useCsvImport`).
+`src/components/dashboard/movement-workspace/golf/compare/`:
+
+- `SessionCompareTab.tsx` — replaces v1.0 placeholder. Two `GolfDatabasePicker` instances (Session A / Session B), both feeding `useGolfSessionHydration`.
+- `CompareForceOverlay.tsx`, `CompareCopOverlay.tsx`, `CompareKpiDeltas.tsx` — reuse `GolfForceTraceChart` / `GolfCopPlayback` in overlay mode (already supports N traces aligned at impact), and a delta table for Tempo · Weight Transfer · Lead Load · Consistency · Peak Force · Transition (ms) · CoP efficiency.
+- `CompareFindingsDiff.tsx` — diffs `insights.technical` / `insights.physical` / `programming` between A and B; tags each finding **Improved · Worsened · Unchanged · New · Resolved** with colour pills.
+- `CompareSummary.tsx` — side-by-side AI summary cards, plus a "Generate comparative summary" button calling the existing `generate-golf-summary` edge function with a new `mode: 'compare'` payload (added below).
+
+`supabase/functions/generate-golf-summary/index.ts` — extend payload: `{ mode: 'session' | 'compare', sessionA, sessionB? }`; comparative branch sent to Lovable AI Gateway with a diff-aware prompt. Same graceful local fallback if gateway unreachable.
 
 ---
 
-## 5. Storage Model (no schema migration)
+## Priority 4 — Report Generator
 
-All persistence is JSONB on existing `test_data.metrics`:
+`src/components/dashboard/movement-workspace/golf/report/`:
+
+- `buildGolfReportData.ts` — assembles every section from the hydrated session.
+- `GolfReportTemplate.tsx` — interactive HTML preview, luxury styling shared with existing report tokens (navy + gold accents, Circular font, framer-motion fade-ins). Sections: Session Summary, Best Swing, Average Swing, Force Traces, CoP, Swing Phases, Coach Tags, Technical Findings, Physical Findings, Programming Focus, AI Summary, Benchmark Comparison.
+- `ReportTab.tsx` — replaces v1.0 placeholder. Preview pane + **Download PDF** + **Email to athlete** (reuses existing NotificationAPI flow).
+
+PDF generation: extend `supabase/functions/generate-interactive-pdf-report/index.ts` with a `module: 'golf_swing'` branch that consumes the same `buildGolfReportData` payload server-side and emits a PDF using the existing pipeline (no new edge function unless the payload shape forces it). Output stored in existing reports bucket, signed URL valid 1 hr (per memory).
+
+---
+
+## Priority 5 — Persistence Wiring
+
+Single source of truth: `metrics.golf` JSONB on `test_data`. Shape (additive to v1.0):
 
 ```json
 {
   "golf": {
-    "swings": [
-      {
-        "index": 1,
-        "score": 87,
-        "phase_markers": { "address": 0.0, "backswing_start": 0.15, "top": 1.04,
-                           "transition": 1.18, "impact": 1.49,
-                           "follow_through": 1.74, "finish": 2.31 },
-        "kpis": { "peak_force": 1820, "lead_load_pct": 62, "trail_load_pct": 38,
-                  "weight_transfer_pct": 71, "tempo_ratio": 3.1, "cop_quality": 0.82 },
-        "cop": { "path_lead": [...], "path_trail": [...], "path_combined": [...] },
-        "insights": { "technical": [...], "physical": [...] }
-      }
-    ],
-    "phase_markers": { ... best swing markers ... },
+    "swings": [ { "index", "score", "phase_markers", "kpis", "cop" } ],
+    "phase_markers": { ... best swing ... },
     "session_kpis": { ... },
     "coach_tags": ["good_pressure_transfer", "late_transition"],
-    "ai_summary": "Weight transfer improved... lead loading still below benchmark.",
-    "video": { "storage_path": "...", "offset_ms": 0 },
-    "raw_csv_path": "..."
+    "ai_summary": "...",
+    "prescription_notes": "...",
+    "video": {
+      "storage_path": "movement-videos/{team}/{athlete}/...",
+      "offset_ms": 0,
+      "duration_ms": 12500,
+      "synchronised_at": "2026-06-14T10:22:00Z"
+    },
+    "raw_csv_path": "...",
+    "last_analysed_at": "..."
   }
 }
 ```
 
-Per-swing persistence avoids future migrations. Phase markers persisted alongside KPIs.
+Write paths all route through `saveGolfMetrics`:
+
+- **Save Analysis** button in Quick mode → creates a `test_data` row (existing CSV import flow), writes full payload.
+- **Save to Athlete** → opens athlete picker, then writes payload to that athlete (no longer routes away).
+- **Batch Import** → `useCsvImport` already preserves `metrics` passthrough; verify the golf payload is included when files are detected as `golf_swing`.
+- **Database Session Update** → Coach tag toggles, AI summary regenerate, phase marker edits, prescription notes all call `saveGolfMetrics` with a partial.
 
 ---
 
-## 6. Swing Phase Detection
+## Files Created
 
-In `modules/golf/phases.ts`:
-- Baseline force window ±5 SD.
-- Sustained threshold crossings (configurable hold-time) to avoid noise.
-- Segmentation: Address → Backswing Start → Top → Transition → Downswing → Impact → Follow Through → Finish.
-- Impact = peak `dF/dt` after Top within ground-contact window.
-- Reuses existing `phaseEngine` primitives where possible.
-
----
-
-## 7. Swing Overlay Mode
-
-`GolfSwingSelector` gains `mode = single | average | best | worst | overlay`.
-Overlay sub-options: **Best vs Worst · All · Selected (multi-pick)**.
-Charts (`GolfForceTraceChart`, `CopPathTab`, `WeightDistributionTab`) render N traces **aligned at impact (t=0)**, deterministic colour palette (gold = best, red = worst).
-
----
-
-## 8. Unified syncBus
-
-`core/syncBus.ts` — tiny typed pub/sub:
-
-```ts
-syncBus.emit('time', { ms });
-syncBus.emit('phase', { name });
-syncBus.emit('impact', { swingIndex });
-syncBus.emit('swingIndex', { i });
 ```
-
-Subscribers: video player, force chart cursor, CoP playback, phase timeline. Click anywhere → everything seeks.
-
----
-
-## 9. Video Sync Tab
-
-- Upload new video **or** pick existing (reuses video upload flow + sanitised filenames per project memory).
-- Single `videoOffsetMs` set by dragging video against detected impact marker (snap-to-impact helper).
-- Bidirectional sync via `syncBus`.
-- Persisted as `metrics.golf.video = { storage_path, offset_ms }`.
-
----
-
-## 10. CoP Analysis Tab
-
-`CopPlayback` renders lead/trail/combined paths with:
-- Play / Pause / Scrub bar wired to `syncBus`.
-- Direction arrows, impact starburst, transition + finish markers.
-- Trailing ghost trail. Premium telemetry styling.
-
----
-
-## 11. Benchmark Comparisons
-
-`modules/golf/benchmarks.ts` declares `benchmarkKeys`: `lead_load_pct`, `weight_transfer_pct`, `tempo_ratio`, `consistency`, `cop_efficiency`, `peak_impact_force`, `transition_ms`.
-
-Scopes: **Club · Region · Country · Global · Golf Benchmark** + disabled **Tour Benchmark** placeholder. Future tiers: Amateur / Club / Elite Amateur / Professional / Tour.
-
-Reuses existing comparison primitives (same 3-band percentile component used in Live Data) + `benchmark_data_warehouse` / `elite_athlete_data`. Graceful "insufficient data" state when sparse.
-
----
-
-## 12. Coach Tags
-
-`GolfCoachTagsPanel`: chip selector with curated catalogue (Early Extension, Poor Transition, Excessive Sway, Loss of Posture, Poor Lead Loading, Good Pressure Transfer, Excellent Sequencing, etc.) + free-text. Persists to `metrics.golf.coach_tags`. Surfaced in reports and future AI prompts.
-
----
-
-## 13. Practitioner Insights (3 sections)
-
-`modules/golf/insights.ts` + `prescription.ts`. Rule-based, evidence chips show triggering KPI:
-
-- **Technical Findings** — late pressure transfer, poor lead-side loading, poor transition timing, excessive trail loading, inconsistent sequencing.
-- **Physical Findings** — lead-leg force deficit, rotational power deficit, balance deficit, thoracic mobility deficit, hip mobility restriction, reactive strength deficit.
-- **Programming Focus** — rotational med-ball, lead-leg force, single-leg force, reactive strength, balance, anti-rotation, thoracic mobility, hip mobility.
-
-Suggestions only — no auto-generated programmes.
-
----
-
-## 14. AI Session Summary
-
-New edge function `supabase/functions/generate-golf-summary/index.ts` (Lovable AI Gateway, no extra secret). Inputs: current session KPIs + previous session deltas + coach tags. Output stored at `metrics.golf.ai_summary`. Surfaced in `GolfAiSummaryCard` and report.
-
----
-
-## 15. Swing Compare Tab
-
-`SwingCompareTab` — Session A vs Session B selector (athlete + date). Side-by-side force, CoP, weight transfer, tempo, consistency. Built on the same chart primitives as Overlay mode.
-
----
-
-## 16. Raw Trace Integration
-
-Reuses existing `src/lib/movement/rawTraceFetch.ts` + `supabase/functions/cc-raw-csv`. "Load raw force trace" button on Database rows pulls `path_to_this_jump_raw_csv` / `path_to_raw_csv` securely. Never exposes API keys. Unlocks force curves, CoP, spring-like correlation for movement modules.
-
----
-
-## 17. Golf Report Generator
-
-`ReportTab` → **Generate Golf Report** → Interactive HTML preview + PDF download.
-
-- Builder: `modules/golf/report/buildReportData.ts`.
-- Template: `GolfReportTemplate.tsx` (luxury NEXUS styling, reuses report design tokens).
-- PDF: extend existing `generate-interactive-pdf-report` with `module:'golf_swing'` branch, OR thin wrapper `supabase/functions/generate-golf-report` if payload diverges.
-- Sections: Session Summary · Best Swing · Average Swing · Force Traces · Weight Distribution · CoP · Swing Phases · Technical Findings · Physical Findings · Programming Focus · AI Summary · Coach Tags.
-- Stored in existing reports bucket; signed URL 1hr per project memory.
-
----
-
-## 18. UX Direction
-
-- framer-motion transitions on mode/swing/tab switches.
-- Mono-digit premium KPI cards with sparkline mini-trends, gold/cyan accent rails.
-- Interactive phase markers (hover tooltip, click seeks everything).
-- Animated CoP playback with ghost trail and impact starburst.
-- Dark telemetry canvas — no spreadsheet tables, no clinical chrome.
-
----
-
-## 19. Files Created (summary)
-
-- `src/lib/movement-engine/core/{types,moduleRegistry,formatRegistry,phaseEngine,syncBus,scoring}.ts`
-- `src/lib/movement-engine/modules/golf/{parse,detectFormat,detectSwings,phases,kpis,cop,scoring,insights,prescription,benchmarks,index}.ts`
-- `src/lib/movement-engine/modules/golf/report/buildReportData.ts`
-- `src/components/dashboard/movement-workspace/MovementWorkspace.tsx` + `ModuleCard.tsx`
-- `src/components/dashboard/movement-workspace/golf/*` (dashboard, mode switcher, KPI strip, force chart, swing selector, phase timeline, insights, coach tags, AI summary, benchmark, raw-trace button)
-- `src/components/dashboard/movement-workspace/golf/tabs/*` (Overview, Force, Weight, CoP, Torque, Consistency, VideoSync, SwingCompare, Benchmarks, Report)
-- `src/components/dashboard/movement-workspace/golf/video/*`
-- `src/components/dashboard/movement-workspace/golf/cop/CopPlayback.tsx`
-- `src/components/dashboard/movement-workspace/golf/report/GolfReportTemplate.tsx`
-- `supabase/functions/generate-golf-summary/index.ts`
+src/components/dashboard/movement-workspace/golf/database/
+  GolfDatabasePicker.tsx
+  GolfDatabaseHeader.tsx
+  useGolfSessionHydration.ts
+src/components/dashboard/movement-workspace/golf/video/
+  VideoSyncTab.tsx
+  VideoPlayerSync.tsx
+  VideoOffsetCalibrator.tsx
+  PhaseTimelineScrubber.tsx
+src/components/dashboard/movement-workspace/golf/compare/
+  SessionCompareTab.tsx
+  CompareForceOverlay.tsx
+  CompareCopOverlay.tsx
+  CompareKpiDeltas.tsx
+  CompareFindingsDiff.tsx
+  CompareSummary.tsx
+src/components/dashboard/movement-workspace/golf/report/
+  ReportTab.tsx
+  GolfReportTemplate.tsx
+  buildGolfReportData.ts
+src/lib/movement-engine/modules/golf/persist.ts
+src/lib/movement-engine/modules/golf/hydrate.ts
+```
 
 ## Files Modified
 
-- `src/pages/Dashboard.tsx` — add `movement-workspace` navigation entry under Insights.
-- `src/components/dashboard/DashboardContent.tsx` — route `movement-workspace` → `MovementWorkspace`.
-- `src/lib/csv/testTypeConfig.ts` — add `golf_swing` subtype under existing `movement` test type.
-- `src/lib/tests/testNameMatching.ts` — `golf_swing` matchers under movement family.
-- `src/components/dashboard/performance-data/TestAnalysisRouter.tsx` — when subtype is `golf_swing`, render "Open Golf Dashboard" CTA → opens workspace pre-loaded with the row.
-- `src/hooks/useCsvImport.ts` — pass through `metrics.golf.*` untouched (verify no stripping).
-- `supabase/functions/generate-interactive-pdf-report/index.ts` — optional `module:'golf_swing'` branch (or new wrapper function).
+```
+src/components/dashboard/movement-workspace/golf/GolfPerformanceDashboard.tsx   // mode-aware shell, tab wiring
+src/components/dashboard/movement-workspace/golf/GolfForceTraceChart.tsx        // syncBus subscribe/emit
+src/components/dashboard/movement-workspace/golf/GolfCopPlayback.tsx            // syncBus subscribe/emit
+src/components/dashboard/movement-workspace/golf/GolfCoachTagsPanel.tsx         // persist via saveGolfMetrics
+src/components/dashboard/movement-workspace/golf/GolfAiSummaryCard.tsx          // persist + compare mode
+src/components/dashboard/movement-workspace/golf/GolfInsightsPanel.tsx          // editable prescription notes
+src/hooks/useCsvImport.ts                                                       // ensure metrics.golf passthrough
+supabase/functions/generate-golf-summary/index.ts                               // session | compare mode
+supabase/functions/generate-interactive-pdf-report/index.ts                     // module:'golf_swing' branch
+```
+
+## Backend Changes
+
+- New private storage bucket `movement-videos` + RLS on `storage.objects` scoped by `team_id` path prefix.
+- No schema changes — all data lives in `metrics.golf` JSONB (existing column).
 
 ---
 
-## 20. Limitations
+## Limitations
 
-- Video A/V alignment is one-time manual (impact-snap helper); no automatic sync in v1.
-- Benchmark percentiles depend on golf rows in `benchmark_data_warehouse`; sparse → graceful empty state. Tour Benchmark scope disabled.
-- Quick Mode results are in-memory until "Save to athlete?" is confirmed.
-- AI summary is a single-paragraph generation; no multi-turn coaching dialogue.
-- Format detectors cover the 4 named vendors + generic; unrecognised exports fall back to generic parser.
-- Report PDF reuses the existing pipeline — layout polish, not a new rendering engine.
-- No new database tables in v1; all data lives in `metrics.golf` JSONB. Future migration path documented (`movement_sessions` / `movement_events` / `movement_phase_metrics`) if cross-module querying becomes a need.
+- Video offset calibration is manual (drag-to-impact). No automatic A/V alignment in v1.1.
+- Comparative AI summary depends on Lovable AI Gateway availability; local fallback returns a structured diff without narrative.
+- PDF rendering reuses the existing interactive-pdf pipeline; layout is luxury but constrained by that engine's primitives.
+- Lazy backfill (re-running the golf module on hydration when `swings` are missing) is in-memory only until the user clicks Save.
+- Session Compare is two-session only in v1.1; multi-session trend view deferred.
+- Report "Email to athlete" reuses existing NotificationAPI templates — no new template designed in v1.1.
 
 ---
 
-## 21. Verification (using uploaded Golf Swing file)
+## Verification
 
-1. **Insights → Movement Workspace → Golf Swing → Quick Golf Analysis** → upload the file.
-2. Confirm: format detected, swings segmented, phase markers populated, KPI strip rendered.
-3. Switch swing selector → **Overlay → Best vs Worst**: traces and CoP align at impact, colour-coded.
-4. Open **Video Sync** tab → upload coach video → drag-to-impact → confirm bidirectional sync (phase marker ↔ force ↔ CoP ↔ video).
-5. Open **Benchmarks** tab → confirm percentile bands (or "insufficient data" state).
-6. Add **Coach Tags**, generate **AI Summary**.
-7. Click **Save to athlete** → row written with `test_type='movement'`, `test_subtype='golf_swing'`, `metrics.golf.swings[]` and `phase_markers` populated.
-8. Open **Performance Data → Movement → Golf Swing → Open Golf Dashboard** on the saved row → Database mode loads the same dashboard.
-9. Open **Swing Compare** → pick two sessions → confirm side-by-side render.
-10. Click **Generate Golf Report** → preview HTML, download PDF, verify all sections.
+1. **Hydration** — Insights → Movement Workspace → Golf Swing → Database. Pick Team → Athlete → a previously saved session. Confirm KPI strip, force chart, phase markers, CoP playback, coach tags and AI summary load without re-upload.
+2. Toggle a Coach Tag → reload the page → tag persists.
+3. **Video Sync** — open the Video Sync tab on a hydrated session, upload a swing video, drag to impact, save offset. Click a phase pill on the force chart → video seeks. Scrub the video → force chart cursor and CoP marker follow.
+4. **Session Compare** — open Compare tab, pick two sessions for the same athlete. Confirm overlay traces, CoP overlay, KPI delta table, and Improved/Worsened/Unchanged finding pills.
+5. Click **Generate comparative summary** → narrative appears (or local fallback structured diff if gateway down).
+6. **Report** — open Report tab on a hydrated session → preview renders all sections → Download PDF returns a 1-hour signed URL → Email to Athlete delivers via NotificationAPI.
+7. **Quick → Save** — drop a CSV in Quick mode → Save to Athlete → pick athlete → confirm new `test_data` row with `test_type='movement'`, `test_subtype='golf_swing'`, full `metrics.golf` payload.
+8. **Batch import** — import a golf CSV via the existing wizard → confirm `metrics.golf.swings[]` and `phase_markers` populated on the resulting row.
 
 ---
 
