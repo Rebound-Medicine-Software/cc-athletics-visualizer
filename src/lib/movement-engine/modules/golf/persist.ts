@@ -63,22 +63,23 @@ export async function createGolfSessionRow(params: {
 }) {
   const { data, error } = await supabase
     .from('test_data')
-    .insert({
+    .insert([{
       athlete_id: params.athleteId,
       athlete_name: params.athleteName,
+      cc_athlete_id: '',
       team_id: params.teamId,
-      team_name: params.teamName ?? null,
+      team_name: params.teamName ?? undefined,
       test_date: params.testDate,
       test_name: 'Golf Swing',
       test_type: 'movement',
       test_subtype: 'golf_swing',
       repetition_number: 1,
-      original_file_name: params.fileName ?? null,
+      original_file_name: params.fileName ?? undefined,
       source: 'movement_workspace_quick',
       metrics: {
         golf: { ...params.payload, last_analysed_at: new Date().toISOString() },
-      },
-    })
+      } as any,
+    }])
     .select('id')
     .single();
   if (error) throw error;
