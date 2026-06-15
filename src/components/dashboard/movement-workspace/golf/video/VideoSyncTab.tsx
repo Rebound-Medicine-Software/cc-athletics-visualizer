@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,13 +36,13 @@ export function VideoSyncTab({ testDataId, teamId, athleteId, events, initialVid
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Resolve signed URL whenever video changes
-  useState(() => {
-    if (video?.storage_path) {
-      supabase.storage.from(BUCKET).createSignedUrl(video.storage_path, 3600)
-        .then(({ data }) => setSignedUrl(data?.signedUrl));
-    }
-  });
+  useEffect(() => {
+    if (!video?.storage_path) { setSignedUrl(undefined); return; }
+    let cancelled = false;
+    supabase.storage.from(BUCKET).createSignedUrl(video.storage_path, 3600)
+      .then(({ data }) => { if (!cancelled) setSignedUrl(data?.signedUrl); });
+    return () => { cancelled = true; };
+  }, [video?.storage_path]);
 
   const handleUpload = async (file: File) => {
     if (!teamId || !athleteId) {
