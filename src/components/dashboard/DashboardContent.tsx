@@ -14,6 +14,7 @@ import { ProgrammingSection } from "@/components/programming/ProgrammingSection"
 import { ReportsSection } from "./reports/ReportsSection";
 import { PerformanceDataExplorer } from "./performance-data/PerformanceDataExplorer";
 import { MovementWorkspaceRoot } from "./movement-workspace/MovementWorkspaceRoot";
+import { AnalysisRoot } from "./analysis/AnalysisRoot";
 import { SectionHeader } from "./SectionHeader";
 import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
@@ -131,6 +132,9 @@ export const DashboardContent = ({
         );
       case "reports":
         return <ReportsSection />;
+      case "analysis":
+        return <AnalysisRoot />;
+      // Legacy deep-link fallbacks — kept so old bookmarks still work
       case "performance-data":
         return <PerformanceDataExplorer />;
       case "movement-workspace":

@@ -25,6 +25,7 @@ import {
   RotateCw,
   Shield,
   BarChart3,
+  FlaskConical,
 } from "lucide-react";
 
 const Dashboard = () => {
@@ -129,9 +130,8 @@ const Dashboard = () => {
       items: [
         { id: "home", label: "Home", icon: Home, description: "Insights & company feed" },
         { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
-        { id: "performance-data", label: "Performance Data", icon: Activity, description: "Test Data Explorer" },
+        { id: "analysis", label: "Analysis", icon: FlaskConical, description: "Testing batteries & movement" },
         { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
-        { id: "movement-workspace", label: "Movement Workspace", icon: Activity, description: "Golf & movement analysis" },
       ],
     },
     {
