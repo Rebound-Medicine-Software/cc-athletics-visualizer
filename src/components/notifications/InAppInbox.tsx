@@ -68,7 +68,7 @@ export const InAppInbox: React.FC = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`in-app-notifications-${user.id}`)
+      .channel(`in-app-notifications-${user.id}`, { config: { private: true } })
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
