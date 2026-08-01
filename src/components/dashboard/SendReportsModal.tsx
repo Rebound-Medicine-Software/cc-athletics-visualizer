@@ -292,8 +292,7 @@ export const SendReportsModal = () => {
     setIsPreviewing(true);
 
     try {
-      console.log(`Generating preview for: ${selectedAthleteData.name}`);
-
+      
       const athleteId = athleteIdByKey[selectedAthlete];
       const response = await supabase.functions.invoke("generate-force-plate-report", {
         body: {
@@ -392,8 +391,7 @@ export const SendReportsModal = () => {
     setIsGenerating(true);
 
     try {
-      console.log(`Generating force plate report for: ${selectedAthleteData.name}`);
-
+      
       const athleteId = athleteIdByKey[selectedAthlete];
       const response = await supabase.functions.invoke("generate-force-plate-report", {
         body: {
@@ -462,8 +460,7 @@ export const SendReportsModal = () => {
     setIsSending(true);
 
     try {
-      console.log(`Generating and sending report for: ${selectedAthleteData.name}`);
-
+      
       const athleteId = athleteIdByKey[selectedAthlete];
       const reportResponse = await supabase.functions.invoke("generate-force-plate-report", {
         body: {
