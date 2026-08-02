@@ -262,8 +262,6 @@ export const AthleteCredentialsTab = () => {
         }
       });
 
-      console.log('Edge function response:', { data, error });
-
       if (error) {
         console.error('Edge function error details:', error);
         throw error;
@@ -329,23 +327,17 @@ export const AthleteCredentialsTab = () => {
           // Determine the team to update: prefer direct team_id, fallback to cc_team_id lookup
           let teamIdToUpdate = athlete.team_id || null;
           
-          console.log('Debug - athlete.team_id:', athlete.team_id);
-          console.log('Debug - athlete.cc_team_id:', athlete.cc_team_id);
-          
           if (!teamIdToUpdate && athlete.cc_team_id) {
             const { data: teamByCc, error: teamError } = await supabase
               .from('teams')
               .select('id, name')
               .eq('cc_team_id', athlete.cc_team_id)
               .maybeSingle();
-            
-            console.log('Debug - team lookup result:', { teamByCc, teamError });
             teamIdToUpdate = teamByCc?.id || null;
           }
 
           // If no team found, try to create one using the athlete's team info
           if (!teamIdToUpdate && athlete.cc_team_id && athlete.team_name) {
-            console.log('Debug - Creating new team for athlete');
 
             const { data: authData, error: authErr } = await supabase.auth.getUser();
             if (authErr || !authData.user) {
@@ -372,7 +364,6 @@ export const AthleteCredentialsTab = () => {
             }
 
             teamIdToUpdate = newTeam?.id;
-            console.log('Debug - Created new team with ID:', teamIdToUpdate);
 
             // Link this athlete to the newly created team for future operations
             if (teamIdToUpdate) {
