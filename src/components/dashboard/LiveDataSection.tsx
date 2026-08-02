@@ -126,32 +126,16 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Debug data and detect new uploads
   useEffect(() => {
     const hasNewData = data?.length > lastDataLength;
-    
-    console.log('LiveDataSection - Data update:', {
-      dataLength: data?.length || 0,
-      lastDataLength,
-      hasNewData,
-      selectedTeamsLength: selectedTeams?.length || 0,
-      sampleData: data?.[0] ? {
-        athlete_name: data[0].athlete_name,
-        test_name: data[0].test_name,
-        test_date: data[0].test_date,
-        team_name: data[0].team_name,
-        gender: data[0].gender
-      } : null
-    });
 
     const latestByDate = getMostRecentTest();
     if (latestByDate) {
       const latestName = getFullTestName(latestByDate.test_name);
       if (latestName !== currentTestName) {
-        console.log('🔄 Updating current test to (by date):', latestName);
         setCurrentTestName(latestName);
       }
     }
 
     if (hasNewData && data?.length) {
-      console.log('🆕 NEW DATA DETECTED! Latest record by date:', latestByDate);
       setLastDataLength(data.length);
     }
   }, [data, selectedTeams, lastDataLength, currentTestName]);
@@ -186,7 +170,6 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
   // Auto-set sex based on most recent test athlete
   useEffect(() => {
     if (mostRecentTest?.gender && mostRecentTest.gender !== selectedSex) {
-      console.log('Auto-setting sex to:', mostRecentTest.gender);
       setSelectedSex(mostRecentTest.gender);
     }
   }, [mostRecentTest?.gender]);
@@ -330,12 +313,6 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
 
   // Debug filtered data
   useEffect(() => {
-    console.log('LiveDataSection - Filtered data:', {
-      filteredLength: filteredData.length,
-      currentTestName,
-      availableMetrics,
-      selectedMetricType
-    });
   }, [filteredData, currentTestName, selectedMetricType]);
 
   const bestPerformances = getBestPerformancePerAthlete();
@@ -350,15 +327,6 @@ export const LiveDataSection = ({ data, selectedTeams, branding }: LiveDataSecti
     if (value !== null && value > 0 && value < 3 && metricDisplayName.toLowerCase().includes('jump height')) {
       value = Math.round(value * 1000) / 10; // e.g. 0.44 → 44.0
     }
-    
-    console.log('Chart data for athlete:', {
-      athlete: test.athlete_name,
-      test_name: test.test_name,
-      selectedMetricType,
-      metricDisplayName,
-      value,
-      metrics: test.metrics
-    });
     return {
       name: test.athlete_name.length > 12 ? test.athlete_name.substring(0, 12) + '...' : test.athlete_name,
       fullName: test.athlete_name,
