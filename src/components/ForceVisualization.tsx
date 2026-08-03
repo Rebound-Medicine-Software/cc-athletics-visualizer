@@ -19,8 +19,7 @@ export const ForceVisualization = ({ data }: ForceVisualizationProps) => {
 
   const handleExport = () => {
     toast.success("Analysis exported successfully!");
-    console.log("Exporting visualization data...");
-  };
+    
 
   return (
     <Card className="bg-white/90 backdrop-blur-sm shadow-lg border-gray-200">
