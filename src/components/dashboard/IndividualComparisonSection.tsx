@@ -179,16 +179,9 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   // Get historical data for the trend chart (Task 3)
   const getHistoricalData = () => {
     if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !apiData.length) {
-      console.log('Historical data missing requirements:', {
-        selectedTestName: !!selectedTestName,
-        selectedMetricType: !!selectedMetricType,
-        selectedAthleteName: !!selectedAthleteName,
-        apiDataLength: apiData.length
-      });
       return [];
     }
 
-    console.log('Getting historical data for:', { selectedTestName, selectedMetricType, selectedAthleteName });
 
     // Get all test records for the selected athlete and test name (regardless of selected test date)
     const athleteTests = teamFilteredData.filter(d => 
@@ -196,8 +189,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       d.athlete_name === selectedAthleteName
     );
 
-    console.log('Found athlete tests:', athleteTests.length);
-    console.log('Athlete test dates:', athleteTests.map(t => t.test_date));
 
     // Group tests by date to get the best value per date
     const testsByDate = athleteTests.reduce((acc, testRecord) => {
@@ -233,7 +224,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       // Format the value based on metric type
       const formattedValue = formatMetricValue(avgValue, selectedMetricType);
 
-      console.log(`Date ${date}: avg=${avgValue}, formattedValue=${formattedValue}`);
 
       return {
         date: formatDate(date),
@@ -243,16 +233,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       };
     }).sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime());
 
-    console.log('Final historical results:', historicalResults);
     return historicalResults;
   };
 
   const historicalData = getHistoricalData();
   
   // Debug historical data
-  console.log('=== HISTORICAL DATA DEBUG ===');
-  console.log('Historical data length:', historicalData.length);
-  console.log('Historical data:', historicalData);
 
   const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
 
@@ -262,9 +248,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       return null;
     }
 
-    console.log('=== LIMB SYMMETRY CALCULATION ===');
-    console.log('Filters:', { selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate });
-    console.log('Available apiData records:', apiData.length);
 
     // Find ALL test records that match our filters (all reps for this date)
     const matchingRecords = apiData.filter(d => 
@@ -273,9 +256,7 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       normalizeTestDate(d.test_date) === selectedTestDate
     );
 
-    console.log('Found matching records:', matchingRecords.length);
     if (matchingRecords.length === 0) {
-      console.log('No matching test records found');
       return null;
     }
 
@@ -317,7 +298,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
       // Case 5: Isometric tests
       const firstRecord = matchingRecords[0];
       const metrics = firstRecord.metrics as any;
-      console.log('=== ISOMETRIC DATA ANALYSIS ===');
       
       if (metrics?.isometric_analysis?.trials) {
         // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
@@ -327,14 +307,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           record.test_name.includes('Isometric')
         );
         
-        console.log('All matching isometric records for limb symmetry:', isoRecords.length);
         
         let allLeftTrials: any[] = [];
         let allRightTrials: any[] = [];
         let foundDualTrial = false;
         
         isoRecords.forEach((record: TestData, recordIndex: number) => {
-          console.log(`Record ${recordIndex}: ${record.test_name}`);
           
           const recordMetrics = record.metrics as any;
           if (recordMetrics?.isometric_analysis?.trials) {
@@ -346,7 +324,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             );
             const dualTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'dual');
             
-            console.log(`  - Left trials: ${leftTrials.length}, Right trials: ${rightTrials.length}, Dual trials: ${dualTrials.length}`);
             
             allLeftTrials.push(...leftTrials);
             allRightTrials.push(...rightTrials);
@@ -354,12 +331,10 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
             // Handle dual trials (prefer these over separate trials)
             dualTrials.forEach((dualTrial: any) => {
               if (dualTrial?.total_metrics?.force_peak_left && dualTrial?.total_metrics?.force_peak_right) {
-                console.log('Found dual trial with separate left/right values');
                 leftValue = dualTrial.total_metrics.force_peak_left;
                 rightValue = dualTrial.total_metrics.force_peak_right;
                 foundDualTrial = true;
               } else if (dualTrial?.cha1_metrics?.force_peak && dualTrial?.cha2_metrics?.force_peak) {
-                console.log('Found dual trial with channel-based left/right values');
                 leftValue = dualTrial.cha1_metrics.force_peak;
                 rightValue = dualTrial.cha2_metrics.force_peak;
                 foundDualTrial = true;
@@ -368,7 +343,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           }
         });
         
-        console.log('Total collected - Left trials:', allLeftTrials.length, 'Right trials:', allRightTrials.length);
 
         // Only calculate from separate trials if we didn't find dual trial values
         if (!foundDualTrial) {
@@ -377,7 +351,6 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
-              console.log('Left trial value:', value, 'from trial:', trial.stance);
               return sum + value;
             }, 0) / allLeftTrials.length;
           }
@@ -387,15 +360,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
               const value = trial.total_metrics?.force_peak || 
                            trial.total_metrics?.[selectedMetricType] || 
                            trial.max_force || 0;
-              console.log('Right trial value:', value, 'from trial:', trial.stance);
               return sum + value;
             }, 0) / allRightTrials.length;
           }
         }
         
-        console.log('Final calculated values - Left:', leftValue, 'Right:', rightValue);
       } else {
-        console.log('No isometric_analysis.trials found');
         leftValue = 0;
         rightValue = 0;
       }
@@ -420,23 +390,13 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
 
   // Debug logging
   useEffect(() => {
-    console.log('Current selections:', {
-      selectedTestName,
-      selectedMetricType,
-      selectedAthleteName,
-      selectedTestDate
-    });
-    console.log('API Data length:', apiData.length);
-    console.log('Limb symmetry result:', limbSymmetryData);
     if (selectedTestName && selectedAthleteName && selectedTestDate) {
       const testRecord = apiData.find(d => 
         d.test_name === selectedTestName && 
         d.athlete_name === selectedAthleteName && 
         normalizeTestDate(d.test_date) === selectedTestDate
       );
-      console.log('Found test record:', testRecord);
       if (testRecord?.metrics) {
-        console.log('Available metrics:', Object.keys(testRecord.metrics));
       }
     }
   }, [selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate, apiData, limbSymmetryData]);
