@@ -17,7 +17,6 @@ const Login = () => {
 
   const validateApiKey = async (key: string) => {
     try {
-      console.log('Validating API key via Supabase Edge Function...');
       
       const { data, error } = await supabase.functions.invoke('validate-api-key', {
         body: { apiKey: key }
@@ -27,8 +26,6 @@ const Login = () => {
         console.error('Supabase function error:', error);
         throw new Error('Failed to validate API key. Please try again.');
       }
-
-      console.log('Validation response:', data);
 
       if (!data.valid) {
         throw new Error(data.error || 'Invalid API key');
