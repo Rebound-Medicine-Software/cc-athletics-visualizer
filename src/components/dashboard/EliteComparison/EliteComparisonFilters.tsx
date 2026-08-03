@@ -74,7 +74,6 @@ export const EliteComparisonFilters = ({
     const updateHiddenColumns = () => {
       const stored = localStorage.getItem('hiddenCMJColumns');
       const parsed = stored ? JSON.parse(stored) : [];
-      console.log('Hidden CMJ columns from localStorage:', parsed);
       setHiddenCMJColumns(parsed);
     };
     
