@@ -39,7 +39,6 @@ export const DataUpload = ({ onDataUpload, isAnalyzing }: DataUploadProps) => {
   };
 
   const handleFile = (file: File) => {
-    console.log("Processing file:", file.name);
     // For demo purposes, generate sample data
     const sampleData = generateSampleData();
     onDataUpload(sampleData);
