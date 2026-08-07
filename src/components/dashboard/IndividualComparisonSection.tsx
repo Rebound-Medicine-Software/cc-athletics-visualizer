@@ -96,13 +96,17 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   const fetchApiData = async () => {
     setIsLoading(true);
     try {
-      // Determine endpoint based on test type
-      let endpoint = 'https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data';
-      
-      if (selectedTestName && !["Countermovement Jump", "Drop Jump", "Pogo Jump", "Squat Jump"].includes(selectedTestName)) {
-        // For isometric tests, use different endpoint
-        endpoint = 'https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes?analysis_type=isometric';
-      }
+      // Always fetch from the shared fetch-cc-data function, which already returns jump,
+      // isometric, and pogo test records together in one response. This used to switch to a
+      // separate isometric-only endpoint (europe-west1-forcemate-desktop.cloudfunctions.net)
+      // for non-jump test names, but that branch called the raw CC Athletics cloud function with
+      // Supabase auth headers instead of the X-API-Key it actually requires (every other caller
+      // of that host uses X-API-Key -- see fetch-cc-data, sync-cc-athletics, validate-api-key,
+      // cc-raw-csv), so it would have failed auth if it ever ran. It also never actually ran in
+      // practice: this only fires once on mount via useEffect(() => { fetchApiData(); }, []), so
+      // selectedTestName is always "" at fetch time and the isometric branch's condition was
+      // always false. Removed as dead, broken, and misleading code.
+      const endpoint = 'https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data';
       
       const response = await fetch(endpoint, {
         method: 'GET',
