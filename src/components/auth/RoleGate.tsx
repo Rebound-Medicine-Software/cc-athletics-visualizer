@@ -67,15 +67,17 @@ const RoleGate: React.FC<RoleGateProps> = ({
     return <>{children}</>;
   }
 
-  const orgStatus = (profile as any).organisation_status as
-    | string
-    | undefined;
-  const onboardingStatus = (profile as any).onboarding_status as
-    | string
-    | undefined;
+    // `profiles` has no organisation_status/onboarding_status columns -
+    // organisation_status lives on `teams`, and onboarding_status doesn't
+    // exist anywhere in the schema. Those were always undefined here, so
+    // this fallback redirect never actually detected incomplete onboarding.
+    // The real flag is profiles.setup_completed (boolean) - the same one
+    // src/pages/Auth.tsx already uses for this exact org redirect check.
+    const onboardingStatus =
+      profile.setup_completed === false ? 'incomplete' : 'complete';
 
-  const destination =
-    fallbackRoute ?? resolveRoleHome(role, orgStatus, onboardingStatus);
+    const destination =
+      fallbackRoute ?? resolveRoleHome(role, undefined, onboardingStatus);
 
   return <Navigate to={destination} replace />;
 };
