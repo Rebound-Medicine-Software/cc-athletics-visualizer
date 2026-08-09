@@ -18,6 +18,7 @@ export interface UserProfile {
   subscription_status: string;
   created_at: string;
   updated_at: string;
+  setup_completed?: boolean; // NOTE (auto/2026-08-09): real onboarding-complete flag — profiles has no organisation_status/onboarding_status columns, see RoleGate.tsx and AdminRedirect.tsx
 }
 
 export interface TeamBranding {
