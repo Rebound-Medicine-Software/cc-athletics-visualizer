@@ -52,6 +52,7 @@ serve(async (req) => {
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
+        full_name: `${firstName} ${lastName}`,
         role: 'organisation'
       }
     });
