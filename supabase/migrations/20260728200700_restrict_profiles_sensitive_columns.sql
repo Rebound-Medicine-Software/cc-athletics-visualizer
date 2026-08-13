@@ -1,0 +1,34 @@
+-- SECURITY FIX (framework.md Section 3, Critical #1)
+--
+-- Problem: the "Practitioners can view team members" SELECT policy on
+-- public.profiles uses can_access_team_row(team_id) to decide which ROWS a
+-- practitioner may see. Row Level Security only ever filters rows, never
+-- columns, so once a row is visible every column on it is visible too -
+-- including password_hash and api_key. In practice this means any
+-- practitioner can read any teammate's password_hash (a legacy plaintext
+-- value kept so org admins can reveal a staff member's password - see
+-- StaffCredentialsTab.tsx) and api_key (the teammate's personal CC Athletics
+-- API credential) simply by requesting those columns directly, e.g.
+-- GET /profiles?select=password_hash,api_key - no UI needed.
+--
+-- The app itself has already moved off reading these two columns directly:
+-- ApiKeysTab.tsx reads via the get_my_api_key() RPC and
+-- StaffCredentialsTab.tsx reads password_hash via the
+-- org_admin_list_team_credentials() RPC, both SECURITY DEFINER functions
+-- that run with elevated privilege and are unaffected by column-level
+-- grants on the calling role. What was never done is closing the door on
+-- the table itself, so the old, unrestricted path has stayed open this
+-- whole time. This migration closes it.
+--
+-- Fix: revoke SELECT on just these two columns from the roles PostgREST
+-- uses for client requests (authenticated, anon). This does not touch row
+-- visibility (existing policies are untouched) and does not touch INSERT/
+-- UPDATE, so saving/clearing your own api_key and setting a staff member's
+-- password from the Settings UI keep working exactly as before - only the
+-- ability to SELECT these two specific columns straight off the table is
+-- removed. Safe even if the two RPC functions above turn out to be missing
+-- or broken: nothing currently relies on the direct-select path working, so
+-- there is no regression either way.
+
+revoke select (password_hash, api_key) on public.profiles from authenticated;
+revoke select (password_hash, api_key) on public.profiles from anon;
