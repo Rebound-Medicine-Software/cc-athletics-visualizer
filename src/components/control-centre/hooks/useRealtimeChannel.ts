@@ -35,7 +35,7 @@ export const useRealtimeChannel = ({
     if (profile?.role !== 'super_admin') return;
 
     const channel = supabase
-      .channel(channelName)
+      .channel(channelName, { config: { private: true } })
       .on(
         'postgres_changes' as any,
         { event, schema, table },

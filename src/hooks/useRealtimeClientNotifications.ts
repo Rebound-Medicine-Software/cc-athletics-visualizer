@@ -27,7 +27,7 @@ export const useRealtimeClientNotifications = () => {
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
-      .channel(`client-notifications-${user.id}`)
+      .channel(`client-notifications-${user.id}`, { config: { private: true } })
       .on(
         'postgres_changes' as any,
         {
