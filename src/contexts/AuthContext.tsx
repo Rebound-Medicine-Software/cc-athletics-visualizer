@@ -50,7 +50,6 @@ interface AuthContextType {
   userTier: UserTier | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, role?: UserRole) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   hasPermission: (permission: keyof UserTier) => boolean;
   isRole: (role: UserRole) => boolean;
@@ -271,22 +270,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (email: string, password: string, role: UserRole = 'client') => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          role: role
-        }
-      }
-    });
-    return { error };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -308,7 +291,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userTier,
     loading,
     signIn,
-    signUp,
     signOut,
     hasPermission,
     isRole,
