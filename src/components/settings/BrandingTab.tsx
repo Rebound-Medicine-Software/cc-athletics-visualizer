@@ -44,12 +44,10 @@ export const BrandingTab = () => {
 
   const fetchTeamBranding = async () => {
     if (!effectiveTeamId) {
-      console.log('No effective team_id found for profile:', profile);
       return;
     }
 
     try {
-      console.log('Fetching team branding for team_id:', effectiveTeamId);
       const { data, error } = await supabase
         .from('teams')
         .select('id, name, logo_url, primary_color, secondary_color, accent_color, font_family')
@@ -62,7 +60,6 @@ export const BrandingTab = () => {
       }
 
       if (data) {
-        console.log('Found team branding data:', data);
         setTeamBranding(data);
         setPendingLogoFile(null);
         setBrandingForm({

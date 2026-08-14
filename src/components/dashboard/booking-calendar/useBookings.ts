@@ -183,7 +183,6 @@ export const useBookings = () => {
             lengthOptions: opts && opts.length > 0 ? Array.from(new Set(opts)).sort((a, b) => a - b) : undefined,
           };
         });
-      console.log(`[Cal.com] Loaded ${mapped.length} event types`, mapped);
       setEventTypes(mapped);
     } catch (err) {
       console.error("Error fetching event types:", err);

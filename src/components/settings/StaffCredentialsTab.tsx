@@ -76,7 +76,6 @@ export const StaffCredentialsTab = () => {
       // Source the team_id from the effective team context so View-As shows the
       // impersonated organisation's staff (not the Super Admin's own team).
       if (!effectiveTeamId) {
-        console.log('No effective team_id; skipping staff fetch');
         setUsers([]);
         return;
       }
