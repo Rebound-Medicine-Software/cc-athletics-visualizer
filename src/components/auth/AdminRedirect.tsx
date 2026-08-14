@@ -31,10 +31,15 @@ const AdminRedirect: React.FC = () => {
     return <AuthLoading label="Loading your profile…" />;
   }
 
-  const orgStatus = (profile as any).organisation_status as string | undefined;
-  const onboardingStatus = (profile as any).onboarding_status as string | undefined;
+  // Same fix as RoleGate.tsx: profiles has no organisation_status/
+  // onboarding_status columns - onboarding_status doesn't exist anywhere
+  // in the schema, so this was always undefined and organisation users
+  // were never routed to /setup from here. Use the real setup_completed
+  // flag instead (matches Auth.tsx's own redirect logic).
+  const onboardingStatus =
+            profile.setup_completed === false ? 'incomplete' : 'complete';
 
-  const destination = resolveRoleHome(profile.role, orgStatus, onboardingStatus);
+  const destination = resolveRoleHome(profile.role, undefined, onboardingStatus);
   return <Navigate to={destination} replace />;
 };
 
