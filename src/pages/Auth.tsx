@@ -249,7 +249,7 @@ const Auth = () => {
     try {
       let role = 'client';
       if (userRole === 'clinician') role = 'organisation';
-      if (signupData.email === 'reflexsportstherpayy@gmail.com') role = 'super_admin';
+      if (signupData.email === 'reflexsportstherapyy@gmail.com') role = 'super_admin';
 
       if (role === 'organisation') {
         const { data, error } = await supabase.functions.invoke('signup-organisation', {
@@ -262,7 +262,7 @@ const Auth = () => {
       } else {
         const { error } = await supabase.auth.signUp({
           email: signupData.email, password: signupData.password,
-          options: { emailRedirectTo: `${window.location.origin}/setup`, data: { first_name: signupData.firstName, last_name: signupData.lastName, role } }
+          options: { emailRedirectTo: `${window.location.origin}/setup`, data: { first_name: signupData.firstName, last_name: signupData.lastName, full_name: `${signupData.firstName} ${signupData.lastName}`, role } }
         });
         if (error) { setError(error.message); return; }
         await sendWelcomeEmail(signupData.email, signupData.firstName, signupData.lastName);
