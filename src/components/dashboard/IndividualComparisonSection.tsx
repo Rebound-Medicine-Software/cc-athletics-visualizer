@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, Line
 import { TestData } from "@/types/forcePlateTypes";
 import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames } from "./filters/filterUtils";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
+import { supabase } from "@/integrations/supabase/client";
 
 interface IndividualComparisonSectionProps {
   data: TestData[];
@@ -93,17 +94,14 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
   }, [resetFiltersKey]);
 
   // Fetch API data using appropriate endpoint based on test type
-  const fetchApiData = async () => {
-    setIsLoading(true);
-    try {
-      // Determine endpoint based on test type
-      let endpoint = 'https://bvieqoevqkwdkphubabt.supabase.co/functions/v1/fetch-cc-data';
-      
-      if (selectedTestName && !["Countermovement Jump", "Drop Jump", "Pogo Jump", "Squat Jump"].includes(selectedTestName)) {
-        // For isometric tests, use different endpoint
-        endpoint = 'https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes?analysis_type=isometric';
-      }
-      
+const fetchApiData = async () => {
+  setIsLoading(true);
+  try {
+    // Isometric tests are served directly from the CC Athletics vendor API,
+    // a separate non-Supabase endpoint - left as-is here, out of scope for
+    // this fix.
+    if (selectedTestName && !["Countermovement Jump", "Drop Jump", "Pogo Jump", "Squat Jump"].includes(selectedTestName)) {
+      const endpoint = 'https://europe-west1-forcemate-desktop.cloudfunctions.net/get_athletes?analysis_type=isometric';
       const response = await fetch(endpoint, {
         method: 'GET',
         headers: {
@@ -112,22 +110,44 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2aWVxb2V2cWt3ZGtwaHViYWJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDA4OTksImV4cCI6MjA2NDk3Njg5OX0.5_zOSAnBSxzg5zdcmTWjTjdbvScQ5VE_HKx0-PBCtc0'
         }
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
           setApiData(result.data);
         } else if (Array.isArray(result)) {
-          // Handle direct API response format
           setApiData(result);
         }
       }
-    } catch (error) {
-      console.error('Failed to fetch API data:', error);
-    } finally {
-      setIsLoading(false);
+      return;
     }
-  };
+
+    // Jump/Drop Jump/Pogo/Squat Jump tests go through the shared, authenticated
+    // Supabase client so the real logged-in user's session token is sent.
+    // fetch-cc-data now requires a real authenticated user (see framework.md
+    // Section 3) and no longer accepts a bare anon key on its own - this used
+    // to hardcode the public anon key directly here, which is what let this
+    // call keep working even with no logged-in user.
+    const { data: result, error } = await supabase.functions.invoke('fetch-cc-data', {
+      method: 'GET',
+    });
+
+    if (error) {
+      console.error('Failed to fetch API data:', error);
+      return;
+    }
+
+    if (result?.success && result.data) {
+      setApiData(result.data);
+    } else if (Array.isArray(result)) {
+      setApiData(result);
+    }
+  } catch (error) {
+    console.error('Failed to fetch API data:', error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchApiData();
