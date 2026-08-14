@@ -300,7 +300,31 @@ const Setup = () => {
               team_id: teamId,
             },
           });
-          if (!error) credentialsSent += 1;
+          if (!error) {
+                        // Account created — now actually deliver the credentials email.
+                        // send-clinician-credentials only creates the account (no email
+                        // of its own since SendPulse was removed 5 August 2026 - Pingram
+                        // is the only provider now). Mirrors StaffCredentialsTab.tsx's
+                        // "Add Staff User" flow, which already does both steps.
+                        try {
+                                        const { error: inviteError } = await supabase.functions.invoke("send-practitioner-invite", {
+                                                          body: {
+                                                                              email: practitioner.email,
+                                                                              full_name: practitioner.name,
+                                                                              password,
+                                                                              role_title: practitioner.role,
+                                                                              team_name: orgData.name,
+                                                                              login_url: `${window.location.origin}/auth`,
+                                                          },
+                                        });
+                                        if (inviteError) {
+                                                          console.warn("Account created but invite email failed to send:", inviteError);
+                                        }
+                        } catch (inviteErr) {
+                                        console.warn("Account created but invite email failed to send:", inviteErr);
+                        }
+                        credentialsSent += 1;
+          }
         } catch (err) {
           console.error("Failed to create practitioner account:", err);
         }
