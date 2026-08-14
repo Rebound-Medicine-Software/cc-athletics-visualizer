@@ -40,8 +40,7 @@ export const useSupabaseData = () => {
       if (!data?.success) throw new Error(data?.error ?? 'Unknown error');
 
       const rows: TestData[] = data.data || [];
-      console.log(`Fetched ${rows.length} test records from CC Athletics API`);
-
+      
       // Global super-admin view: no client-side filter.
       if (isGlobalAdmin) return rows;
 
@@ -53,9 +52,6 @@ export const useSupabaseData = () => {
 
       const filtered = rows.filter((r: any) =>
         allowedNames.has((r.team_name ?? '').toLowerCase()),
-      );
-      console.log(
-        `Scoped CC data ${rows.length} → ${filtered.length} across ${allowedNames.size} workspace team(s)`,
       );
       return filtered;
     },
