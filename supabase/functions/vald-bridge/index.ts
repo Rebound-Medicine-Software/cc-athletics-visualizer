@@ -29,13 +29,27 @@ const corsHeaders = {
 };
 
 // ── Config ─────────────────────────────────────────────────────────────────────
-const REGION_URLS: Record<string, string> = {
-  eu: "https://extapi-eu.valdperformance.com",
-  us: "https://extapi-us.valdperformance.com",
-  au: "https://extapi.valdperformance.com",
-};
+// VALD migrated external API auth to Auth0 in March 2026. The legacy
+// security.valdperformance.com/connect/token host no longer resolves.
+const AUTH_URL = "https://auth.prd.vald.com/oauth/token";
+const AUTH_AUDIENCE = "vald-api-external";
 
-const AUTH_URL = "https://security.valdperformance.com/connect/token";
+// VALD_REGION accepts either short codes (eu/us/au) or raw region codes (euw/use/aue).
+const REGION_ALIASES: Record<string, string> = { eu: "euw", us: "use", au: "aue" };
+
+function regionCode(): string {
+  const raw = (Deno.env.get("VALD_REGION") ?? "euw").toLowerCase();
+  return REGION_ALIASES[raw] ?? raw;
+}
+
+function serviceHost(service: "profile" | "forcedecks" | "tenants"): string {
+  const r = regionCode();
+  const suffix =
+    service === "profile" ? "externalprofile"
+    : service === "forcedecks" ? "extforcedecks"
+    : "externaltenants";
+  return `https://prd-${r}-api-${suffix}.valdperformance.com`;
+}
 
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
@@ -48,7 +62,12 @@ async function getToken(): Promise<string> {
   const res = await fetch(AUTH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+      audience: AUTH_AUDIENCE,
+    }),
   });
   if (!res.ok) throw new Error(`VALD auth failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
@@ -57,14 +76,15 @@ async function getToken(): Promise<string> {
   return cachedToken;
 }
 
-async function valdFetch(path: string): Promise<unknown> {
+async function valdFetch(service: "profile" | "forcedecks" | "tenants", path: string): Promise<unknown> {
   const token = await getToken();
-  const region = Deno.env.get("VALD_REGION") ?? "eu";
-  const baseUrl = REGION_URLS[region] ?? REGION_URLS.eu;
-  const res = await fetch(`${baseUrl}${path}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } });
+  const res = await fetch(`${serviceHost(service)}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
   if (!res.ok) throw new Error(`VALD API ${res.status} at ${path}: ${await res.text()}`);
   return res.json();
 }
+
 
 interface ValdResult {
   result?: string;
