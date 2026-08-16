@@ -142,8 +142,3 @@ export const DashboardHeader = ({
     </div>
   );
 };
-
-      </div>
-    </div>
-  );
-};
