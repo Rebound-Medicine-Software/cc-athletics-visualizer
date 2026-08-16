@@ -121,6 +121,13 @@ export const getNavigationItems = (): NavigationItem[] => [
     permissions: ['can_view_analytics']
   },
   {
+    id: 'vald-hub',
+    label: 'VALD Hub',
+    icon: Activity,
+    description: 'Force plate assessments and performance reports',
+    roles: ['organisation', 'clinician'],
+  },
+  {
     id: 'programming',
     label: 'My Programme',
     icon: Dumbbell,
