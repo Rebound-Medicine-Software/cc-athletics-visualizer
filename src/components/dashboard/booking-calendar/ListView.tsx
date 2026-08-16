@@ -63,6 +63,9 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
               <div className="text-sm font-mono text-muted-foreground w-16 shrink-0">
                 {format(new Date(b.appointment_date), "HH:mm")}
               </div>
+              <span className="pr-avatar">
+                {(b.attendeeName || b.title || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("")}
+              </span>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate flex items-center gap-1.5">
                   {b.title}
@@ -77,9 +80,9 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
                   <div className="text-xs text-muted-foreground truncate">{b.notes}</div>
                 )}
               </div>
-              <Badge variant="outline" className={cn("text-[10px] shrink-0", statusVariant[b.status || "scheduled"])}>
+              <span className={cn("shrink-0", statusVariant[b.status || "scheduled"] ?? "pr-pill pr-pill-neutral")}>
                 {b.status}
-              </Badge>
+              </span>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEventClick(b); }}>
                   <Edit className="w-3.5 h-3.5" />
