@@ -30,9 +30,7 @@ export const useAthletes = () => {
   return useQuery({
     queryKey: ['athletes', teamId ?? 'all', isImpersonating],
     queryFn: async (): Promise<Athlete[]> => {
-      console.log('Fetching athletes...', { teamId, isImpersonating });
-
-      let query = supabase
+        let query = supabase
         .from('athletes')
         .select('id, name, email, last_test_at, team_id, teams ( name )');
 
@@ -56,8 +54,6 @@ export const useAthletes = () => {
           ? new Date(row.last_test_at).toISOString().split('T')[0]
           : '',
       }));
-
-      console.log(`Fetched ${normalized.length} athletes`);
       return normalized;
     },
     staleTime: 5 * 60 * 1000,

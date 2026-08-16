@@ -53,7 +53,6 @@ export const useCCAthletics = (): UseCCAthletics => {
                               const filtered = allData.filter(
                                             (r: any) => allowedNames.has((r.team_name ?? '').toLowerCase()),
                                           );
-                              console.log(`Scoped CC Athletics data ${allData.length} -> ${filtered.length} across ${allowedNames.size} workspace team(s)`);
                               return filtered;
                   },
                   enabled: !!apiKey && (isGlobalAdmin || workspaceTeams !== undefined),

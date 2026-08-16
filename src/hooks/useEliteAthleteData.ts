@@ -31,8 +31,6 @@ export const useEliteAthleteData = () => {
   return useQuery({
     queryKey: ['elite-athlete-data'],
     queryFn: async (): Promise<EliteAthleteData[]> => {
-      console.log('Fetching elite athlete data from canonical table...');
-
       const { data, error } = await supabase
         .from('elite_athlete_data')
         .select('*');
@@ -59,8 +57,6 @@ export const useEliteAthleteData = () => {
         dynamic_metrics: row.dynamic_metrics ?? {},
         created_at: row.created_at,
       }));
-
-      console.log(`Fetched ${mapped.length} elite athlete records`);
       return mapped;
     },
     staleTime: 5 * 60 * 1000,
