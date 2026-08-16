@@ -19,33 +19,36 @@ export const MetricCard = ({
   arrow,
   color = "",
   percent,
-}: MetricCardProps) => (
-  <Card className="bg-white shadow-md">
-    <CardContent className="p-4 text-center flex flex-col items-center">
-      <div className="text-2xl mb-2">{icon}</div>
-      <div className="text-xs text-gray-600 mb-2 h-8 flex items-center justify-center">
-        {title}
-      </div>
-      <div className="flex flex-col items-center gap-1 w-full">
-        <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wide mb-0">
-          RECENT
-        </div>
-        <div className="text-2xl font-bold text-gray-800 mb-1">
-          {formattedRecent}
-        </div>
-        <div className={`text-sm font-medium flex items-center gap-1 mt-1 ${color}`}>
-          {arrow && <span>{arrow}</span>}
-          {percent !== null && percent !== undefined && !Number.isNaN(percent) && (
-            <span>{Math.abs(percent).toFixed(1)}%</span>
+}: MetricCardProps) => {
+  const hasTrend =
+    percent !== null && percent !== undefined && !Number.isNaN(percent);
+  const trendClass = !hasTrend
+    ? "pr-trend-flat"
+    : arrow === "↑"
+    ? "pr-trend-up"
+    : arrow === "↓"
+    ? "pr-trend-down"
+    : "pr-trend-flat";
+
+  return (
+    <Card className="pr-panel">
+      <CardContent className="p-4 flex flex-col">
+        <div className="flex items-start justify-between mb-3">
+          <span className="pr-icon-badge text-base">{icon}</span>
+          {hasTrend && (
+            <span className={`pr-trend ${trendClass} ${color}`}>
+              {arrow && <span>{arrow}</span>}
+              {Math.abs(percent!).toFixed(1)}%
+            </span>
           )}
         </div>
-        <div className="text-[12px] font-bold text-gray-500 uppercase tracking-wide mb-0 mt-1">
-          ALL TIME BEST
+        <div className="pr-kpi-label">{title}</div>
+        <div className="pr-kpi-value mt-1">{formattedRecent}</div>
+        <div className="mt-3 flex items-center justify-between">
+          <span className="pr-kpi-label">All time best</span>
+          <span className="pr-pill pr-pill-positive">{formattedBest}</span>
         </div>
-        <div className="text-lg font-semibold text-green-700 mt-0">
-          {formattedBest}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
