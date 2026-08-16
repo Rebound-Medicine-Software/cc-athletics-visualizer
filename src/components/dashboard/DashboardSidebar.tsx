@@ -1,8 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, Menu, X } from "lucide-react";
 import { TeamBranding } from "@/contexts/AuthContext";
 import { motion, useReducedMotion } from "framer-motion";
+
 
 export interface NavItem {
   id: string;
