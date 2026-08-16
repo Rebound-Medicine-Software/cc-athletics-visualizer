@@ -133,67 +133,62 @@ export const HighlightsSection = ({
 
 
   return <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
-      <Card 
-        className="mb-6 mt-4 border-2"
-        style={{
-          backgroundColor: branding?.primary_color ? `${branding.primary_color}15` : 'hsl(var(--primary) / 0.08)',
-          borderColor: branding?.primary_color ? `${branding.primary_color}50` : 'hsl(var(--primary) / 0.3)'
-        }}
-      >
-        <CardHeader className="sticky top-[80px] z-30 rounded-t-lg" style={{
-          backgroundColor: branding?.primary_color ? `${branding.primary_color}15` : 'hsl(var(--primary) / 0.08)',
-        }}>
-          <CardTitle className="text-center text-lg text-gray-800">Performance Insights</CardTitle>
+      <Card className="pr-panel mb-6 mt-4">
+        <CardHeader className="pr-filterbar sticky top-[80px] z-30 rounded-t-[18px]">
+          <CardTitle className="text-center text-lg">Performance Insights</CardTitle>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Team Name */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Team Name</label>
+              <label className="pr-filter-label block mb-2 text-center">Team Name</label>
               <MultiSelectDropdown options={teamOptions} value={selectedTeams} onChange={setSelectedTeams} placeholder="All Teams" className="text-center" labelClassName="bg-white" />
             </div>
 
             {/* Athlete Name */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+              <label className="pr-filter-label block mb-2 text-center">Athlete Name</label>
               <MultiSelectDropdown options={athleteOptions} value={selectedAthletes} onChange={setSelectedAthletes} placeholder="All Athletes" className="text-center" labelClassName="bg-white" />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-              <div className="text-2xl font-bold text-gray-800">{highlights.totalTests}</div>
-              <div className="text-sm text-gray-600">Total Tests</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="pr-kpi">
+              <div className="flex items-start justify-between mb-3">
+                <span className="pr-icon-badge pr-icon-badge-pending"><Trophy className="w-4 h-4" /></span>
+              </div>
+              <div className="pr-kpi-value">{highlights.totalTests}</div>
+              <div className="pr-kpi-label mt-1">Total Tests</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800 truncate">{highlights.primaryTeam}</div>
-              <div className="text-sm text-gray-600">Primary Team</div>
+            <div className="pr-kpi">
+              <div className="flex items-start justify-between mb-3">
+                <span className="pr-icon-badge pr-icon-badge-positive"><TrendingUp className="w-4 h-4" /></span>
+              </div>
+              <div className="pr-kpi-value truncate">{highlights.primaryTeam}</div>
+              <div className="pr-kpi-label mt-1">Primary Team</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800 truncate">{highlights.topPerformer}</div>
-              <div className="text-sm text-gray-600">Top Performer</div>
+            <div className="pr-kpi">
+              <div className="flex items-start justify-between mb-3">
+                <span className="pr-icon-badge"><Users className="w-4 h-4" /></span>
+              </div>
+              <div className="pr-kpi-value truncate">{highlights.topPerformer}</div>
+              <div className="pr-kpi-label mt-1">Top Performer</div>
             </div>
-            <div className="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
-              <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <div className="text-xl font-bold text-gray-800">
+            <div className="pr-kpi">
+              <div className="flex items-start justify-between mb-3">
+                <span className="pr-icon-badge"><Calendar className="w-4 h-4" /></span>
+              </div>
+              <div className="pr-kpi-value">
                 {highlights.latestTest !== "N/A" ? formatDate(highlights.latestTest) : "N/A"}
               </div>
-              <div className="text-sm text-gray-600">Latest Test</div>
+              <div className="pr-kpi-label mt-1">Latest Test</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Second Individual Filters Section */}
-      <Card 
-        className="mb-6 border-2"
-        style={{
-          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
-          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
-        }}
-      >
+      <Card className="pr-panel mb-6">
+
         <CardContent className="p-4">
           {/* Section Title */}
           <h2 className="text-lg font-semibold text-center mb-4 text-foreground">Athlete Highlights</h2>
