@@ -212,7 +212,7 @@ export const HighlightsSection = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {/* Test Name */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+              <label className="pr-filter-label block mb-2 text-center">Test Name</label>
               <Select 
                 value={secondFilters.testNames} 
                  onValueChange={(value) => {
@@ -240,7 +240,7 @@ export const HighlightsSection = ({
 
             {/* Athlete Name - Single Select */}
             <div className="flex flex-col">
-              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+              <label className="pr-filter-label block mb-2 text-center">Athlete Name</label>
               {!secondFilters.testNames ? (
                 <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                   Select Athlete
