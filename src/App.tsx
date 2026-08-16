@@ -82,6 +82,9 @@ const App = () => (
               }
             />
 
+            {/* VALD Performance Hub */}
+            <Route path="/vald-hub" element={<ValdHub />} />
+
             {/* Client portal */}
             <Route
               path="/Dashboard(Client)"
