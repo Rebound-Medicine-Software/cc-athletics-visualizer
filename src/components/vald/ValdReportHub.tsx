@@ -109,9 +109,9 @@ function AsymBadge({ value }: { value: number | null }) {
 export default function ValdReportHub() {
   const [athleteId,  setAthleteId]  = useState<string | null>(null);
   const [testId,     setTestId]     = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("__all__");
   const [dayFilter,  setDayFilter]  = useState(0);
-  const [normKey,    setNormKey]    = useState("");
+  const [normKey,    setNormKey]    = useState("__none__");
 
   const { data: athletes,  isLoading: loadingAthletes, error: athleteError } = useValdAthletes();
   const { data: tests,     isLoading: loadingTests  } = useValdTests(athleteId);
@@ -122,17 +122,17 @@ export default function ValdReportHub() {
 
   const filteredTests = useMemo(() => {
     let t = tests ?? [];
-    if (typeFilter) t = t.filter(x => x.type === typeFilter);
+    if (typeFilter && typeFilter !== "__all__") t = t.filter(x => x.type === typeFilter);
     if (dayFilter)  t = t.filter(x => x.date >= format(subDays(new Date(), dayFilter), "yyyy-MM-dd"));
     return t;
   }, [tests, typeFilter, dayFilter]);
 
-  const norm = normKey ? NORMS[normKey] : null;
+  const norm = normKey && normKey !== "__none__" ? NORMS[normKey] : null;
 
   const handleAthleteChange = (id: string) => {
     setAthleteId(id);
     setTestId(null);
-    setTypeFilter("");
+    setTypeFilter("__all__");
   };
 
   return (
