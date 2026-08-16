@@ -19,6 +19,8 @@ export const ForceVisualization = ({ data }: ForceVisualizationProps) => {
 
   const handleExport = () => {
     toast.success("Analysis exported successfully!");
+  };
+
     
 
   return (
