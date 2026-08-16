@@ -13,14 +13,15 @@ interface ListViewProps {
 }
 
 const statusVariant: Record<string, string> = {
-  scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-  confirmed: "bg-green-100 text-green-800 border-green-200",
-  accepted: "bg-green-100 text-green-800 border-green-200",
-  completed: "bg-gray-100 text-gray-600 border-gray-200",
-  cancelled: "bg-red-100 text-red-700 border-red-200",
-  "no-show": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  past: "bg-gray-100 text-gray-600 border-gray-200",
+  scheduled: "pr-pill pr-pill-info",
+  confirmed: "pr-pill pr-pill-positive",
+  accepted: "pr-pill pr-pill-positive",
+  completed: "pr-pill pr-pill-neutral",
+  cancelled: "pr-pill pr-pill-negative",
+  "no-show": "pr-pill pr-pill-pending",
+  past: "pr-pill pr-pill-neutral",
 };
+
 
 export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) => {
   const grouped = useMemo(() => {
