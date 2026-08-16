@@ -171,3 +171,145 @@
   border-color: hsl(var(--pr-negative) / 0.5);
   color: hsl(0 80% 76%);
 }
+
+/* ---------- Surfaces: cards / panels ---------- */
+/* shadcn <Card> roots (they always carry `text-card-foreground`) */
+.practitioner-shell [class*="text-card-foreground"] {
+  background: hsl(var(--pr-card));
+  border-color: hsl(var(--pr-border));
+  border-width: 1px;
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-shadow);
+}
+
+.practitioner-shell .pr-panel {
+  background: hsl(var(--pr-card));
+  border: 1px solid hsl(var(--pr-border));
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-shadow);
+}
+
+/* Filter / search bars: white card instead of a flat grey block */
+.practitioner-shell .pr-filterbar {
+  background: hsl(var(--pr-card));
+  border-radius: var(--pr-radius);
+}
+.practitioner-shell .pr-filter-label {
+  color: hsl(var(--pr-fg-muted));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- KPI / stat cards ---------- */
+.practitioner-shell .pr-kpi {
+  background: hsl(var(--pr-card));
+  border: 1px solid hsl(var(--pr-border));
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-shadow);
+  padding: 18px;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+.practitioner-shell .pr-kpi:hover {
+  box-shadow: var(--pr-shadow-lg);
+  transform: translateY(-1px);
+}
+.practitioner-shell .pr-kpi-label {
+  color: hsl(var(--pr-fg-muted));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.practitioner-shell .pr-kpi-value {
+  color: hsl(var(--pr-fg));
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.practitioner-shell .pr-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--pr-accent-soft));
+  color: hsl(var(--pr-accent-strong));
+}
+.practitioner-shell .pr-icon-badge-positive { background: hsl(var(--pr-positive-soft)); color: hsl(var(--pr-positive)); }
+.practitioner-shell .pr-icon-badge-pending  { background: hsl(var(--pr-pending-soft));  color: hsl(var(--pr-pending)); }
+.practitioner-shell .pr-icon-badge-negative { background: hsl(var(--pr-negative-soft)); color: hsl(var(--pr-negative)); }
+
+/* ---------- Pills / status badges ---------- */
+.practitioner-shell .pr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.practitioner-shell .pr-pill-positive { background: hsl(var(--pr-positive-soft)); color: hsl(var(--pr-positive)); border-color: hsl(var(--pr-positive) / 0.24); }
+.practitioner-shell .pr-pill-pending  { background: hsl(var(--pr-pending-soft));  color: hsl(38 82% 36%);          border-color: hsl(var(--pr-pending) / 0.28); }
+.practitioner-shell .pr-pill-negative { background: hsl(var(--pr-negative-soft)); color: hsl(var(--pr-negative)); border-color: hsl(var(--pr-negative) / 0.24); }
+.practitioner-shell .pr-pill-info     { background: hsl(var(--pr-accent-soft));   color: hsl(var(--pr-accent-strong)); border-color: hsl(var(--pr-accent) / 0.22); }
+.practitioner-shell .pr-pill-neutral  { background: hsl(var(--pr-canvas));        color: hsl(var(--pr-fg-muted));  border-color: hsl(var(--pr-border)); }
+
+/* Trend badge */
+.practitioner-shell .pr-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.practitioner-shell .pr-trend-up   { background: hsl(var(--pr-positive-soft)); color: hsl(var(--pr-positive)); }
+.practitioner-shell .pr-trend-down { background: hsl(var(--pr-negative-soft)); color: hsl(var(--pr-negative)); }
+.practitioner-shell .pr-trend-flat { background: hsl(var(--pr-canvas));        color: hsl(var(--pr-fg-muted)); }
+
+/* Avatar chip for name columns */
+.practitioner-shell .pr-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: hsl(var(--pr-accent-soft));
+  color: hsl(var(--pr-accent-strong));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+}
+
+/* ---------- Tables ---------- */
+.practitioner-shell table thead th {
+  background: hsl(var(--pr-canvas));
+  color: hsl(var(--pr-fg-muted));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-bottom: 1px solid hsl(var(--pr-border));
+}
+.practitioner-shell table tbody tr {
+  background: hsl(var(--pr-card));
+  border-bottom: 1px solid hsl(var(--pr-border) / 0.75);
+}
+.practitioner-shell table tbody tr:hover {
+  background: hsl(var(--pr-accent-soft) / 0.55);
+}
+.practitioner-shell table tbody td {
+  color: hsl(var(--pr-fg));
+  font-size: 13px;
+}

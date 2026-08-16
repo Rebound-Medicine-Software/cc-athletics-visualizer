@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { format, isAfter, isBefore, startOfDay, addDays } from "date-fns";
 import { BookingEvent } from "./types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Clock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -13,14 +12,15 @@ interface ListViewProps {
 }
 
 const statusVariant: Record<string, string> = {
-  scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-  confirmed: "bg-green-100 text-green-800 border-green-200",
-  accepted: "bg-green-100 text-green-800 border-green-200",
-  completed: "bg-gray-100 text-gray-600 border-gray-200",
-  cancelled: "bg-red-100 text-red-700 border-red-200",
-  "no-show": "bg-yellow-100 text-yellow-800 border-yellow-200",
-  past: "bg-gray-100 text-gray-600 border-gray-200",
+  scheduled: "pr-pill pr-pill-info",
+  confirmed: "pr-pill pr-pill-positive",
+  accepted: "pr-pill pr-pill-positive",
+  completed: "pr-pill pr-pill-neutral",
+  cancelled: "pr-pill pr-pill-negative",
+  "no-show": "pr-pill pr-pill-pending",
+  past: "pr-pill pr-pill-neutral",
 };
+
 
 export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) => {
   const grouped = useMemo(() => {
@@ -62,6 +62,9 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
               <div className="text-sm font-mono text-muted-foreground w-16 shrink-0">
                 {format(new Date(b.appointment_date), "HH:mm")}
               </div>
+              <span className="pr-avatar">
+                {(b.attendeeName || b.title || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("")}
+              </span>
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate flex items-center gap-1.5">
                   {b.title}
@@ -76,9 +79,9 @@ export const ListView = ({ bookings, onEventClick, onDelete }: ListViewProps) =>
                   <div className="text-xs text-muted-foreground truncate">{b.notes}</div>
                 )}
               </div>
-              <Badge variant="outline" className={cn("text-[10px] shrink-0", statusVariant[b.status || "scheduled"])}>
+              <span className={cn("shrink-0", statusVariant[b.status || "scheduled"] ?? "pr-pill pr-pill-neutral")}>
                 {b.status}
-              </Badge>
+              </span>
               <div className="flex gap-1 shrink-0">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEventClick(b); }}>
                   <Edit className="w-3.5 h-3.5" />

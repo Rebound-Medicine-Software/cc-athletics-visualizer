@@ -76,18 +76,10 @@ export function ReportFiltersContainer({
 
   return (
     <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
-      <Card 
-        className="border-2"
-        style={{
-          backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
-          borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
-        }}
-      >
+      <Card className="pr-panel">
         <CardContent className="p-4">
           {/* Sticky filter area */}
-          <div className="sticky top-[80px] z-30 pb-4 rounded-t-lg" style={{
-            backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
-          }}>
+          <div className="pr-filterbar sticky top-[80px] z-30 pb-4 rounded-t-[18px]">
           {/* Header */}
           <div className="flex justify-center mb-4">
             <Button 
@@ -107,7 +99,7 @@ export function ReportFiltersContainer({
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           {/* Test Name */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+            <label className="pr-filter-label block mb-2 text-center">Test Name</label>
             <Select 
               value={filters.testNames} 
               onValueChange={(value) => {
@@ -138,7 +130,7 @@ export function ReportFiltersContainer({
 
           {/* Sex */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Sex</label>
+            <label className="pr-filter-label block mb-2 text-center">Sex</label>
             {!filters.testNames ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Sex
@@ -177,7 +169,7 @@ export function ReportFiltersContainer({
 
           {/* Athlete Name(s) - Multi-Select */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name(s)</label>
+            <label className="pr-filter-label block mb-2 text-center">Athlete Name(s)</label>
             {!filters.sex ? (
               <div className="bg-gray-100 opacity-60 h-10 rounded-md border border-input px-3 py-2 text-sm text-muted-foreground flex items-center justify-center">
                 Select Athletes
@@ -208,7 +200,7 @@ export function ReportFiltersContainer({
 
           {/* Metric Type */}
           <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+            <label className="pr-filter-label block mb-2 text-center">Metric Type</label>
             <Select 
               value={filters.metricTypes} 
               onValueChange={(value) => {
