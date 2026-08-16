@@ -29,13 +29,27 @@ const corsHeaders = {
 };
 
 // ── Config ─────────────────────────────────────────────────────────────────────
-const REGION_URLS: Record<string, string> = {
-  eu: "https://extapi-eu.valdperformance.com",
-  us: "https://extapi-us.valdperformance.com",
-  au: "https://extapi.valdperformance.com",
-};
+// VALD migrated external API auth to Auth0 in March 2026. The legacy
+// security.valdperformance.com/connect/token host no longer resolves.
+const AUTH_URL = "https://auth.prd.vald.com/oauth/token";
+const AUTH_AUDIENCE = "vald-api-external";
 
-const AUTH_URL = "https://security.valdperformance.com/connect/token";
+// VALD_REGION accepts either short codes (eu/us/au) or raw region codes (euw/use/aue).
+const REGION_ALIASES: Record<string, string> = { eu: "euw", us: "use", au: "aue" };
+
+function regionCode(): string {
+  const raw = (Deno.env.get("VALD_REGION") ?? "euw").toLowerCase();
+  return REGION_ALIASES[raw] ?? raw;
+}
+
+function serviceHost(service: "profile" | "forcedecks" | "tenants"): string {
+  const r = regionCode();
+  const suffix =
+    service === "profile" ? "externalprofile"
+    : service === "forcedecks" ? "extforcedecks"
+    : "externaltenants";
+  return `https://prd-${r}-api-${suffix}.valdperformance.com`;
+}
 
 let cachedToken: string | null = null;
 let tokenExpiry = 0;
@@ -48,7 +62,12 @@ async function getToken(): Promise<string> {
   const res = await fetch(AUTH_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret }),
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: clientId,
+      client_secret: clientSecret,
+      audience: AUTH_AUDIENCE,
+    }),
   });
   if (!res.ok) throw new Error(`VALD auth failed (${res.status}): ${await res.text()}`);
   const data = await res.json();
@@ -57,14 +76,15 @@ async function getToken(): Promise<string> {
   return cachedToken;
 }
 
-async function valdFetch(path: string): Promise<unknown> {
+async function valdFetch(service: "profile" | "forcedecks" | "tenants", path: string): Promise<unknown> {
   const token = await getToken();
-  const region = Deno.env.get("VALD_REGION") ?? "eu";
-  const baseUrl = REGION_URLS[region] ?? REGION_URLS.eu;
-  const res = await fetch(`${baseUrl}${path}`, { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } });
+  const res = await fetch(`${serviceHost(service)}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
   if (!res.ok) throw new Error(`VALD API ${res.status} at ${path}: ${await res.text()}`);
   return res.json();
 }
+
 
 interface ValdResult {
   result?: string;
@@ -81,10 +101,10 @@ function getMetric(results: ValdResult[], key: string, limb?: string): number | 
 }
 
 async function handleAthletes(tenantId: string) {
-  const data = await valdFetch(`/profiles/v2023q2/profiles?tenantId=${tenantId}`) as Record<string, unknown>;
+  const data = await valdFetch("profile", `/profiles?TenantId=${tenantId}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.profiles ?? data.data ?? []) as Record<string, unknown>[]);
   const athletes = list.map((a) => ({
-    id: a.id, number: a.externalId ?? "",
+    id: a.id ?? a.profileId ?? "", number: a.externalId ?? "",
     name: `${a.givenName ?? ""} ${a.familyName ?? ""}`.trim(),
     givenName: a.givenName ?? "", familyName: a.familyName ?? "",
     dob: a.dateOfBirth ?? "", sex: a.sex ?? "",
@@ -94,7 +114,7 @@ async function handleAthletes(tenantId: string) {
 }
 
 async function handleTests(tenantId: string, athleteId: string) {
-  const data = await valdFetch(`/forcedecks/v2022q2/teams/${tenantId}/tests?profileId=${athleteId}&pageSize=100`) as Record<string, unknown>;
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?athleteId=${athleteId}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.tests ?? data.data ?? []) as Record<string, unknown>[]);
   const tests = list.map((t) => {
     const results = (t.results ?? []) as ValdResult[];
@@ -119,7 +139,7 @@ async function handleTests(tenantId: string, athleteId: string) {
 }
 
 async function handleDetail(tenantId: string, testId: string) {
-  const data = await valdFetch(`/forcedecks/v2022q2/teams/${tenantId}/tests/${testId}/trials`) as Record<string, unknown>;
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests/${testId}/trials`) as Record<string, unknown>;
   const trials = Array.isArray(data) ? data : ((data.trials ?? data.data ?? [data]) as Record<string, unknown>[]);
   const best = (trials[0] ?? {}) as Record<string, unknown>;
   const res = (best.results ?? []) as ValdResult[];
