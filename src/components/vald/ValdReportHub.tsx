@@ -30,7 +30,7 @@ import {
 // ── Normative data (22 sport populations) ────────────────────────────
 // Sources: McMahon et al. (2022) Salford UK; Haugen et al. (2020); VALD EFL 2025
 
-interface NormBand { p10: number; p25: number; p50: number; p75: number; p90: number }
+interface NormBand { p10?: number; p25: number; p50: number; p75: number; p90?: number }
 interface NormEntry { label: string; cmjH: NormBand; rsi: NormBand; djH?: NormBand }
 
 const NORMS: Record<string, NormEntry> = {
@@ -63,8 +63,10 @@ const NORMS: Record<string, NormEntry> = {
 // ── Normative bar component ──────────────────────────────────────────────────────
 
 function NormBar({ label, value, band }: { label: string; value: number | null; band: NormBand }) {
-  const range = band.p90 - band.p10;
-  const pct = (v: number) => Math.min(100, Math.max(0, ((v - band.p10) / range) * 100));
+  const min = band.p10 ?? band.p25 - (band.p75 - band.p25) * 0.5;
+  const max = band.p90 ?? band.p75 + (band.p75 - band.p25) * 0.5;
+  const range = max - min;
+  const pct = (v: number) => Math.min(100, Math.max(0, ((v - min) / range) * 100));
   const status = value == null ? null : value < band.p25 ? "below" : value > band.p75 ? "above" : "ok";
 
   return (
@@ -76,7 +78,7 @@ function NormBar({ label, value, band }: { label: string; value: number | null; 
           {status === "below" && <span className="text-xs text-red-500">Below P25</span>}
           {status === "above" && <span className="text-xs text-green-600">Above P75</span>}
           {status === "ok"    && <span className="text-xs text-teal-600">P25–P75</span>}
-          <span className="text-xs text-muted-foreground">P50: {band.p50} | {band.p10}–{band.p90}</span>
+          <span className="text-xs text-muted-foreground">P50: {band.p50} | {min.toFixed(2)}–{max.toFixed(2)}</span>
         </div>
       </div>
       <div className="relative h-3 bg-slate-100 rounded-full overflow-visible">
@@ -107,9 +109,9 @@ function AsymBadge({ value }: { value: number | null }) {
 export default function ValdReportHub() {
   const [athleteId,  setAthleteId]  = useState<string | null>(null);
   const [testId,     setTestId]     = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("__all__");
   const [dayFilter,  setDayFilter]  = useState(0);
-  const [normKey,    setNormKey]    = useState("");
+  const [normKey,    setNormKey]    = useState("__none__");
 
   const { data: athletes,  isLoading: loadingAthletes, error: athleteError } = useValdAthletes();
   const { data: tests,     isLoading: loadingTests  } = useValdTests(athleteId);
@@ -120,17 +122,17 @@ export default function ValdReportHub() {
 
   const filteredTests = useMemo(() => {
     let t = tests ?? [];
-    if (typeFilter) t = t.filter(x => x.type === typeFilter);
+    if (typeFilter && typeFilter !== "__all__") t = t.filter(x => x.type === typeFilter);
     if (dayFilter)  t = t.filter(x => x.date >= format(subDays(new Date(), dayFilter), "yyyy-MM-dd"));
     return t;
   }, [tests, typeFilter, dayFilter]);
 
-  const norm = normKey ? NORMS[normKey] : null;
+  const norm = normKey && normKey !== "__none__" ? NORMS[normKey] : null;
 
   const handleAthleteChange = (id: string) => {
     setAthleteId(id);
     setTestId(null);
-    setTypeFilter("");
+    setTypeFilter("__all__");
   };
 
   return (
@@ -159,18 +161,18 @@ export default function ValdReportHub() {
             <SelectValue placeholder="All test types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All test types</SelectItem>
+            <SelectItem value="__all__">All test types</SelectItem>
             {testTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
 
         {/* Date range */}
-        <Select value={String(dayFilter)} onValueChange={v => setDayFilter(Number(v))} disabled={!athleteId}>
+        <Select value={dayFilter === 0 ? "__all_dates__" : String(dayFilter)} onValueChange={v => setDayFilter(v === "__all_dates__" ? 0 : Number(v))} disabled={!athleteId}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All dates" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">All dates</SelectItem>
+            <SelectItem value="__all_dates__">All dates</SelectItem>
             <SelectItem value="30">Last 30 days</SelectItem>
             <SelectItem value="90">Last 3 months</SelectItem>
             <SelectItem value="180">Last 6 months</SelectItem>
@@ -184,7 +186,7 @@ export default function ValdReportHub() {
             <SelectValue placeholder="No normative comparison" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No comparison</SelectItem>
+            <SelectItem value="__none__">No comparison</SelectItem>
             <SelectGroup><SelectLabel>General</SelectLabel>
               <SelectItem value="general_male">General Athletic — Male</SelectItem>
               <SelectItem value="general_female">General Athletic — Female</SelectItem>
