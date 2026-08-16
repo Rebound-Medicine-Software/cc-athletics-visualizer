@@ -104,7 +104,7 @@ async function handleAthletes(tenantId: string) {
   const data = await valdFetch("profile", `/profiles?TenantId=${tenantId}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.profiles ?? data.data ?? []) as Record<string, unknown>[]);
   const athletes = list.map((a) => ({
-    id: a.id, number: a.externalId ?? "",
+    id: a.id ?? a.profileId ?? "", number: a.externalId ?? "",
     name: `${a.givenName ?? ""} ${a.familyName ?? ""}`.trim(),
     givenName: a.givenName ?? "", familyName: a.familyName ?? "",
     dob: a.dateOfBirth ?? "", sex: a.sex ?? "",
