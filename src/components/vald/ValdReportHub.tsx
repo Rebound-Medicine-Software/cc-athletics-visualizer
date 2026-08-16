@@ -161,18 +161,18 @@ export default function ValdReportHub() {
             <SelectValue placeholder="All test types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All test types</SelectItem>
+            <SelectItem value="__all__">All test types</SelectItem>
             {testTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
 
         {/* Date range */}
-        <Select value={String(dayFilter)} onValueChange={v => setDayFilter(Number(v))} disabled={!athleteId}>
+        <Select value={dayFilter === 0 ? "__all_dates__" : String(dayFilter)} onValueChange={v => setDayFilter(v === "__all_dates__" ? 0 : Number(v))} disabled={!athleteId}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All dates" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">All dates</SelectItem>
+            <SelectItem value="__all_dates__">All dates</SelectItem>
             <SelectItem value="30">Last 30 days</SelectItem>
             <SelectItem value="90">Last 3 months</SelectItem>
             <SelectItem value="180">Last 6 months</SelectItem>
@@ -186,7 +186,7 @@ export default function ValdReportHub() {
             <SelectValue placeholder="No normative comparison" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No comparison</SelectItem>
+            <SelectItem value="__none__">No comparison</SelectItem>
             <SelectGroup><SelectLabel>General</SelectLabel>
               <SelectItem value="general_male">General Athletic — Male</SelectItem>
               <SelectItem value="general_female">General Athletic — Female</SelectItem>
