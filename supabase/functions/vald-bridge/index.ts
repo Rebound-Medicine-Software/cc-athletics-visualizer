@@ -101,7 +101,7 @@ function getMetric(results: ValdResult[], key: string, limb?: string): number | 
 }
 
 async function handleAthletes(tenantId: string) {
-  const data = await valdFetch(`/profiles/v2023q2/profiles?tenantId=${tenantId}`) as Record<string, unknown>;
+  const data = await valdFetch("profile", `/profiles?TenantId=${tenantId}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.profiles ?? data.data ?? []) as Record<string, unknown>[]);
   const athletes = list.map((a) => ({
     id: a.id, number: a.externalId ?? "",
@@ -114,7 +114,7 @@ async function handleAthletes(tenantId: string) {
 }
 
 async function handleTests(tenantId: string, athleteId: string) {
-  const data = await valdFetch(`/forcedecks/v2022q2/teams/${tenantId}/tests?profileId=${athleteId}&pageSize=100`) as Record<string, unknown>;
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?athleteId=${athleteId}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.tests ?? data.data ?? []) as Record<string, unknown>[]);
   const tests = list.map((t) => {
     const results = (t.results ?? []) as ValdResult[];
@@ -139,7 +139,7 @@ async function handleTests(tenantId: string, athleteId: string) {
 }
 
 async function handleDetail(tenantId: string, testId: string) {
-  const data = await valdFetch(`/forcedecks/v2022q2/teams/${tenantId}/tests/${testId}/trials`) as Record<string, unknown>;
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests/${testId}/trials`) as Record<string, unknown>;
   const trials = Array.isArray(data) ? data : ((data.trials ?? data.data ?? [data]) as Record<string, unknown>[]);
   const best = (trials[0] ?? {}) as Record<string, unknown>;
   const res = (best.results ?? []) as ValdResult[];
