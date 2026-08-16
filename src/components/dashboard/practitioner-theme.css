@@ -1,0 +1,173 @@
+/*
+ * Scoped practitioner / organisation dashboard theme.
+ * Applies ONLY inside `.practitioner-shell` (the practitioner dashboard layout wrapper).
+ * Does not touch global tokens, athlete-facing UI, or public/auth pages.
+ */
+
+.practitioner-shell {
+  /* Surfaces */
+  --pr-canvas: 220 20% 97%;
+  --pr-card: 0 0% 100%;
+  --pr-border: 220 16% 91%;
+
+  /* Type */
+  --pr-fg: 224 24% 14%;
+  --pr-fg-muted: 220 10% 46%;
+  --pr-fg-dim: 220 9% 62%;
+
+  /* Accent */
+  --pr-accent: 244 75% 58%;
+  --pr-accent-strong: 244 68% 48%;
+  --pr-accent-soft: 244 80% 96%;
+
+  /* Sidebar (dark near-black) */
+  --pr-sidebar: 225 16% 11%;
+  --pr-sidebar-2: 225 15% 15%;
+  --pr-sidebar-fg: 220 18% 92%;
+  --pr-sidebar-fg-dim: 220 10% 62%;
+  --pr-sidebar-border: 225 12% 20%;
+
+  /* Status */
+  --pr-positive: 152 62% 40%;
+  --pr-positive-soft: 152 60% 94%;
+  --pr-pending: 38 92% 48%;
+  --pr-pending-soft: 40 95% 94%;
+  --pr-negative: 0 72% 52%;
+  --pr-negative-soft: 0 85% 96%;
+
+  /* Shape + elevation */
+  --pr-radius: 18px;
+  --pr-radius-sm: 12px;
+  --pr-shadow: 0 1px 2px hsl(224 24% 14% / 0.04), 0 8px 24px -12px hsl(224 24% 14% / 0.12);
+  --pr-shadow-lg: 0 2px 4px hsl(224 24% 14% / 0.04), 0 18px 40px -18px hsl(224 24% 14% / 0.18);
+
+  background: hsl(var(--pr-canvas));
+  color: hsl(var(--pr-fg));
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Header ---------- */
+.practitioner-shell .pr-header {
+  background: hsl(var(--pr-card) / 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid hsl(var(--pr-border));
+  box-shadow: 0 1px 0 hsl(var(--pr-border) / 0.6);
+}
+
+.practitioner-shell .pr-header-title {
+  color: hsl(var(--pr-fg));
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.practitioner-shell .pr-header-sub,
+.practitioner-shell .pr-crumb {
+  color: hsl(var(--pr-fg-muted));
+}
+
+.practitioner-shell .pr-crumb-current {
+  color: hsl(var(--pr-accent));
+  font-weight: 600;
+}
+
+.practitioner-shell .pr-header-btn {
+  border-radius: 999px;
+  border: 1px solid hsl(var(--pr-border));
+  background: hsl(var(--pr-card));
+  color: hsl(var(--pr-fg-muted));
+  transition: all 0.16s ease;
+}
+.practitioner-shell .pr-header-btn:hover {
+  border-color: hsl(var(--pr-accent) / 0.4);
+  background: hsl(var(--pr-accent-soft));
+  color: hsl(var(--pr-accent-strong));
+}
+
+.practitioner-shell .pr-header-btn-primary {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: hsl(var(--pr-accent));
+  color: hsl(0 0% 100%);
+  box-shadow: 0 6px 16px -8px hsl(var(--pr-accent) / 0.7);
+  transition: all 0.16s ease;
+}
+.practitioner-shell .pr-header-btn-primary:hover {
+  background: hsl(var(--pr-accent-strong));
+  color: hsl(0 0% 100%);
+}
+
+/* ---------- Sidebar ---------- */
+.practitioner-shell .pr-sidebar {
+  background: hsl(var(--pr-sidebar));
+  border: 1px solid hsl(var(--pr-sidebar-border));
+  border-radius: var(--pr-radius);
+  box-shadow: var(--pr-shadow-lg);
+  color: hsl(var(--pr-sidebar-fg));
+  overflow: hidden;
+}
+
+.practitioner-shell .pr-sidebar-brand {
+  color: hsl(var(--pr-sidebar-fg));
+}
+.practitioner-shell .pr-sidebar-brand-sub {
+  color: hsl(var(--pr-sidebar-fg-dim));
+}
+
+.practitioner-shell .pr-sidebar-group-label {
+  color: hsl(var(--pr-sidebar-fg-dim));
+  letter-spacing: 0.12em;
+}
+
+.practitioner-shell .pr-sidebar-divider {
+  border-color: hsl(var(--pr-sidebar-border));
+}
+
+.practitioner-shell .pr-nav-item {
+  border-radius: var(--pr-radius-sm);
+  color: hsl(var(--pr-sidebar-fg-dim));
+  transition: color 0.16s ease, background-color 0.16s ease;
+}
+.practitioner-shell .pr-nav-item:hover {
+  background: hsl(var(--pr-sidebar-2));
+  color: hsl(var(--pr-sidebar-fg));
+}
+.practitioner-shell .pr-nav-item.is-active,
+.practitioner-shell .pr-nav-item.is-active:hover {
+  background: transparent;
+  color: hsl(0 0% 100%);
+}
+
+.practitioner-shell .pr-nav-pill {
+  border-radius: var(--pr-radius-sm);
+  background: hsl(var(--pr-accent));
+  box-shadow: 0 8px 20px -10px hsl(var(--pr-accent) / 0.9);
+}
+
+.practitioner-shell .pr-nav-sub {
+  color: hsl(var(--pr-sidebar-fg-dim));
+}
+.practitioner-shell .pr-nav-item.is-active .pr-nav-sub {
+  color: hsl(0 0% 100% / 0.75);
+}
+
+.practitioner-shell .pr-sidebar-toggle {
+  color: hsl(var(--pr-sidebar-fg-dim));
+  border-radius: 10px;
+}
+.practitioner-shell .pr-sidebar-toggle:hover {
+  background: hsl(var(--pr-sidebar-2));
+  color: hsl(var(--pr-sidebar-fg));
+}
+
+.practitioner-shell .pr-signout {
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid hsl(var(--pr-sidebar-border));
+  color: hsl(var(--pr-sidebar-fg-dim));
+}
+.practitioner-shell .pr-signout:hover {
+  background: hsl(var(--pr-negative) / 0.14);
+  border-color: hsl(var(--pr-negative) / 0.5);
+  color: hsl(0 80% 76%);
+}
