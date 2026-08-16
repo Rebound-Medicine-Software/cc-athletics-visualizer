@@ -44,14 +44,7 @@ export const DashboardHeader = ({
     current?.description ?? "Professional athlete performance analysis";
 
   return (
-    <div
-      className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-50"
-      style={{
-        background: "rgba(255,255,255,0.98)",
-        backdropFilter: "blur(4px)",
-        boxShadow: "0 4px 12px 0 rgba(0,0,0,0.03)",
-      }}
-    >
+    <div className="pr-header sticky top-0 z-50">
       <div className="w-full px-3 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between min-w-0 gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -70,14 +63,19 @@ export const DashboardHeader = ({
               <img
                 src={teamBranding.logo_url}
                 alt="Organization Logo"
-                className="w-9 h-9 rounded object-cover shrink-0 hidden sm:block"
+                className="w-10 h-10 rounded-xl object-cover shrink-0 hidden sm:block"
               />
             ) : (
-              <Activity className="w-8 h-8 shrink-0 text-primary hidden sm:block" />
+              <div
+                className="w-10 h-10 rounded-xl items-center justify-center shrink-0 hidden sm:flex"
+                style={{ background: 'hsl(var(--pr-accent-soft))' }}
+              >
+                <Activity className="w-5 h-5" style={{ color: 'hsl(var(--pr-accent))' }} />
+              </div>
             )}
             <div className="min-w-0">
               {/* Breadcrumb */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="pr-crumb flex items-center gap-1 text-xs">
                 <span className="truncate max-w-[180px]">
                   {teamBranding?.name || "Organization"}
                 </span>
@@ -88,14 +86,14 @@ export const DashboardHeader = ({
                   </>
                 )}
                 <ChevronRight className="w-3 h-3" />
-                <span className="truncate font-medium text-foreground">
+                <span className="pr-crumb-current truncate">
                   {sectionLabel}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold truncate text-primary leading-tight">
+              <h1 className="pr-header-title text-xl sm:text-2xl truncate leading-tight">
                 {sectionLabel}
               </h1>
-              <p className="text-xs sm:text-sm truncate text-muted-foreground">
+              <p className="pr-header-sub text-xs sm:text-sm truncate">
                 {sectionDescription}
               </p>
             </div>
@@ -107,7 +105,7 @@ export const DashboardHeader = ({
                 variant="outline"
                 onClick={handleResetFilters}
                 size="sm"
-                className="border-accent text-accent hover:bg-accent/10 hidden md:inline-flex"
+                className="pr-header-btn hidden md:inline-flex"
               >
                 <RotateCw className="w-4 h-4 mr-2" />
                 Reset Filters
@@ -117,7 +115,7 @@ export const DashboardHeader = ({
               variant="outline"
               size="sm"
               onClick={() => window.dispatchEvent(new Event("nh:open-command-palette"))}
-              className="border-muted-foreground/30 text-muted-foreground hover:bg-muted/40 hidden md:inline-flex"
+              className="pr-header-btn hidden md:inline-flex"
               aria-label="Open command palette"
             >
               <Search className="w-4 h-4 mr-2" />
@@ -130,7 +128,7 @@ export const DashboardHeader = ({
               variant="outline"
               onClick={handleRefresh}
               size="sm"
-              className="border-primary text-primary hover:bg-primary/10"
+              className="pr-header-btn-primary"
               aria-label="Refresh data"
             >
               <RefreshCw className="w-4 h-4 sm:mr-2" />
@@ -140,6 +138,11 @@ export const DashboardHeader = ({
             {showSendReports && <SendReportsModal />}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
       </div>
     </div>
   );
