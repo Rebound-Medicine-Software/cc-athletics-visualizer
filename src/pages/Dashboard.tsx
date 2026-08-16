@@ -10,6 +10,8 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { DashboardSkeleton } from "@/components/dashboard/skeletons";
+import "@/components/dashboard/practitioner-theme.css";
+
 import {
   Activity,
   LogOut,
@@ -173,7 +175,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <div className="practitioner-shell min-h-screen">
         <div className="w-full max-w-7xl mx-auto px-6 pt-10 pb-12">
           <DashboardSkeleton />
         </div>
@@ -182,7 +184,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+    <div className="practitioner-shell min-h-screen">
       {/* Persistent dashboard header across all sections */}
       <DashboardHeader
         handleRefresh={handleRefresh}
