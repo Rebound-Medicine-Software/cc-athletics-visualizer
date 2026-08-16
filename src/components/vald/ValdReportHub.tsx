@@ -30,7 +30,7 @@ import {
 // ── Normative data (22 sport populations) ────────────────────────────
 // Sources: McMahon et al. (2022) Salford UK; Haugen et al. (2020); VALD EFL 2025
 
-interface NormBand { p10: number; p25: number; p50: number; p75: number; p90: number }
+interface NormBand { p10?: number; p25: number; p50: number; p75: number; p90?: number }
 interface NormEntry { label: string; cmjH: NormBand; rsi: NormBand; djH?: NormBand }
 
 const NORMS: Record<string, NormEntry> = {
@@ -63,8 +63,10 @@ const NORMS: Record<string, NormEntry> = {
 // ── Normative bar component ──────────────────────────────────────────────────────
 
 function NormBar({ label, value, band }: { label: string; value: number | null; band: NormBand }) {
-  const range = band.p90 - band.p10;
-  const pct = (v: number) => Math.min(100, Math.max(0, ((v - band.p10) / range) * 100));
+  const min = band.p10 ?? band.p25 - (band.p75 - band.p25) * 0.5;
+  const max = band.p90 ?? band.p75 + (band.p75 - band.p25) * 0.5;
+  const range = max - min;
+  const pct = (v: number) => Math.min(100, Math.max(0, ((v - min) / range) * 100));
   const status = value == null ? null : value < band.p25 ? "below" : value > band.p75 ? "above" : "ok";
 
   return (
@@ -76,7 +78,7 @@ function NormBar({ label, value, band }: { label: string; value: number | null; 
           {status === "below" && <span className="text-xs text-red-500">Below P25</span>}
           {status === "above" && <span className="text-xs text-green-600">Above P75</span>}
           {status === "ok"    && <span className="text-xs text-teal-600">P25–P75</span>}
-          <span className="text-xs text-muted-foreground">P50: {band.p50} | {band.p10}–{band.p90}</span>
+          <span className="text-xs text-muted-foreground">P50: {band.p50} | {min.toFixed(2)}–{max.toFixed(2)}</span>
         </div>
       </div>
       <div className="relative h-3 bg-slate-100 rounded-full overflow-visible">
