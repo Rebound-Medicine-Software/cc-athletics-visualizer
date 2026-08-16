@@ -14,6 +14,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ClientDashboard from "./pages/ClientDashboard";
+import ValdHub from "./pages/ValdHub";
 import ControlCentre from "./components/control-centre/ControlCentre";
 
 import NotFound from "./pages/NotFound";
