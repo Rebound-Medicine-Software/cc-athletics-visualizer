@@ -189,7 +189,7 @@ serve(async (req: Request) => {
       case "tests": {
         const athleteId = url.searchParams.get("athleteId") ?? "";
         if (!athleteId) throw new Error("athleteId query param required");
-        payload = await handleTests(tenantId, athleteId); break;
+        payload = await handleTests(tenantId, athleteId, url.searchParams.get("modifiedFrom") ?? undefined); break;
       }
       case "detail": {
         const testId = url.searchParams.get("testId") ?? "";
