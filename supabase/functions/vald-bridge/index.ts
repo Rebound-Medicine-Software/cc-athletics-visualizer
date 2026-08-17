@@ -1,40 +1,43 @@
 /**
- * NEXUS HUB — VALD Bridge Edge Function
- * ─────────────────────────────────────────────────────────────────
- * Single edge function handling all VALD API calls.
- * Credentials live as Supabase Secrets, never in source code.
+ * NEXUS HUB — VALD Bridge Edge Function v3
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Built from VALD official API documentation (support.vald.com):
+ *   · How to integrate with VALD APIs
+ *   · A guide to using the External Profiles API
+ *   · A guide to using the External ForceDecks API
  *
- * Routes (via `action` query param):
- *   GET  ?action=athletes                       → list all athletes in tenant
- *   GET  ?action=tests&athleteId=<id>           → test sessions for one athlete
- *   GET  ?action=detail&testId=<id>             → full metrics for one test
+ * ARCHITECTURE
+ *   Auth        → https://auth.prd.vald.com/oauth/token  (audience: vald-api-external)
+ *   Profiles    → https://prd-{r}-api-externalprofile.valdperformance.com
+ *   ForceDecks  → https://prd-{r}-api-extforcedecks.valdperformance.com
  *
- * Setup — run once in your terminal:
- *   supabase secrets set VALD_CLIENT_ID=your_client_id
- *   supabase secrets set VALD_CLIENT_SECRET=your_client_secret
- *   supabase secrets set VALD_TENANT_ID=your_tenant_id
- *   supabase secrets set VALD_REGION=eu
+ * ENDPOINTS
+ *   Athletes : GET /profiles?tenantId=X
+ *   Tests    : GET /tests?tenantId=X&modifiedFromUtc=Y&profileId=Z
+ *              (falls back to /v2019q3/teams/{tenantId}/tests?athleteId=Z&modifiedFrom=Y)
+ *   Detail   : GET /v2019q3/teams/{tenantId}/tests/{testId}/trials
  *
- * Deploy:
- *   supabase functions deploy vald-bridge
+ * NOTES
+ *   - /tests is primarily metadata; when metric results are present they are mapped too
+ *     so the existing report hub keeps working.
+ *   - Metric values: value × definition.resultUnitScaleFactor = display unit.
+ *   - modifiedFromUtc is REQUIRED on /tests.
+ *   - VALD returns 204 with an empty body when there are no results.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// ── CORS headers ───────────────────────────────────────────────────────────────
-const corsHeaders = {
+// ── CORS ──────────────────────────────────────────────────────────────────────
+
+const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-// ── Config ─────────────────────────────────────────────────────────────────────
-// VALD migrated external API auth to Auth0 in March 2026. The legacy
-// security.valdperformance.com/connect/token host no longer resolves.
-const AUTH_URL = "https://auth.prd.vald.com/oauth/token";
-const AUTH_AUDIENCE = "vald-api-external";
+// ── REGIONAL BASE URLS ────────────────────────────────────────────────────────
+// VALD_REGION accepts short codes (eu/us/au) or raw region codes (euw/use/aue).
 
-// VALD_REGION accepts either short codes (eu/us/au) or raw region codes (euw/use/aue).
 const REGION_ALIASES: Record<string, string> = { eu: "euw", us: "use", au: "aue" };
 
 function regionCode(): string {
@@ -42,174 +45,371 @@ function regionCode(): string {
   return REGION_ALIASES[raw] ?? raw;
 }
 
-function serviceHost(service: "profile" | "forcedecks" | "tenants"): string {
-  const r = regionCode();
-  const suffix =
-    service === "profile" ? "externalprofile"
-    : service === "forcedecks" ? "extforcedecks"
-    : "externaltenants";
-  return `https://prd-${r}-api-${suffix}.valdperformance.com`;
+function profilesBase(): string {
+  return `https://prd-${regionCode()}-api-externalprofile.valdperformance.com`;
 }
 
-let cachedToken: string | null = null;
-let tokenExpiry = 0;
+function forcedecksBase(): string {
+  return `https://prd-${regionCode()}-api-extforcedecks.valdperformance.com`;
+}
+
+// ── AUTH ──────────────────────────────────────────────────────────────────────
+
+let _token = "";
+let _expiry = 0;
 
 async function getToken(): Promise<string> {
-  if (cachedToken && Date.now() < tokenExpiry) return cachedToken;
+  if (_token && Date.now() < _expiry) return _token;
+
   const clientId = Deno.env.get("VALD_CLIENT_ID") ?? "";
   const clientSecret = Deno.env.get("VALD_CLIENT_SECRET") ?? "";
-  if (!clientId || !clientSecret) throw new Error("VALD_CLIENT_ID and VALD_CLIENT_SECRET must be set as Supabase Secrets");
-  const res = await fetch(AUTH_URL, {
+  if (!clientId || !clientSecret) {
+    throw new Error("VALD_CLIENT_ID and VALD_CLIENT_SECRET Supabase Secrets are not set");
+  }
+
+  const res = await fetch("https://auth.prd.vald.com/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "client_credentials",
       client_id: clientId,
       client_secret: clientSecret,
-      audience: AUTH_AUDIENCE,
+      audience: "vald-api-external", // REQUIRED — missing = auth failure
     }),
   });
+
   if (!res.ok) throw new Error(`VALD auth failed (${res.status}): ${await res.text()}`);
+
   const data = await res.json();
-  cachedToken = data.access_token as string;
-  tokenExpiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
-  return cachedToken;
+  _token = data.access_token as string;
+  _expiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
+  return _token;
 }
 
-async function valdFetch(service: "profile" | "forcedecks" | "tenants", path: string): Promise<unknown> {
+// ── HTTP HELPER ───────────────────────────────────────────────────────────────
+
+async function get(url: string): Promise<{ status: number; body: unknown }> {
   const token = await getToken();
-  const res = await fetch(`${serviceHost(service)}${path}`, {
+  const res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
-  if (!res.ok) throw new Error(`VALD API ${res.status} at ${path}: ${await res.text()}`);
-  // VALD returns 204 No Content (empty body) when a query matches no records.
-  if (res.status === 204) return [];
+
+  if (res.status === 204) return { status: 204, body: null };
+  if (!res.ok) throw new Error(`VALD API ${res.status} at ${url}: ${await res.text()}`);
+
   const text = await res.text();
-  if (!text.trim()) return [];
+  if (!text.trim()) return { status: res.status, body: null };
   try {
-    return JSON.parse(text);
+    return { status: res.status, body: JSON.parse(text) };
   } catch {
-    throw new Error(`VALD API returned non-JSON at ${path}: ${text.slice(0, 200)}`);
+    throw new Error(`VALD API returned non-JSON at ${url}: ${text.slice(0, 200)}`);
   }
 }
 
+// ── METRIC EXTRACTION ─────────────────────────────────────────────────────────
+// definition.result is the metric string ID; limb: Both | Left | Right | Trial | Asym
+
+interface ValdResultDef {
+  result?: string;
+  name?: string;
+  unit?: string;
+  resultUnitScaleFactor?: number;
+}
 
 interface ValdResult {
-  result?: string;
-  definition?: { result?: string };
+  resultId?: number;
   value: number;
-  resultUnitScaleFactor?: number;
   limb?: string;
+  repeat?: number;
+  result?: string;
+  resultUnitScaleFactor?: number;
+  definition?: ValdResultDef;
 }
 
-function getMetric(results: ValdResult[], key: string, limb?: string): number | null {
-  const r = results.find((m) => (m.result ?? m.definition?.result ?? "") === key && (!limb || m.limb === limb));
-  if (!r) return null;
-  return Math.round(r.value * (r.resultUnitScaleFactor ?? 1) * 100) / 100;
+function resultId(r: ValdResult): string {
+  return r.definition?.result ?? r.result ?? String(r.resultId ?? "UNKNOWN");
 }
 
-async function handleAthletes(tenantId: string) {
-  const data = await valdFetch("profile", `/profiles?TenantId=${tenantId}`) as Record<string, unknown>;
-  const list = Array.isArray(data) ? data : ((data.profiles ?? data.data ?? []) as Record<string, unknown>[]);
-  const athletes = list.map((a) => ({
-    id: a.id ?? a.profileId ?? "", number: a.externalId ?? "",
-    name: `${a.givenName ?? ""} ${a.familyName ?? ""}`.trim(),
-    givenName: a.givenName ?? "", familyName: a.familyName ?? "",
-    dob: a.dateOfBirth ?? "", sex: a.sex ?? "",
-    teams: ((a.teams as { name: string }[]) ?? []).map((t) => t.name).join(", "),
-  })).sort((a, b) => a.name.localeCompare(b.name));
-  return { athletes, count: athletes.length };
+function scale(r: ValdResult): number {
+  return r.definition?.resultUnitScaleFactor ?? r.resultUnitScaleFactor ?? 1;
 }
 
-async function handleTests(tenantId: string, athleteId: string, modifiedFromIso?: string) {
-  // ForceDecks /tests requires modifiedFrom. Default to a 10-year lookback so all history is returned.
-  const from = new Date();
-  from.setFullYear(from.getFullYear() - 10);
-  const modifiedFrom = modifiedFromIso && !Number.isNaN(Date.parse(modifiedFromIso))
-    ? new Date(modifiedFromIso).toISOString()
-    : from.toISOString();
-  const params = new URLSearchParams({ athleteId, modifiedFrom });
-  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?${params}`) as Record<string, unknown>;
-  const list = Array.isArray(data) ? data : ((data.tests ?? data.data ?? []) as Record<string, unknown>[]);
-  const tests = list.map((t) => {
-    const results = (t.results ?? []) as ValdResult[];
-    return {
-      id: t.id,
-      date: typeof t.recordedUTC === "string" ? t.recordedUTC.slice(0, 10) : "",
-      type: t.testType ?? t.type ?? "Unknown",
-      cmjH: getMetric(results, "JMP_HEIGHT_IMP_MOM", "Both"),
-      cmjHL: getMetric(results, "JMP_HEIGHT_IMP_MOM", "Left"),
-      cmjHR: getMetric(results, "JMP_HEIGHT_IMP_MOM", "Right"),
-      cmjRSI: getMetric(results, "RSI_MODIFIED", "Both"),
-      cmjPP: getMetric(results, "PEAK_PROPULSIVE_PWR", "Both"),
-      cmjAsym: getMetric(results, "ASYM_INDEX", "Both"),
-      djH: getMetric(results, "JMP_HEIGHT_FLIGHT_TIME", "Both"),
-      djRSI: getMetric(results, "REACTIVE_STR_IDX", "Both"),
-      djCT: getMetric(results, "CONTRACTION_TIME", "Both"),
-      pjH: getMetric(results, "JMP_HEIGHT_FLIGHT_TIME", "Both"),
-      pjRSI: getMetric(results, "RSI_MODIFIED", "Both"),
-    };
-  }).sort((a, b) => b.date.localeCompare(a.date));
-  return { tests, count: tests.length };
+/**
+ * Look up a metric by string ID.
+ * ForceDecks reports bilateral values with limb "Trial" (and sometimes "Both"),
+ * so bilateral lookups accept either.
+ */
+function metric(results: ValdResult[], id: string, limb = "Both"): number | null {
+  const limbs = limb === "Both" ? ["Both", "Trial"] : [limb];
+  for (const l of limbs) {
+    const r = results.find((m) => resultId(m) === id && (m.limb ?? "Both") === l);
+    if (r) return Math.round(r.value * scale(r) * 100) / 100;
+  }
+  return null;
 }
 
-async function handleDetail(tenantId: string, testId: string) {
-  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests/${testId}/trials`) as Record<string, unknown>;
-  const trials = Array.isArray(data) ? data : ((data.trials ?? data.data ?? [data]) as Record<string, unknown>[]);
-  const best = (trials[0] ?? {}) as Record<string, unknown>;
-  const res = (best.results ?? []) as ValdResult[];
-  const raw: Record<string, number> = {};
-  res.forEach((m) => { const k = `${m.result ?? m.definition?.result ?? "UNKNOWN"}_${m.limb ?? "Both"}`; raw[k] = Math.round(m.value * (m.resultUnitScaleFactor ?? 1) * 100) / 100; });
+/** First non-null metric across a list of candidate IDs. */
+function firstMetric(results: ValdResult[], ids: string[], limb = "Both"): number | null {
+  for (const id of ids) {
+    const v = metric(results, id, limb);
+    if (v != null) return v;
+  }
+  return null;
+}
+
+function allMetrics(results: ValdResult[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  results.forEach((r) => {
+    map[`${resultId(r)}_${r.limb ?? "Both"}`] = Math.round(r.value * scale(r) * 100) / 100;
+  });
+  return map;
+}
+
+// Metric string IDs verified against live /trials responses.
+const ID_HEIGHT = ["JUMP_HEIGHT_IMP_MOM", "JUMP_HEIGHT", "IMPULSE_JUMP_HEIGHT"];
+const ID_RSI_MOD = ["RSI_MODIFIED", "RSI_MODIFIED_IMP_MOM"];
+const ID_RSI = ["RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
+const ID_PEAK_POWER = ["PEAK_TAKEOFF_POWER", "PEAK_PROPULSIVE_POWER", "PEAK_PROPULSIVE_PWR"];
+const ID_CONTACT = ["GROUND_CONTACT_TIME", "CONTRACTION_TIME"];
+
+/** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
+function flatMetrics(results: ValdResult[]) {
   return {
-    trialCount: trials.length, raw,
-    cmjH: getMetric(res, "JMP_HEIGHT_IMP_MOM", "Both"),
-    cmjHL: getMetric(res, "JMP_HEIGHT_IMP_MOM", "Left"),
-    cmjHR: getMetric(res, "JMP_HEIGHT_IMP_MOM", "Right"),
-    cmjRSI: getMetric(res, "RSI_MODIFIED", "Both"),
-    cmjPP: getMetric(res, "PEAK_PROPULSIVE_PWR", "Both"),
-    cmjAsym: getMetric(res, "ASYM_INDEX", "Both"),
-    djH: getMetric(res, "JMP_HEIGHT_FLIGHT_TIME", "Both"),
-    djRSI: getMetric(res, "REACTIVE_STR_IDX", "Both"),
-    djCT: getMetric(res, "CONTRACTION_TIME", "Both"),
-    djL: getMetric(res, "PEAK_LANDING_FORCE", "Left"),
-    djR: getMetric(res, "PEAK_LANDING_FORCE", "Right"),
-    djAsym: getMetric(res, "ASYM_INDEX", "Both"),
-    pjH: getMetric(res, "JMP_HEIGHT_FLIGHT_TIME", "Both"),
-    pjRSI: getMetric(res, "RSI_MODIFIED", "Both"),
-    pjCT: getMetric(res, "CONTRACTION_TIME", "Both"),
-    solL: getMetric(res, "PEAK_FORCE", "Left"),
-    solR: getMetric(res, "PEAK_FORCE", "Right"),
-    gasL: getMetric(res, "FORCE_250MS", "Left"),
-    gasR: getMetric(res, "FORCE_250MS", "Right"),
+    cmjH: firstMetric(results, ID_HEIGHT, "Both"),
+    cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
+    cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
+    cmjRSI: firstMetric(results, ID_RSI_MOD, "Both"),
+    cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
+    cmjAsym:
+      firstMetric(results, ID_HEIGHT, "Asym") ??
+      metric(results, "PEAK_TAKEOFF_FORCE", "Asym") ??
+      metric(results, "ASYM_INDEX", "Both"),
+    djH: firstMetric(results, ID_HEIGHT, "Both"),
+    djRSI: firstMetric(results, ID_RSI, "Both") ?? firstMetric(results, ID_RSI_MOD, "Both"),
+    djCT: firstMetric(results, ID_CONTACT, "Both"),
+    pjH: firstMetric(results, ID_HEIGHT, "Both"),
+    pjRSI: firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both"),
   };
 }
 
+
+// ── HANDLERS ──────────────────────────────────────────────────────────────────
+
+async function handleAthletes(tenantId: string) {
+  const { body } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
+  const list = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>)?.profiles ??
+       (body as Record<string, unknown>)?.data ??
+       [])) as Record<string, unknown>[];
+
+  const athletes = list
+    .map((p) => ({
+      id: p.profileId ?? p.id ?? "",
+      number: p.externalId ?? p.syncId ?? "",
+      name: `${p.givenName ?? ""} ${p.familyName ?? ""}`.trim(),
+      givenName: p.givenName ?? "",
+      familyName: p.familyName ?? "",
+      dob: p.dateOfBirth ?? "",
+      sex: p.sex ?? "",
+      teams: ((p.teams as { name: string }[]) ?? []).map((t) => t.name).join(", "),
+    }))
+    .sort((a, b) => (a.name as string).localeCompare(b.name as string));
+
+  return { athletes, count: athletes.length };
+}
+
+function tenYearsAgoIso(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 10);
+  return d.toISOString();
+}
+
+async function handleTests(tenantId: string, athleteId: string, modifiedFromUtc?: string) {
+  const from =
+    modifiedFromUtc && !Number.isNaN(Date.parse(modifiedFromUtc))
+      ? new Date(modifiedFromUtc).toISOString()
+      : tenYearsAgoIso();
+
+  const base = forcedecksBase();
+
+  // Preferred (documented) endpoint, with fallback to the legacy team-scoped route.
+  const candidates = [
+    `${base}/tests?${new URLSearchParams({ tenantId, modifiedFromUtc: from, profileId: athleteId })}`,
+    `${base}/v2019q3/teams/${tenantId}/tests?${new URLSearchParams({ athleteId, modifiedFrom: from })}`,
+  ];
+
+  let body: unknown = null;
+  let status = 204;
+  let lastErr: unknown = null;
+
+  for (const url of candidates) {
+    try {
+      const res = await get(url);
+      status = res.status;
+      body = res.body;
+      lastErr = null;
+      break;
+    } catch (err) {
+      lastErr = err;
+      console.warn("[vald-bridge] tests endpoint failed, trying fallback:", String(err));
+    }
+  }
+  if (lastErr) throw lastErr;
+
+  if (status === 204 || body == null) return { tests: [], count: 0 };
+
+  const raw = body as Record<string, unknown>;
+  const list = (Array.isArray(body) ? body : (raw.tests ?? raw.data ?? [])) as Record<string, unknown>[];
+
+  const tests = list
+    .map((t) => {
+      const results = (t.results ?? []) as ValdResult[];
+      const recorded = (t.recordedDateUtc ?? t.recordedUTC ?? "") as string;
+      return {
+        id: (t.testId ?? t.id) as string,
+        date: typeof recorded === "string" ? recorded.slice(0, 10) : "",
+        modifiedDate: t.modifiedDateUtc ?? t.modifiedUTC ?? null,
+        type: t.testType ?? t.type ?? "Unknown",
+        profileId: t.profileId ?? athleteId,
+        tenantId: t.tenantId ?? tenantId,
+        recordingId: t.recordingId ?? null,
+        notes: t.notes ?? "",
+        ...flatMetrics(results),
+      };
+    })
+    .sort((a, b) => (b.date as string).localeCompare(a.date as string));
+
+  // /tests is metadata-only. Hydrate metric values from /trials so the report
+  // hub and CC Athletics charts receive populated fields.
+  await hydrateTestMetrics(tenantId, tests);
+
+  return { tests, count: tests.length };
+}
+
+type TestRow = { id: string; cmjH: number | null } & Record<string, unknown>;
+
+const MAX_HYDRATE = 40;
+const HYDRATE_CONCURRENCY = 6;
+
+async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
+  const pending = tests.filter((t) => t.id && t.cmjH == null).slice(0, MAX_HYDRATE);
+
+  for (let i = 0; i < pending.length; i += HYDRATE_CONCURRENCY) {
+    const batch = pending.slice(i, i + HYDRATE_CONCURRENCY);
+    await Promise.all(
+      batch.map(async (t) => {
+        try {
+          const results = await fetchTrialResults(tenantId, t.id);
+          Object.assign(t, flatMetrics(results));
+        } catch (err) {
+          console.warn(`[vald-bridge] trial hydration failed for ${t.id}:`, String(err));
+        }
+      }),
+    );
+  }
+}
+
+async function fetchTrialResults(tenantId: string, testId: string): Promise<ValdResult[]> {
+  const { status, body } = await get(
+    `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
+  );
+  if (status === 204 || body == null) return [];
+  const trials = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
+  return ((trials[0] ?? {}).results ?? []) as ValdResult[];
+}
+
+async function handleDetail(tenantId: string, testId: string) {
+  const { status, body } = await get(
+    `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
+  );
+
+  if (status === 204 || body == null) return { trialCount: 0, raw: {} };
+
+  const trials = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
+
+  const best = (trials[0] ?? {}) as Record<string, unknown>;
+  const results = (best.results ?? []) as ValdResult[];
+
+  return {
+    trialCount: trials.length,
+    limb: best.limb ?? null,
+    raw: allMetrics(results),
+    ...flatMetrics(results),
+
+    // Extended CMJ metrics (IDs verified against live /trials payloads)
+    avgBrakingForce: firstMetric(results, ["MEAN_ECCENTRIC_BRAKING_FORCE", "AVG_BRAKING_FORCE"]),
+    avgPropulsiveForce: firstMetric(results, ["MEAN_TAKEOFF_FORCE", "AVG_PROPULSIVE_FORCE"]),
+    avgBrakingPower: firstMetric(results, ["MEAN_ECCENTRIC_POWER", "AVG_BRAKING_POWER"]),
+    avgPropulsivePower: firstMetric(results, ["MEAN_CONCENTRIC_POWER", "AVG_PROPULSIVE_POWER"]),
+    peakPropForce: firstMetric(results, ["PEAK_TAKEOFF_FORCE", "PEAK_CONCENTRIC_FORCE", "PEAK_PROPULSIVE_FORCE"]),
+    netImpulse: firstMetric(results, ["POSITIVE_TAKEOFF_IMPULSE", "CONCENTRIC_IMPULSE", "NET_IMPULSE"]),
+    brakingDuration: firstMetric(results, ["BRAKING_PHASE_DURATION", "BRAKING_DURATION"]),
+    takeoffVelocity: firstMetric(results, ["TAKEOFF_VELOCITY", "PEAK_TAKEOFF_VELOCITY"]),
+    flightTime: metric(results, "FLIGHT_TIME", "Both"),
+    bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
+
+    // Drop jump limbs
+    djL: metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left"),
+    djR: metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right"),
+    djAsym: firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym"),
+
+    // Pogo
+    pjCT: firstMetric(results, ID_CONTACT, "Both"),
+
+    // Isometric
+    solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
+    solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Right"),
+
+  };
+}
+
+// ── MAIN ──────────────────────────────────────────────────────────────────────
+
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+
   try {
     const url = new URL(req.url);
     const action = url.searchParams.get("action") ?? "athletes";
     const tenantId = Deno.env.get("VALD_TENANT_ID") ?? "";
-    if (!tenantId) throw new Error("VALD_TENANT_ID must be set as a Supabase Secret");
+    if (!tenantId) throw new Error("VALD_TENANT_ID Supabase Secret is not set");
+
     let payload: unknown;
-    switch (action) {
-      case "athletes": payload = await handleAthletes(tenantId); break;
-      case "tests": {
-        const athleteId = url.searchParams.get("athleteId") ?? "";
-        if (!athleteId) throw new Error("athleteId query param required");
-        payload = await handleTests(tenantId, athleteId, url.searchParams.get("modifiedFrom") ?? undefined); break;
-      }
-      case "detail": {
-        const testId = url.searchParams.get("testId") ?? "";
-        if (!testId) throw new Error("testId query param required");
-        payload = await handleDetail(tenantId, testId); break;
-      }
-      default: throw new Error(`Unknown action: ${action}. Use athletes | tests | detail`);
+
+    if (action === "athletes") {
+      payload = await handleAthletes(tenantId);
+    } else if (action === "tests") {
+      const athleteId = url.searchParams.get("athleteId") ?? "";
+      if (!athleteId) throw new Error("athleteId is required");
+      const from =
+        url.searchParams.get("modifiedFromUtc") ??
+        url.searchParams.get("modifiedFrom") ??
+        undefined;
+      payload = await handleTests(tenantId, athleteId, from);
+    } else if (action === "detail") {
+      const testId = url.searchParams.get("testId") ?? "";
+      if (!testId) throw new Error("testId is required");
+      payload = await handleDetail(tenantId, testId);
+    } else {
+      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail`);
     }
-    return new Response(JSON.stringify(payload), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+    return new Response(JSON.stringify(payload), {
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("[vald-bridge]", message);
-    return new Response(JSON.stringify({ error: message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[vald-bridge]", msg);
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
   }
 });
