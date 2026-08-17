@@ -764,24 +764,26 @@ export const SendReportsModal = ({
               )}
             </Button>
 
-            <Button
-              onClick={handleSendViaEmail}
-              disabled={isLoading || !selectedAthlete}
-              className="w-full"
-              variant="outline"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Generate & Send via Email
-                </>
-              )}
-            </Button>
+            {allowEmail && (
+              <Button
+                onClick={handleSendViaEmail}
+                disabled={isLoading || !selectedAthlete}
+                className="w-full"
+                variant="outline"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Generate & Send via Email
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="ghost"
