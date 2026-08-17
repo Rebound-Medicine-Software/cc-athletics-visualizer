@@ -266,15 +266,24 @@ export const SendReportsModal = ({
     );
     const includedTestNames = filteredTestNames.filter((testName) => !excludedTests.includes(testName));
 
+    // Rows actually sent to the generator — same selection, report-flavour values
+    const reportTests = reportSource.filter(
+      (test) =>
+        test.athlete_name === name &&
+        test.team_name === team &&
+        !excludedTests.includes(test.test_name) &&
+        !parentTestsWithOnlySideData.includes(test.test_name),
+    );
+
     return {
       name,
       team,
-      tests: includedTests,
+      tests: reportTests.length > 0 ? reportTests : includedTests,
       allTestNames: filteredTestNames,
       testNames: includedTestNames,
       testCount: includedTests.length,
     };
-  }, [selectedAthlete, testData, excludedTests]);
+  }, [selectedAthlete, testData, reportSource, excludedTests]);
 
   const createPdfBlobUrl = async (reportUrl: string) => {
     const pdfResponse = await fetch(reportUrl);
