@@ -6,6 +6,7 @@ import { useEffectiveTeamId } from "@/lib/impersonation/useEffectiveTeamId";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import ValdReportHub from "@/components/vald/ValdReportHub";
+import ValdCCAnalytics from "@/components/vald/ValdCCAnalytics";
 import { toast } from "sonner";
 import {
   Home,
@@ -199,6 +200,7 @@ const ValdHub = () => {
               <p className="text-sm text-muted-foreground">Force Plate Assessment Reports</p>
             </div>
             <ValdReportHub />
+            <ValdCCAnalytics />
           </div>
         </div>
       </div>
