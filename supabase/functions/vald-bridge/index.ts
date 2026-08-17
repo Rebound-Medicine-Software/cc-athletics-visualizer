@@ -287,7 +287,7 @@ async function handleTests(tenantId: string, athleteId: string, modifiedFromUtc?
   return { tests, count: tests.length };
 }
 
-type TestRow = Awaited<ReturnType<typeof handleTests>>["tests"][number];
+type TestRow = { id: string; cmjH: number | null } & Record<string, unknown>;
 
 const MAX_HYDRATE = 40;
 const HYDRATE_CONCURRENCY = 6;
