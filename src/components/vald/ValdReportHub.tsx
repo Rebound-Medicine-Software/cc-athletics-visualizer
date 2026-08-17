@@ -249,7 +249,7 @@ export default function ValdReportHub() {
       {athleteError && (
         <Alert variant="destructive">
           <AlertDescription>
-            Could not connect to VALD API. Check the <code>vald-bridge</code> edge function is deployed and Supabase Secrets are set.
+            VALD is temporarily unavailable. Wait a minute and refresh to reconnect; the rest of the hub remains available.
           </AlertDescription>
         </Alert>
       )}
