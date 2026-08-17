@@ -113,7 +113,26 @@ const PdfPreviewContent = ({ fileUrl }: { fileUrl: string }) => {
   );
 };
 
-export const SendReportsModal = () => {
+export interface SendReportsModalProps {
+  /** Rows used for team/athlete/test selection. Defaults to CC Athletics data. */
+  data?: any[];
+  /** Rows sent to the report generator (metres / seconds flavour). Defaults to `data`. */
+  reportData?: any[];
+  triggerLabel?: string;
+  description?: string;
+  /** Hide the email action for sources without linked athlete records (e.g. VALD). */
+  allowEmail?: boolean;
+  sourceLabel?: string;
+}
+
+export const SendReportsModal = ({
+  data: injectedData,
+  reportData: injectedReportData,
+  triggerLabel = "Send Reports",
+  description,
+  allowEmail = true,
+  sourceLabel,
+}: SendReportsModalProps = {}) => {
   const { teamBranding } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -125,7 +144,10 @@ export const SendReportsModal = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("");
 
-  const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
+  const { data: ccData = [], isLoading: ccLoading } = useSupabaseData();
+  const testData = injectedData ?? ccData;
+  const dataLoading = injectedData ? false : ccLoading;
+  const reportSource = injectedReportData ?? injectedData ?? ccData;
 
   const [athleteIdByKey, setAthleteIdByKey] = useState<Record<string, string>>({});
   const [mappingLoading, setMappingLoading] = useState(false);
