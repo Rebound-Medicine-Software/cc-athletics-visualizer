@@ -7,7 +7,7 @@
  *   const { data: detail }   = useValdTestDetail(testId)
  */
 
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export class ValdBridgeError extends Error {
@@ -171,4 +171,70 @@ export function useValdTestDetails(testIds: string[], max = 25) {
   });
 
   return { details: query.data ?? [], isLoading: query.isLoading };
+}
+
+/**
+ * Tests + hydrated details for several VALD athletes at once.
+ * Powers the VALD Hub analytics screen, which mirrors /dashboard > Analytics
+ * and therefore needs a multi-athlete dataset rather than a single athlete.
+ */
+export function useValdMultiAthleteTests(athleteIds: string[], maxAthletes = 8) {
+  const ids = athleteIds.slice(0, maxAthletes);
+
+  const testQueries = useQueries({
+    queries: ids.map((athleteId) => ({
+      queryKey: ["vald", "tests", athleteId],
+      queryFn: () =>
+        callBridge<{ tests: ValdTest[]; count: number }>({ action: "tests", athleteId }),
+      staleTime: 2 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: (failureCount: number, error: unknown) =>
+        !(error instanceof ValdBridgeError && (error.status === 429 || error.status === 503)) &&
+        failureCount < 1,
+      select: (d: { tests: ValdTest[] }) => d.tests,
+    })),
+  });
+
+  const testsByAthlete: Record<string, ValdTest[]> = {};
+  ids.forEach((athleteId, index) => {
+    testsByAthlete[athleteId] = (testQueries[index]?.data as ValdTest[] | undefined) ?? [];
+  });
+
+  const detailQueries = useQueries({
+    queries: ids.map((athleteId) => {
+      const testIds = (testsByAthlete[athleteId] ?? []).slice(0, 25).map((t) => t.id);
+      const key = testIds.join(",");
+      return {
+        queryKey: ["vald", "details", key],
+        queryFn: () =>
+          callBridge<{ details: ValdTestDetail[]; count: number }>({
+            action: "details",
+            testIds: key,
+          }),
+        enabled: testIds.length > 0,
+        staleTime: 10 * 60 * 1000,
+        refetchOnWindowFocus: false,
+        retry: (failureCount: number, error: unknown) =>
+          !(error instanceof ValdBridgeError && (error.status === 429 || error.status === 503)) &&
+          failureCount < 1,
+        select: (d: { details: ValdTestDetail[] }) => d.details,
+      };
+    }),
+  });
+
+  const enrichedByAthlete: Record<string, (ValdTest | ValdTestDetail)[]> = {};
+  ids.forEach((athleteId, index) => {
+    const details = (detailQueries[index]?.data as ValdTestDetail[] | undefined) ?? [];
+    const byId = new Map(details.map((d) => [d.id, d]));
+    enrichedByAthlete[athleteId] = (testsByAthlete[athleteId] ?? []).map((t) => ({
+      ...t,
+      ...(byId.get(t.id) ?? {}),
+    }));
+  });
+
+  return {
+    testsByAthlete: enrichedByAthlete,
+    isLoading: testQueries.some((q) => q.isLoading) || detailQueries.some((q) => q.isLoading),
+    error: (testQueries.find((q) => q.error)?.error ?? null) as Error | null,
+  };
 }
