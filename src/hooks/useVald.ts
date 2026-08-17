@@ -70,13 +70,16 @@ export interface ValdTestDetail extends ValdTest {
 async function callBridge<T>(params: Record<string, string>): Promise<T> {
   const searchParams = new URLSearchParams(params).toString();
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+    ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const { data: { session } } = await supabase.auth.getSession();
+  const bearerToken = session?.access_token ?? supabaseKey;
 
   const res = await fetch(
     `${supabaseUrl}/functions/v1/vald-bridge?${searchParams}`,
     {
       headers: {
-        Authorization: `Bearer ${supabaseKey}`,
+        Authorization: `Bearer ${bearerToken}`,
         apikey: supabaseKey,
       },
     }
