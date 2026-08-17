@@ -2,15 +2,24 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { useValdAthletes, useValdTests } from "@/hooks/useVald";
-import { valdTestsToTestData, mergeWithCCData } from "@/lib/valdToCCAthletics";
+import { useValdAthletes, useValdTests, useValdTestDetails } from "@/hooks/useVald";
+import {
+  valdTestsToTestData,
+  mergeWithCCData,
+  valdLimbComparisons,
+} from "@/lib/valdToCCAthletics";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
+import ValdLimbComparison from "@/components/vald/ValdLimbComparison";
+import ValdForcePlateReport from "@/components/vald/ValdForcePlateReport";
 
 /**
  * Bridges VALD test results into the CC Athletics analytics components,
  * so VALD data renders in the same charts alongside CC Athletics data.
+ *
+ * Test detail is hydrated per test so Left/Right limb metrics are available
+ * for the asymmetry comparison and the force plate report.
  */
 export const ValdCCAnalytics = () => {
   const [athleteId, setAthleteId] = useState<string>("");
@@ -25,17 +34,28 @@ export const ValdCCAnalytics = () => {
     [athletes, athleteId]
   );
 
+  // Hydrate per-test detail (raw metric map + limb values)
+  const { details, isLoading: detailsLoading } = useValdTestDetails(
+    useMemo(() => valdTests.map((t) => t.id), [valdTests])
+  );
+
+  // Prefer the hydrated detail row for each test, fall back to the list row
+  const enrichedTests = useMemo(() => {
+    const byId = new Map(details.map((d) => [d.id, d]));
+    return valdTests.map((t) => ({ ...t, ...(byId.get(t.id) ?? {}) }));
+  }, [valdTests, details]);
+
   // VALD tests translated into CC Athletics TestData[]
   const ccCompatibleTests = useMemo(
-    () => (selectedAthlete ? valdTestsToTestData(valdTests, selectedAthlete) : []),
-    [valdTests, selectedAthlete]
+    () => (selectedAthlete ? valdTestsToTestData(enrichedTests, selectedAthlete) : []),
+    [enrichedTests, selectedAthlete]
   );
 
   // VALD + CC Athletics rows in one dataset for the shared charts
   const combinedData = useMemo(() => {
     if (!selectedAthlete) return ccData;
-    return mergeWithCCData(ccData, valdTests, selectedAthlete);
-  }, [ccData, valdTests, selectedAthlete]);
+    return mergeWithCCData(ccData, enrichedTests, selectedAthlete);
+  }, [ccData, enrichedTests, selectedAthlete]);
 
   const testOptions = useMemo(
     () => Array.from(new Set(combinedData.map((d) => d.test_name).filter(Boolean))).sort(),
@@ -43,6 +63,9 @@ export const ValdCCAnalytics = () => {
   );
 
   const activeTest = selectedTest || testOptions[0] || "";
+
+  const limbRows = useMemo(() => valdLimbComparisons(enrichedTests), [enrichedTests]);
+  const limbTestNames = useMemo(() => new Set(limbRows.map((r) => r.testName)), [limbRows]);
 
   return (
     <Card className="mt-8">
@@ -95,6 +118,17 @@ export const ValdCCAnalytics = () => {
           <p className="text-sm text-muted-foreground">
             Select a VALD athlete to see their results in the shared analytics charts.
           </p>
+        )}
+
+        {selectedAthlete && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ValdLimbComparison
+              rows={limbRows}
+              isLoading={detailsLoading}
+              testName={limbTestNames.has(activeTest) ? activeTest : undefined}
+            />
+            <ValdForcePlateReport athlete={selectedAthlete} tests={enrichedTests} />
+          </div>
         )}
       </CardContent>
     </Card>

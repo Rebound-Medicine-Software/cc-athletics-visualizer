@@ -57,33 +57,52 @@ function forcedecksBase(): string {
 
 let _token = "";
 let _expiry = 0;
+let _inflight: Promise<string> | null = null;
 
-async function getToken(): Promise<string> {
-  if (_token && Date.now() < _expiry) return _token;
-
+async function requestToken(): Promise<string> {
   const clientId = Deno.env.get("VALD_CLIENT_ID") ?? "";
   const clientSecret = Deno.env.get("VALD_CLIENT_SECRET") ?? "";
   if (!clientId || !clientSecret) {
     throw new Error("VALD_CLIENT_ID and VALD_CLIENT_SECRET Supabase Secrets are not set");
   }
 
-  const res = await fetch("https://auth.prd.vald.com/oauth/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      client_id: clientId,
-      client_secret: clientSecret,
-      audience: "vald-api-external", // REQUIRED — missing = auth failure
-    }),
-  });
+  // VALD's auth endpoint is quota limited — retry 429s with backoff.
+  let lastError = "";
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await fetch("https://auth.prd.vald.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+        audience: "vald-api-external", // REQUIRED — missing = auth failure
+      }),
+    });
 
-  if (!res.ok) throw new Error(`VALD auth failed (${res.status}): ${await res.text()}`);
+    if (res.ok) {
+      const data = await res.json();
+      _token = data.access_token as string;
+      _expiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
+      return _token;
+    }
 
-  const data = await res.json();
-  _token = data.access_token as string;
-  _expiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
-  return _token;
+    lastError = `${res.status}: ${await res.text()}`;
+    if (res.status !== 429) break;
+    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+  }
+
+  throw new Error(`VALD auth failed (${lastError})`);
+}
+
+async function getToken(): Promise<string> {
+  if (_token && Date.now() < _expiry) return _token;
+  if (!_inflight) {
+    _inflight = requestToken().finally(() => {
+      _inflight = null;
+    });
+  }
+  return await _inflight;
 }
 
 // ── HTTP HELPER ───────────────────────────────────────────────────────────────
@@ -397,8 +416,27 @@ serve(async (req: Request) => {
       const testId = url.searchParams.get("testId") ?? "";
       if (!testId) throw new Error("testId is required");
       payload = await handleDetail(tenantId, testId);
+    } else if (action === "details") {
+      // Batched detail — one request (and one auth token) for many tests,
+      // which avoids hammering the VALD auth quota from the browser.
+      const ids = (url.searchParams.get("testIds") ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 30);
+      if (!ids.length) throw new Error("testIds is required");
+
+      const details: Record<string, unknown>[] = [];
+      for (const id of ids) {
+        try {
+          details.push({ id, ...(await handleDetail(tenantId, id)) });
+        } catch (_e) {
+          details.push({ id, trialCount: 0, raw: {} });
+        }
+      }
+      payload = { details, count: details.length };
     } else {
-      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail`);
+      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail | details`);
     }
 
     return new Response(JSON.stringify(payload), {
