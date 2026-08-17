@@ -120,3 +120,26 @@ export function useValdTestDetail(testId: string | null) {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+/**
+ * Full metric detail for many tests at once, in a single batched bridge call.
+ * Needed for Left/Right limb metrics, which the `/tests` list rows do not carry.
+ */
+export function useValdTestDetails(testIds: string[], max = 25) {
+  const ids = testIds.slice(0, max);
+  const key = ids.join(",");
+
+  const query = useQuery({
+    queryKey: ["vald", "details", key],
+    queryFn: () =>
+      callBridge<{ details: ValdTestDetail[]; count: number }>({
+        action: "details",
+        testIds: key,
+      }),
+    enabled: ids.length > 0,
+    staleTime: 10 * 60 * 1000,
+    select: (d) => d.details,
+  });
+
+  return { details: query.data ?? [], isLoading: query.isLoading };
+}
