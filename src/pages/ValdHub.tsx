@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import ValdReportHub from "@/components/vald/ValdReportHub";
 import ValdCCAnalytics from "@/components/vald/ValdCCAnalytics";
+import ValdAnalytics from "@/components/vald/ValdAnalytics";
 import { toast } from "sonner";
 import {
   Home,
