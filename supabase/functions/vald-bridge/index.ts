@@ -120,7 +120,7 @@ async function writeCachedToken(token: string, expiresAt: number): Promise<void>
   }
 }
 
-async function requestToken(): Promise<string> {
+async function requestToken(forceRefresh = false): Promise<string> {
   const clientId = Deno.env.get("VALD_CLIENT_ID") ?? "";
   const clientSecret = Deno.env.get("VALD_CLIENT_SECRET") ?? "";
   if (!clientId || !clientSecret) {
@@ -129,14 +129,35 @@ async function requestToken(): Promise<string> {
 
   // Another isolate may already have minted a valid token.
   const cached = await readCachedToken();
-  if (cached && Date.now() < cached.expiresAt - TOKEN_SKEW_MS) {
+  if (!forceRefresh && cached && Date.now() < cached.expiresAt - TOKEN_SKEW_MS) {
     _token = cached.token;
     _expiry = cached.expiresAt;
     return _token;
   }
 
+  // Give another isolate time to finish a refresh, then adopt its token rather
+  // than sending simultaneous requests to VALD's quota-limited auth endpoint.
+  if (!forceRefresh) {
+    await new Promise((resolve) => setTimeout(resolve, 150 + Math.random() * 600));
+    const raced = await readCachedToken();
+    if (raced && Date.now() < raced.expiresAt - TOKEN_SKEW_MS) {
+      _token = raced.token;
+      _expiry = raced.expiresAt;
+      return _token;
+    }
+  }
+
   let lastError = "";
   for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      const refreshed = await readCachedToken();
+      if (refreshed && refreshed.token !== cached?.token && Date.now() < refreshed.expiresAt - TOKEN_SKEW_MS) {
+        _token = refreshed.token;
+        _expiry = refreshed.expiresAt;
+        return _token;
+      }
+    }
+
     const res = await fetch("https://auth.prd.vald.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -162,7 +183,7 @@ async function requestToken(): Promise<string> {
     const retryAfter = Number(res.headers.get("retry-after"));
     const delay = Number.isFinite(retryAfter) && retryAfter > 0
       ? retryAfter * 1000
-      : 2000 * (attempt + 1);
+      : 2000 * (attempt + 1) + Math.random() * 1000;
     await new Promise((r) => setTimeout(r, delay));
   }
 
@@ -177,10 +198,14 @@ async function requestToken(): Promise<string> {
   throw new Error(`VALD auth failed (${lastError})`);
 }
 
-async function getToken(): Promise<string> {
-  if (_token && Date.now() < _expiry - TOKEN_SKEW_MS) return _token;
+async function getToken(forceRefresh = false): Promise<string> {
+  if (!forceRefresh && _token && Date.now() < _expiry - TOKEN_SKEW_MS) return _token;
+  if (forceRefresh) {
+    _token = "";
+    _expiry = 0;
+  }
   if (!_inflight) {
-    _inflight = requestToken().finally(() => {
+    _inflight = requestToken(forceRefresh).finally(() => {
       _inflight = null;
     });
   }
@@ -191,10 +216,19 @@ async function getToken(): Promise<string> {
 // ── HTTP HELPER ───────────────────────────────────────────────────────────────
 
 async function get(url: string): Promise<{ status: number; body: unknown }> {
-  const token = await getToken();
-  const res = await fetch(url, {
+  let token = await getToken();
+  let res = await fetch(url, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
+
+  // A token can be revoked before its advertised expiry. Invalidate it and
+  // perform exactly one forced refresh rather than failing repeatedly.
+  if (res.status === 401) {
+    token = await getToken(true);
+    res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+  }
 
   if (res.status === 204) return { status: 204, body: null };
   if (!res.ok) throw new Error(`VALD API ${res.status} at ${url}: ${await res.text()}`);
