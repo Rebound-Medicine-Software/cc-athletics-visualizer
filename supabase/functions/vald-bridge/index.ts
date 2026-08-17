@@ -82,7 +82,15 @@ async function valdFetch(service: "profile" | "forcedecks" | "tenants", path: st
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   if (!res.ok) throw new Error(`VALD API ${res.status} at ${path}: ${await res.text()}`);
-  return res.json();
+  // VALD returns 204 No Content (empty body) when a query matches no records.
+  if (res.status === 204) return [];
+  const text = await res.text();
+  if (!text.trim()) return [];
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`VALD API returned non-JSON at ${path}: ${text.slice(0, 200)}`);
+  }
 }
 
 
