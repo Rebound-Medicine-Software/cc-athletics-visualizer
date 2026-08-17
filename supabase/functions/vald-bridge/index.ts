@@ -54,10 +54,56 @@ function forcedecksBase(): string {
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
+// VALD's token endpoint is quota limited per client. Each cold edge isolate would
+// otherwise mint its own token, which quickly trips "Client quota exceeded" (429).
+// So the token is cached in the database and shared by every isolate.
 
 let _token = "";
 let _expiry = 0;
 let _inflight: Promise<string> | null = null;
+
+const SB_URL = Deno.env.get("SUPABASE_URL") ?? "";
+const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const CACHE_URL = `${SB_URL}/rest/v1/vald_token_cache`;
+const sbHeaders = {
+  apikey: SB_KEY,
+  Authorization: `Bearer ${SB_KEY}`,
+  "Content-Type": "application/json",
+};
+
+async function readCachedToken(): Promise<{ token: string; expiresAt: number } | null> {
+  if (!SB_URL || !SB_KEY) return null;
+  try {
+    const res = await fetch(`${CACHE_URL}?id=eq.default&select=access_token,expires_at`, {
+      headers: sbHeaders,
+    });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row?.access_token) return null;
+    return { token: row.access_token as string, expiresAt: Date.parse(row.expires_at) };
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedToken(token: string, expiresAt: number): Promise<void> {
+  if (!SB_URL || !SB_KEY) return;
+  try {
+    await fetch(`${CACHE_URL}?on_conflict=id`, {
+      method: "POST",
+      headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify({
+        id: "default",
+        access_token: token,
+        expires_at: new Date(expiresAt).toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  } catch {
+    // Cache write failures are non-fatal.
+  }
+}
 
 async function requestToken(): Promise<string> {
   const clientId = Deno.env.get("VALD_CLIENT_ID") ?? "";
@@ -66,9 +112,16 @@ async function requestToken(): Promise<string> {
     throw new Error("VALD_CLIENT_ID and VALD_CLIENT_SECRET Supabase Secrets are not set");
   }
 
-  // VALD's auth endpoint is quota limited — retry 429s with backoff.
+  // Another isolate may already have minted a valid token.
+  const cached = await readCachedToken();
+  if (cached && Date.now() < cached.expiresAt) {
+    _token = cached.token;
+    _expiry = cached.expiresAt;
+    return _token;
+  }
+
   let lastError = "";
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const res = await fetch("https://auth.prd.vald.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -84,12 +137,21 @@ async function requestToken(): Promise<string> {
       const data = await res.json();
       _token = data.access_token as string;
       _expiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
+      await writeCachedToken(_token, _expiry);
       return _token;
     }
 
     lastError = `${res.status}: ${await res.text()}`;
     if (res.status !== 429) break;
-    await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+  }
+
+  // Quota exhausted — fall back to the last cached token even if it is past our
+  // safety margin; VALD tokens usually remain valid a little longer.
+  if (cached?.token) {
+    _token = cached.token;
+    _expiry = Date.now() + 60_000;
+    return _token;
   }
 
   throw new Error(`VALD auth failed (${lastError})`);
@@ -104,6 +166,7 @@ async function getToken(): Promise<string> {
   }
   return await _inflight;
 }
+
 
 // ── HTTP HELPER ───────────────────────────────────────────────────────────────
 
