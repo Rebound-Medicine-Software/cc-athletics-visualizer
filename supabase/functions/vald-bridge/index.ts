@@ -267,7 +267,7 @@ async function handleTests(tenantId: string, athleteId: string, modifiedFromUtc?
       const results = (t.results ?? []) as ValdResult[];
       const recorded = (t.recordedDateUtc ?? t.recordedUTC ?? "") as string;
       return {
-        id: t.testId ?? t.id,
+        id: (t.testId ?? t.id) as string,
         date: typeof recorded === "string" ? recorded.slice(0, 10) : "",
         modifiedDate: t.modifiedDateUtc ?? t.modifiedUTC ?? null,
         type: t.testType ?? t.type ?? "Unknown",
@@ -280,7 +280,45 @@ async function handleTests(tenantId: string, athleteId: string, modifiedFromUtc?
     })
     .sort((a, b) => (b.date as string).localeCompare(a.date as string));
 
+  // /tests is metadata-only. Hydrate metric values from /trials so the report
+  // hub and CC Athletics charts receive populated fields.
+  await hydrateTestMetrics(tenantId, tests);
+
   return { tests, count: tests.length };
+}
+
+type TestRow = Awaited<ReturnType<typeof handleTests>>["tests"][number];
+
+const MAX_HYDRATE = 40;
+const HYDRATE_CONCURRENCY = 6;
+
+async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
+  const pending = tests.filter((t) => t.id && t.cmjH == null).slice(0, MAX_HYDRATE);
+
+  for (let i = 0; i < pending.length; i += HYDRATE_CONCURRENCY) {
+    const batch = pending.slice(i, i + HYDRATE_CONCURRENCY);
+    await Promise.all(
+      batch.map(async (t) => {
+        try {
+          const results = await fetchTrialResults(tenantId, t.id);
+          Object.assign(t, flatMetrics(results));
+        } catch (err) {
+          console.warn(`[vald-bridge] trial hydration failed for ${t.id}:`, String(err));
+        }
+      }),
+    );
+  }
+}
+
+async function fetchTrialResults(tenantId: string, testId: string): Promise<ValdResult[]> {
+  const { status, body } = await get(
+    `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
+  );
+  if (status === 204 || body == null) return [];
+  const trials = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
+  return ((trials[0] ?? {}).results ?? []) as ValdResult[];
 }
 
 async function handleDetail(tenantId: string, testId: string) {
@@ -303,29 +341,32 @@ async function handleDetail(tenantId: string, testId: string) {
     raw: allMetrics(results),
     ...flatMetrics(results),
 
-    // Extended CMJ metrics
-    avgBrakingForce: metric(results, "AVG_BRAKING_FORCE", "Both"),
-    avgPropulsiveForce: metric(results, "AVG_PROPULSIVE_FORCE", "Both"),
-    avgBrakingPower: metric(results, "AVG_BRAKING_POWER", "Both"),
-    avgPropulsivePower: metric(results, "AVG_PROPULSIVE_POWER", "Both"),
-    peakPropForce: metric(results, "PEAK_PROPULSIVE_FORCE", "Both"),
-    netImpulse: metric(results, "NET_IMPULSE", "Both"),
-    brakingDuration: metric(results, "BRAKING_DURATION", "Both"),
-    takeoffVelocity: metric(results, "TAKEOFF_VELOCITY", "Both"),
+    // Extended CMJ metrics (IDs verified against live /trials payloads)
+    avgBrakingForce: firstMetric(results, ["MEAN_ECCENTRIC_BRAKING_FORCE", "AVG_BRAKING_FORCE"]),
+    avgPropulsiveForce: firstMetric(results, ["MEAN_TAKEOFF_FORCE", "AVG_PROPULSIVE_FORCE"]),
+    avgBrakingPower: firstMetric(results, ["MEAN_ECCENTRIC_POWER", "AVG_BRAKING_POWER"]),
+    avgPropulsivePower: firstMetric(results, ["MEAN_CONCENTRIC_POWER", "AVG_PROPULSIVE_POWER"]),
+    peakPropForce: firstMetric(results, ["PEAK_TAKEOFF_FORCE", "PEAK_CONCENTRIC_FORCE", "PEAK_PROPULSIVE_FORCE"]),
+    netImpulse: firstMetric(results, ["POSITIVE_TAKEOFF_IMPULSE", "CONCENTRIC_IMPULSE", "NET_IMPULSE"]),
+    brakingDuration: firstMetric(results, ["BRAKING_PHASE_DURATION", "BRAKING_DURATION"]),
+    takeoffVelocity: firstMetric(results, ["TAKEOFF_VELOCITY", "PEAK_TAKEOFF_VELOCITY"]),
+    flightTime: metric(results, "FLIGHT_TIME", "Both"),
+    bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
     // Drop jump limbs
-    djL: metric(results, "PEAK_LANDING_FORCE", "Left") ?? metric(results, "JUMP_HEIGHT", "Left"),
-    djR: metric(results, "PEAK_LANDING_FORCE", "Right") ?? metric(results, "JUMP_HEIGHT", "Right"),
-    djAsym: metric(results, "JUMP_HEIGHT", "Asym") ?? metric(results, "ASYM_INDEX", "Both"),
+    djL: metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left"),
+    djR: metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right"),
+    djAsym: firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym"),
 
     // Pogo
-    pjCT: metric(results, "GROUND_CONTACT_TIME", "Both") ?? metric(results, "CONTRACTION_TIME", "Both"),
+    pjCT: firstMetric(results, ID_CONTACT, "Both"),
 
     // Isometric
-    solL: metric(results, "PEAK_FORCE", "Left"),
-    solR: metric(results, "PEAK_FORCE", "Right"),
-    gasL: metric(results, "FORCE_AT_250MS", "Left") ?? metric(results, "FORCE_250MS", "Left"),
-    gasR: metric(results, "FORCE_AT_250MS", "Right") ?? metric(results, "FORCE_250MS", "Right"),
+    solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
+    solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Right"),
+
   };
 }
 
