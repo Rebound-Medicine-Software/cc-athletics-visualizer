@@ -10,6 +10,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export class ValdBridgeError extends Error {
+  status: number;
+  code: string;
+
+  constructor(message: string, status: number, code = "VALD_BRIDGE_ERROR") {
+    super(message);
+    this.name = "ValdBridgeError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 // ── Types ───────────────────────────────────────────────────────────────────────────
 
 export interface ValdAthlete {
@@ -71,8 +83,12 @@ async function callBridge<T>(params: Record<string, string>): Promise<T> {
   );
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`vald-bridge ${res.status}: ${err}`);
+    const body = await res.json().catch(() => null) as { error?: string; code?: string } | null;
+    throw new ValdBridgeError(
+      body?.error ?? `VALD request failed (${res.status})`,
+      res.status,
+      body?.code,
+    );
   }
 
   const data = await res.json();
@@ -91,6 +107,9 @@ export function useValdAthletes() {
         action: "athletes",
       }),
     staleTime: 5 * 60 * 1000,
+    retry: (failureCount, error) =>
+      !(error instanceof ValdBridgeError && (error.status === 429 || error.status === 503)) && failureCount < 2,
+    refetchOnWindowFocus: false,
     select: (d) => d.athletes,
   });
 }
@@ -99,13 +118,16 @@ export function useValdAthletes() {
 export function useValdTests(athleteId: string | null) {
   return useQuery({
     queryKey: ["vald", "tests", athleteId],
-    queryFn: () =>
-      callBridge<{ tests: ValdTest[]; count: number }>({
+    queryFn: () => {
+      if (!athleteId) throw new Error("An athlete is required");
+      return callBridge<{ tests: ValdTest[]; count: number }>({
         action: "tests",
-        athleteId: athleteId!,
-      }),
+        athleteId,
+      });
+    },
     enabled: !!athleteId,
     staleTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: false,
     select: (d) => d.tests,
   });
 }
@@ -114,10 +136,13 @@ export function useValdTests(athleteId: string | null) {
 export function useValdTestDetail(testId: string | null) {
   return useQuery({
     queryKey: ["vald", "detail", testId],
-    queryFn: () =>
-      callBridge<ValdTestDetail>({ action: "detail", testId: testId! }),
+    queryFn: () => {
+      if (!testId) throw new Error("A test is required");
+      return callBridge<ValdTestDetail>({ action: "detail", testId });
+    },
     enabled: !!testId,
     staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -138,6 +163,7 @@ export function useValdTestDetails(testIds: string[], max = 25) {
       }),
     enabled: ids.length > 0,
     staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
     select: (d) => d.details,
   });
 

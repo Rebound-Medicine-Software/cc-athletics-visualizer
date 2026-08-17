@@ -13,6 +13,7 @@ import { MetricCards } from "@/components/dashboard/MetricCards";
 import { ComparisonChart } from "@/components/dashboard/ComparisonChart";
 import ValdLimbComparison from "@/components/vald/ValdLimbComparison";
 import ValdForcePlateReport from "@/components/vald/ValdForcePlateReport";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 /**
  * Bridges VALD test results into the CC Athletics analytics components,
@@ -25,7 +26,7 @@ export const ValdCCAnalytics = () => {
   const [athleteId, setAthleteId] = useState<string>("");
   const [selectedTest, setSelectedTest] = useState<string>("");
 
-  const { data: athletes = [], isLoading: athletesLoading } = useValdAthletes();
+  const { data: athletes = [], isLoading: athletesLoading, error: athletesError } = useValdAthletes();
   const { data: valdTests = [], isLoading: testsLoading } = useValdTests(athleteId || null);
   const { data: ccData = [] } = useSupabaseData();
 
@@ -79,6 +80,13 @@ export const ValdCCAnalytics = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {athletesError && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              VALD is temporarily unavailable. The page remains usable; wait a minute and refresh to reconnect.
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="grid gap-3 sm:grid-cols-2">
           <Select value={athleteId} onValueChange={setAthleteId}>
             <SelectTrigger>

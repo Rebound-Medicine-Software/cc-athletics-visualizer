@@ -61,6 +61,7 @@ function forcedecksBase(): string {
 let _token = "";
 let _expiry = 0;
 let _inflight: Promise<string> | null = null;
+const TOKEN_SKEW_MS = 15_000;
 
 const SB_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -70,6 +71,18 @@ const sbHeaders = {
   Authorization: `Bearer ${SB_KEY}`,
   "Content-Type": "application/json",
 };
+
+function tokenExpiry(token: string, fallback: number): number {
+  try {
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return fallback;
+    const normalized = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(normalized)) as { exp?: number };
+    return typeof payload.exp === "number" ? payload.exp * 1000 : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 async function readCachedToken(): Promise<{ token: string; expiresAt: number } | null> {
   if (!SB_URL || !SB_KEY) return null;
@@ -81,7 +94,9 @@ async function readCachedToken(): Promise<{ token: string; expiresAt: number } |
     const rows = await res.json();
     const row = Array.isArray(rows) ? rows[0] : null;
     if (!row?.access_token) return null;
-    return { token: row.access_token as string, expiresAt: Date.parse(row.expires_at) };
+    const token = row.access_token as string;
+    const storedExpiry = Date.parse(row.expires_at);
+    return { token, expiresAt: tokenExpiry(token, storedExpiry) };
   } catch {
     return null;
   }
@@ -114,7 +129,7 @@ async function requestToken(): Promise<string> {
 
   // Another isolate may already have minted a valid token.
   const cached = await readCachedToken();
-  if (cached && Date.now() < cached.expiresAt) {
+  if (cached && Date.now() < cached.expiresAt - TOKEN_SKEW_MS) {
     _token = cached.token;
     _expiry = cached.expiresAt;
     return _token;
@@ -136,14 +151,19 @@ async function requestToken(): Promise<string> {
     if (res.ok) {
       const data = await res.json();
       _token = data.access_token as string;
-      _expiry = Date.now() + ((data.expires_in as number) - 120) * 1000;
+      const fallbackExpiry = Date.now() + (data.expires_in as number) * 1000;
+      _expiry = tokenExpiry(_token, fallbackExpiry);
       await writeCachedToken(_token, _expiry);
       return _token;
     }
 
     lastError = `${res.status}: ${await res.text()}`;
     if (res.status !== 429) break;
-    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    const retryAfter = Number(res.headers.get("retry-after"));
+    const delay = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : 2000 * (attempt + 1);
+    await new Promise((r) => setTimeout(r, delay));
   }
 
   // Quota exhausted — fall back to the last cached token even if it is past our
@@ -158,7 +178,7 @@ async function requestToken(): Promise<string> {
 }
 
 async function getToken(): Promise<string> {
-  if (_token && Date.now() < _expiry) return _token;
+  if (_token && Date.now() < _expiry - TOKEN_SKEW_MS) return _token;
   if (!_inflight) {
     _inflight = requestToken().finally(() => {
       _inflight = null;
@@ -508,9 +528,19 @@ serve(async (req: Request) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[vald-bridge]", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...CORS, "Content-Type": "application/json" },
+    const quotaLimited = msg.includes("VALD auth failed (429:");
+    return new Response(JSON.stringify({
+      error: quotaLimited
+        ? "VALD is temporarily rate-limiting authentication. Please wait before retrying."
+        : msg,
+      code: quotaLimited ? "VALD_AUTH_RATE_LIMITED" : "VALD_BRIDGE_ERROR",
+    }), {
+      status: quotaLimited ? 503 : 500,
+      headers: {
+        ...CORS,
+        "Content-Type": "application/json",
+        ...(quotaLimited ? { "Retry-After": "60" } : {}),
+      },
     });
   }
 });
