@@ -113,8 +113,15 @@ async function handleAthletes(tenantId: string) {
   return { athletes, count: athletes.length };
 }
 
-async function handleTests(tenantId: string, athleteId: string) {
-  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?athleteId=${athleteId}`) as Record<string, unknown>;
+async function handleTests(tenantId: string, athleteId: string, modifiedFromIso?: string) {
+  // ForceDecks /tests requires modifiedFrom. Default to a 10-year lookback so all history is returned.
+  const from = new Date();
+  from.setFullYear(from.getFullYear() - 10);
+  const modifiedFrom = modifiedFromIso && !Number.isNaN(Date.parse(modifiedFromIso))
+    ? new Date(modifiedFromIso).toISOString()
+    : from.toISOString();
+  const params = new URLSearchParams({ athleteId, modifiedFrom });
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?${params}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.tests ?? data.data ?? []) as Record<string, unknown>[]);
   const tests = list.map((t) => {
     const results = (t.results ?? []) as ValdResult[];
