@@ -134,10 +134,27 @@ function scale(r: ValdResult): number {
   return r.definition?.resultUnitScaleFactor ?? r.resultUnitScaleFactor ?? 1;
 }
 
+/**
+ * Look up a metric by string ID.
+ * ForceDecks reports bilateral values with limb "Trial" (and sometimes "Both"),
+ * so bilateral lookups accept either.
+ */
 function metric(results: ValdResult[], id: string, limb = "Both"): number | null {
-  const r = results.find((m) => resultId(m) === id && (m.limb ?? "Both") === limb);
-  if (!r) return null;
-  return Math.round(r.value * scale(r) * 100) / 100;
+  const limbs = limb === "Both" ? ["Both", "Trial"] : [limb];
+  for (const l of limbs) {
+    const r = results.find((m) => resultId(m) === id && (m.limb ?? "Both") === l);
+    if (r) return Math.round(r.value * scale(r) * 100) / 100;
+  }
+  return null;
+}
+
+/** First non-null metric across a list of candidate IDs. */
+function firstMetric(results: ValdResult[], ids: string[], limb = "Both"): number | null {
+  for (const id of ids) {
+    const v = metric(results, id, limb);
+    if (v != null) return v;
+  }
+  return null;
 }
 
 function allMetrics(results: ValdResult[]): Record<string, number> {
@@ -148,43 +165,33 @@ function allMetrics(results: ValdResult[]): Record<string, number> {
   return map;
 }
 
+// Metric string IDs verified against live /trials responses.
+const ID_HEIGHT = ["JUMP_HEIGHT_IMP_MOM", "JUMP_HEIGHT", "IMPULSE_JUMP_HEIGHT"];
+const ID_RSI_MOD = ["RSI_MODIFIED", "RSI_MODIFIED_IMP_MOM"];
+const ID_RSI = ["RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
+const ID_PEAK_POWER = ["PEAK_TAKEOFF_POWER", "PEAK_PROPULSIVE_POWER", "PEAK_PROPULSIVE_PWR"];
+const ID_CONTACT = ["GROUND_CONTACT_TIME", "CONTRACTION_TIME"];
+
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
   return {
-    cmjH:
-      metric(results, "JUMP_HEIGHT_IMP_MOM", "Both") ??
-      metric(results, "JUMP_HEIGHT", "Both"),
-    cmjHL:
-      metric(results, "JUMP_HEIGHT_IMP_MOM", "Left") ??
-      metric(results, "JUMP_HEIGHT", "Left"),
-    cmjHR:
-      metric(results, "JUMP_HEIGHT_IMP_MOM", "Right") ??
-      metric(results, "JUMP_HEIGHT", "Right"),
-    cmjRSI: metric(results, "RSI_MODIFIED", "Both"),
-    cmjPP:
-      metric(results, "PEAK_PROPULSIVE_POWER", "Both") ??
-      metric(results, "PEAK_PROPULSIVE_PWR", "Both"),
+    cmjH: firstMetric(results, ID_HEIGHT, "Both"),
+    cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
+    cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
+    cmjRSI: firstMetric(results, ID_RSI_MOD, "Both"),
+    cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
-      metric(results, "JUMP_HEIGHT_IMP_MOM", "Asym") ??
-      metric(results, "JUMP_HEIGHT", "Asym") ??
+      firstMetric(results, ID_HEIGHT, "Asym") ??
+      metric(results, "PEAK_TAKEOFF_FORCE", "Asym") ??
       metric(results, "ASYM_INDEX", "Both"),
-    djH:
-      metric(results, "JMP_HEIGHT_FLIGHT_TIME", "Both") ??
-      metric(results, "JUMP_HEIGHT", "Both"),
-    djRSI:
-      metric(results, "RSI", "Both") ??
-      metric(results, "REACTIVE_STRENGTH_INDEX", "Both") ??
-      metric(results, "REACTIVE_STR_IDX", "Both"),
-    djCT:
-      metric(results, "GROUND_CONTACT_TIME", "Both") ??
-      metric(results, "CONTRACTION_TIME", "Both"),
-    pjH:
-      metric(results, "JMP_HEIGHT_FLIGHT_TIME", "Both") ??
-      metric(results, "JUMP_HEIGHT", "Both"),
-    pjRSI:
-      metric(results, "RSI_MODIFIED", "Both") ?? metric(results, "RSI", "Both"),
+    djH: firstMetric(results, ID_HEIGHT, "Both"),
+    djRSI: firstMetric(results, ID_RSI, "Both") ?? firstMetric(results, ID_RSI_MOD, "Both"),
+    djCT: firstMetric(results, ID_CONTACT, "Both"),
+    pjH: firstMetric(results, ID_HEIGHT, "Both"),
+    pjRSI: firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both"),
   };
 }
+
 
 // ── HANDLERS ──────────────────────────────────────────────────────────────────
 
