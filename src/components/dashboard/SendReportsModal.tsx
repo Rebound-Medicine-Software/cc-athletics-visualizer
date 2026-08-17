@@ -603,7 +603,7 @@ export const SendReportsModal = ({
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          Send Reports
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] w-[95vw] max-w-lg overflow-y-auto sm:w-full">
@@ -611,10 +611,15 @@ export const SendReportsModal = ({
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Generate Force Plate Report
+            {sourceLabel && (
+              <span className="rounded-full border px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                {sourceLabel}
+              </span>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Select an athlete to generate a multi-page PDF report with individual scores,
-            historical comparisons, limb symmetry analysis, and AI coaching insights.
+            {description ??
+              "Select an athlete to generate a multi-page PDF report with individual scores, historical comparisons, limb symmetry analysis, and AI coaching insights."}
           </DialogDescription>
         </DialogHeader>
 
