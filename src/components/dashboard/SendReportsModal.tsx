@@ -113,7 +113,26 @@ const PdfPreviewContent = ({ fileUrl }: { fileUrl: string }) => {
   );
 };
 
-export const SendReportsModal = () => {
+export interface SendReportsModalProps {
+  /** Rows used for team/athlete/test selection. Defaults to CC Athletics data. */
+  data?: any[];
+  /** Rows sent to the report generator (metres / seconds flavour). Defaults to `data`. */
+  reportData?: any[];
+  triggerLabel?: string;
+  description?: string;
+  /** Hide the email action for sources without linked athlete records (e.g. VALD). */
+  allowEmail?: boolean;
+  sourceLabel?: string;
+}
+
+export const SendReportsModal = ({
+  data: injectedData,
+  reportData: injectedReportData,
+  triggerLabel = "Send Reports",
+  description,
+  allowEmail = true,
+  sourceLabel,
+}: SendReportsModalProps = {}) => {
   const { teamBranding } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
@@ -125,7 +144,10 @@ export const SendReportsModal = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>("");
 
-  const { data: testData = [], isLoading: dataLoading } = useSupabaseData();
+  const { data: ccData = [], isLoading: ccLoading } = useSupabaseData();
+  const testData = injectedData ?? ccData;
+  const dataLoading = injectedData ? false : ccLoading;
+  const reportSource = injectedReportData ?? injectedData ?? ccData;
 
   const [athleteIdByKey, setAthleteIdByKey] = useState<Record<string, string>>({});
   const [mappingLoading, setMappingLoading] = useState(false);
@@ -244,15 +266,24 @@ export const SendReportsModal = () => {
     );
     const includedTestNames = filteredTestNames.filter((testName) => !excludedTests.includes(testName));
 
+    // Rows actually sent to the generator — same selection, report-flavour values
+    const reportTests = reportSource.filter(
+      (test) =>
+        test.athlete_name === name &&
+        test.team_name === team &&
+        !excludedTests.includes(test.test_name) &&
+        !parentTestsWithOnlySideData.includes(test.test_name),
+    );
+
     return {
       name,
       team,
-      tests: includedTests,
+      tests: reportTests.length > 0 ? reportTests : includedTests,
       allTestNames: filteredTestNames,
       testNames: includedTestNames,
       testCount: includedTests.length,
     };
-  }, [selectedAthlete, testData, excludedTests]);
+  }, [selectedAthlete, testData, reportSource, excludedTests]);
 
   const createPdfBlobUrl = async (reportUrl: string) => {
     const pdfResponse = await fetch(reportUrl);
@@ -572,7 +603,7 @@ export const SendReportsModal = () => {
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <FileText className="h-4 w-4" />
-          Send Reports
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] w-[95vw] max-w-lg overflow-y-auto sm:w-full">
@@ -580,10 +611,15 @@ export const SendReportsModal = () => {
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Generate Force Plate Report
+            {sourceLabel && (
+              <span className="rounded-full border px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                {sourceLabel}
+              </span>
+            )}
           </DialogTitle>
           <DialogDescription>
-            Select an athlete to generate a multi-page PDF report with individual scores,
-            historical comparisons, limb symmetry analysis, and AI coaching insights.
+            {description ??
+              "Select an athlete to generate a multi-page PDF report with individual scores, historical comparisons, limb symmetry analysis, and AI coaching insights."}
           </DialogDescription>
         </DialogHeader>
 
@@ -728,24 +764,26 @@ export const SendReportsModal = () => {
               )}
             </Button>
 
-            <Button
-              onClick={handleSendViaEmail}
-              disabled={isLoading || !selectedAthlete}
-              className="w-full"
-              variant="outline"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Generate & Send via Email
-                </>
-              )}
-            </Button>
+            {allowEmail && (
+              <Button
+                onClick={handleSendViaEmail}
+                disabled={isLoading || !selectedAthlete}
+                className="w-full"
+                variant="outline"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Generate & Send via Email
+                  </>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="ghost"

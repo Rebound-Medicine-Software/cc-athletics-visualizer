@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import ValdReportHub from "@/components/vald/ValdReportHub";
 import ValdCCAnalytics from "@/components/vald/ValdCCAnalytics";
+import ValdAnalytics from "@/components/vald/ValdAnalytics";
 import { toast } from "sonner";
 import {
   Home,
@@ -199,8 +200,15 @@ const ValdHub = () => {
               <h1 className="text-2xl font-bold tracking-tight">VALD Performance Hub</h1>
               <p className="text-sm text-muted-foreground">Force Plate Assessment Reports</p>
             </div>
-            <ValdReportHub />
-            <ValdCCAnalytics />
+
+            {/* Mirror of /dashboard > Analytics, powered by VALD data */}
+            <ValdAnalytics branding={branding} />
+
+            {/* Single-athlete VALD explorer & unified (VALD + CC) view */}
+            <div className="mt-10 space-y-6">
+              <ValdReportHub />
+              <ValdCCAnalytics />
+            </div>
           </div>
         </div>
       </div>
