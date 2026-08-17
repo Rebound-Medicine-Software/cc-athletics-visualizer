@@ -82,7 +82,15 @@ async function valdFetch(service: "profile" | "forcedecks" | "tenants", path: st
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   if (!res.ok) throw new Error(`VALD API ${res.status} at ${path}: ${await res.text()}`);
-  return res.json();
+  // VALD returns 204 No Content (empty body) when a query matches no records.
+  if (res.status === 204) return [];
+  const text = await res.text();
+  if (!text.trim()) return [];
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`VALD API returned non-JSON at ${path}: ${text.slice(0, 200)}`);
+  }
 }
 
 
@@ -113,8 +121,15 @@ async function handleAthletes(tenantId: string) {
   return { athletes, count: athletes.length };
 }
 
-async function handleTests(tenantId: string, athleteId: string) {
-  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?athleteId=${athleteId}`) as Record<string, unknown>;
+async function handleTests(tenantId: string, athleteId: string, modifiedFromIso?: string) {
+  // ForceDecks /tests requires modifiedFrom. Default to a 10-year lookback so all history is returned.
+  const from = new Date();
+  from.setFullYear(from.getFullYear() - 10);
+  const modifiedFrom = modifiedFromIso && !Number.isNaN(Date.parse(modifiedFromIso))
+    ? new Date(modifiedFromIso).toISOString()
+    : from.toISOString();
+  const params = new URLSearchParams({ athleteId, modifiedFrom });
+  const data = await valdFetch("forcedecks", `/v2019q3/teams/${tenantId}/tests?${params}`) as Record<string, unknown>;
   const list = Array.isArray(data) ? data : ((data.tests ?? data.data ?? []) as Record<string, unknown>[]);
   const tests = list.map((t) => {
     const results = (t.results ?? []) as ValdResult[];
@@ -182,7 +197,7 @@ serve(async (req: Request) => {
       case "tests": {
         const athleteId = url.searchParams.get("athleteId") ?? "";
         if (!athleteId) throw new Error("athleteId query param required");
-        payload = await handleTests(tenantId, athleteId); break;
+        payload = await handleTests(tenantId, athleteId, url.searchParams.get("modifiedFrom") ?? undefined); break;
       }
       case "detail": {
         const testId = url.searchParams.get("testId") ?? "";
