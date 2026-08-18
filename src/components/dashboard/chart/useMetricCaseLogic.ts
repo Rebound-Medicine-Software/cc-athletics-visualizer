@@ -66,8 +66,6 @@ export const metricCaseLogic = (
       break;
     case "Left Side Squat Jump":
     case "Right Side Squat Jump":
-    case "Left Side Drop Jump":
-    case "Right Side Drop Jump":
       if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
       if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force", "fp1_peak_landing_force", "fp2_peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
       if (metricType === "Ground Contact Time (s)") { value = pick(["time_to_takeoff", "contact_time"]); yAxisLabel = "Ground Contact Time (s)"; }
@@ -81,6 +79,38 @@ export const metricCaseLogic = (
       if (metricType === "Flight Time") value = pick(["flight_time", "avg_flight_time"]);
       if (metricType === "Contact Time") value = pick(["contact_time", "avg_contact_time"]);
       if (metricType === "Reactive Strength Index") value = pick(["rsi", "avg_rsi"]);
+      break;
+    case "Single Leg Drop Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
+      if (metricType === "Jump Height (cm)") value = pick(["jump_height_ft", "jump_height"]);
+      if (metricType === "Contact Time") { value = pick(["contact_time"]); yAxisLabel = "Contact Time (ms)"; }
+      if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
+      if (metricType === "Flight Time") { value = pick(["flight_time"]); yAxisLabel = "Flight Time (ms)"; }
+      if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force", "fp1_peak_landing_force", "fp2_peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
+      if (metricType === "Ground Contact Time (s)") { value = pick(["time_to_takeoff", "contact_time"]); yAxisLabel = "Ground Contact Time (s)"; }
+      break;
+    case "Standing Long Jump":
+    case "Horizontal Jump":
+      if (metricType === "Peak Takeoff Force") { value = pick(["peak_force", "avg_propulsive_force"]); yAxisLabel = "Peak Takeoff Force (N)"; }
+      if (metricType === "Flight Time") { value = pick(["flight_time"]); yAxisLabel = "Flight Time (ms)"; }
+      if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
+      if (metricType === "Takeoff Velocity") { value = pick(["takeoff_velocity"]); yAxisLabel = "Takeoff Velocity (m/s)"; }
+      break;
+    case "Single Leg Hop for Distance":
+      if (metricType === "Peak Takeoff Force") { value = pick(["peak_force", "avg_propulsive_force"]); yAxisLabel = "Peak Takeoff Force (N)"; }
+      if (metricType === "Contact Time") { value = pick(["contact_time"]); yAxisLabel = "Contact Time (ms)"; }
+      if (metricType === "Peak Landing Force") { value = pick(["peak_landing_force"]); yAxisLabel = "Peak Landing Force (N)"; }
+      if (metricType === "Reactive Strength Index") value = pick(["rsi"]);
+      break;
+    case "Isometric Shoulder Y-test":
+    case "Isometric Mid-Thigh Pull":
+    case "Isometric Squat":
+    case "Isometric Push":
+      if (metricType === "Peak Force") { value = pick(["force_peak", "peak_force"]); yAxisLabel = "Peak Force (N)"; }
+      if (metricType === "RFD Max") { value = pick(["rfd_max"]); yAxisLabel = "RFD Max (N/s)"; }
+      if (metricType === "Impulse @ 50ms") { value = pick(["impulse_50ms"]); yAxisLabel = "Impulse @ 50ms (N·s)"; }
+      if (metricType === "Impulse @ 250ms") { value = pick(["impulse_250ms"]); yAxisLabel = "Impulse @ 250ms (N·s)"; }
       break;
     default:
       // Left/Right Side isometric tests (e.g. "Left Side IMTP")
