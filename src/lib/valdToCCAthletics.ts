@@ -242,7 +242,12 @@ export function valdLimbComparisons(tests: (ValdTest | ValdTestDetail)[]): ValdL
 type Flavour = 'dashboard' | 'report';
 
 function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpMetrics {
-  const isDJ = mapTestName(test.type) === 'Drop Jump';
+  const mappedName = mapTestName(test.type);
+  const isDJ =
+    mappedName === 'Drop Jump'             ||
+    mappedName === 'Single Leg Drop Jump'  ||
+    mappedName === 'Left Side Drop Jump'   ||
+    mappedName === 'Right Side Drop Jump';
   const heightCm = isDJ ? (test.djH ?? test.cmjH) : test.cmjH;
   const rsiVal   = isDJ ? test.djRSI : test.cmjRSI;
   const ctVal    = isDJ ? test.djCT  : null;
