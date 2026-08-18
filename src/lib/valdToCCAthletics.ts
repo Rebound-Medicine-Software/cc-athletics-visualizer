@@ -95,21 +95,51 @@ export function classifyTestType(type: string): 'jump' | 'isometric' | 'pogo' {
   const t = type.toLowerCase();
   if (t.includes('pogo')) return 'pogo';
   if (
-    t.includes('isometric') || t.includes('mvc')  || t.includes('imtp') ||
-    t.includes('soleus')    || t.includes('gastroc') ||
-    t.includes('copenhagen')|| t.includes('adductor')
+    t.includes('isometric') || t.includes('mvc')    ||
+    t.includes('imtp')      || t.includes('soleus')  ||
+    t.includes('gastroc')   || t.includes('copenhagen') ||
+    t.includes('adductor')  || t === 'shldisoy'     ||
+    (t.includes('shoulder') && (t.includes('y') || t.includes('iso'))) ||
+    t.includes('nordboard') || t.includes('nordbord')
   ) return 'isometric';
   return 'jump';
 }
 
 export function mapTestName(type: string): string {
   const t = type.toLowerCase().replace(/[\s_-]/g, '');
-  if (t.includes('countermovement') || t === 'cmj') return 'Countermovement Jump';
-  if (t.includes('dropjump')        || t === 'dj')  return 'Drop Jump';
-  if (t.includes('squatjump')       || t === 'sj')  return 'Squat Jump';
-  if (t.includes('pogojump') || t.includes('pogo')) return 'Pogo Jump';
-  if (t.includes('imtp') || t.includes('isometricmidthigh')) return 'IMTP';
-  return type;
+
+  // Countermovement Jump variants
+  if (t === 'leftcmj' || t.includes('leftcountermovement')) return 'Left Side Countermovement Jump';
+  if (t === 'rightcmj' || t.includes('rightcountermovement')) return 'Right Side Countermovement Jump';
+  if (t === 'slcmj' || t.includes('singlelegcountermovement')) return 'Single Leg Countermovement Jump';
+  if (t === 'cmj' || t.includes('countermovement')) return 'Countermovement Jump';
+
+  // Drop Jump variants
+  if (t === 'leftdj' || t.includes('leftdrop')) return 'Left Side Drop Jump';
+  if (t === 'rightdj' || t.includes('rightdrop')) return 'Right Side Drop Jump';
+  if (t === 'sldj' || t.includes('singlelegdrop') || t.includes('singlelegdj')) return 'Single Leg Drop Jump';
+  if (t === 'dj' || t.includes('dropjump')) return 'Drop Jump';
+
+  // Squat Jump variants
+  if (t === 'slsj' || t.includes('singlelegsquat')) return 'Single Leg Squat Jump';
+  if (t === 'sj' || t.includes('squatjump')) return 'Squat Jump';
+
+  // Pogo Jump variants
+  if (t.includes('pogo')) return 'Pogo Jump';
+
+  // Horizontal jump / hop tests
+  if (t === 'slhj' || t.includes('singleleghopdistance') || t.includes('singlelegbroadjump') ||
+      t.includes('singleleghop')) return 'Single Leg Hop for Distance';
+  if (t === 'slj' || t.includes('standinglongjump') || t.includes('standingbroadjump')) return 'Standing Long Jump';
+  if (t === 'hj' || t === 'broadjump' || t.includes('horizontaljump')) return 'Horizontal Jump';
+
+  // Isometric tests
+  if (t === 'imtp' || t.includes('isometricmidthigh') || t.includes('midthighpull')) return 'Isometric Mid-Thigh Pull';
+  if (t === 'shldisoy' || t.includes('shouldery') || (t.includes('shoulder') && t.includes('y'))) return 'Isometric Shoulder Y-test';
+  if (t.includes('isometricsquat') || t.includes('isosquat')) return 'Isometric Squat';
+  if (t.includes('isometricpush') || t.includes('isopush')) return 'Isometric Push';
+
+  return type; // preserve original for any unrecognised test
 }
 
 // ── Limb summary (used by the L/R comparison UI) ───────────────────────────────
