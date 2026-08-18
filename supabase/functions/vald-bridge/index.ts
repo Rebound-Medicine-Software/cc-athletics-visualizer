@@ -494,12 +494,13 @@ async function handleDetail(tenantId: string, testId: string) {
     : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
 
   const best = (trials[0] ?? {}) as Record<string, unknown>;
-  const results = (best.results ?? []) as ValdResult[];
+    const results = (best.results ?? []) as ValdResult[];
+  const allR    = allMetrics(results); // shared raw map — reused for limb fallbacks
 
   return {
     trialCount: trials.length,
     limb: best.limb ?? null,
-    raw: allMetrics(results),
+    raw: allR,
     ...flatMetrics(results),
 
     // Extended CMJ metrics (IDs verified against live /trials payloads)
