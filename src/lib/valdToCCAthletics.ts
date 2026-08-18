@@ -93,12 +93,16 @@ function rawLimb(raw: Raw, limb: 'Left' | 'Right', ...ids: string[]): number | u
 
 export function classifyTestType(type: string): 'jump' | 'isometric' | 'pogo' {
   const t = type.toLowerCase();
+  const c = t.replace(/[\s_-]/g, '');
   if (t.includes('pogo')) return 'pogo';
+  // Reactive hop tests behave like pogo (RSI / contact time)
+  if (c === 'hj' || c === 'slhj' || c.includes('hoptest') || c.includes('singleleghop')) return 'pogo';
   if (
     t.includes('isometric') || t.includes('mvc')    ||
     t.includes('imtp')      || t.includes('soleus')  ||
     t.includes('gastroc')   || t.includes('copenhagen') ||
-    t.includes('adductor')  || t === 'shldisoy'     ||
+    t.includes('adductor')  || c === 'shldisoy'     ||
+    c.includes('shoulderisoy') || c.includes('shoulderiso-y') ||
     (t.includes('shoulder') && (t.includes('y') || t.includes('iso'))) ||
     t.includes('nordboard') || t.includes('nordbord')
   ) return 'isometric';
@@ -127,20 +131,20 @@ export function mapTestName(type: string): string {
   // Pogo Jump variants
   if (t.includes('pogo')) return 'Pogo Jump';
 
-  // Horizontal jump / hop tests
-  if (t === 'slhj' || t.includes('singleleghopdistance') || t.includes('singlelegbroadjump') ||
-      t.includes('singleleghop')) return 'Single Leg Hop for Distance';
-  if (t === 'slj' || t.includes('standinglongjump') || t.includes('standingbroadjump')) return 'Standing Long Jump';
-  if (t === 'hj' || t === 'broadjump' || t.includes('horizontaljump')) return 'Horizontal Jump';
+  // Hop / single leg jump tests
+  if (t === 'slhj' || t.includes('singleleghoptest') || t.includes('singleleghop')) return 'Single Leg Hop Test';
+  if (t === 'slj' || t.includes('singlelegjump')) return 'Single Leg Jump';
+  if (t === 'hj' || t.includes('hoptest')) return 'Hop Test';
 
   // Isometric tests
   if (t === 'imtp' || t.includes('isometricmidthigh') || t.includes('midthighpull')) return 'Isometric Mid-Thigh Pull';
-  if (t === 'shldisoy' || t.includes('shouldery') || (t.includes('shoulder') && t.includes('y'))) return 'Isometric Shoulder Y-test';
+  if (t === 'shldisoy' || t.includes('shoulderisoy') || t.includes('shouldery') || (t.includes('shoulder') && t.includes('y'))) return 'Shoulder ISO-Y';
   if (t.includes('isometricsquat') || t.includes('isosquat')) return 'Isometric Squat';
   if (t.includes('isometricpush') || t.includes('isopush')) return 'Isometric Push';
 
   return type; // preserve original for any unrecognised test
 }
+
 
 // ── Limb summary (used by the L/R comparison UI) ───────────────────────────────
 
