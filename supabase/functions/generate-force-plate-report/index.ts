@@ -104,7 +104,42 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
       ];
-    case 'Single Leg Jump':\n      return [\n        {icon:'⚡',title:'RSI',metricKey:'rsi',unit:''},\n        {icon:'📏',title:'Jump Height (cm)',metricKey:'jump_height_ft',keyOverride:'jump_height_cm',unit:'cm'},\n        {icon:'⏱️',title:'Contact Time',metricKey:'contact_time',unit:'ms'},\n        {icon:'⏱️',title:'Flight Time',metricKey:'flight_time',unit:'ms'},\n      ];\n    case 'Single Leg Drop Jump':\n      return [\n        {icon:'⚡',title:'Reactive Strength Index',metricKey:'rsi',unit:''},\n        {icon:'📏',title:'Jump Height (cm)',metricKey:'jump_height_ft',keyOverride:'jump_height_cm',unit:'cm'},\n        {icon:'⏱️',title:'Contact Time',metricKey:'contact_time',unit:'ms'},\n        {icon:'⏱️',title:'Flight Time',metricKey:'flight_time',unit:'ms'},\n      ];\n    case 'Hop Test':\n      return [\n        {icon:'⚡',title:'RSI',metricKey:'avg_rsi',fallbackKeys:['rsi'],unit:''},\n        {icon:'⏱️',title:'Contact Time',metricKey:'avg_contact_time',fallbackKeys:['contact_time'],unit:'ms'},\n        {icon:'⏱️',title:'Flight Time',metricKey:'avg_flight_time',fallbackKeys:['flight_time'],unit:'ms'},\n        {icon:'📏',title:'Jump Height (cm)',metricKey:'avg_jump_height',keyOverride:'avg_jump_height_cm',unit:'cm'},\n      ];\n    case 'Single Leg Hop Test':\n      return [\n        {icon:'⚡',title:'RSI',metricKey:'avg_rsi',fallbackKeys:['rsi'],unit:''},\n        {icon:'⏱️',title:'Contact Time',metricKey:'avg_contact_time',fallbackKeys:['contact_time'],unit:'ms'},\n        {icon:'⏱️',title:'Flight Time',metricKey:'avg_flight_time',fallbackKeys:['flight_time'],unit:'ms'},\n        {icon:'📏',title:'Jump Height (cm)',metricKey:'avg_jump_height',keyOverride:'avg_jump_height_cm',unit:'cm'},\n      ];\n    case 'Shoulder ISO-Y':\n      return [\n        {icon:'⚡',title:'Peak Force',metricKey:'force_peak',fallbackKeys:['peak_vertical_force'],unit:'N'},\n        {icon:'📈',title:'RFD Max',metricKey:'rfd_max',fallbackKeys:['rfd_at_150ms'],unit:'N/s'},\n        {icon:'⚡',title:'Force @ 50ms',metricKey:'force_50ms',fallbackKeys:['force_at_50ms'],unit:'N'},\n        {icon:'⚡',title:'Force @ 200ms',metricKey:'force_200ms',fallbackKeys:['force_at_200ms'],unit:'N'},\n      ];\n    case 'Single Leg Jump':\n      return [\n        {icon:'J',title:'RSI',metricKey:'rsi',unit:''},\n        {icon:'J',title:'Jump Height (cm)',metricKey:'jump_height_ft',keyOverride:'jump_height_cm',unit:'cm'},\n        {icon:'J',title:'Contact Time',metricKey:'contact_time',unit:'ms'},\n        {icon:'J',title:'Flight Time',metricKey:'flight_time',unit:'ms'},\n      ];\n    case 'Single Leg Drop Jump':\n      return [\n        {icon:'J',title:'Reactive Strength Index',metricKey:'rsi',unit:''},\n        {icon:'J',title:'Jump Height (cm)',metricKey:'jump_height_ft',keyOverride:'jump_height_cm',unit:'cm'},\n        {icon:'J',title:'Contact Time',metricKey:'contact_time',unit:'ms'},\n        {icon:'J',title:'Flight Time',metricKey:'flight_time',unit:'ms'},\n      ];\n    case 'Hop Test':\n      return [\n        {icon:'H',title:'RSI',metricKey:'avg_rsi',fallbackKeys:['rsi'],unit:''},\n        {icon:'H',title:'Contact Time',metricKey:'avg_contact_time',fallbackKeys:['contact_time'],unit:'ms'},\n        {icon:'H',title:'Flight Time',metricKey:'avg_flight_time',fallbackKeys:['flight_time'],unit:'ms'},\n        {icon:'H',title:'Jump Height (cm)',metricKey:'avg_jump_height',keyOverride:'avg_jump_height_cm',unit:'cm'},\n      ];\n    case 'Single Leg Hop Test':\n      return [\n        {icon:'H',title:'RSI',metricKey:'avg_rsi',fallbackKeys:['rsi'],unit:''},\n        {icon:'H',title:'Contact Time',metricKey:'avg_contact_time',fallbackKeys:['contact_time'],unit:'ms'},\n        {icon:'H',title:'Flight Time',metricKey:'avg_flight_time',fallbackKeys:['flight_time'],unit:'ms'},\n        {icon:'H',title:'Jump Height (cm)',metricKey:'avg_jump_height',keyOverride:'avg_jump_height_cm',unit:'cm'},\n      ];\n    case 'Shoulder ISO-Y':\n      return [\n        {icon:'I',title:'Peak Force',metricKey:'force_peak',fallbackKeys:['peak_vertical_force'],unit:'N'},\n        {icon:'I',title:'RFD Max',metricKey:'rfd_max',fallbackKeys:['rfd_at_150ms'],unit:'N/s'},\n        {icon:'I',title:'Force @ 50ms',metricKey:'force_50ms',fallbackKeys:['force_at_50ms'],unit:'N'},\n        {icon:'I',title:'Force @ 200ms',metricKey:'force_200ms',fallbackKeys:['force_at_200ms'],unit:'N'},\n      ];\n    default:
+    case "Single Leg Jump":
+      return [
+        { icon: "J", title: "RSI", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+        { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+      ];
+    case "Single Leg Drop Jump":
+      return [
+        { icon: "J", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+        { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+      ];
+    case "Hop Test":
+      return [
+        { icon: "H", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "H", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
+        { icon: "H", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
+        { icon: "H", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
+      ];
+    case "Single Leg Hop Test":
+      return [
+        { icon: "H", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "H", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
+        { icon: "H", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
+        { icon: "H", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
+      ];
+    case "Shoulder ISO-Y":
+      return [
+        { icon: "I", title: "Peak Force", metricKey: "force_peak", fallbackKeys: ["peak_vertical_force"], unit: "N" },
+        { icon: "I", title: "RFD Max", metricKey: "rfd_max", fallbackKeys: ["rfd_at_150ms"], unit: "N/s" },
+        { icon: "I", title: "Force @ 50ms", metricKey: "force_50ms", fallbackKeys: ["force_at_50ms"], unit: "N" },
+        { icon: "I", title: "Force @ 200ms", metricKey: "force_200ms", fallbackKeys: ["force_at_200ms"], unit: "N" },
+      ];
+        default:
       // Check for Left/Right Side isometric tests
       if (testName.startsWith('Left Side') || testName.startsWith('Right Side')) {
         return [
