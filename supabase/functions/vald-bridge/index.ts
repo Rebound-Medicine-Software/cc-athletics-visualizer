@@ -315,21 +315,37 @@ const ID_CONTACT = [
 
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
+  // Build raw map once — used for fallback lookups that firstMetric() misses.
+  // Confirmed from live VALD API: CONTACT_TIME (DJ/SLDJ) and HOP_BEST_* (HJ/SLHJ)
+  // are present in allMetrics() but not found by firstMetric() due to resultId mismatch.
+  const raw = allMetrics(results);
+  const r = (k: string): number | null => (raw[k] != null ? raw[k] : null);
+
+  const stdCT = firstMetric(results, ID_CONTACT, "Both");
+
+  // HJ / SLHJ: all metrics use HOP_BEST_* prefix (confirmed from live /trials response)
+  const hopH   = r("HOP_BEST_JUMP_HEIGHT_Trial");
+  const hopRSI = r("HOP_BEST_RSI_Trial");
+  const hopCT  = r("HOP_BEST_CONTACT_TIME_Trial");
+
   return {
-    cmjH: firstMetric(results, ID_HEIGHT, "Both"),
-    cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
-    cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
-    cmjRSI: firstMetric(results, ID_RSI_MOD, "Both"),
-    cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
+    cmjH:    firstMetric(results, ID_HEIGHT, "Both"),
+    cmjHL:   firstMetric(results, ID_HEIGHT, "Left"),
+    cmjHR:   firstMetric(results, ID_HEIGHT, "Right"),
+    cmjRSI:  firstMetric(results, ID_RSI_MOD, "Both"),
+    cmjPP:   firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
       firstMetric(results, ID_HEIGHT, "Asym") ??
       metric(results, "PEAK_TAKEOFF_FORCE", "Asym") ??
       metric(results, "ASYM_INDEX", "Both"),
-    djH: firstMetric(results, ID_HEIGHT, "Both"),
+    djH:   firstMetric(results, ID_HEIGHT, "Both"),
     djRSI: firstMetric(results, ID_RSI, "Both") ?? firstMetric(results, ID_RSI_MOD, "Both"),
-    djCT: firstMetric(results, ID_CONTACT, "Both"),
-    pjH: firstMetric(results, ID_HEIGHT, "Both"),
-    pjRSI: firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both"),
+    // Raw map fallback: CONTACT_TIME_Trial confirmed = 0.23s (DJ) / 0.34s (SLDJ) in live data
+    djCT:  stdCT ?? r("CONTACT_TIME_Trial"),
+    // Raw map fallback: HOP_BEST_* confirmed in live HJ/SLHJ /trials response
+    pjH:   firstMetric(results, ID_HEIGHT, "Both") ?? hopH,
+    pjRSI: firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both") ?? hopRSI,
+    pjCT:  stdCT ?? hopCT,
   };
 }
 
