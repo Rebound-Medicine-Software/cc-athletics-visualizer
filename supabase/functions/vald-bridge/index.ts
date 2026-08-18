@@ -306,7 +306,12 @@ const ID_HEIGHT = ["JUMP_HEIGHT_IMP_MOM", "JUMP_HEIGHT", "IMPULSE_JUMP_HEIGHT"];
 const ID_RSI_MOD = ["RSI_MODIFIED", "RSI_MODIFIED_IMP_MOM"];
 const ID_RSI = ["RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
 const ID_PEAK_POWER = ["PEAK_TAKEOFF_POWER", "PEAK_PROPULSIVE_POWER", "PEAK_PROPULSIVE_PWR"];
-const ID_CONTACT = ["GROUND_CONTACT_TIME", "CONTRACTION_TIME"];
+const ID_CONTACT = [
+  "GROUND_CONTACT_TIME",
+  "CONTRACTION_TIME",
+  "CONTACT_TIME",
+  "TOUCHDOWN_TO_TAKEOFF_DURATION",
+];
 
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
@@ -347,8 +352,12 @@ async function handleAthletes(tenantId: string) {
       givenName: p.givenName ?? "",
       familyName: p.familyName ?? "",
       dob: p.dateOfBirth ?? "",
-      sex: p.sex ?? "",
-      teams: ((p.teams as { name: string }[]) ?? []).map((t) => t.name).join(", "),
+      sex: (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
+      teams: (() => {
+        const teamArr = (p.teams as { name: string }[] | undefined) ??
+                        (p.groups as { name: string }[] | undefined) ?? [];
+        return teamArr.map((t) => t.name).join(", ");
+      })(),
     }))
     .sort((a, b) => (a.name as string).localeCompare(b.name as string));
 

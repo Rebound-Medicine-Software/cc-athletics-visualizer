@@ -21,9 +21,20 @@ export function getMetricTypesForTest(testName: string): string[] {
     case "Left Side Squat Jump":
     case "Right Side Squat Jump":
       return ["Jump Height (cm)", "Peak Landing Force", "Ground Contact Time (s)", "Reactive Strength Index"];
+    case "Single Leg Drop Jump":
     case "Left Side Drop Jump":
     case "Right Side Drop Jump":
-      return ["Jump Height (cm)", "Peak Landing Force", "Ground Contact Time (s)", "Reactive Strength Index"];
+      return ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"];
+    case "Standing Long Jump":
+    case "Horizontal Jump":
+      return ["Peak Takeoff Force", "Flight Time", "Peak Landing Force", "Takeoff Velocity"];
+    case "Single Leg Hop for Distance":
+      return ["Peak Takeoff Force", "Contact Time", "Peak Landing Force", "Reactive Strength Index"];
+    case "Isometric Shoulder Y-test":
+    case "Isometric Mid-Thigh Pull":
+    case "Isometric Squat":
+    case "Isometric Push":
+      return ["Peak Force", "RFD Max", "Impulse @ 50ms", "Impulse @ 250ms"];
     default:
       // Left/Right Side isometric tests (e.g. "Left Side IMTP")
       if (testName.startsWith("Left Side") || testName.startsWith("Right Side")) {

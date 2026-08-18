@@ -50,6 +50,40 @@ export const getCardConfigs = (testName?: string) => {
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
       ];
+    case "Single Leg Drop Jump":
+    case "Left Side Drop Jump":
+    case "Right Side Drop Jump":
+      return [
+        { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+      ];
+    case "Standing Long Jump":
+    case "Horizontal Jump":
+      return [
+        { icon: "⚡", title: "Peak Takeoff Force", metricKey: "peak_force", unit: "N" },
+        { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
+        { icon: "⚡", title: "Takeoff Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
+      ];
+    case "Single Leg Hop for Distance":
+      return [
+        { icon: "⚡", title: "Peak Takeoff Force", metricKey: "peak_force", unit: "N" },
+        { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
+        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+      ];
+    case "Isometric Shoulder Y-test":
+    case "Isometric Mid-Thigh Pull":
+    case "Isometric Squat":
+    case "Isometric Push":
+      return [
+        { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
+        { icon: "📈", title: "RFD Max", metricKey: "rfd_max", unit: "N/s" },
+        { icon: "⚡", title: "Impulse @ 50ms", metricKey: "impulse_50ms", unit: "N·s" },
+        { icon: "⚡", title: "Impulse @ 250ms", metricKey: "impulse_250ms", unit: "N·s" },
+      ];
     default:
       return [
         { icon: "⚡", title: "Peak Force", metricKey: "force_peak", unit: "N" },
