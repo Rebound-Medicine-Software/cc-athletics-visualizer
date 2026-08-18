@@ -515,13 +515,13 @@ async function handleDetail(tenantId: string, testId: string) {
     flightTime: metric(results, "FLIGHT_TIME", "Both"),
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
-    // Drop jump limbs
-    djL: metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left"),
-    djR: metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right"),
-    djAsym: firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym"),
+    // HOP_BEST_AVERAGE_FORCE_Left/Right confirmed in live HJ /trials response (1150/1312 N)
+    djL:   metric(results, "PEAK_LANDING_FORCE", "Left")  ?? firstMetric(results, ID_HEIGHT, "Left")  ?? allR["HOP_BEST_AVERAGE_FORCE_Left"]  ?? null,
+    djR:   metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null,
+    djAsym: firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym") ?? allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? null,
 
-    // Pogo
-    pjCT: firstMetric(results, ID_CONTACT, "Both"),
+    // Pogo — HOP_BEST_CONTACT_TIME_Trial confirmed = 0.18s (HJ) / 0.29s (SLHJ) in live data
+    pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
     // Isometric
     solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
