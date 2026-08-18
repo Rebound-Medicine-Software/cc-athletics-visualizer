@@ -347,8 +347,12 @@ async function handleAthletes(tenantId: string) {
       givenName: p.givenName ?? "",
       familyName: p.familyName ?? "",
       dob: p.dateOfBirth ?? "",
-      sex: p.sex ?? "",
-      teams: ((p.teams as { name: string }[]) ?? []).map((t) => t.name).join(", "),
+      sex: (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
+      teams: (() => {
+        const teamArr = (p.teams as { name: string }[] | undefined) ??
+                        (p.groups as { name: string }[] | undefined) ?? [];
+        return teamArr.map((t) => t.name).join(", ");
+      })(),
     }))
     .sort((a, b) => (a.name as string).localeCompare(b.name as string));
 
