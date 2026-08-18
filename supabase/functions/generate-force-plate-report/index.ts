@@ -106,28 +106,28 @@ function getCardConfigs(testName: string): CardConfig[] {
       ];
     case "Single Leg Jump":
       return [
-        { icon: "J", title: "RSI", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
       ];
     case "Single Leg Drop Jump":
       return [
-        { icon: "J", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
       ];
     case "Hop Test":
       return [
-        { icon: "H", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "H", title: "RSI (m/s)", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
         { icon: "H", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "H", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
         { icon: "H", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
       ];
     case "Single Leg Hop Test":
       return [
-        { icon: "H", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
+        { icon: "H", title: "RSI (m/s)", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
         { icon: "H", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "H", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
         { icon: "H", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
@@ -239,6 +239,11 @@ function formatMetricValue(value: number, metricKey: string): number {
       }
       // Already in cm
       return value;
+    case 'rsi':
+    case 'avg_rsi':
+      // VALD RSI_MODIFIED is cm/s (jump_height_cm / contact_time_s)
+      // Canonical display unit is m/s -> divide by 100 when value looks like cm/s
+      return value > 5 ? Math.round(value / 100 * 1000) / 1000 : value;
     case 'contact_time':
     case 'flight_time':
     case 'avg_flight_time':

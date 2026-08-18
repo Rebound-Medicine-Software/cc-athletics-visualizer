@@ -515,10 +515,25 @@ async function handleDetail(tenantId: string, testId: string) {
     flightTime: metric(results, "FLIGHT_TIME", "Both"),
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
-    // HOP_BEST_AVERAGE_FORCE_Left/Right confirmed in live HJ /trials response (1150/1312 N)
-    djL:   metric(results, "PEAK_LANDING_FORCE", "Left")  ?? firstMetric(results, ID_HEIGHT, "Left")  ?? allR["HOP_BEST_AVERAGE_FORCE_Left"]  ?? null,
-    djR:   metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null,
-    djAsym: firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym") ?? allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? null,
+    // Limb comparison — unilateral: best Left trial vs best Right trial
+    // bilateral: Left/Right force within single bilateral trial
+    djL: isUnilateral
+      ? firstMetric((bestForLimb("Left")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
+      : metric(results, "PEAK_LANDING_FORCE", "Left")  ?? firstMetric(results, ID_HEIGHT, "Left")  ?? allR["HOP_BEST_AVERAGE_FORCE_Left"]  ?? null,
+    djR: isUnilateral
+      ? firstMetric((bestForLimb("Right")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
+      : metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null,
+    djAsym: (() => {
+      const l = isUnilateral
+        ? firstMetric((bestForLimb("Left")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
+        : (firstMetric(results, ID_HEIGHT, "Asym") ?? allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? null);
+      const r = isUnilateral
+        ? firstMetric((bestForLimb("Right")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
+        : null;
+      if (isUnilateral && l != null && r != null && Math.max(l,r) > 0)
+        return Math.round(Math.abs(l - r) / Math.max(l, r) * 1000) / 10;
+      return l; // bilateral: already an asym value
+    })(),
 
     // Pogo — HOP_BEST_CONTACT_TIME_Trial confirmed = 0.18s (HJ) / 0.29s (SLHJ) in live data
     pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
