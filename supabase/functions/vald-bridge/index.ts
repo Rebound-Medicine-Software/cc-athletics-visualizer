@@ -344,10 +344,16 @@ function flatMetrics(results: ValdResult[]) {
     djCT:  stdCT ?? r("CONTACT_TIME_Trial"),
     // Raw map fallback: HOP_BEST_* confirmed in live HJ/SLHJ /trials response
     pjH:   firstMetric(results, ID_HEIGHT, "Both") ?? hopH,
-    // RSI: VALD stores in cm/s (jump_height_cm / contact_time_s); canonical unit is m/s
-    // Divide by 100 here so downstream code gets consistent m/s values
-    pjRSI: (() => { const v = firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both") ?? hopRSI; return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
-    cmjRSI_raw: firstMetric(results, ID_RSI_MOD, "Both"), // raw cm/s for reference
+    // pjRSI: for hop tests this comes from HOP_BEST_RSI which is ALREADY in m/s
+    // For CMJ-family, RSI_MODIFIED is in cm/s and needs /100
+    // We detect which by checking if hopRSI exists (hop tests) vs standard RSI (CMJ)
+    pjRSI: (function() {
+      var hopVal = hopRSI; // HOP_BEST_RSI_Trial — already m/s
+      if (hopVal != null) return Math.round(hopVal * 1000) / 1000;
+      var stdVal = firstMetric(results, ID_RSI_MOD, "Both") || firstMetric(results, ID_RSI, "Both");
+      // RSI_MODIFIED is cm/s for CMJ family -> divide by 100 to get m/s
+      return stdVal != null ? Math.round(stdVal / 100 * 10000) / 10000 : null;
+    }())
     pjCT:  stdCT ?? hopCT,
   };
 }
@@ -528,29 +534,27 @@ async function handleDetail(tenantId: string, testId: string) {
     flightTime: metric(results, "FLIGHT_TIME", "Both"),
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
-    // Per-limb: unilateral tests have trial.limb=Left/Right; bilateral have Left/Right within results
+    // Per-limb: unilateral tests have trial.limb=Left/Right; get best per limb
     djL: (function() {
-      if (isUnilateral) {
-        var lt = trials.filter(function(t) { return (t as Record<string,unknown>).limb === "Left"; });
-        if (!lt.length) return null;
-        var leftBest = lt.reduce(function(a, b) { return getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a; }) as Record<string,unknown>;
-        var lr = (leftBest.results ?? []) as ValdResult[];
+      var lt = trials.filter(function(t) { return t.limb === "Left"; });
+      if (lt.length > 0) {
+        var leftBest = lt.reduce(function(a,b) { return getH(b) > getH(a) ? b : a; });
+        var lr = leftBest.results || [];
         return firstMetric(lr, ID_HEIGHT, "Both");
       }
-      return metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left") ?? allR["HOP_BEST_AVERAGE_FORCE_Left"] ?? null;
+      return metric(results, "PEAK_LANDING_FORCE", "Left") || firstMetric(results, ID_HEIGHT, "Left") || allR["HOP_BEST_AVERAGE_FORCE_Left"] || null;
     }()),
     djR: (function() {
-      if (isUnilateral) {
-        var rt = trials.filter(function(t) { return (t as Record<string,unknown>).limb === "Right"; });
-        if (!rt.length) return null;
-        var rightBest = rt.reduce(function(a, b) { return getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a; }) as Record<string,unknown>;
-        var rr = (rightBest.results ?? []) as ValdResult[];
+      var rt = trials.filter(function(t) { return t.limb === "Right"; });
+      if (rt.length > 0) {
+        var rightBest = rt.reduce(function(a,b) { return getH(b) > getH(a) ? b : a; });
+        var rr = rightBest.results || [];
         return firstMetric(rr, ID_HEIGHT, "Both");
       }
-      return metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null;
+      return metric(results, "PEAK_LANDING_FORCE", "Right") || firstMetric(results, ID_HEIGHT, "Right") || allR["HOP_BEST_AVERAGE_FORCE_Right"] || null;
     }()),
-    djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym") ?? null,
-    pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
+    djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] || firstMetric(results, ID_HEIGHT, "Asym") || metric(results, "PEAK_LANDING_FORCE", "Asym") || null,
+    pjCT:    pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
     // Isometric
     solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
