@@ -528,46 +528,28 @@ async function handleDetail(tenantId: string, testId: string) {
     flightTime: metric(results, "FLIGHT_TIME", "Both"),
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
-    // Per-limb data for unilateral tests (SLJ, SLDJ, SLHJ)
-    // bridge scans all trials, splits by trial.limb = Left/Right, picks best per limb
-    djL: (() => {
+    // Per-limb: unilateral tests have trial.limb=Left/Right; bilateral have Left/Right within results
+    djL: (function() {
       if (isUnilateral) {
-        const lt = trials.filter(t => (t as Record<string,unknown>).limb === "Left");
-        const best = lt.length ? lt.reduce((a,b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a) as Record<string,unknown> : null;
-        return best ? firstMetric((best.results ?? []) as ValdResult[], ID_HEIGHT, "Both") : null;
+        var lt = trials.filter(function(t) { return (t as Record<string,unknown>).limb === "Left"; });
+        if (!lt.length) return null;
+        var leftBest = lt.reduce(function(a, b) { return getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a; }) as Record<string,unknown>;
+        var lr = (leftBest.results ?? []) as ValdResult[];
+        return firstMetric(lr, ID_HEIGHT, "Both");
       }
       return metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left") ?? allR["HOP_BEST_AVERAGE_FORCE_Left"] ?? null;
-    })(),
-    djR: (() => {
+    }()),
+    djR: (function() {
       if (isUnilateral) {
-        const rt = trials.filter(t => (t as Record<string,unknown>).limb === "Right");
-        const best = rt.length ? rt.reduce((a,b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a) as Record<string,unknown> : null;
-        return best ? firstMetric((best.results ?? []) as ValdResult[], ID_HEIGHT, "Both") : null;
+        var rt = trials.filter(function(t) { return (t as Record<string,unknown>).limb === "Right"; });
+        if (!rt.length) return null;
+        var rightBest = rt.reduce(function(a, b) { return getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a; }) as Record<string,unknown>;
+        var rr = (rightBest.results ?? []) as ValdResult[];
+        return firstMetric(rr, ID_HEIGHT, "Both");
       }
       return metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null;
-    })(),
-    djAsym: (() => {
-      const l = allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym");
-      return l;
-    })(),
-      ? firstMetric((bestForLimb("Left")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
-      : metric(results, "PEAK_LANDING_FORCE", "Left")  ?? firstMetric(results, ID_HEIGHT, "Left")  ?? allR["HOP_BEST_AVERAGE_FORCE_Left"]  ?? null,
-    djR: isUnilateral
-      ? firstMetric((bestForLimb("Right")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
-      : metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null,
-    djAsym: (() => {
-      const l = isUnilateral
-        ? firstMetric((bestForLimb("Left")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
-        : (firstMetric(results, ID_HEIGHT, "Asym") ?? allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? null);
-      const r = isUnilateral
-        ? firstMetric((bestForLimb("Right")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
-        : null;
-      if (isUnilateral && l != null && r != null && Math.max(l,r) > 0)
-        return Math.round(Math.abs(l - r) / Math.max(l, r) * 1000) / 10;
-      return l; // bilateral: already an asym value
-    })(),
-
-    // Pogo — HOP_BEST_CONTACT_TIME_Trial confirmed = 0.18s (HJ) / 0.29s (SLHJ) in live data
+    }()),
+    djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym") ?? null,
     pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
     // Isometric
