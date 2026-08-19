@@ -104,17 +104,24 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
       ];
+    // VALD unilateral tests: valdDetailToLimbPair() converts these to
+    // "Left Side X" / "Right Side X" pairs before reaching the report generator.
+    // These cases are fallbacks if a single record is passed directly.
     case "Single Leg Jump":
+    case "Left Side Single Leg Jump":
+    case "Right Side Single Leg Jump":
       return [
-        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
       ];
     case "Single Leg Drop Jump":
+    case "Left Side Single Leg Drop Jump":
+    case "Right Side Single Leg Drop Jump":
       return [
-        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
+        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
       ];
@@ -244,6 +251,10 @@ function formatMetricValue(value: number, metricKey: string): number {
       // VALD RSI_MODIFIED is cm/s (jump_height_cm / contact_time_s)
       // Canonical display unit is m/s -> divide by 100 when value looks like cm/s
       return value > 5 ? Math.round(value / 100 * 1000) / 1000 : value;
+    case 'rsi':
+    case 'avg_rsi':
+      // VALD bridge already converts RSI to m/s (÷100). No further conversion.
+      return Math.round(value * 1000) / 1000;
     case 'contact_time':
     case 'flight_time':
     case 'avg_flight_time':

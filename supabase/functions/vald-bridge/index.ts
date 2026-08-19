@@ -332,7 +332,7 @@ function flatMetrics(results: ValdResult[]) {
     cmjH:    firstMetric(results, ID_HEIGHT, "Both"),
     cmjHL:   firstMetric(results, ID_HEIGHT, "Left"),
     cmjHR:   firstMetric(results, ID_HEIGHT, "Right"),
-    cmjRSI:  firstMetric(results, ID_RSI_MOD, "Both"),
+    cmjRSI:  (() => { const v = firstMetric(results, ID_RSI_MOD, "Both"); return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
     cmjPP:   firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
       firstMetric(results, ID_HEIGHT, "Asym") ??
@@ -344,7 +344,10 @@ function flatMetrics(results: ValdResult[]) {
     djCT:  stdCT ?? r("CONTACT_TIME_Trial"),
     // Raw map fallback: HOP_BEST_* confirmed in live HJ/SLHJ /trials response
     pjH:   firstMetric(results, ID_HEIGHT, "Both") ?? hopH,
-    pjRSI: firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both") ?? hopRSI,
+    // RSI: VALD stores in cm/s (jump_height_cm / contact_time_s); canonical unit is m/s
+    // Divide by 100 here so downstream code gets consistent m/s values
+    pjRSI: (() => { const v = firstMetric(results, ID_RSI_MOD, "Both") ?? firstMetric(results, ID_RSI, "Both") ?? hopRSI; return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
+    cmjRSI_raw: firstMetric(results, ID_RSI_MOD, "Both"), // raw cm/s for reference
     pjCT:  stdCT ?? hopCT,
   };
 }
@@ -493,7 +496,17 @@ async function handleDetail(tenantId: string, testId: string) {
     ? body
     : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
 
-  const best = (trials[0] ?? {}) as Record<string, unknown>;
+  // Detect unilateral test by trial.limb values
+  const trialLimbs = trials.map(t => String((t as Record<string,unknown>).limb ?? "Both"));
+  const isUnilateral = trialLimbs.some(l => l === "Left" || l === "Right") && !trialLimbs.includes("Both");
+  const getH = (t: Record<string,unknown>): number => {
+    const r = ((t.results ?? []) as ValdResult[]);
+    return firstMetric(r, ID_HEIGHT, "Both") ?? 0;
+  };
+  const primaryTrial = isUnilateral
+    ? trials.reduce((a, b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a, trials[0]) as Record<string,unknown>
+    : (trials[0] ?? {}) as Record<string, unknown>;
+
     const results = (best.results ?? []) as ValdResult[];
   const allR    = allMetrics(results); // shared raw map — reused for limb fallbacks
 
@@ -515,9 +528,28 @@ async function handleDetail(tenantId: string, testId: string) {
     flightTime: metric(results, "FLIGHT_TIME", "Both"),
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
 
-    // Limb comparison — unilateral: best Left trial vs best Right trial
-    // bilateral: Left/Right force within single bilateral trial
-    djL: isUnilateral
+    // Per-limb data for unilateral tests (SLJ, SLDJ, SLHJ)
+    // bridge scans all trials, splits by trial.limb = Left/Right, picks best per limb
+    djL: (() => {
+      if (isUnilateral) {
+        const lt = trials.filter(t => (t as Record<string,unknown>).limb === "Left");
+        const best = lt.length ? lt.reduce((a,b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a) as Record<string,unknown> : null;
+        return best ? firstMetric((best.results ?? []) as ValdResult[], ID_HEIGHT, "Both") : null;
+      }
+      return metric(results, "PEAK_LANDING_FORCE", "Left") ?? firstMetric(results, ID_HEIGHT, "Left") ?? allR["HOP_BEST_AVERAGE_FORCE_Left"] ?? null;
+    })(),
+    djR: (() => {
+      if (isUnilateral) {
+        const rt = trials.filter(t => (t as Record<string,unknown>).limb === "Right");
+        const best = rt.length ? rt.reduce((a,b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a) as Record<string,unknown> : null;
+        return best ? firstMetric((best.results ?? []) as ValdResult[], ID_HEIGHT, "Both") : null;
+      }
+      return metric(results, "PEAK_LANDING_FORCE", "Right") ?? firstMetric(results, ID_HEIGHT, "Right") ?? allR["HOP_BEST_AVERAGE_FORCE_Right"] ?? null;
+    })(),
+    djAsym: (() => {
+      const l = allR["HOP_BEST_AVERAGE_FORCE_Asym"] ?? firstMetric(results, ID_HEIGHT, "Asym") ?? metric(results, "PEAK_LANDING_FORCE", "Asym");
+      return l;
+    })(),
       ? firstMetric((bestForLimb("Left")?.results ?? []) as ValdResult[], ID_HEIGHT, "Both")
       : metric(results, "PEAK_LANDING_FORCE", "Left")  ?? firstMetric(results, ID_HEIGHT, "Left")  ?? allR["HOP_BEST_AVERAGE_FORCE_Left"]  ?? null,
     djR: isUnilateral

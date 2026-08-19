@@ -470,3 +470,92 @@ export function mergeWithCCData(
   return [...ccData, ...valdTestsToTestData(valdTests, athlete)]
     .sort((a, b) => b.test_date.localeCompare(a.test_date));
 }
+
+
+/**
+ * For unilateral VALD tests (SLJ, SLDJ, SLHJ), produce a Left/Right Side pair
+ * so the report generator renders a LIMB COMPARISON page (matching CC Athletics).
+ *
+ * Mapping:
+ *   SLJ  (Single Leg Jump)     → Left/Right Side Countermovement Jump
+ *   SLDJ (Single Leg Drop Jump)→ Left/Right Side Drop Jump
+ *   SLHJ (Single Leg Hop Test) → Left/Right Side Pogo Jump
+ *
+ * The bridge must return djL/djR from separate left/right trials.
+ */
+export function valdDetailToLimbPair(
+  detail: ValdTestDetail,
+  athlete: ValdAthlete,
+): TestData[] | null {
+  const t = detail.type.toLowerCase().replace(/[\s_-]/g, '');
+  
+  let baseName: string | null = null;
+  if (t === 'slj') baseName = 'Countermovement Jump';
+  else if (t === 'sldj') baseName = 'Drop Jump';
+  else if (t === 'slhj') baseName = 'Pogo Jump';
+  
+  if (!baseName) return null; // not a unilateral test we handle this way
+  
+  const raw = (detail as any).raw as Record<string, number> | undefined;
+  const djL: number | null = (detail as any).djL ?? null;
+  const djR: number | null = (detail as any).djR ?? null;
+  
+  if (djL == null && djR == null) return null; // no limb data available
+  
+  // Convert jump height cm → ft for CC Athletics (report generator converts back to cm)
+  const cmToFt = (cm: number | null) => cm != null ? Math.round(cm * 0.0328084 * 100000) / 100000 : undefined;
+  
+  // RSI already divided by 100 in bridge (cm/s → m/s)
+  const rsi = (detail as any).cmjRSI ?? (detail as any).pjRSI ?? null;
+  const ct = (detail as any).djCT ?? (detail as any).pjCT ?? null;
+  const ft = raw?.['FLIGHT_TIME_Trial'] ?? null;
+  const pp = (detail as any).cmjPP ?? null;
+  
+  const makeMetrics = (heightCm: number | null) => {
+    if (baseName === 'Pogo Jump') {
+      return {
+        avg_jump_height: heightCm != null ? heightCm / 100 : undefined, // metres
+        avg_rsi: rsi ?? undefined,
+        avg_contact_time: ct ?? undefined,
+        avg_flight_time: ft != null ? ft : undefined,
+        avg_power: pp ?? undefined,
+      };
+    }
+    return {
+      jump_height_ft: cmToFt(heightCm),
+      rsi: rsi ?? undefined,
+      contact_time: ct ?? undefined,
+      flight_time: ft ?? undefined,
+      peak_power: pp ?? undefined,
+    };
+  };
+
+  const base = {
+    athlete_id: athlete.id,
+    athlete_name: athlete.name,
+    team_name: athlete.teams,
+    test_date: detail.date,
+    repetition_number: 1,
+  };
+  
+  const results: TestData[] = [];
+  
+  if (djL != null) {
+    results.push({
+      ...base,
+      test_name: `Left Side ${baseName}`,
+      leg_stance: 'left_leg',
+      metrics: makeMetrics(djL) as any,
+    });
+  }
+  if (djR != null) {
+    results.push({
+      ...base,
+      test_name: `Right Side ${baseName}`,
+      leg_stance: 'right_leg',
+      metrics: makeMetrics(djR) as any,
+    });
+  }
+  
+  return results.length ? results : null;
+}
