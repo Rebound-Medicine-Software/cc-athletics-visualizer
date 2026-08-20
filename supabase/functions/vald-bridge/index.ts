@@ -554,7 +554,7 @@ async function handleDetail(tenantId: string, testId: string) {
       return metric(results, "PEAK_LANDING_FORCE", "Right") || firstMetric(results, ID_HEIGHT, "Right") || allR["HOP_BEST_AVERAGE_FORCE_Right"] || null;
     }()),
     djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] || firstMetric(results, ID_HEIGHT, "Asym") || metric(results, "PEAK_LANDING_FORCE", "Asym") || null,
-    pjCT:    pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
+    pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
     // Isometric
     solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
