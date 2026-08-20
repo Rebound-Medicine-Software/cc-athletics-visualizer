@@ -531,8 +531,9 @@ async function handleDetail(tenantId: string, testId: string) {
     netImpulse: firstMetric(results, ["POSITIVE_TAKEOFF_IMPULSE", "CONCENTRIC_IMPULSE", "NET_IMPULSE"]),
     brakingDuration: firstMetric(results, ["BRAKING_PHASE_DURATION", "BRAKING_DURATION"]),
     takeoffVelocity: firstMetric(results, ["TAKEOFF_VELOCITY", "PEAK_TAKEOFF_VELOCITY"]),
-    flightTime: metric(results, "FLIGHT_TIME", "Both"),
+    flightTime: metric(results, "FLIGHT_TIME", "Both") ?? allR["HOP_BEST_FLIGHT_TIME_Trial"] ?? null,
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
+    rfdMax: firstMetric(results, ["PEAK_RFD", "MAX_RFD", "RFD_AT_150MS", "RFD_AT_250MS"]) ?? allR["RFD_AT_150MS_Trial"] ?? allR["RFD_AT_250MS_Trial"] ?? null,
 
     // Per-limb: unilateral tests have trial.limb=Left/Right; get best per limb
     djL: (function() {
