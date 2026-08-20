@@ -513,12 +513,12 @@ async function handleDetail(tenantId: string, testId: string) {
     ? trials.reduce((a, b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a, trials[0]) as Record<string,unknown>
     : (trials[0] ?? {}) as Record<string, unknown>;
 
-    const results = (best.results ?? []) as ValdResult[];
+    const results = (primaryTrial.results ?? []) as ValdResult[];
   const allR    = allMetrics(results); // shared raw map — reused for limb fallbacks
 
   return {
     trialCount: trials.length,
-    limb: best.limb ?? null,
+    limb: primaryTrial.limb ?? null,
     raw: allR,
     ...flatMetrics(results),
 
