@@ -353,7 +353,8 @@ function flatMetrics(results: ValdResult[]) {
       var stdVal = firstMetric(results, ID_RSI_MOD, "Both") || firstMetric(results, ID_RSI, "Both");
       // RSI_MODIFIED is cm/s for CMJ family -> divide by 100 to get m/s
       return stdVal != null ? Math.round(stdVal / 100 * 10000) / 10000 : null;
-    }()),`r`n    pjCT:  stdCT ?? hopCT,
+    }()),
+    pjCT:  stdCT ?? hopCT,
   };
 }
 
