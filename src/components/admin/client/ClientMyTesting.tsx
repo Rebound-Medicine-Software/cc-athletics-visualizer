@@ -941,16 +941,40 @@ export const ClientMyTesting = () => {
   const [tab, setTab] = useState<TabKey>('overview');
 
   const { data: lastTest } = useQuery({
-    queryKey: ['client-last-test', athlete?.name],
+    queryKey: ['client-last-test', athlete?.name, athlete?.team_id],
     enabled: !!athlete?.name,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from('test_data')
-        .select('test_date, test_name, test_location, team_name')
-        .eq('athlete_name', athlete!.name)
-        .order('test_date', { ascending: false })
-        .limit(1);
+      // Resolve the athlete's team name so this lookup can be scoped by team —
+      // without this, a same-named athlete on a different team with a more
+      // recent test could silently resolve as "my last test" here, and the
+      // wrong team_name would then cascade into the Compare tab's club-
+      // ranking scope too. Same team_id -> teams.name pattern as
+      // useClientMetrics.ts's resolveTeamName() fix (PR #38).
+      let teamName: string | null = null;
+      if (athlete!.team_id) {
+        const { data: teamRow } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', athlete!.team_id)
+        .maybeSingle();
+        teamName = teamRow?.name ?? null;
+      }
+
+      const baseQuery = supabase
+      .from('test_data')
+      .select('test_date, test_name, test_location, team_name')
+      .eq('athlete_name', athlete!.name)
+      .order('test_date', { ascending: false })
+      .limit(1);
+
+      // Falls back to the unscoped query only if the team lookup itself
+      // came back empty — never after a scoped query returns zero rows,
+      // which would just re-introduce the cross-team collision.
+      const { data } = teamName
+      ? await baseQuery.eq('team_name', teamName)
+        : await baseQuery;
+
       return (data ?? [])[0] ?? null;
     },
   });
