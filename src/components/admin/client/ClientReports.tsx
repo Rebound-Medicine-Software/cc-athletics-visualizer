@@ -14,29 +14,52 @@ export const ClientReports = () => {
   const { data: athlete } = useClientAthlete();
   const [view, setView] = useState<View>('report');
 
-  const { data: tests, isLoading } = useQuery({
-    queryKey: ['client-reports-tests', athlete?.name],
-    enabled: !!athlete?.name,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('test_data')
-        .select('test_date, test_name, test_location')
-        .eq('athlete_name', athlete!.name)
-        .order('test_date', { ascending: false })
-        .limit(30);
-      const byDate = new Map<string, { date: string; tests: string[]; location: string | null }>();
-      (data ?? []).forEach((t: any) => {
-        const e = byDate.get(t.test_date);
-        if (e) {
-          if (!e.tests.includes(t.test_name)) e.tests.push(t.test_name);
-        } else {
-          byDate.set(t.test_date, { date: t.test_date, tests: [t.test_name], location: t.test_location });
-        }
-      });
-      return Array.from(byDate.values());
-    },
-  });
+    const { data: tests, isLoading } = useQuery({
+            queryKey: ['client-reports-tests', athlete?.name, athlete?.team_id],
+            enabled: !!athlete?.name,
+            staleTime: 60_000,
+            queryFn: async () => {
+                      // Resolve the athlete's team name so this lookup can be scoped by team —
+                      // without this, a same-named athlete on a different team could have
+                      // their test sessions silently mixed into this athlete's own "Test
+                      // history" log. Same team_id -> teams.name pattern as
+                      // ClientMyTesting.tsx's resolveTeamName()-style fix (PR #39).
+                      let teamName: string | null = null;
+                      if (athlete!.team_id) {
+                                  const { data: teamRow } = await supabase
+                                    .from('teams')
+                                    .select('name')
+                                    .eq('id', athlete!.team_id)
+                                    .maybeSingle();
+                                  teamName = teamRow?.name ?? null;
+                      }
+
+                      const baseQuery = supabase
+                        .from('test_data')
+                        .select('test_date, test_name, test_location')
+                        .eq('athlete_name', athlete!.name)
+                        .order('test_date', { ascending: false })
+                        .limit(30);
+
+                      // Falls back to the unscoped query only if the team lookup itself
+                      // came back empty — never after a scoped query returns zero rows,
+                      // which would just re-introduce the cross-team collision.
+                      const { data } = teamName
+                        ? await baseQuery.eq('team_name', teamName)
+                                  : await baseQuery;
+
+                      const byDate = new Map<string, { date: string; tests: string[]; location: string | null }>();
+                      (data ?? []).forEach((t: any) => {
+                                  const e = byDate.get(t.test_date);
+                                  if (e) {
+                                                if (!e.tests.includes(t.test_name)) e.tests.push(t.test_name);
+                                  } else {
+                                                byDate.set(t.test_date, { date: t.test_date, tests: [t.test_name], location: t.test_location });
+                                  }
+                      });
+                      return Array.from(byDate.values());
+            },
+    });
 
   return (
     <div className="space-y-6">
