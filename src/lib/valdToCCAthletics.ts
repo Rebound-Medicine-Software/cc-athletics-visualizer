@@ -374,7 +374,7 @@ function toPogoMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): PogoM
   const heightCm = test.pjH;
   const height = flavour === 'report' ? cmToM(heightCm) : orUndef(heightCm);
   const ctSeconds = ('pjCT' in d ? d.pjCT : null) ?? rawBoth(raw, 'GROUND_CONTACT_TIME');
-  const ftSeconds = rawBoth(raw, 'FLIGHT_TIME');
+  const ftSeconds = rawBoth(raw, 'FLIGHT_TIME') ?? rawBoth(raw, 'HOP_BEST_FLIGHT_TIME', 'HOP_FLIGHT_TIME', 'HOP_MEAN_FLIGHT_TIME') ?? (('flightTime' in (d as any)) ? (d as any).flightTime : undefined);
   const ct = flavour === 'report' ? toSec(ctSeconds) : toMs(ctSeconds);
   const ft = flavour === 'report' ? toSec(ftSeconds) : toMs(ftSeconds);
   const rsi = orUndef(test.pjRSI);
