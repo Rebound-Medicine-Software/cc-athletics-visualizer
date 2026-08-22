@@ -345,7 +345,7 @@ function toIsometricMetrics(test: ValdTest | ValdTestDetail): IsometricMetrics {
   if (d.gasL != null) m.force_250ms_left = d.gasL;
   if (d.gasR != null) m.force_250ms_right = d.gasR;
 
-  m.rfd_max          = fw('PEAK_RFD', 'RFD_MAX', 'MAX_RFD');
+  m.rfd_max          = fw('PEAK_RFD', 'RFD_MAX', 'MAX_RFD') ?? fw('RFD_AT_150MS', 'RFD_AT_200MS', 'RFD_AT_100MS');
   m.force_at_max_rfd = fw('FORCE_AT_MAX_RFD');
   m.rfd_50ms  = fw('RFD_AT_50MS', 'RFD_50MS');
   m.rfd_100ms = fw('RFD_AT_100MS', 'RFD_100MS');
