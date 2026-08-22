@@ -30,6 +30,16 @@ export function getMetricTypesForTest(testName: string): string[] {
       return ["Peak Takeoff Force", "Flight Time", "Peak Landing Force", "Takeoff Velocity"];
     case "Single Leg Hop for Distance":
       return ["Peak Takeoff Force", "Contact Time", "Peak Landing Force", "Reactive Strength Index"];
+    case "Hop Test":
+      return ["RSI (m/s)", "Contact Time", "Flight Time", "Jump Height (cm)"];
+    case "Single Leg Hop Test":
+      return ["RSI (m/s)", "Contact Time", "Flight Time", "Jump Height (cm)"];
+    case "Single Leg Jump":
+      return ["RSI (m/s)", "Jump Height (cm)", "Contact Time", "Flight Time"];
+    case "Single Leg Drop Jump":
+      return ["Jump Height (cm)", "RSI (m/s)", "Contact Time", "Flight Time"];
+    case "Shoulder ISO-Y":
+      return ["Peak Force", "RFD Max", "Force @ 50ms", "Force @ 200ms"];
     case "Isometric Shoulder Y-test":
     case "Isometric Mid-Thigh Pull":
     case "Isometric Squat":
