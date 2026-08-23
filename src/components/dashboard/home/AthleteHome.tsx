@@ -18,7 +18,7 @@ export const AthleteHome = ({ setActiveSection }: Props) => {
   const { user } = useAuth();
   const { teamId } = useEffectiveTeamId();
 
-  const { data: progress, isLoading: progressLoading } = useAthleteProgress(user?.id);
+  const { data: progress, isLoading: progressLoading } = useAthleteProgress(user?.id, teamId);
   const { data: todayBookings, isLoading: bookingsLoading } = useTodayBookings(teamId);
 
   const goSection = (s: string) => setActiveSection?.(s);
