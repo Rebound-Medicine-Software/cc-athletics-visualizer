@@ -599,6 +599,11 @@ serve(async (req: Request) => {
       const { body: rawBody } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
       payload = rawBody;
 
+    } else if (action === "rawprofiles") {
+      // Debug: returns raw Profiles API response before any mapping
+      const { body: rawBody } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
+      payload = rawBody;
+
     } else if (action === "details") {
       // Batched detail — one request (and one auth token) for many tests,
       // which avoids hammering the VALD auth quota from the browser.
