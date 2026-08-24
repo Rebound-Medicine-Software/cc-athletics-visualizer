@@ -594,10 +594,52 @@ serve(async (req: Request) => {
       const testId = url.searchParams.get("testId") ?? "";
       if (!testId) throw new Error("testId is required");
       payload = await handleDetail(tenantId, testId);
+    } else if (action === "migrate") {
+      // ONE-TIME: create vald_profile_metadata table — delete this block after running
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const sql = `
+        create table if not exists vald_profile_metadata (
+          profile_id text primary key,
+          sex text, weight_kg numeric(5,2), height_cm numeric(5,1),
+          position text, sport text, team text, notes text,
+          updated_at timestamptz default now(), created_at timestamptz default now()
+        );
+        alter table vald_profile_metadata enable row level security;
+        do $$ begin
+          if not exists (select 1 from pg_policies where tablename='vald_profile_metadata' and policyname='vald_meta_auth') then
+            execute 'create policy vald_meta_auth on vald_profile_metadata for all to authenticated using (true) with check (true)';
+          end if;
+        end $$;
+      `;
+      const { error: migErr } = await admin.rpc("exec_sql" as any, { sql });
+      payload = migErr ? { error: migErr.message } : { ok: true, message: "Table created" };
+
     } else if (action === "rawprofiles") {
       // Debug: returns raw Profiles API response before any mapping
       const { body: rawBody } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
       payload = rawBody;
+
+    } else if (action === "migrate") {
+      // ONE-TIME: create vald_profile_metadata table — delete this block after running
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const sql = `
+        create table if not exists vald_profile_metadata (
+          profile_id text primary key,
+          sex text, weight_kg numeric(5,2), height_cm numeric(5,1),
+          position text, sport text, team text, notes text,
+          updated_at timestamptz default now(), created_at timestamptz default now()
+        );
+        alter table vald_profile_metadata enable row level security;
+        do $$ begin
+          if not exists (select 1 from pg_policies where tablename='vald_profile_metadata' and policyname='vald_meta_auth') then
+            execute 'create policy vald_meta_auth on vald_profile_metadata for all to authenticated using (true) with check (true)';
+          end if;
+        end $$;
+      `;
+      const { error: migErr } = await admin.rpc("exec_sql" as any, { sql });
+      payload = migErr ? { error: migErr.message } : { ok: true, message: "Table created" };
 
     } else if (action === "rawprofiles") {
       // Debug: returns raw Profiles API response before any mapping
