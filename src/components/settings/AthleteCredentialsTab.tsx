@@ -22,6 +22,7 @@ import { BulkSportsDialog } from "./BulkSportsDialog";
 import { athleteMatchesSport, ALL_CANONICAL_SPORTS } from "@/lib/sports/normalize";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Tags } from "lucide-react";
+import { ValdAthleteMetadataSection } from "./ValdAthleteMetadataSection";
 
 interface Athlete {
   id: string;
@@ -74,6 +75,7 @@ export const AthleteCredentialsTab = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   
+  const [athleteTab, setAthleteTab] = useState<"cc" | "vald">("cc");
   const canEditAvatar = profile?.role === 'organisation' || profile?.role === 'super_admin';
 
   // Dirty whenever an inline edit form is open with any user input
@@ -703,7 +705,12 @@ export const AthleteCredentialsTab = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex gap-2 border-b pb-3 mb-4">
+        <button onClick={() => setAthleteTab("cc")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${athleteTab === "cc" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>CC Athletics Athletes</button>
+        <button onClick={() => setAthleteTab("vald")} className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${athleteTab === "vald" ? "border-teal-600 text-teal-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}>VALD Athletes</button>
+      </div>
+      {athleteTab === "vald" ? <ValdAthleteMetadataSection /> : (<>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 text-sm">
               <strong>Create Athlete Accounts:</strong> Add email and password to create a client account. 
               Athletes will receive login credentials via email and can access the patient portal at /auth → Athlete/Patient.

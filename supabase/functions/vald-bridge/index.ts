@@ -369,6 +369,12 @@ async function handleAthletes(tenantId: string) {
        (body as Record<string, unknown>)?.data ??
        [])) as Record<string, unknown>[];
 
+  // Join vald_profile_metadata for sex/weight/height/sport/position/team
+  let metaMap: Record<string, Record<string, unknown>> = {};
+  try {
+    const metaRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vald_profile_metadata?select=*`, { headers: { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` } });
+    if (metaRes.ok) { const rows = await metaRes.json() as Record<string,unknown>[]; rows.forEach(r => { metaMap[r.profile_id as string] = r; }); }
+  } catch { /* non-fatal */ }
   const athletes = list
     .map((p) => ({
       id: p.profileId ?? p.id ?? "",
