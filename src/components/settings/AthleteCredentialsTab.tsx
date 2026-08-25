@@ -255,7 +255,7 @@ export const AthleteCredentialsTab = () => {
           password: password,
           organisationName: team?.name || 'Your Organization',
           athleteType: 'Athlete',
-          // Deterministic linking — guarantees athletes.user_id is set and
+          // Deterministic linking Ã¢â‚¬â€ guarantees athletes.user_id is set and
           // profile.role/team_id are correct so the client can reach
           // /Dashboard(Client) on first login.
           athleteId: athlete.id,
@@ -443,7 +443,7 @@ export const AthleteCredentialsTab = () => {
       // Prepare update object
       const updateData: any = {};
 
-      // Sports tags — always persist if changed (allows clearing to [])
+      // Sports tags Ã¢â‚¬â€ always persist if changed (allows clearing to [])
       const currentSports = athlete.sports ?? [];
       const nextSports = editForm.sports ?? [];
       const sportsChanged =
@@ -464,7 +464,7 @@ export const AthleteCredentialsTab = () => {
         updateData.email = editForm.email;
       }
 
-      // Handle password and account creation — always route through the
+      // Handle password and account creation Ã¢â‚¬â€ always route through the
       // edge function so the Supabase Auth user is created/updated AND the
       // athlete row is linked. The `suppressEmail` flag controls whether
       // the welcome email is sent.
@@ -713,7 +713,7 @@ export const AthleteCredentialsTab = () => {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <p className="text-blue-800 text-sm">
               <strong>Create Athlete Accounts:</strong> Add email and password to create a client account. 
-              Athletes will receive login credentials via email and can access the patient portal at /auth → Athlete/Patient.
+              Athletes will receive login credentials via email and can access the patient portal at /auth Ã¢â€ â€™ Athlete/Patient.
             </p>
           </div>
 
@@ -958,7 +958,7 @@ export const AthleteCredentialsTab = () => {
                         {revealedPasswords[athlete.id] ? (
                           <span className="text-xs font-mono">{revealedPasswords[athlete.id]}</span>
                         ) : (
-                          <span className="text-xs">••••••••</span>
+                          <span className="text-xs">Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢</span>
                         )}
                         <Button
                           onClick={() => {
@@ -1003,7 +1003,7 @@ export const AthleteCredentialsTab = () => {
                         ))}
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">Ã¢â‚¬â€</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -1091,7 +1091,7 @@ export const AthleteCredentialsTab = () => {
               No athletes found. Try adjusting your search.
             </div>
           )}
-          </>)}
+      </>)}
         </div>
       </CardContent>
 
@@ -1179,7 +1179,7 @@ export const AthleteCredentialsTab = () => {
               .map((a) => (
                 <div key={a.id} className="flex items-center gap-2 text-sm px-2 py-1 rounded bg-muted">
                   <span className="font-medium">{a.name}</span>
-                  <span className="text-muted-foreground">— {a.team_name || 'No Team'}</span>
+                  <span className="text-muted-foreground">Ã¢â‚¬â€ {a.team_name || 'No Team'}</span>
                 </div>
               ))}
           </div>
