@@ -26,6 +26,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -572,11 +573,42 @@ async function handleDetail(tenantId: string, testId: string) {
 
   };
 }
+// ── REQUEST AUTHORIZATION ────────────────────────────────────────────────────
+// This endpoint returns every athlete/test in the whole VALD tenant and has no
+// scoping of its own. Supabase's default verify_jwt setting only requires *a*
+// valid JWT on the request - the public anon key (already embedded in the app
+// bundle by design, see framework.md Section 5) is itself a valid JWT, and the
+// frontend's own callBridge() falls back to sending that anon key whenever
+// there is no logged-in session. Without a check here, anyone who pulled the
+// anon key out of the bundle could call this function directly with no
+// account at all and pull every team's athlete list and force-plate test
+// data - the same class of gap already closed on fetch-cc-data (see
+// framework.md Section 3, item 15 / PR #21). This requires a real logged-in
+// user's access token instead of just any valid JWT.
+async function requireAuthenticatedUser(req: Request): Promise<Response | null> {
+  const authHeader = req.headers.get("authorization") ?? "";
+  const token = authHeader.replace("Bearer ", "");
+  const authClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+  const { data: userData, error: authError } = await authClient.auth.getUser(token);
+  if (authError || !userData?.user) {
+    return new Response(
+      JSON.stringify({ error: "Authentication required", code: "VALD_AUTH_REQUIRED" }),
+      { status: 401, headers: { ...CORS, "Content-Type": "application/json" } },
+      );
+  }
+  return null;
+}
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+
+  const authFailure = await requireAuthenticatedUser(req);
+  if (authFailure) return authFailure;
 
   try {
     const url = new URL(req.url);
