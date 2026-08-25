@@ -134,6 +134,7 @@ const Dashboard = () => {
         { id: "dashboard", label: "Analytics", icon: BarChart3, description: "Testing reports" },
         { id: "analysis", label: "Analysis", icon: FlaskConical, description: "Testing batteries & movement" },
         { id: "live-data", label: "Live Data", icon: Activity, description: "Real-time force plate data" },
+        { id: "vald-hub", label: "VALD Hub", icon: Database, description: "VALD ForceDecks assessments" },
       ],
     },
     {

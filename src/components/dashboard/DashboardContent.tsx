@@ -20,6 +20,7 @@ import { EmptyState } from "./EmptyState";
 import { ErrorState } from "./ErrorState";
 import { PageTransition } from "./PageTransition";
 import { BarChart3, Activity } from "lucide-react";
+import { ValdHub } from "@/pages/ValdHub";
 
 export interface DashboardContentProps {
   data: any[];
