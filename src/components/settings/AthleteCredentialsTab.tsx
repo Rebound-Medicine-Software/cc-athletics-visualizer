@@ -1091,6 +1091,7 @@ export const AthleteCredentialsTab = () => {
               No athletes found. Try adjusting your search.
             </div>
           )}
+          </>)}
         </div>
       </CardContent>
 

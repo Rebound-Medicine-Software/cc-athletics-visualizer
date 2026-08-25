@@ -2007,6 +2007,45 @@ export type Database = {
           },
         ]
       }
+      vald_profile_metadata: {
+        Row: {
+          created_at: string | null
+          height_cm: number | null
+          notes: string | null
+          position: string | null
+          profile_id: string
+          sex: string | null
+          sport: string | null
+          team: string | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          height_cm?: number | null
+          notes?: string | null
+          position?: string | null
+          profile_id: string
+          sex?: string | null
+          sport?: string | null
+          team?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          height_cm?: number | null
+          notes?: string | null
+          position?: string | null
+          profile_id?: string
+          sex?: string | null
+          sport?: string | null
+          team?: string | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       vald_token_cache: {
         Row: {
           access_token: string
