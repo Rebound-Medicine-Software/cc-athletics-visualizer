@@ -33,6 +33,14 @@ export interface ValdAthlete {
   dob: string;
   sex: string;
   teams: string;
+  // Metadata merged in server-side by vald-bridge's handleAthletes() from vald_profile_metadata.
+  // Not guaranteed present for every athlete - always fall back, never assume set.
+  weightKg?: number | null;
+  heightCm?: number | null;
+  position?: string | null;
+  sport?: string | null;
+  team?: string | null;
+  notes?: string | null;
 }
 
 export interface ValdTest {
