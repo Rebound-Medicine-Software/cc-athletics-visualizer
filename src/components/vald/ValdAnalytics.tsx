@@ -12,7 +12,7 @@ import { EliteComparison } from "@/components/dashboard/EliteComparison";
 import { SendReportsModal } from "@/components/dashboard/SendReportsModal";
 import { SectionHeader } from "@/components/dashboard/SectionHeader";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { useValdAthletes, useValdMultiAthleteTests } from "@/hooks/useVald";
+import { useValdAthletes, useValdMultiAthleteTests, ValdAthlete } from "@/hooks/useVald";
 import { valdTestsToTestData, valdTestsToReportData } from "@/lib/valdToCCAthletics";
 import { TestData } from "@/types/forcePlateTypes";
 
@@ -35,6 +35,14 @@ function normaliseSex(raw: string): string {
 function sportFromTeam(team: string): string {
   return team || "Unknown";
 }
+// Sport(s) for an athlete: prefer the metadata-set sport (vald_profile_metadata.sport,
+// merged onto the athlete object by vald-bridge's handleAthletes()) when present;
+// otherwise fall back to the team-name placeholder above, per team (unchanged behaviour).
+function sportsForAthlete(a: ValdAthlete, teams: string[]): string[] {
+  if (a.sport && a.sport.trim()) return [a.sport.trim()];
+  return teams.map(sportFromTeam);
+}
+
 
 /**
  * VALD Hub analytics — mirrors /dashboard > Analytics driven by VALD ForceDecks data.
@@ -87,7 +95,7 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
   const sportOptions = useMemo(() => {
     const set = new Set<string>();
     athletes.forEach((a) => {
-      if (a.teams) a.teams.split(",").map((t) => t.trim()).filter(Boolean).forEach((t) => set.add(sportFromTeam(t)));
+      const ts = a.teams ? a.teams.split(",").map((t) => t.trim()).filter(Boolean) : []; sportsForAthlete(a, ts).forEach((s) => set.add(s));
     });
     return Array.from(set).sort().map((s) => ({ value: s, label: s }));
   }, [athletes]);
@@ -97,7 +105,7 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
     return athletes.filter((a) => {
       const athleteTeams = a.teams ? a.teams.split(",").map((t) => t.trim()) : [];
       const athleteSex   = normaliseSex(a.sex);
-      const athleteSports = athleteTeams.map(sportFromTeam);
+      const athleteSports = sportsForAthlete(a, athleteTeams);
 
       if (selectedTeams.length  > 0 && !selectedTeams.some((t) => athleteTeams.includes(t)))   return false;
       if (selectedSex.length    > 0 && !selectedSex.includes(athleteSex))                       return false;
