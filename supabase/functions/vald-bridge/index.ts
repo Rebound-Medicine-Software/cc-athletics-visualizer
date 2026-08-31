@@ -376,20 +376,30 @@ async function handleAthletes(tenantId: string) {
     if (metaRes.ok) { const rows = await metaRes.json() as Record<string,unknown>[]; rows.forEach(r => { metaMap[r.profile_id as string] = r; }); }
   } catch { /* non-fatal */ }
   const athletes = list
-.map((p) => ({
-  id: p.profileId ?? p.id ?? "",
-  number: p.externalId ?? p.syncId ?? "",
-  name: `${p.givenName ?? ""} ${p.familyName ?? ""}`.trim(),
-  givenName: p.givenName ?? "",
-  familyName: p.familyName ?? "",
-  dob: p.dateOfBirth ?? "",
-  sex: (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
-  teams: (() => {
-    const teamArr = (p.teams as { name: string }[] | undefined) ??
-      (p.groups as { name: string }[] | undefined) ?? [];
-    return teamArr.map((t) => t.name).join(", ");
-  })(),
-}))
+.map((p) => {
+  const id = (p.profileId ?? p.id ?? "") as string;
+  const meta = metaMap[id] ?? {};
+  return {
+    id,
+    number: p.externalId ?? p.syncId ?? "",
+    name: `${p.givenName ?? ""} ${p.familyName ?? ""}`.trim(),
+    givenName: p.givenName ?? "",
+    familyName: p.familyName ?? "",
+    dob: p.dateOfBirth ?? "",
+    sex: (meta.sex as string | undefined) ?? (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
+    teams: (() => {
+      const teamArr = (p.teams as { name: string }[] | undefined) ??
+        (p.groups as { name: string }[] | undefined) ?? [];
+      return teamArr.map((t) => t.name).join(", ");
+    })(),
+    weightKg: (meta.weight_kg as number | undefined) ?? null,
+    heightCm: (meta.height_cm as number | undefined) ?? null,
+    position: (meta.position as string | undefined) ?? "",
+    sport: (meta.sport as string | undefined) ?? "",
+    team: (meta.team as string | undefined) ?? "",
+    notes: (meta.notes as string | undefined) ?? "",
+  };
+})
     .sort((a, b) => (a.name as string).localeCompare(b.name as string));
 
   return { athletes, count: athletes.length };
