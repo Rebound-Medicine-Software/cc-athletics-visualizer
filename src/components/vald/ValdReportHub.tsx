@@ -262,7 +262,7 @@ export default function ValdReportHub() {
               {athlete.number && <div className="text-xs font-mono text-teal-600 font-bold tracking-widest">#{athlete.number}</div>}
               <div className="text-lg font-bold">{athlete.name}</div>
               <div className="text-sm text-muted-foreground">
-                {[athlete.teams, athlete.sex, athlete.dob ? `b. ${athlete.dob.slice(0,4)}` : ""].filter(Boolean).join(" · ")}
+                {[athlete.sport, athlete.position, athlete.teams, athlete.sex, athlete.dob ? `b. ${athlete.dob.slice(0,4)}` : ""].filter(Boolean).join(" · ")}
               </div>
             </div>
             {!loadingTests && tests && (
