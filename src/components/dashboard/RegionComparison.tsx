@@ -1,12 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TestData } from "@/types/forcePlateTypes";
 import { useState, useEffect } from "react";
 import { Filters } from "./RegionComparison/Filters";
 import { DataTable } from "./RegionComparison/DataTable";
 import { SatelliteMap } from "../SatelliteMap";
 import { useRegionData } from "@/hooks/useRegionData";
+import { useSportsByAthleteName } from "@/hooks/useSportsByAthleteName";
 
 interface RegionComparisonProps {
   data: TestData[];
@@ -17,6 +19,8 @@ interface RegionComparisonProps {
 
 export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComparisonProps) => {
   const { data: regionTestingData, isLoading: regionDataLoading } = useRegionData();
+  const { data: sportsLookup } = useSportsByAthleteName();
+  const [sportPool, setSportPool] = useState<string>("all");
   
   const [filters, setFilters] = useState({
     // Individual Filters - teamName and athleteName are arrays, sex and testName are strings
@@ -45,6 +49,7 @@ export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComp
       address: [],
       metricType: "all"
     });
+    setSportPool("all");
   }, [resetFiltersKey]);
 
   // Process region data for dependent dropdowns
@@ -115,6 +120,15 @@ export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComp
   
   if (filters.testName && filters.testName !== "all") {
     tableFilteredData = tableFilteredData.filter(d => d.test_name === filters.testName);
+  }
+
+  // Sport filter: matches athletes tagged with the selected canonical sport (independent of the
+  // Individual/Region cascade above, same pattern as LiveDataSection's "Sport pool" filter)
+  if (sportPool !== "all" && sportsLookup) {
+    tableFilteredData = tableFilteredData.filter(d => {
+      const row = sportsLookup.byName.get((d.athlete_name ?? "").trim().toLowerCase());
+      return !!row && row.canonicalSports.includes(sportPool);
+    });
   }
 
   // MAP DATA: Apply ONLY region filters for the map display
@@ -287,6 +301,25 @@ export const RegionComparison = ({ data, resetFiltersKey, branding }: RegionComp
             regionData={dependentRegionData}
             testData={data} // Pass all data, not filtered by selectedTeams
           />
+        <div className="flex flex-col items-center gap-2 mb-4 p-3 rounded-lg border bg-muted/50">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sport</span>
+          <Select value={sportPool} onValueChange={setSportPool}>
+            <SelectTrigger className="w-48 bg-white">
+              <SelectValue placeholder="All athletes" />
+            </SelectTrigger>
+            <SelectContent className="bg-white z-[1000]">
+              <SelectItem value="all">All athletes</SelectItem>
+              {(sportsLookup?.allCanonicalSports ?? []).map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {sportPool !== "all" && (
+            <p className="text-xs text-muted-foreground">
+              Showing athletes tagged with {sportPool} only — tag athletes in Settings → Athlete Credentials.
+            </p>
+          )}
+        </div>
           {/* Header in rounded box */}
           <div 
             className="rounded-lg border-2 p-4 shadow-sm"
