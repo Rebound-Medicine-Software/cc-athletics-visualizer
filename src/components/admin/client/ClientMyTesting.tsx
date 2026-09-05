@@ -526,13 +526,19 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
     enabled: !!athleteName,
     staleTime: 60_000,
     queryFn: async () => {
-      const { data } = await supabase
+      let symmetryQuery = supabase
         .from('test_data')
         .select('test_name, metrics')
         .eq('athlete_name', athleteName!)
         .in('test_name', ['Left Side Countermovement Jump', 'Right Side Countermovement Jump'])
         .order('test_date', { ascending: false })
         .limit(40);
+      // Scope to the athlete's own team when known, so a same-named athlete
+      // on a different team can't feed into this symmetry calculation.
+      if (teamName) {
+        symmetryQuery = symmetryQuery.eq('team_name', teamName);
+      }
+      const { data } = await symmetryQuery;
       const pickBest = (n: string) => {
         const vals = (data ?? [])
           .filter((r: any) => r.test_name === n)
@@ -784,18 +790,24 @@ interface SessionRow {
   metrics: Record<string, number>;
 }
 
-const HistoryTab = ({ athleteName }: { athleteName: string | null }) => {
+const HistoryTab = ({ athleteName, teamName }: { athleteName: string | null; teamName: string | null }) => {
   const { data: sessions, isLoading } = useQuery({
-    queryKey: ['client-test-sessions', athleteName],
+    queryKey: ['client-test-sessions', athleteName, teamName],
     enabled: !!athleteName,
     staleTime: 60_000,
     queryFn: async (): Promise<SessionRow[]> => {
-      const { data } = await supabase
+      let sessionsQuery = supabase
         .from('test_data')
         .select('test_date, test_name, metrics')
         .eq('athlete_name', athleteName!)
         .order('test_date', { ascending: false })
         .limit(400);
+      // Scope to the athlete's own team when known, same discipline as the
+      // symmetry query above and the lastTest/rank queries elsewhere in this file.
+      if (teamName) {
+        sessionsQuery = sessionsQuery.eq('team_name', teamName);
+      }
+      const { data } = await sessionsQuery;
       const grouped = new Map<string, SessionRow>();
       (data ?? []).forEach((r: any) => {
         if (!r.test_date) return;
@@ -1039,7 +1051,7 @@ export const ClientMyTesting = () => {
           teamName={(lastTest as any)?.team_name ?? null}
         />
       )}
-      {tab === 'history' && <HistoryTab athleteName={athlete?.name ?? null} />}
+      {tab === 'history' && <HistoryTab athleteName={athlete?.name ?? null} teamName={(lastTest as any)?.team_name ?? null} />}
     </div>
   );
 };
