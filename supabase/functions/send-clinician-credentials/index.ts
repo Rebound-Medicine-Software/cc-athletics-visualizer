@@ -27,6 +27,44 @@ const handler = async (req: Request): Promise<Response> => {
                         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
                       );
 
+        // SECURITY, fixed by scheduled run 5 Sept 2026: this function creates a
+        // real Supabase Auth account (a new practitioner login) using the
+        // service-role key, which bypasses RLS -- and until now had no check
+        // at all on who was calling it. It isn't in config.toml's
+        // verify_jwt=false list, so it defaults to verify_jwt=true, but that
+        // only requires *a* valid JWT, not a real logged-in org admin -- the
+        // public anon key (public by design, see Section 5) is itself a
+        // valid JWT. Net effect: anyone who pulled the anon key out of the
+        // app bundle could call this function directly and create their own
+        // practitioner account, no org-admin session needed -- the team_id
+        // link below only ever silently no-ops on failure, it never blocks
+        // account creation itself. Same root-cause shape as fetch-cc-data
+        // (PR #21) and vald-bridge (PR #42) before their fixes.
+        const authHeader = req.headers.get("authorization");
+        const callerToken = authHeader?.replace("Bearer ", "") ?? "";
+        const { data: { user: requestingUser }, error: callerAuthError } =
+          await supabase.auth.getUser(callerToken);
+
+        if (callerAuthError || !requestingUser) {
+          return new Response(
+            JSON.stringify({ error: "Authentication required" }),
+            { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+
+        const { data: callerProfile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", requestingUser.id)
+          .maybeSingle();
+
+        if (!callerProfile || !["organisation", "super_admin"].includes(callerProfile.role)) {
+          return new Response(
+            JSON.stringify({ error: "Only an organisation admin can create staff accounts" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+
         const {
                   email,
                   full_name,
