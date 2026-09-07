@@ -20,6 +20,27 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Require a real logged-in user before doing anything else. This function
+    // looks up any athlete by ID (service-role key, bypasses RLS) and emails
+    // them a report with a caller-supplied pdf_path link. With no auth check
+    // of its own, and verify_jwt disabled in config.toml, anyone who found
+    // this function's URL could trigger NEXUS Hub to send a real, branded
+    // "view your report" email to any athlete's actual address, pointing at
+    // an arbitrary attacker-controlled URL. Same "authenticated users only"
+    // bar already applied to fetch-cc-data (Section 3, Critical #15) and
+    // vald-bridge (PR #42) - both frontend callers (SendReportsModal.tsx,
+    // ReportsSection.tsx) already use supabase.functions.invoke(), which
+    // sends the real session token, so this doesn't change anything for them.
+    const authHeader = req.headers.get('authorization') ?? ''
+    const token = authHeader.replace('Bearer ', '')
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token)
+    if (authError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const { athlete_id, pdf_path } = await req.json()
 
     if (!athlete_id || !pdf_path) {
