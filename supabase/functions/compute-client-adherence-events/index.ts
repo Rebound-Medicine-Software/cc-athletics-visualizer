@@ -92,6 +92,27 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
+  // Require a real logged-in user before computing or inserting anything. This
+  // function is invoked directly from the athlete-facing app
+  // (ClientNotifications.tsx, supabase.functions.invoke) but had no auth
+  // check of its own, and Supabase's default verify_jwt setting only
+  // requires *a* valid JWT to be present - the public anon key (already
+  // embedded in the app bundle by design) is itself a valid JWT, so anyone
+  // who copied that key out of the bundle could call this function's URL
+  // directly with no account at all and trigger notification computation /
+  // inserts for any athlete_id or team_id. Same root-cause gap already
+  // fixed for fetch-cc-data (framework.md Section 3, Critical #15) and
+  // vald-bridge (PR #42) - closing it here too.
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.replace('Bearer ', '')
+  const { data: userData, error: authError } = await supa.auth.getUser(token)
+  if (authError || !userData?.user) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Authentication required' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+    )
+  }
+
   try {
     const body = await req.json().catch(() => ({})) as { team_id?: string; athlete_id?: string }
     const teamFilter = body.team_id ?? null
