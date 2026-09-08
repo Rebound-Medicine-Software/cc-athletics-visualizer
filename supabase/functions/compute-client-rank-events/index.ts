@@ -112,6 +112,33 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   )
 
+  // Require a real logged-in user (or the trusted internal service-role
+  // caller) before computing or inserting anything. This function is called
+  // two ways: directly from the athlete app (ClientNotifications.tsx,
+  // supabase.functions.invoke - a real user session) and server-to-server
+  // from sync-cc-athletics (a raw fetch() using the SUPABASE_SERVICE_ROLE_KEY
+  // as its Bearer token, fire-and-forget after every sync). It had no auth
+  // check of its own, and config.toml explicitly sets verify_jwt = false for
+  // this function - so it was reachable by absolutely anyone, no key or
+  // account required at all, to trigger notification computation/inserts for
+  // any athlete_id or team_id. Same root-cause gap already fixed for
+  // fetch-cc-data (framework.md Section 3, Critical #15) and vald-bridge
+  // (PR #42) - closing it here too, with a carve-out for the legitimate
+  // service-role caller so sync-cc-athletics keeps working.
+  const authHeader = req.headers.get('authorization') ?? ''
+  const token = authHeader.replace('Bearer ', '')
+  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const isTrustedServiceCaller = !!serviceRoleKey && token === serviceRoleKey
+  if (!isTrustedServiceCaller) {
+    const { data: userData, error: authError } = await supa.auth.getUser(token)
+    if (authError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authentication required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+      )
+    }
+  }
+
   try {
     const body = await req.json().catch(() => ({})) as { team_id?: string; athlete_id?: string }
     const teamFilter = body.team_id ?? null
