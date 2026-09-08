@@ -28,12 +28,12 @@ serve(async (req) => {
   }
 
   try {
-    const { organisation, email, password } = await req.json();
+    const { organisation, email, password, token } = await req.json();
 
     console.log('Sending organisation signup email to:', email);
 
     // Create confirmation URL that points to our custom edge function
-    const confirmUrl = `${SUPABASE_URL}/functions/v1/confirm-organisation-account?email=${encodeURIComponent(email)}`;
+    const confirmUrl = `${SUPABASE_URL}/functions/v1/confirm-organisation-account?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`;
 
     console.log('Sending organisation signup email to:', email, 'with confirmUrl:', confirmUrl);
 
