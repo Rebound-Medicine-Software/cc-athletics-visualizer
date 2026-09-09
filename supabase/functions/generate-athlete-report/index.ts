@@ -74,13 +74,26 @@ async function generateInteractiveHtmlReport(athlete: Athlete, testResults: Test
   const rightLimb = cmjTest?.metrics?.right_limb || 1674.56;
   const symmetryPercentage = Math.round((leftLimb / (leftLimb + rightLimb)) * 100);
 
-  // Generate sample chart data for peer comparison
+  // Real peer-comparison chart data: the athlete's own CMJ jump height plus
+  // real elite_athlete_data benchmark rows (values only, no individual naming --
+  // matches the "aggregated, not named" pattern already used by the dashboard's
+  // EliteComparisonChart). This used to be hardcoded sample data (fictional names
+  // "Michael J"/"Jonathan F"/"Sarah M"/"Chris R" with made-up values) that shipped
+  // on every real athlete's PDF report -- replaced with real numbers. NOTE: not
+  // sport-filtered -- the Athlete object this function queries has no sport field
+  // (unlike src/hooks/useEliteBenchmarkForAthlete.ts's canonicalSport() matching),
+  // so this averages across whatever elite_athlete_data rows come back. Flagged
+  // in framework.md Section 9 for a follow-up to wire sport in properly.
+  const athleteJumpHeightM = typeof cmjTest?.metrics?.jump_height_cm === 'number'
+    ? cmjTest.metrics.jump_height_cm / 100
+    : 0.35; // fallback only if this athlete has no CMJ result on file yet
+  const eliteBenchmarkBars = (eliteData ?? [])
+    .filter((row: any) => typeof row.cmj_jump_height_cm === 'number')
+    .slice(0, 4)
+    .map((row: any) => ({ name: 'Elite benchmark', value: row.cmj_jump_height_cm / 100 }));
   const chartData = [
-    { name: 'Michael J', value: 0.23 },
-    { name: 'Jonathan F', value: 0.27 },
-    { name: 'Sarah M', value: 0.31 },
-    { name: 'Chris R', value: 0.28 },
-    { name: athlete.name.split(' ')[0], value: 0.35, highlight: true }
+    ...eliteBenchmarkBars,
+    { name: athlete.name.split(' ')[0], value: athleteJumpHeightM, highlight: true }
   ];
 
   const htmlContent = `
