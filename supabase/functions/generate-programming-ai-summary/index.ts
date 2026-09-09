@@ -56,6 +56,28 @@ serve(async (req) => {
   let assignmentId: string | null = null;
 
   try {
+    // Require a real logged-in user before hitting the Lovable AI gateway.
+    // This function had no auth check of its own and config.toml sets
+    // verify_jwt = false, so it was reachable by anyone with no account at
+    // all -- burning Lovable AI credits on demand with an arbitrary
+    // team_id/athlete_id/assignment_id in the body. No server-to-server
+    // caller found for this one (unlike generate-ai-coach-insight), so no
+    // service-role carve-out needed.
+    const authHeader = req.headers.get("authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "");
+    const sUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!sUrl || !serviceRoleKey) throw new Error("Supabase env vars not configured");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
+    const authClient = createClient(sUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: userData, error: authError } = await authClient.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = (await req.json()) as RequestBody;
     teamId = body.team_id ?? null;
     athleteId = body.athlete_id ?? null;
