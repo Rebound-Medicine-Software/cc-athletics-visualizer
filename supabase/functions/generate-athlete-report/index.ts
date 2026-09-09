@@ -270,6 +270,22 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Require a real logged-in user before generating or storing anything.
+    // This function had no auth check of its own and config.toml sets
+    // verify_jwt = false, so it was reachable by anyone with no account at
+    // all -- and could even create new athlete records as a side effect of
+    // report generation. Same root-cause gap already fixed for
+    // fetch-cc-data/vald-bridge/compute-client-rank-events and others.
+    const authHeader = req.headers.get('authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { athlete_id, athlete_key } = await req.json();
     
     if (!athlete_id && !athlete_key) {
