@@ -28,8 +28,6 @@ export const useRegionData = () => {
   return useQuery({
     queryKey: ['region-testing-data', isImpersonating ? impersonatedTeamName : 'all'],
     queryFn: async (): Promise<RegionTestingData[]> => {
-      console.log('Fetching region testing data...', { isImpersonating, impersonatedTeamName });
-
       let query = supabase.from('Region Testing').select('*');
 
       if (isImpersonating && impersonatedTeamName && profile?.role === 'super_admin') {
@@ -42,8 +40,6 @@ export const useRegionData = () => {
         console.error('Error fetching region data:', error);
         throw error;
       }
-
-      console.log(`Fetched ${data?.length || 0} region records`);
       return data || [];
     },
     staleTime: 5 * 60 * 1000,
