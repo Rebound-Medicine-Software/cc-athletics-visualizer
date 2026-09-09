@@ -46,12 +46,13 @@ function sportsForAthlete(a: ValdAthlete, teams: string[]): string[] {
 
 /**
  * VALD Hub analytics — mirrors /dashboard > Analytics driven by VALD ForceDecks data.
- * Adds five filters aligned with the CC Athletics dashboard:
+ * Adds six filters aligned with the CC Athletics dashboard:
  *   1. Team Names     — derived from athlete.teams
  *   2. Sex            — derived from athlete.sex (normalised)
  *   3. Sport          — derived from team name (combined with CC Athletics convention)
  *   4. Test Date      — dependent dropdown: only dates present in the loaded data
  *   5. Metric Type    — handled inside ReportFilters / useMetricCaseLogic (getMetricTypesForTest)
+ *   6. Position       — derived from athlete.position (VALD metadata; unfiltered when unset)
  */
 export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
   const { data: athletes = [], isLoading: athletesLoading, error: athletesError } = useValdAthletes();
@@ -61,6 +62,7 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
   const [selectedTeams,      setSelectedTeams]         = useState<string[]>([]);
   const [selectedSex,        setSelectedSex]           = useState<string[]>([]);
   const [selectedSports,     setSelectedSports]        = useState<string[]>([]);
+  const [selectedPositions,  setSelectedPositions]     = useState<string[]>([]);
   const [selectedDates,      setSelectedDates]         = useState<string[]>([]);
   const [resetFiltersKey,    setResetFiltersKey]        = useState(0);
   const [selectedTestPeers,  setSelectedTestPeers]     = useState<string>("");
@@ -100,19 +102,28 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
     return Array.from(set).sort().map((s) => ({ value: s, label: s }));
   }, [athletes]);
 
+  /** Unique positions (from VALD athlete metadata, athlete.position) */
+  const positionOptions = useMemo(() => {
+    const set = new Set<string>();
+    athletes.forEach((a) => { if (a.position && a.position.trim()) set.add(a.position.trim()); });
+    return Array.from(set).sort().map((p) => ({ value: p, label: p }));
+  }, [athletes]);
+
   // ── Athletes that survive team / sex / sport filters ─────────────────────────
   const filteredAthletes = useMemo(() => {
     return athletes.filter((a) => {
       const athleteTeams = a.teams ? a.teams.split(",").map((t) => t.trim()) : [];
       const athleteSex   = normaliseSex(a.sex);
       const athleteSports = sportsForAthlete(a, athleteTeams);
+      const athletePosition = a.position && a.position.trim() ? a.position.trim() : "";
 
       if (selectedTeams.length  > 0 && !selectedTeams.some((t) => athleteTeams.includes(t)))   return false;
       if (selectedSex.length    > 0 && !selectedSex.includes(athleteSex))                       return false;
       if (selectedSports.length > 0 && !selectedSports.some((s) => athleteSports.includes(s))) return false;
+      if (selectedPositions.length > 0 && !selectedPositions.includes(athletePosition))        return false;
       return true;
     });
-  }, [athletes, selectedTeams, selectedSex, selectedSports]);
+  }, [athletes, selectedTeams, selectedSex, selectedSports, selectedPositions]);
 
   // When filters change, remove deselected athletes from the selection
   useEffect(() => {
@@ -191,6 +202,7 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
     setSelectedTeams([]);
     setSelectedSex([]);
     setSelectedSports([]);
+    setSelectedPositions([]);
     setSelectedDates([]);
     setSelectedTestPeers("");
     setResetFiltersKey((k) => k + 1);
@@ -219,7 +231,7 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
         <CardContent className="p-4 space-y-4">
 
           {/* Row 1: Team / Sex / Sport filters */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             {/* Team Names */}
             <div>
               <label className="pr-filter-label mb-1 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -258,6 +270,20 @@ export const ValdAnalytics = ({ branding }: ValdAnalyticsProps) => {
                 value={selectedSports}
                 onChange={setSelectedSports}
                 placeholder={sportOptions.length === 0 ? "No groups available" : "All sports"}
+                className="bg-white"
+              />
+            </div>
+
+            {/* Position (from VALD athlete metadata) */}
+            <div>
+              <label className="pr-filter-label mb-1 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Position
+              </label>
+              <MultiSelectDropdown
+                options={positionOptions}
+                value={selectedPositions}
+                onChange={setSelectedPositions}
+                placeholder={positionOptions.length === 0 ? "No positions set in VALD" : "All positions"}
                 className="bg-white"
               />
             </div>
