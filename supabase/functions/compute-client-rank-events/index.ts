@@ -205,17 +205,22 @@ serve(async (req) => {
       }
     }
 
-    // 1b. Load per-team retest interval (fall back to default)
+    // 1b. Load per-team retest interval (fall back to default) + team names
+    // (team names are needed to scope athlete-name matching below — two
+    // different teams can have athletes who share a name, and matching by
+    // name alone let one athlete's PB/retest data leak into another's).
     const teamIds = Array.from(new Set(linked.map((a) => a.team_id).filter(Boolean))) as string[]
     const teamRetestDays = new Map<string, number>()
+    const teamNameById = new Map<string, string>()
     if (teamIds.length > 0) {
       const { data: teamRows } = await supa
         .from('teams')
-        .select('id, retest_interval_days')
+        .select('id, name, retest_interval_days')
         .in('id', teamIds)
       for (const t of teamRows ?? []) {
         const v = (t as any).retest_interval_days
         teamRetestDays.set(t.id, typeof v === 'number' && v > 0 ? v : DEFAULT_RETEST_DAYS)
+        if ((t as any).name) teamNameById.set(t.id, (t as any).name)
       }
     }
 
@@ -239,23 +244,35 @@ serve(async (req) => {
     let pbCount = 0, rankCount = 0, leaderCount = 0, retestCount = 0
 
     for (const ath of linked) {
+      // Scope name-matching to this athlete's own team where we can. Two
+      // different teams can each have an athlete with the same name, and
+      // matching test_data rows by athlete_name alone let one athlete's
+      // best-lift/retest data leak into another's. Falls back to the old
+      // name-only match when we don't have a team name for either side.
+      const myTeamName: string | null = ath.team_id ? (teamNameById.get(ath.team_id) ?? null) : null
+      const matchesAthlete = (r: any) => {
+        if (r.athlete_name !== ath.name) return false
+        if (myTeamName && r.team_name) return r.team_name === myTeamName
+        return true
+      }
+
       // Get athlete's team_name + region (from any of their rows)
-      const myAnyRow = (allRowsByTest.get('Countermovement Jump') ?? []).find((r) => r.athlete_name === ath.name)
-        ?? Array.from(allRowsByTest.values()).flat().find((r) => r.athlete_name === ath.name)
-      const teamName: string | null = myAnyRow?.team_name ?? null
+      const myAnyRow = (allRowsByTest.get('Countermovement Jump') ?? []).find(matchesAthlete)
+        ?? Array.from(allRowsByTest.values()).flat().find(matchesAthlete)
+      const teamName: string | null = myAnyRow?.team_name ?? myTeamName
       const region: string | null = myAnyRow?.test_region ?? null
 
       // Latest test date (any test) for retest-due
       let lastTestDate: string | null = null
       for (const rows of allRowsByTest.values()) {
         for (const r of rows) {
-          if (r.athlete_name !== ath.name) continue
+          if (!matchesAthlete(r)) continue
           if (!lastTestDate || r.test_date > lastTestDate) lastTestDate = r.test_date
         }
       }
 
       for (const spec of METRICS) {
-        const rows = (allRowsByTest.get(spec.testName) ?? []).filter((r) => r.athlete_name === ath.name)
+        const rows = (allRowsByTest.get(spec.testName) ?? []).filter(matchesAthlete)
         if (rows.length === 0) continue
 
         // Group by date, average reps per date
