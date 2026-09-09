@@ -20,9 +20,10 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const email = url.searchParams.get('email');
+    const token = url.searchParams.get('token');
     
-    if (!email) {
-      throw new Error('Email parameter is required');
+    if (!email || !token) {
+      throw new Error('Email and token parameters are required');
     }
 
     console.log('Confirming organisation account for:', email);
@@ -41,9 +42,18 @@ serve(async (req) => {
       throw new Error('User not found');
     }
 
-    // Confirm the user's email
+    const storedToken = (user.user_metadata as Record<string, unknown> | null)?.confirmation_token;
+
+    if (!storedToken || storedToken !== token) {
+      console.error('Confirmation token mismatch for:', email);
+      throw new Error('Invalid or expired confirmation link');
+    }
+
+    // Confirm the user's email and consume the one-time confirmation token
+    const { confirmation_token: _usedToken, ...remainingMetadata } = (user.user_metadata as Record<string, unknown>) || {};
     const { error: confirmError } = await supabase.auth.admin.updateUserById(user.id, {
-      email_confirm: true
+      email_confirm: true,
+      user_metadata: remainingMetadata
     });
 
     if (confirmError) {

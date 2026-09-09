@@ -44,6 +44,8 @@ serve(async (req) => {
       });
     }
 
+    const confirmationToken = crypto.randomUUID();
+
     // Create user with admin API (bypasses email confirmation)
     const { data: user, error: signUpError } = await supabase.auth.admin.createUser({
       email,
@@ -53,7 +55,8 @@ serve(async (req) => {
         first_name: firstName,
         last_name: lastName,
         full_name: `${firstName} ${lastName}`,
-        role: 'organisation'
+        role: 'organisation',
+        confirmation_token: confirmationToken
       }
     });
 
@@ -86,7 +89,8 @@ serve(async (req) => {
       body: {
         organisation: `${firstName} ${lastName}`,
         email,
-        password
+        password,
+        token: confirmationToken
       }
     });
 
