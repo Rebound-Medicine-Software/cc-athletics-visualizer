@@ -122,12 +122,22 @@ export const AthleteCredentialsTab = () => {
       // Now fetch athletes from our database
       const { data, error } = await supabase
         .from('athletes')
-        .select('*')
+        .select('id, name, cc_athlete_id, cc_team_id, team_id, age, gender, weight_kg, height_cm, avatar_url, email, consent_status, consent_token, consent_signed_at, created_at, sports, sport_primary')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch teams data to get logos
+      // Merge in decrypted reveal-passwords via RPC -- athletes.password_hash/
+            // password_encrypted are no longer selectable directly (see the
+            // encrypt_reveal_passwords migration), same pattern StaffCredentialsTab.tsx
+            // already used for profiles via org_admin_list_team_credentials().
+            const { data: athleteCreds } = await supabase.rpc('list_team_athlete_credentials');
+            const athleteCredMap = new Map<string, string | null>();
+            (athleteCreds as Array<{ id: string; password_hash: string | null }> | null)?.forEach((c) => {
+                      athleteCredMap.set(c.id, c.password_hash);
+            });
+      
+            // Fetch teams data to get logos
       const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
         .select('cc_team_id, logo_url');
@@ -172,7 +182,8 @@ export const AthleteCredentialsTab = () => {
         return {
           ...athlete,
           team_name: teamName,
-          team_logo_url: logoUrl
+          team_logo_url: logoUrl,
+              password_hash: athleteCredMap.get(athlete.id) ?? null
         };
       }) || [];
       
@@ -471,7 +482,7 @@ export const AthleteCredentialsTab = () => {
       if (editForm.password && editForm.email) {
         try {
           await createAthleteAccount(athlete, editForm.email, editForm.password, !sendSignupEmails);
-          updateData.password_hash = editForm.password;
+          updateData.password_encrypted = (await supabase.rpc('encrypt_reveal_password', { _plain: editForm.password })).data;
           updateData.email = editForm.email;
           toast.success(
             sendSignupEmails
@@ -485,7 +496,7 @@ export const AthleteCredentialsTab = () => {
         }
       } else if (editForm.password && !editForm.email) {
         // Just store password without creating account
-        updateData.password_hash = editForm.password;
+        updateData.password_encrypted = (await supabase.rpc('encrypt_reveal_password', { _plain: editForm.password })).data;
       }
 
       // Update athlete record if there are changes
