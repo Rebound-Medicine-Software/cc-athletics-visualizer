@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import {
   User, BarChart3, TrendingUp, Heart, Target,
   Settings, HelpCircle, Calendar, FileText, CreditCard, ChevronRight, LogOut,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -34,6 +35,7 @@ export const ClientMoreMenu = ({ onSectionChange }: Props) => {
         { id: 'progress',  label: 'Progress & Trends', sub: 'How you compare', icon: TrendingUp, section: 'progress' },
         { id: 'reports',   label: 'Reports',           sub: 'Latest testing reports', icon: FileText, section: 'reports' },
         { id: 'testing',   label: 'Testing Hub',       sub: 'All assessments', icon: BarChart3, section: 'testing' },
+        { id: 'client-messages', label: 'Messages from your Team', sub: 'Notes & resources from your coach', icon: MessageSquare, section: 'client-messages' },
       ],
     },
     {
