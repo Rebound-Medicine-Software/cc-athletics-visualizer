@@ -6,6 +6,7 @@ import { ClientReports } from './client/ClientReports';
 import { ClientPrograms } from './client/ClientPrograms';
 import { ClientMyTesting } from './client/ClientMyTesting';
 import { ClientNotifications } from './client/ClientNotifications';
+import { ClientDirectMessages } from './client/ClientDirectMessages';
 import { ClientMoreMenu } from './client/ClientMoreMenu';
 import { PaymentPackages } from './client/PaymentPackages';
 import { ClientHeader } from './client/ClientHeader';
@@ -41,6 +42,8 @@ export const ClientDashboard = () => {
       case 'notifications':
       case 'messages':
         return <ClientNotifications />;
+      case 'client-messages':
+        return <ClientDirectMessages />;
       case 'payment-packages':
         return <PaymentPackages />;
       case 'more':
