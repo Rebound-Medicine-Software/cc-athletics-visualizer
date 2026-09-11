@@ -28,28 +28,33 @@ import { Loader2, MessageSquarePlus, Send, User } from 'lucide-react';
 // athlete-facing read side (ClientDirectMessages.tsx) and the client_messages
 // schema (PR #57) already shipped; this is the write side.
 //
-// Deliberately scoped to the practitioner's OWN team only, unlike the
-// cross-team dashboard reads elsewhere in this app (Section 3, Warning #5) —
-// per the client_messages migration's own design notes, direct messaging to
-// a named person is meant to stay team-scoped. The athlete picker below
-// filters by profile.team_id client-side, and the "Team staff can send
-// client messages" RLS policy enforces the same boundary server-side as a
-// backstop.
+// Cross-team by design, corrected 11 September 2026 (Josh, live chat) after
+// an initial version scoped this to the practitioner's own team only. Same
+// established pattern as the rest of this dashboard (Section 3, Warning #5 —
+// "a logged-in practitioner should see all data regardless of team") and
+// matching SendReportsModal's athlete picker, which is also cross-team. The
+// client_messages RLS policies were updated in the same PR as this file to
+// drop the team_id = get_my_team_id() gate that PR #57 originally shipped —
+// see that migration for the full explanation.
 //
-// Athletes are looked up directly from the `athletes` table by id (not by
-// matching name/team strings from test_data the way SendReportsModal does)
-// to avoid the athlete_name-collision bug class documented extensively
+// Athletes are still looked up directly from the `athletes` table by id
+// (not by matching name/team strings from test_data the way SendReportsModal
+// does) to avoid the athlete_name-collision bug class documented extensively
 // elsewhere in this repo (Section 4 Item 1's PR #34/#37/#38/#39/#40/#41/#51
-// sweep) — there's no reason to reintroduce that pattern in new code.
+// sweep) — cross-team makes name collisions more likely, not less, so this
+// matters even more here. Team name is shown alongside each athlete in the
+// picker so a practitioner can tell two same-named athletes on different
+// teams apart before sending.
 
 interface AthleteOption {
   id: string;
   name: string;
   team_id: string;
+  team_name: string | null;
 }
 
 export const MessageClientModal = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedAthleteId, setSelectedAthleteId] = useState('');
   const [subject, setSubject] = useState('');
@@ -57,16 +62,20 @@ export const MessageClientModal = () => {
   const [resourceUrl, setResourceUrl] = useState('');
 
   const { data: athletes = [], isLoading } = useQuery({
-    queryKey: ['message-client-athletes', profile?.team_id],
-    enabled: isOpen && !!profile?.team_id,
+    queryKey: ['message-client-athletes'],
+    enabled: isOpen,
     queryFn: async (): Promise<AthleteOption[]> => {
       const { data, error } = await supabase
         .from('athletes')
-        .select('id, name, team_id')
-        .eq('team_id', profile!.team_id)
+        .select('id, name, team_id, teams ( name )')
         .order('name');
       if (error) throw error;
-      return (data ?? []) as AthleteOption[];
+      return (data ?? []).map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        team_id: a.team_id,
+        team_name: a.teams?.name ?? null,
+      }));
     },
   });
 
@@ -161,6 +170,9 @@ export const MessageClientModal = () => {
                     <span className="flex items-center gap-2">
                       <User className="h-4 w-4 text-muted-foreground" />
                       {a.name}
+                      {a.team_name && (
+                        <span className="text-xs text-muted-foreground">({a.team_name})</span>
+                      )}
                     </span>
                   </SelectItem>
                 ))}
