@@ -195,6 +195,7 @@ const Dashboard = () => {
         sectionGroupLabel={sectionGroupLabel}
         showResetFilters={activeSection === "dashboard"}
         showSendReports={activeSection === "dashboard"}
+        showMessageClient={activeSection === "dashboard"}
         onOpenMobileNav={() => setMobileNavOpen(true)}
       />
       <div className="w-full max-w-7xl mx-auto">

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Activity, RefreshCw, RotateCw, ChevronRight, Search, Menu } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { SendReportsModal } from "./SendReportsModal";
+import { MessageClientModal } from "./MessageClientModal";
 import { InAppInbox } from "@/components/notifications/InAppInbox";
 
 interface NavItemLite {
@@ -22,6 +23,8 @@ interface DashboardHeaderProps {
   showResetFilters?: boolean;
   /** Show the "Send Reports" CTA. Default false; only Analytics needs it. */
   showSendReports?: boolean;
+  /** Show the "Message Client" CTA. Default false; only Analytics needs it. */
+  showMessageClient?: boolean;
   /** Optional handler to open the mobile slide-in nav. */
   onOpenMobileNav?: () => void;
 }
@@ -34,6 +37,7 @@ export const DashboardHeader = ({
   sectionGroupLabel,
   showResetFilters = false,
   showSendReports = false,
+  showMessageClient = false,
   onOpenMobileNav,
 }: DashboardHeaderProps) => {
   const { teamBranding } = useAuth();
@@ -135,6 +139,7 @@ export const DashboardHeader = ({
               <span className="hidden sm:inline">Refresh</span>
             </Button>
             <InAppInbox />
+            {showMessageClient && <MessageClientModal />}
             {showSendReports && <SendReportsModal />}
           </div>
         </div>
