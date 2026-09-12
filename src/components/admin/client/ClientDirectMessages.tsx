@@ -45,7 +45,7 @@ export const ClientDirectMessages = () => {
     enabled: !!user?.id,
     staleTime: 30_000,
     queryFn: async (): Promise<ClientMessage[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('client_messages')
         .select('id, subject, body, resource_url, created_at, read_at')
         .order('created_at', { ascending: false })
@@ -57,7 +57,7 @@ export const ClientDirectMessages = () => {
 
   const markRead = useMutation({
     mutationFn: async (id: string) => {
-      await supabase
+      await (supabase as any)
         .from('client_messages')
         .update({ read_at: new Date().toISOString() })
         .eq('id', id);
