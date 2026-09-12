@@ -28,6 +28,7 @@ import {
   Shield,
   BarChart3,
   FlaskConical,
+  Database,
 } from "lucide-react";
 
 const Dashboard = () => {
