@@ -312,7 +312,7 @@ export const StaffCredentialsTab = () => {
             // Store password hash in profiles for reference
             await supabase
               .from('profiles')
-              .update({ password_encrypted: (await (supabase as any).rpc('encrypt_reveal_password', { _plain: password })).data })
+              .update({ password_encrypted: (await (supabase as any).rpc('encrypt_reveal_password', { _plain: password })).data } as any)
               .eq('id', existingProfile.id);
           }
         }
