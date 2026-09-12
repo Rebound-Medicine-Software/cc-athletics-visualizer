@@ -199,7 +199,7 @@ export const StaffCredentialsTab = () => {
 
         // Add password if provided
         if (editForm.password) {
-          const { data: encPw, error: encErr } = await supabase.rpc('encrypt_reveal_password', { _plain: editForm.password });
+          const { data: encPw, error: encErr } = await (supabase as any).rpc('encrypt_reveal_password', { _plain: editForm.password });
           if (encErr) throw encErr;
           updateData.password_encrypted = encPw;
         }
@@ -312,7 +312,7 @@ export const StaffCredentialsTab = () => {
             // Store password hash in profiles for reference
             await supabase
               .from('profiles')
-              .update({ password_encrypted: (await supabase.rpc('encrypt_reveal_password', { _plain: password })).data })
+              .update({ password_encrypted: (await (supabase as any).rpc('encrypt_reveal_password', { _plain: password })).data })
               .eq('id', existingProfile.id);
           }
         }

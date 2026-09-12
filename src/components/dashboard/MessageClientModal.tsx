@@ -97,7 +97,7 @@ export const MessageClientModal = () => {
       if (!body.trim()) throw new Error('Write a message first.');
       if (!user?.id) throw new Error('Not signed in.');
 
-      const { error } = await supabase.from('client_messages').insert({
+      const { error } = await (supabase as any).from('client_messages').insert({
         team_id: selectedAthlete.team_id,
         athlete_id: selectedAthlete.id,
         sender_user_id: user.id,
