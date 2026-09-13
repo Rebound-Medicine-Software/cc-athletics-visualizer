@@ -152,6 +152,7 @@ export const useClientMetrics = ({ athleteId, athleteName, teamName }: Args) => 
       .from('test_data')
       .select('test_date, test_name, metrics')
       .eq('athlete_name', athleteName!)
+      .eq("review_status", "approved" as any)
       .in('test_name', testNames)
       .order('test_date', { ascending: true })
       .limit(500);
@@ -186,6 +187,7 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
       .from('test_data')
       .select('test_region')
       .eq('athlete_name', athleteName!)
+      .eq("review_status", "approved" as any)
       .not('test_region', 'is', null)
       .order('test_date', { ascending: false })
       .limit(1);
@@ -199,6 +201,7 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
       .from('test_data')
       .select('athlete_name, team_name, test_region, test_date, metrics')
       .eq('test_name', spec.testName)
+      .eq("review_status", "approved" as any)
       .order('test_date', { ascending: false })
       .limit(2000);
       const { data, error } = await baseSelect;
