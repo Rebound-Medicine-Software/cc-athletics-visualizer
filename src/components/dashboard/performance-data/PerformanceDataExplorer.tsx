@@ -334,12 +334,31 @@ export const PerformanceDataExplorer = () => {
 
   const queryClient = useQueryClient();
   const submitForReview = useMutation({
-    mutationFn: async (rowId: string) => {
+    mutationFn: async (row: TestRow) => {
       const { error } = await supabase
         .from('test_data')
         .update({ review_status: 'pending' } as any)
-        .eq('id', rowId);
+        .eq('id', row.id);
       if (error) throw error;
+
+      // Best-effort: let the org admin know something needs their sign-off.
+      // Goes through an edge function rather than a direct client-side insert
+      // because platform_in_app_notifications has no INSERT policy for
+      // regular authenticated users (only service_role/self) - see
+      // supabase/functions/notify-review-decision.
+      try {
+        await supabase.functions.invoke('notify-review-decision', {
+          body: {
+            teamId: row.team_id,
+            athleteName: row.athlete_name,
+            testName: row.test_name,
+            testDate: row.test_date,
+            action: 'submitted_for_review',
+          },
+        });
+      } catch (e) {
+        console.error('notify-review-decision failed', e);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['perf-explorer:tests'] });
@@ -799,7 +818,7 @@ export const PerformanceDataExplorer = () => {
                             className="mr-1"
                             onClick={(event) => {
                               event.stopPropagation();
-                              submitForReview.mutate(r.id);
+                              submitForReview.mutate(r);
                             }}
                             disabled={submitForReview.isPending}
                           >
