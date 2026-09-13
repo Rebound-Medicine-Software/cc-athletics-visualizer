@@ -25,6 +25,7 @@ import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
 import { RetestSettingsTab } from "@/components/settings/RetestSettingsTab";
+import { ReviewWorkflowTab } from "@/components/settings/ReviewWorkflowTab";
 import {
   UnsavedChangesProvider,
   useUnsavedChanges,
@@ -41,7 +42,8 @@ type SectionId =
   | "athlete-linking"
   | "data-housing"
   | "athlete-duplicates"
-  | "tier-management";
+  | "tier-management"
+    | "review-workflow";
 
 type Group = {
   id: string;
@@ -60,6 +62,7 @@ const GROUPS: Group[] = [
     sections: [
       { id: "branding", label: "Branding", description: "Colours, logo and typography." },
       { id: "retest-interval", label: "Retest Interval", description: "How often athletes are reminded to re-test." },
+      { id: "review-workflow", label: "Review Workflow", description: "Require admin approval before results reach athletes." },
     ],
   },
   {
@@ -153,6 +156,7 @@ const SettingsInner = () => {
       case "athlete-duplicates": return <AthleteDuplicatesPanel />;
       case "data-housing": return <DataHousingTab />;
       case "tier-management": return <TierManagementTab />;
+      case "review-workflow": return <ReviewWorkflowTab />;
     }
   };
 
