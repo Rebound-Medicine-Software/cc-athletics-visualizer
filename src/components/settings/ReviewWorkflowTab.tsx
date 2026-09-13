@@ -27,7 +27,7 @@ export const ReviewWorkflowTab = () => {
       <CardContent className="p-6">
       <p className="text-muted-foreground text-center">
       This section is only available to the organisation owner/admin.
-      </p>p>
+      </p>
       </CardContent>
       </Card>
       );
@@ -76,4 +76,4 @@ export const ReviewWorkflowTab = () => {
     </Card>
     );
 };
-</Card>
+      
