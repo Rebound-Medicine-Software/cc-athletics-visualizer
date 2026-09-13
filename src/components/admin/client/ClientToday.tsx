@@ -163,6 +163,7 @@ export const ClientToday = ({ onSectionChange }: Props) => {
                               .from('test_data')
                               .select('test_date')
                               .eq('athlete_name', athlete!.name)
+                              .eq("review_status", "approved" as any)
                               .order('test_date', { ascending: false })
                               .limit(1);
 
