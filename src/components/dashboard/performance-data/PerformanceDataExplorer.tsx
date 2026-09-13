@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -110,6 +110,7 @@ interface TestRow {
   import_batch_id: string | null;
   file_hash: string | null;
   repetition_number: number;
+  review_status: string;
 }
 
 const numeric = (v: any) => {
@@ -266,7 +267,7 @@ export const PerformanceDataExplorer = () => {
       let q = supabase
         .from('test_data')
         .select(
-          'id, athlete_id, athlete_name, team_id, team_name, test_date, test_type, test_subtype, test_name, metrics, source, original_file_name, import_batch_id, file_hash, repetition_number',
+          'id, athlete_id, athlete_name, team_id, team_name, test_date, test_type, test_subtype, test_name, metrics, source, original_file_name, import_batch_id, file_hash, repetition_number, review_status',
         )
         .gte('test_date', filters.fromDate)
         .lte('test_date', filters.toDate)
@@ -314,6 +315,37 @@ export const PerformanceDataExplorer = () => {
     },
   });
 
+  // Teams with the org admin "Submit for review" toggle turned on for
+  // their team — gates the per-row Submit for review action/badge below.
+  // See framework.md Section 4 Item 1's Submit-for-review sub-item and
+  // src/hooks/useReviewWorkflow.ts (the Settings toggle this reads).
+  const reviewEnabledTeamsQuery = useQuery({
+    queryKey: ['perf-explorer:review-enabled-teams'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('teams')
+        .select('id')
+        .eq('review_workflow_enabled', true as any);
+      if (error) throw error;
+      return new Set((data ?? []).map((t: any) => t.id as string));
+    },
+  });
+  const reviewEnabledTeamIds = reviewEnabledTeamsQuery.data ?? new Set<string>();
+
+  const queryClient = useQueryClient();
+  const submitForReview = useMutation({
+    mutationFn: async (rowId: string) => {
+      const { error } = await supabase
+        .from('test_data')
+        .update({ review_status: 'pending' } as any)
+        .eq('id', rowId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['perf-explorer:tests'] });
+    },
+  });
+
   // Live CC Athletics rows — same source the Analytics dashboard uses.
   // Merging here guarantees: anything Analytics shows, Performance Data shows.
   const liveQuery = useSupabaseData();
@@ -356,6 +388,7 @@ export const PerformanceDataExplorer = () => {
           import_batch_id: null,
           file_hash: null,
           repetition_number: r.repetition_number ?? 0,
+          review_status: 'approved',
         };
       });
   }, [liveQuery.data, filters, selectedAthleteCcId, ccIdToAthlete]);
@@ -749,8 +782,30 @@ export const PerformanceDataExplorer = () => {
                         ) : (
                           <Badge variant="outline">Synced</Badge>
                         )}
+                        {reviewEnabledTeamIds.has(r.team_id ?? '') && !r.id.startsWith('live-') && (
+                          <Badge
+                            variant={r.review_status === 'pending' ? 'secondary' : r.review_status === 'rejected' ? 'destructive' : 'outline'}
+                            className="ml-1"
+                          >
+                            {r.review_status === 'pending' ? 'Pending review' : r.review_status === 'rejected' ? 'Rejected' : 'Approved'}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
+                        {reviewEnabledTeamIds.has(r.team_id ?? '') && !r.id.startsWith('live-') && r.review_status === 'approved' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mr-1"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              submitForReview.mutate(r.id);
+                            }}
+                            disabled={submitForReview.isPending}
+                          >
+                            Submit for review
+                          </Button>
+                        )}
                         <Button
                           variant={rowIsGolf ? 'default' : 'ghost'}
                           size="sm"
@@ -1168,3 +1223,11 @@ const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="mt-0.5">{value}</div>
   </div>
 );
+◀
+
+
+
+
+
+
+
