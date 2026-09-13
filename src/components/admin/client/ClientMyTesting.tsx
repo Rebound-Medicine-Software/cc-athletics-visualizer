@@ -530,6 +530,7 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
         .from('test_data')
         .select('test_name, metrics')
         .eq('athlete_name', athleteName!)
+        .eq("review_status", "approved" as any)
         .in('test_name', ['Left Side Countermovement Jump', 'Right Side Countermovement Jump'])
         .order('test_date', { ascending: false })
         .limit(40);
@@ -800,6 +801,7 @@ const HistoryTab = ({ athleteName, teamName }: { athleteName: string | null; tea
         .from('test_data')
         .select('test_date, test_name, metrics')
         .eq('athlete_name', athleteName!)
+        .eq("review_status", "approved" as any)
         .order('test_date', { ascending: false })
         .limit(400);
       // Scope to the athlete's own team when known, same discipline as the
@@ -977,6 +979,7 @@ export const ClientMyTesting = () => {
       .from('test_data')
       .select('test_date, test_name, test_location, team_name')
       .eq('athlete_name', athlete!.name)
+      .eq("review_status", "approved" as any)
       .order('test_date', { ascending: false })
       .limit(1);
 
