@@ -183,11 +183,11 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
     // scoped to the athlete's own team where possible, so a same-named
     // athlete on a different team can't feed a wrong region into "your
     // region" ranking.
-    let meQuery = supabase
+    let meQuery = (supabase as any)
       .from('test_data')
       .select('test_region')
       .eq('athlete_name', athleteName!)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .not('test_region', 'is', null)
       .order('test_date', { ascending: false })
       .limit(1);
