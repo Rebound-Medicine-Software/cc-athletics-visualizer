@@ -302,7 +302,7 @@ export const PerformanceDataExplorer = () => {
 
       const { data, error } = await q;
       if (error) throw error;
-      let out = (data ?? []) as TestRow[];
+      let out = ((data ?? []) as unknown) as TestRow[];
 
       // Subtype name-pattern filter (client-side) — works for both API and CSV
       // rows regardless of whether test_subtype was persisted.
