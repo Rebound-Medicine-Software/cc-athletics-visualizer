@@ -526,11 +526,11 @@ const ComparisonsTab = ({ athleteName, teamName }: { athleteName: string | null;
     enabled: !!athleteName,
     staleTime: 60_000,
     queryFn: async () => {
-      let symmetryQuery = supabase
+      let symmetryQuery = (supabase as any)
         .from('test_data')
         .select('test_name, metrics')
         .eq('athlete_name', athleteName!)
-        .eq("review_status", "approved" as any)
+        .eq("review_status", "approved")
         .in('test_name', ['Left Side Countermovement Jump', 'Right Side Countermovement Jump'])
         .order('test_date', { ascending: false })
         .limit(40);
