@@ -797,11 +797,11 @@ const HistoryTab = ({ athleteName, teamName }: { athleteName: string | null; tea
     enabled: !!athleteName,
     staleTime: 60_000,
     queryFn: async (): Promise<SessionRow[]> => {
-      let sessionsQuery = supabase
+      let sessionsQuery = (supabase as any)
         .from('test_data')
         .select('test_date, test_name, metrics')
         .eq('athlete_name', athleteName!)
-        .eq("review_status", "approved" as any)
+        .eq("review_status", "approved")
         .order('test_date', { ascending: false })
         .limit(400);
       // Scope to the athlete's own team when known, same discipline as the
