@@ -191,11 +191,11 @@ export const useAthleteProgress = (userId?: string | null, teamId?: string | nul
             .eq("review_status", "approved")
             .gte("test_date", startOfLastMonth.slice(0, 10))
             .lte("test_date", endOfLastMonth.slice(0, 10));
-            let recentQuery = supabase
+            let recentQuery = (supabase as any)
             .from("test_data")
             .select("test_date, test_name, metrics")
             .eq("athlete_name", candidateName)
-            .eq("review_status", "approved" as any)
+            .eq("review_status", "approved")
             .order("test_date", { ascending: false })
             .limit(5);
 
