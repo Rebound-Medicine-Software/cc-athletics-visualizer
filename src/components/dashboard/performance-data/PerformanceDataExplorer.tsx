@@ -322,10 +322,10 @@ export const PerformanceDataExplorer = () => {
   const reviewEnabledTeamsQuery = useQuery({
     queryKey: ['perf-explorer:review-enabled-teams'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('teams')
         .select('id')
-        .eq('review_workflow_enabled', true as any);
+        .eq('review_workflow_enabled', true);
       if (error) throw error;
       return new Set((data ?? []).map((t: any) => t.id as string));
     },
