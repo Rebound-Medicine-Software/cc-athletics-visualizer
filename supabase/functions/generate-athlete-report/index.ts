@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts'
 import { logActivity } from '../_shared/logActivity.ts'
+import { canonicalSport } from '../_shared/sportNormalize.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,7 @@ interface Athlete {
   team: string;
   email: string;
   testing_dates: string;
+  sports: string[];
 }
 
 interface TestResult {
@@ -79,15 +81,20 @@ async function generateInteractiveHtmlReport(athlete: Athlete, testResults: Test
   // matches the "aggregated, not named" pattern already used by the dashboard's
   // EliteComparisonChart). This used to be hardcoded sample data (fictional names
   // "Michael J"/"Jonathan F"/"Sarah M"/"Chris R" with made-up values) that shipped
-  // on every real athlete's PDF report -- replaced with real numbers. NOTE: not
-  // sport-filtered -- the Athlete object this function queries has no sport field
-  // (unlike src/hooks/useEliteBenchmarkForAthlete.ts's canonicalSport() matching),
-  // so this averages across whatever elite_athlete_data rows come back. Flagged
-  // in framework.md Section 9 for a follow-up to wire sport in properly.
+  // sport-filtered where possible: matches the athlete's canonical
+  // sport(s) (athletes.sports, via canonicalSport() -- ported to
+  // supabase/functions/_shared/sportNormalize.ts, same matching logic
+  // src/hooks/useEliteBenchmarkForAthlete.ts uses on the frontend)
+  // against elite_athlete_data.sport. Falls back to the unfiltered
+  // set when the athlete has no tagged sport, or none of the benchmark
+  // rows match, so the chart still has bars rather than showing none.
   const athleteJumpHeightM = typeof cmjTest?.metrics?.jump_height_cm === 'number'
     ? cmjTest.metrics.jump_height_cm / 100
     : 0.35; // fallback only if this athlete has no CMJ result on file yet
-  const eliteBenchmarkBars = (eliteData ?? [])
+    const athleteSports = new Set((athlete.sports ?? []).map(canonicalSport).filter(Boolean).map((s) => s.toLowerCase()));
+    const sportMatchedElite = (eliteData ?? []).filter((row: any) => row.sport && athleteSports.has(canonicalSport(row.sport).toLowerCase()));
+    const eliteRowsForChart = athleteSports.size > 0 && sportMatchedElite.length > 0 ? sportMatchedElite : (eliteData ?? []);
+    const eliteBenchmarkBars = eliteRowsForChart
     .filter((row: any) => typeof row.cmj_jump_height_cm === 'number')
     .slice(0, 4)
     .map((row: any) => ({ name: 'Elite benchmark', value: row.cmj_jump_height_cm / 100 }));
@@ -544,7 +551,7 @@ Deno.serve(async (req) => {
     // Fetch athlete data (canonical `athletes` table joined to teams)
     const { data: athleteRow, error: athleteError } = await supabaseClient
       .from('athletes')
-      .select('id, name, email, last_test_at, teams ( name )')
+      .select('id, name, email, last_test_at, teams ( name ), sports')
       .eq('id', athleteIdToUse)
       .maybeSingle();
 
@@ -562,6 +569,7 @@ Deno.serve(async (req) => {
       name: athleteRow.name ?? '',
       team: (athleteRow as any).teams?.name ?? '',
       email: athleteRow.email ?? '',
+      sports: athleteRow.sports ?? [],
       testing_dates: athleteRow.last_test_at
         ? new Date(athleteRow.last_test_at).toISOString().split('T')[0]
         : '',
