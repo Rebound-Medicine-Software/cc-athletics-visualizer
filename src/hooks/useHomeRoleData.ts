@@ -178,24 +178,24 @@ export const useAthleteProgress = (userId?: string | null, teamId?: string | nul
             const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
             const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
 
-        let thisMonthQuery = supabase
+        let thisMonthQuery = (supabase as any)
             .from("test_data")
             .select("id", { count: "exact", head: true })
             .eq("athlete_name", candidateName)
-            .eq("review_status", "approved" as any)
+            .eq("review_status", "approved")
             .gte("test_date", startOfMonth.slice(0, 10));
-            let lastMonthQuery = supabase
+            let lastMonthQuery = (supabase as any)
             .from("test_data")
             .select("id", { count: "exact", head: true })
             .eq("athlete_name", candidateName)
-            .eq("review_status", "approved" as any)
+            .eq("review_status", "approved")
             .gte("test_date", startOfLastMonth.slice(0, 10))
             .lte("test_date", endOfLastMonth.slice(0, 10));
-            let recentQuery = supabase
+            let recentQuery = (supabase as any)
             .from("test_data")
             .select("test_date, test_name, metrics")
             .eq("athlete_name", candidateName)
-            .eq("review_status", "approved" as any)
+            .eq("review_status", "approved")
             .order("test_date", { ascending: false })
             .limit(5);
 

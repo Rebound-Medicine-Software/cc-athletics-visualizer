@@ -34,11 +34,11 @@ export const ClientReports = () => {
                                   teamName = teamRow?.name ?? null;
                       }
 
-                      const baseQuery = supabase
+                      const baseQuery = (supabase as any)
                         .from('test_data')
                         .select('test_date, test_name, test_location')
                         .eq('athlete_name', athlete!.name)
-                        .eq("review_status", "approved" as any)
+                        .eq("review_status", "approved")
                         .order('test_date', { ascending: false })
                         .limit(30);
 

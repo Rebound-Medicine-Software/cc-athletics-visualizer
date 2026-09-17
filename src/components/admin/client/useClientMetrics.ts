@@ -148,11 +148,11 @@ export const useClientMetrics = ({ athleteId, athleteName, teamName }: Args) => 
     queryFn: async () => {
       const testNames = Array.from(new Set(CLIENT_METRICS.map((m) => m.testName)));
       const resolvedTeamName = await resolveTeamName(athleteId, teamName);
-      let query = supabase
+      let query = (supabase as any)
       .from('test_data')
       .select('test_date, test_name, metrics')
       .eq('athlete_name', athleteName!)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .in('test_name', testNames)
       .order('test_date', { ascending: true })
       .limit(500);
@@ -183,11 +183,11 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
     // scoped to the athlete's own team where possible, so a same-named
     // athlete on a different team can't feed a wrong region into "your
     // region" ranking.
-    let meQuery = supabase
+    let meQuery = (supabase as any)
       .from('test_data')
       .select('test_region')
       .eq('athlete_name', athleteName!)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .not('test_region', 'is', null)
       .order('test_date', { ascending: false })
       .limit(1);
@@ -197,11 +197,11 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
 
     for (const spec of CLIENT_METRICS) {
       // Pull a bounded sample of test rows for this test
-      const baseSelect = supabase
+      const baseSelect = (supabase as any)
       .from('test_data')
       .select('athlete_name, team_name, test_region, test_date, metrics')
       .eq('test_name', spec.testName)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .order('test_date', { ascending: false })
       .limit(2000);
       const { data, error } = await baseSelect;

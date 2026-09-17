@@ -18,11 +18,11 @@ export const usePendingReviewQueue = (teamId: string | null | undefined) => {
     enabled: !!teamId,
     staleTime: 30_000,
     queryFn: async (): Promise<PendingReviewRow[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('test_data')
         .select('id, athlete_name, test_name, test_date')
         .eq('team_id', teamId!)
-        .eq('review_status', 'pending' as any)
+        .eq('review_status', 'pending')
         .order('test_date', { ascending: false })
         .limit(100);
       if (error) throw error;

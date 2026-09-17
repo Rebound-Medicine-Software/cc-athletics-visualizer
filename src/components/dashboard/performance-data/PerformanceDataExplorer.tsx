@@ -302,7 +302,7 @@ export const PerformanceDataExplorer = () => {
 
       const { data, error } = await q;
       if (error) throw error;
-      let out = (data ?? []) as TestRow[];
+      let out = ((data ?? []) as unknown) as TestRow[];
 
       // Subtype name-pattern filter (client-side) — works for both API and CSV
       // rows regardless of whether test_subtype was persisted.
@@ -322,10 +322,10 @@ export const PerformanceDataExplorer = () => {
   const reviewEnabledTeamsQuery = useQuery({
     queryKey: ['perf-explorer:review-enabled-teams'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('teams')
         .select('id')
-        .eq('review_workflow_enabled', true as any);
+        .eq('review_workflow_enabled', true);
       if (error) throw error;
       return new Set((data ?? []).map((t: any) => t.id as string));
     },
@@ -1242,11 +1242,3 @@ const Field = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className="mt-0.5">{value}</div>
   </div>
 );
-◀
-
-
-
-
-
-
-
