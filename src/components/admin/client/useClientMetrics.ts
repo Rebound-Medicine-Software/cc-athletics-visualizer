@@ -148,11 +148,11 @@ export const useClientMetrics = ({ athleteId, athleteName, teamName }: Args) => 
     queryFn: async () => {
       const testNames = Array.from(new Set(CLIENT_METRICS.map((m) => m.testName)));
       const resolvedTeamName = await resolveTeamName(athleteId, teamName);
-      let query = supabase
+      let query = (supabase as any)
       .from('test_data')
       .select('test_date, test_name, metrics')
       .eq('athlete_name', athleteName!)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .in('test_name', testNames)
       .order('test_date', { ascending: true })
       .limit(500);
