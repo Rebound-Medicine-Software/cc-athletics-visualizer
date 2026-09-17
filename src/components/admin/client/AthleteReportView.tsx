@@ -9,8 +9,9 @@ import {
   Sparkles, TrendingUp, Trophy, History, MessageSquare, Target, Presentation,
   Compass, ArrowUpRight, Flame,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { useClientAthlete } from '@/components/programming/client/useClientAthlete';
 import { useClientMetrics, useClientRankings } from './useClientMetrics';
 import { interpretMetric, tierStyles } from '@/utils/metricInterpretation';
@@ -134,10 +135,11 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
     },
   });
   const [noteDraft, setNoteDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const queryClient = useQueryClient();
 
   if (aLoading || mLoading) return <Skeleton className="h-96 w-full" />;
   if (!athlete) return <p className="text-sm text-muted-foreground">No athlete profile linked.</p>;
-
   const athleteSports: string[] = (athlete as any)?.sports ?? [];
   const sportContext = sportComparisonLabel(athleteSports, '');
   const firstName = athlete.name.split(' ')[0];
@@ -383,24 +385,34 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
                     onChange={(e) => setNoteDraft(e.target.value)}
                     rows={3}
                   />
-                  <Button
-                    size="sm"
-                    disabled={!noteDraft.trim() || !athlete.user_id}
-                    onClick={async () => {
-                      if (!athlete.user_id) return;
-                      await supabase.from('platform_in_app_notifications').insert({
-                        recipient_user_id: athlete.user_id,
-                        team_id: athlete.team_id,
-                        title: '📝 Note from your coach',
-                        message: noteDraft.trim(),
-                        severity: 'info',
-                        metadata: { notification_type: 'coach_note' },
-                      });
-                      setNoteDraft('');
-                    }}
-                  >
-                    Save note
-                  </Button>
+<Button
+      size="sm"
+  disabled={!noteDraft.trim() || !athlete.user_id || savingNote}
+  onClick={async () => {
+    if (!athlete.user_id) return;
+    setSavingNote(true);
+    try {
+      const { error } = await supabase.functions.invoke('notify-coach-note', {
+        body: {
+          athleteUserId: athlete.user_id,
+          teamId: athlete.team_id,
+          message: noteDraft.trim(),
+        },
+      });
+      if (error) throw error;
+      setNoteDraft('');
+      queryClient.invalidateQueries({ queryKey: ['coach-note-latest', athlete.id] });
+      toast.success('Note sent to athlete');
+    } catch (e: any) {
+      console.error('notify-coach-note failed', e);
+      toast.error(e?.message ?? 'Could not save note - please try again');
+    } finally {
+      setSavingNote(false);
+    }
+  }}
+  >
+  {savingNote ? 'Saving…' : 'Save note'}
+</Button>
                 </div>
               )}
             </CardContent>
