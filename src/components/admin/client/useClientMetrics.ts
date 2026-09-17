@@ -197,11 +197,11 @@ export const useClientRankings = ({ athleteId, athleteName, teamName }: Args) =>
 
     for (const spec of CLIENT_METRICS) {
       // Pull a bounded sample of test rows for this test
-      const baseSelect = supabase
+      const baseSelect = (supabase as any)
       .from('test_data')
       .select('athlete_name, team_name, test_region, test_date, metrics')
       .eq('test_name', spec.testName)
-      .eq("review_status", "approved" as any)
+      .eq("review_status", "approved")
       .order('test_date', { ascending: false })
       .limit(2000);
       const { data, error } = await baseSelect;
