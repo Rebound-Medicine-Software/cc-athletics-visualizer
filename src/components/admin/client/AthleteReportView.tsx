@@ -135,12 +135,11 @@ export const AthleteReportView = ({ practitionerMode = false }: Props) => {
     },
   });
   const [noteDraft, setNoteDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const queryClient = useQueryClient();
 
   if (aLoading || mLoading) return <Skeleton className="h-96 w-full" />;
   if (!athlete) return <p className="text-sm text-muted-foreground">No athlete profile linked.</p>;
-
-  const [savingNote, setSavingNote] = useState(false);
-  const queryClient = useQueryClient();
   const athleteSports: string[] = (athlete as any)?.sports ?? [];
   const sportContext = sportComparisonLabel(athleteSports, '');
   const firstName = athlete.name.split(' ')[0];
