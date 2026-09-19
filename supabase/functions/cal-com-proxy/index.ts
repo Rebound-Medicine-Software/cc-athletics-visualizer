@@ -19,7 +19,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the user
+    // Authenticate the user. This must confirm a real logged-in user made the
+    // request, not just that a validly-signed Supabase JWT was sent. The
+    // previous check here (supabase.auth.getClaims()) only confirmed the
+    // token was well-formed and signed - the public anon key (already public
+    // by design, embedded in the app bundle, see framework.md Section 5) is
+    // itself a validly-signed JWT for this project and satisfies that check
+    // with no login at all. Cal.com bookings carry athlete/patient names and
+    // contact details, and this endpoint can create, reschedule, and cancel
+    // real bookings, so an anon-key-only caller getting through here is a
+    // real read+write gap, not just a read. auth.getUser() instead confirms
+    // the token is tied to a real authenticated user - the same fix already
+    // applied to vald-bridge (PR #42) and fetch-cc-data (PR #21) for the
+    // identical gap.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -28,16 +40,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(
+    const authClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(
+    const { data: userData, error: authError } = await authClient.auth.getUser(
       authHeader.replace("Bearer ", "")
     );
-    if (claimsError || !claimsData?.claims) {
+    if (authError || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
