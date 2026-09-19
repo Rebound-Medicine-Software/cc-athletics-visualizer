@@ -3,8 +3,8 @@
 // the server. Temporary download URL is not persisted.
 //
 // POST { path: string, downsample_factor?: number }
-//  -> { success: true, csv: string, download_url: string, sample_count: number,
-//       columns: string[] }
+// -> { success: true, csv: string, download_url: string, sample_count: number,
+// columns: string[] }
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -25,25 +25,31 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json(405, { success: false, error: 'method_not_allowed' });
 
-  // Require an authenticated caller (JWT-verified)
-  const authHeader = req.headers.get('Authorization') ?? '';
+      // Require an authenticated caller. auth.getClaims() only confirms the bearer
+      // token is a validly-signed Supabase JWT - the public anon key (already
+      // public by design, embedded in the app bundle) is itself a valid JWT and
+      // satisfies that check with no real login. This proxy streams raw
+      // force-plate CSV data server-side, so it needs to confirm a real
+      // authenticated user, not just a well-formed token - same fix already
+      // applied to cal-com-proxy (PR #70), vald-bridge (PR #42), and
+      // fetch-cc-data (PR #21) for the identical gap.
+      const authHeader = req.headers.get('Authorization') ?? '';
   if (!authHeader.startsWith('Bearer ')) {
     return json(401, { success: false, error: 'unauthorized' });
   }
-  const supa = createClient(
+  const authClient = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: claims, error: claimsErr } = await supa.auth.getClaims(
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+  const { data: userData, error: authError } = await authClient.auth.getUser(
     authHeader.replace('Bearer ', ''),
-  );
-  if (claimsErr || !claims?.claims) return json(401, { success: false, error: 'unauthorized' });
+    );
+  if (authError || !userData?.user) return json(401, { success: false, error: 'unauthorized' });
 
-  const apiKey = Deno.env.get('CC_ATHLETICS_API_KEY');
+      const apiKey = Deno.env.get('CC_ATHLETICS_API_KEY');
   if (!apiKey) return json(500, { success: false, error: 'CC_ATHLETICS_API_KEY not configured' });
 
-  let body: { path?: string; downsample_factor?: number };
+      let body: { path?: string; downsample_factor?: number };
   try {
     body = await req.json();
   } catch {
@@ -52,40 +58,40 @@ serve(async (req) => {
   const path = String(body.path ?? '').trim();
   if (!path) return json(400, { success: false, error: 'missing_path' });
 
-  const params = new URLSearchParams({ path });
+      const params = new URLSearchParams({ path });
   if (body.downsample_factor && Number.isFinite(body.downsample_factor)) {
     params.set('downsample_factor', String(body.downsample_factor));
   }
 
-  try {
-    const urlRes = await fetch(
-      `https://europe-west1-forcemate-desktop.cloudfunctions.net/get_csv_download_url?${params.toString()}`,
-      { headers: { 'X-API-Key': apiKey } },
-    );
-    if (!urlRes.ok) {
-      const text = await urlRes.text().catch(() => '');
-      return json(urlRes.status, {
-        success: false,
-        error: `get_csv_download_url failed: ${urlRes.status}`,
-        detail: text.slice(0, 500),
-      });
-    }
-    const { download_url } = await urlRes.json();
-    if (!download_url) return json(502, { success: false, error: 'no_download_url' });
+      try {
+        const urlRes = await fetch(
+          `https://europe-west1-forcemate-desktop.cloudfunctions.net/get_csv_download_url?${params.toString()}`,
+          { headers: { 'X-API-Key': apiKey } },
+          );
+        if (!urlRes.ok) {
+          const text = await urlRes.text().catch(() => '');
+          return json(urlRes.status, {
+            success: false,
+            error: `get_csv_download_url failed: ${urlRes.status}`,
+            detail: text.slice(0, 500),
+          });
+        }
+        const { download_url } = await urlRes.json();
+        if (!download_url) return json(502, { success: false, error: 'no_download_url' });
 
-    const csvRes = await fetch(download_url);
-    if (!csvRes.ok) {
-      return json(502, { success: false, error: `csv_download_failed: ${csvRes.status}` });
-    }
-    const csv = await csvRes.text();
+  const csvRes = await fetch(download_url);
+        if (!csvRes.ok) {
+          return json(502, { success: false, error: `csv_download_failed: ${csvRes.status}` });
+        }
+        const csv = await csvRes.text();
 
-    // Lightweight header peek (don't full-parse server-side; client uses PapaParse)
-    const firstLine = csv.split(/\r?\n/, 1)[0] ?? '';
-    const columns = firstLine.split(/[,;\t]/).map((c) => c.trim());
-    const sample_count = Math.max(0, csv.split('\n').length - 1);
+  // Lightweight header peek (don't full-parse server-side; client uses PapaParse)
+  const firstLine = csv.split(/\r?\n/, 1)[0] ?? '';
+        const columns = firstLine.split(/[,;\t]/).map((c) => c.trim());
+        const sample_count = Math.max(0, csv.split('\n').length - 1);
 
-    return json(200, { success: true, download_url, csv, columns, sample_count });
-  } catch (e) {
-    return json(500, { success: false, error: (e as Error).message });
-  }
+  return json(200, { success: true, download_url, csv, columns, sample_count });
+      } catch (e) {
+        return json(500, { success: false, error: (e as Error).message });
+      }
 });
