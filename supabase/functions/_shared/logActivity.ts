@@ -1,6 +1,7 @@
 // Shared platform activity logging helper for edge functions.
 // Writes to public.platform_activity_logs using the service role.
 // Never throws — failures are swallowed so they never break the calling function.
+import { getServiceRoleKey } from './supabaseAdmin.ts';
 
 interface LogActivityArgs {
   eventType: string;
@@ -19,7 +20,7 @@ async function getClient() {
   if (cachedClient) return cachedClient;
   const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.45.0');
   const url = Deno.env.get('SUPABASE_URL');
-  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const key = getServiceRoleKey();
   if (!url || !key) return null;
   cachedClient = createClient(url, key, { auth: { persistSession: false } });
   return cachedClient;
