@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import notificationapi from "npm:notificationapi-node-server-sdk@1.1.0";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    getServiceRoleKey(),
     );
 
   const requestBody = await req.json();
