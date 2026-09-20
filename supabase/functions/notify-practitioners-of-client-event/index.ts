@@ -1,5 +1,6 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2.95.0/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2.95.0';
+import { getServiceRoleKey } from '../_shared/supabaseAdmin.ts';
 
 /**
  * notify-practitioners-of-client-event
@@ -26,7 +27,7 @@ interface Payload {
 }
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_KEY = getServiceRoleKey();
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
