@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,61 +6,75 @@ const corsHeaders = {
 };
 
 /**
- * Closes any super_admin_impersonation_logs row where:
- *   - ended_at IS NULL
- *   - started_at < now() - interval '8 hours'
+ * Manual trigger for the "Close stale (>8h)" button in the Control Centre's
+ * Impersonation Audit panel. Closes any super_admin_impersonation_logs row
+ * where ended_at IS NULL and started_at < now() - interval '8 hours'.
  *
- * For each stale row, sets ended_at = started_at + interval '8 hours'
- * and appends an "[auto-closed: stale > 8h]" marker to `reason`.
- *
- * Designed to be invoked by a pg_cron schedule (every 15 min) and
- * also callable manually by super admins for ad-hoc cleanup.
+ * The actual cleanup logic now lives in a SECURITY DEFINER Postgres
+ * function, public.cleanup_stale_impersonations() (added by migration
+ * 20260919193701), which pg_cron calls directly every 15 minutes - no HTTP
+ * hop, no bearer token, nothing for an anon-key holder to call. This edge
+ * function used to have no auth check of its own beyond Supabase's default
+ * "some validly-signed JWT" requirement, which the public anon key
+ * satisfies with no login - that was fine as far as the platform check
+ * goes, but meant anyone with the anon key could trigger it directly. Now
+ * requires a real authenticated user via auth.getUser(), then the
+ * is_super_admin() RPC, same pattern as cc-retry-sync's super-admin-only
+ * actions, before running the same cleanup function on demand.
  */
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const admin = createClient(supabaseUrl, serviceRoleKey);
+           try {
+             const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+             const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+             const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
 
-    const cutoffIso = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString();
+  const authHeader = req.headers.get('Authorization') ?? '';
+             if (!authHeader.startsWith('Bearer ')) {
+               return new Response(
+                 JSON.stringify({ success: false, error: 'unauthorized' }),
+                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+                 );
+             }
 
-    const { data: stale, error: selErr } = await admin
-      .from('super_admin_impersonation_logs')
-      .select('id, started_at, reason')
-      .is('ended_at', null)
-      .lt('started_at', cutoffIso);
+  const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    if (selErr) throw selErr;
-
-    let closed = 0;
-    for (const row of stale ?? []) {
-      const endedAt = new Date(
-        new Date(row.started_at as string).getTime() + 8 * 60 * 60 * 1000,
-      ).toISOString();
-      const newReason = `${row.reason ?? ''} [auto-closed: stale > 8h]`.trim();
-
-      const { error: upErr } = await admin
-        .from('super_admin_impersonation_logs')
-        .update({ ended_at: endedAt, reason: newReason })
-        .eq('id', row.id);
-
-      if (!upErr) closed += 1;
-      else console.warn('Failed to close impersonation log', row.id, upErr.message);
-    }
-
-    return new Response(
-      JSON.stringify({ success: true, scanned: stale?.length ?? 0, closed }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+  const { data: userData, error: userErr } = await admin.auth.getUser(
+    authHeader.replace('Bearer ', ''),
     );
-  } catch (e: any) {
-    console.error('cleanup-stale-impersonations error:', e);
-    return new Response(
-      JSON.stringify({ success: false, error: e?.message ?? 'unknown' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
+             if (userErr || !userData?.user) {
+               return new Response(
+                 JSON.stringify({ success: false, error: 'unauthorized' }),
+                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+                 );
+             }
+
+  const callerClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+             const { data: isAdmin, error: adminErr } = await callerClient.rpc('is_super_admin');
+             if (adminErr || !isAdmin) {
+               return new Response(
+                 JSON.stringify({ success: false, error: 'forbidden' }),
+                 { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 },
+                 );
+             }
+
+  const { data, error } = await admin.rpc('cleanup_stale_impersonations');
+             if (error) throw error;
+
+  return new Response(
+    JSON.stringify(data ?? { success: true }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
-  }
+           } catch (e: any) {
+console.error('cleanup-stale-impersonations error:', e);
+             return new Response(
+               JSON.stringify({ success: false, error: e?.message ?? 'unknown' }),
+               { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
+               );
+           }
 });
