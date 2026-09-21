@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { logActivity, logIntegrationHealth } from "../_shared/logActivity.ts";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +43,7 @@ serve(async (req) => {
     // service-role key as its Bearer token, so that caller is carved out.
     const authHeader = req.headers.get("authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const serviceRoleKey = getServiceRoleKey();
     if (!serviceRoleKey || token !== serviceRoleKey) {
       const sUrl = Deno.env.get("SUPABASE_URL");
       if (!sUrl || !serviceRoleKey) throw new Error("Supabase env vars not configured");
@@ -93,7 +94,7 @@ serve(async (req) => {
       try {
         const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
         const sUrl = Deno.env.get("SUPABASE_URL");
-        const sKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        const sKey = getServiceRoleKey();
         if (sUrl && sKey) {
           const svc = createClient(sUrl, sKey, { auth: { persistSession: false } });
           const { data: cached } = await svc
@@ -279,7 +280,7 @@ Provide a short explanation of what this test measures and why it matters, follo
       try {
         const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
         const sUrl = Deno.env.get("SUPABASE_URL");
-        const sKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        const sKey = getServiceRoleKey();
         if (sUrl && sKey) {
           const svc = createClient(sUrl, sKey, { auth: { persistSession: false } });
           await svc.from("ai_coach_insights").insert({

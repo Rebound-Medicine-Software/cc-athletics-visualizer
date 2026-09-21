@@ -27,6 +27,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ let _inflight: Promise<string> | null = null;
 const TOKEN_SKEW_MS = 15_000;
 
 const SB_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+const SB_KEY = getServiceRoleKey();
 const CACHE_URL = `${SB_URL}/rest/v1/vald_token_cache`;
 const sbHeaders = {
   apikey: SB_KEY,
@@ -373,7 +374,7 @@ async function handleAthletes(tenantId: string) {
   // Join vald_profile_metadata for sex/weight/height/sport/position/team
   let metaMap: Record<string, Record<string, unknown>> = {};
   try {
-    const metaRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vald_profile_metadata?select=*`, { headers: { apikey: Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}` } });
+    const metaRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vald_profile_metadata?select=*`, { headers: { apikey: getServiceRoleKey(), Authorization: `Bearer ${getServiceRoleKey()}` } });
     if (metaRes.ok) { const rows = await metaRes.json() as Record<string,unknown>[]; rows.forEach(r => { metaMap[r.profile_id as string] = r; }); }
   } catch { /* non-fatal */ }
   const athletes = list
@@ -600,7 +601,7 @@ async function requireAuthenticatedUser(req: Request): Promise<Response | null> 
   const token = authHeader.replace("Bearer ", "");
   const authClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    getServiceRoleKey()
     );
   const { data: userData, error: authError } = await authClient.auth.getUser(token);
   if (authError || !userData?.user) {
