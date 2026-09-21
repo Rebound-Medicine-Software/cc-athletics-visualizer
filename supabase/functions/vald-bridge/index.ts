@@ -374,7 +374,7 @@ async function handleAthletes(tenantId: string) {
   // Join vald_profile_metadata for sex/weight/height/sport/position/team
   let metaMap: Record<string, Record<string, unknown>> = {};
   try {
-    const metaRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vald_profile_metadata?select=*`, { headers: { apikey: getServiceRoleKey(), Authorization: `Bearer ${getServiceRoleKey()` } });
+    const metaRes = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/vald_profile_metadata?select=*`, { headers: { apikey: getServiceRoleKey(), Authorization: `Bearer ${getServiceRoleKey()}` } });
     if (metaRes.ok) { const rows = await metaRes.json() as Record<string,unknown>[]; rows.forEach(r => { metaMap[r.profile_id as string] = r; }); }
   } catch { /* non-fatal */ }
   const athletes = list
