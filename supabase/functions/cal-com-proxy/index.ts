@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { logIntegrationHealth } from "../_shared/logActivity.ts";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
 
     const authClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      getServiceRoleKey(),
     );
 
     const { data: userData, error: authError } = await authClient.auth.getUser(

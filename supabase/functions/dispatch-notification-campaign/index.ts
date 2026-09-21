@@ -3,6 +3,7 @@
 // - in_app → inserts into platform_in_app_notifications for each recipient owner_user_id
 // - webhook → POSTs payload to all active platform_webhook_endpoints (filtered by team if scoped)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,7 @@ const corsHeaders = {
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SERVICE_ROLE = getServiceRoleKey();
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const NOTIFAPI_CLIENT_ID = Deno.env.get("NOTIFICATIONAPI_CLIENT_ID");
 const NOTIFAPI_CLIENT_SECRET = Deno.env.get("NOTIFICATIONAPI_CLIENT_SECRET");
