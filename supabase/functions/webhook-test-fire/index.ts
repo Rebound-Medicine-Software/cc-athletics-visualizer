@@ -3,6 +3,7 @@
 // updates last_success_at / last_failure_at on the endpoint, and writes an
 // audit row. Never returns the stored secret.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,7 @@ const corsHeaders = {
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SERVICE_ROLE = getServiceRoleKey();
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 // SSRF guard. Returns null if safe, or an error code.
