@@ -5,6 +5,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getServiceRoleKey } from '../_shared/supabaseAdmin.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,7 +110,7 @@ serve(async (req) => {
 
   const supa = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    getServiceRoleKey(),
   )
 
   // Require a real logged-in user (or the trusted internal service-role
@@ -127,7 +128,7 @@ serve(async (req) => {
   // service-role caller so sync-cc-athletics keeps working.
   const authHeader = req.headers.get('authorization') ?? ''
   const token = authHeader.replace('Bearer ', '')
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const serviceRoleKey = getServiceRoleKey()
   const isTrustedServiceCaller = !!serviceRoleKey && token === serviceRoleKey
   if (!isTrustedServiceCaller) {
     const { data: userData, error: authError } = await supa.auth.getUser(token)
