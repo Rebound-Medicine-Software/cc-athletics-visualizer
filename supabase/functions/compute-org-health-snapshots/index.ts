@@ -2,6 +2,7 @@
 // Triggered by pg_cron. Idempotent per (team_id, snapshot_date) via upsert.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { getServiceRoleKey } from '../_shared/supabaseAdmin.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    getServiceRoleKey(),
     { auth: { persistSession: false } },
   );
 
