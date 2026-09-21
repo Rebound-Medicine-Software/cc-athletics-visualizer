@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { logActivity, logIntegrationHealth } from "../_shared/logActivity.ts";
+import { getServiceRoleKey } from "../_shared/supabaseAdmin.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +67,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization") ?? "";
     const token = authHeader.replace("Bearer ", "");
     const sUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceRoleKey = getServiceRoleKey();
     if (!sUrl || !serviceRoleKey) throw new Error("Supabase env vars not configured");
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
     const authClient = createClient(sUrl, serviceRoleKey, { auth: { persistSession: false } });
