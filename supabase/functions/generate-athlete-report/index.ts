@@ -581,7 +581,7 @@ Deno.serve(async (req) => {
     const { data: testRows, error: testError } = await supabaseClient
       .from('test_data')
       .select('id, athlete_id, test_name, metrics')
-      .eq('athlete_id', athleteIdToUse);
+      .eq('athlete_id', athleteIdToUse).eq('review_status', 'approved' as any);
 
     if (testError) {
       console.error('Error fetching test results:', testError);
