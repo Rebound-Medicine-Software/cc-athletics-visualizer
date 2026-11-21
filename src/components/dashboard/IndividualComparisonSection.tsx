@@ -46,26 +46,46 @@ const getMetricUnit = (metricType: string | null): string => {
   }
 };
 
-// Helper function to format metric values based on type
+// Contact/Flight time arrives in different units depending on data source:
+// CC Athletics' raw API returns these in seconds, while VALD's dashboard
+// mapper (valdToCCAthletics.ts) already converts them to milliseconds
+// before the record reaches this chart. Both land in the same
+// metrics.contact_time / metrics.flight_time keys.
+//
+// This MUST run on each record's raw value individually, before any
+// averaging happens (see getHistoricalData below) — not on an already
+// averaged value. An athlete can have a CC Athletics (software) test and a
+// VALD (hardware) test of the same type on the same calendar date, and
+// Josh wants both providers combining onto the same report card /
+// historical trend rather than being treated as separate silos. Averaging
+// a raw CC seconds value (e.g. 0.70) together with a raw VALD ms value
+// (e.g. 704) before converting would blend them into a meaningless ~352.
+// Normalizing each value to ms first, then averaging, means a mixed-source
+// day combines into one correct point. Values are always well under 5 when
+// expressed in seconds and well over 5 once in ms, so that's the signal to
+// convert — the same tolerant heuristic valdToCCAthletics.ts's own toMs()
+// helper already uses elsewhere in this codebase.
+const normalizeRawMetricValue = (value: number, metricType: string | null): number => {
+  if (!metricType) return value;
+
+  switch (metricType) {
+    case 'Contact Time':
+    case 'Flight Time':
+      return value < 5 ? value * 1000 : value;
+    default:
+      return value;
+  }
+};
+
+// Helper function to format metric values based on type. Runs on the
+// already-averaged (and, for Contact/Flight Time, already per-record
+// unit-normalized — see normalizeRawMetricValue above) value.
 const formatMetricValue = (value: number, metricType: string | null): number => {
   if (!metricType) return value;
 
   switch (metricType) {
     case 'Jump Height (cm)':
       return value * 100;
-    case 'Contact Time':
-    case 'Flight Time':
-      // Contact/Flight time arrives in different units depending on data
-      // source: CC Athletics' raw API returns these in seconds, while
-      // VALD's dashboard mapper (valdToCCAthletics.ts) already converts
-      // them to milliseconds before the record reaches this chart. Both
-      // land in the same metrics.contact_time / metrics.flight_time keys,
-      // so only convert when the value still looks like raw seconds
-      // (always well under 5) — the same tolerant heuristic
-      // valdToCCAthletics.ts's own toMs() helper already uses elsewhere.
-      // This avoids double-converting VALD's already-ms values while still
-      // fixing CC Athletics' real seconds values up to ms.
-      return value < 5 ? value * 1000 : value;
     default:
       return value;
   }
@@ -163,7 +183,12 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
       const values = testsOnDate.map(testRecord => {
         const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
-        return { value: value || 0, yAxisLabel };
+        // Normalize per-record, before averaging, so a CC Athletics
+        // (software) record and a VALD (hardware) record for the same
+        // athlete/test/date combine correctly instead of blending
+        // mismatched units.
+        const normalized = value != null ? normalizeRawMetricValue(value, selectedMetricType) : value;
+        return { value: normalized || 0, yAxisLabel };
       }).filter(result => result.value > 0);
 
       if (values.length === 0) {
