@@ -104,6 +104,31 @@ function AsymBadge({ value }: { value: number | null }) {
   return <Badge className={`text-xs font-mono ${cls}`}>{value.toFixed(1)}%</Badge>;
 }
 
+// ── Limb comparison bar (shared by CMJ / Soleus / Gastrocnemius) ────────────────────
+
+function LimbCompareCard({ title, left, right, metricLabel, unit }: {
+  title: string; left: number; right: number; metricLabel: string; unit: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-mono uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-between text-xs font-mono mb-1">
+          <span className="text-blue-600 font-bold">LEFT {left} {unit}</span>
+          <span className="text-muted-foreground">{metricLabel}</span>
+          <span className="text-red-600 font-bold">RIGHT {right} {unit}</span>
+        </div>
+        <div className="flex h-3 gap-0.5 rounded-full overflow-hidden">
+          <div className="bg-blue-500 rounded-l-full" style={{ flex: left }} />
+          <div className="bg-red-500 rounded-r-full"  style={{ flex: right }} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────────────
 
 export default function ValdReportHub() {
@@ -369,6 +394,14 @@ export default function ValdReportHub() {
             { label: "DJ RSI",       val: detail.djRSI,  unit: ""   },
             { label: "Pogo Height",  val: detail.pjH,    unit: "cm" },
             { label: "Pogo RSI",     val: detail.pjRSI,  unit: ""   },
+            // Isometric calf tests (Soleus / Gastrocnemius) — these were previously
+            // completely absent from this list, so selecting an isometric test
+            // showed an empty card grid even though the bridge already returns
+            // solL/solR/gasL/gasR for it. See useVald.ts ValdTestDetail.
+            { label: "Soleus Peak Force (L)",    val: detail.solL, unit: "N" },
+            { label: "Soleus Peak Force (R)",    val: detail.solR, unit: "N" },
+            { label: "Gastroc Force @250ms (L)", val: detail.gasL, unit: "N" },
+            { label: "Gastroc Force @250ms (R)", val: detail.gasR, unit: "N" },
           ] as { label: string; val: number | null; unit: string }[])
             .filter(m => m.val != null)
             .map(m => (
@@ -383,24 +416,31 @@ export default function ValdReportHub() {
         </div>
       )}
 
-      {/* Limb comparison */}
+      {/* Limb comparison — CMJ */}
       {detail && detail.cmjHL != null && detail.cmjHR != null && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-mono uppercase tracking-widest text-muted-foreground">Between-Limb Comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between text-xs font-mono mb-1">
-              <span className="text-blue-600 font-bold">LEFT {detail.cmjHL} cm</span>
-              <span className="text-muted-foreground">CMJ Height</span>
-              <span className="text-red-600 font-bold">RIGHT {detail.cmjHR} cm</span>
-            </div>
-            <div className="flex h-3 gap-0.5 rounded-full overflow-hidden">
-              <div className="bg-blue-500 rounded-l-full" style={{ flex: detail.cmjHL }} />
-              <div className="bg-red-500 rounded-r-full"  style={{ flex: detail.cmjHR }} />
-            </div>
-          </CardContent>
-        </Card>
+        <LimbCompareCard
+          title="Between-Limb Comparison"
+          left={detail.cmjHL} right={detail.cmjHR}
+          metricLabel="CMJ Height" unit="cm"
+        />
+      )}
+
+      {/* Limb comparison — Soleus (isometric calf) */}
+      {detail && detail.solL != null && detail.solR != null && (
+        <LimbCompareCard
+          title="Between-Limb Comparison — Soleus"
+          left={detail.solL} right={detail.solR}
+          metricLabel="Peak Force" unit="N"
+        />
+      )}
+
+      {/* Limb comparison — Gastrocnemius (isometric calf) */}
+      {detail && detail.gasL != null && detail.gasR != null && (
+        <LimbCompareCard
+          title="Between-Limb Comparison — Gastrocnemius"
+          left={detail.gasL} right={detail.gasR}
+          metricLabel="Force @ 250ms" unit="N"
+        />
       )}
 
     </div>
