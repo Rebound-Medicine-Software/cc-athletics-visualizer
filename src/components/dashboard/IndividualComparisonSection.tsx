@@ -55,7 +55,17 @@ const formatMetricValue = (value: number, metricType: string | null): number => 
       return value * 100;
     case 'Contact Time':
     case 'Flight Time':
-      return value * 1000;
+      // Contact/Flight time arrives in different units depending on data
+      // source: CC Athletics' raw API returns these in seconds, while
+      // VALD's dashboard mapper (valdToCCAthletics.ts) already converts
+      // them to milliseconds before the record reaches this chart. Both
+      // land in the same metrics.contact_time / metrics.flight_time keys,
+      // so only convert when the value still looks like raw seconds
+      // (always well under 5) — the same tolerant heuristic
+      // valdToCCAthletics.ts's own toMs() helper already uses elsewhere.
+      // This avoids double-converting VALD's already-ms values while still
+      // fixing CC Athletics' real seconds values up to ms.
+      return value < 5 ? value * 1000 : value;
     default:
       return value;
   }

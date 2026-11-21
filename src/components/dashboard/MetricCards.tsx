@@ -1,4 +1,3 @@
-
 // Refactored: now uses subcomponents and helpers for maintainability!
 import { TestData } from "@/types/forcePlateTypes";
 import { getCardConfigs, isLowerBetter } from "./metric-cards/metricCardConfig";
@@ -29,6 +28,32 @@ const getArrowInfo = (change: number, metricKey: string) => {
 const formatValue = (value: number | null | undefined, unit?: string) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
   return `${value.toFixed(2)}${unit ? ` ${unit}` : ""}`;
+};
+
+// Contact Time / Flight Time cards are labelled "ms", but the raw value
+// behind them arrives in different units depending on data source: CC
+// Athletics' own API returns contact_time/flight_time in seconds, while
+// VALD's dashboard mapper (valdToCCAthletics.ts) already converts them to
+// milliseconds before the record reaches this component. Both land in the
+// same metrics.contact_time / metrics.flight_time (and avg_ variants) keys,
+// so without this normalization CC Athletics' own Drop Jump / Pogo cards
+// have always displayed a number ~1000x too small (e.g. "0.70 ms" instead
+// of "704.17 ms"). Contact/flight times are always well under 5 when
+// expressed in seconds and well over 5 once in ms, so use that as the
+// signal to convert — the same tolerant heuristic valdToCCAthletics.ts's
+// own toMs() helper already relies on elsewhere in this codebase.
+const TIME_MS_METRIC_KEYS = new Set([
+  "contact_time",
+  "flight_time",
+  "avg_contact_time",
+  "avg_flight_time",
+]);
+
+const normalizeMetricValue = (metricKey: string, value: number): number => {
+  if (TIME_MS_METRIC_KEYS.has(metricKey) && value < 5) {
+    return value * 1000;
+  }
+  return value;
 };
 
 // Helper to try to get value either from .jump_height_cm or convert ft to cm
@@ -79,7 +104,7 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
       if (d.metrics && metricKey in d.metrics && typeof (d.metrics as any)[metricKey] === "number") {
         const key = `${d.athlete_name}||${d.test_date}`;
         if (!groups[key]) groups[key] = [];
-        groups[key].push((d.metrics as any)[metricKey]);
+        groups[key].push(normalizeMetricValue(metricKey, (d.metrics as any)[metricKey]));
       }
     });
     // Best rep per athlete per date
@@ -97,7 +122,7 @@ export const MetricCards = ({ selectedTest, data }: MetricCardsProps) => {
       if (d.metrics && metricKey in d.metrics && typeof (d.metrics as any)[metricKey] === "number") {
         const key = `${d.athlete_name}||${d.test_date}`;
         if (!groups[key]) groups[key] = { date: d.test_date, values: [] };
-        groups[key].values.push((d.metrics as any)[metricKey]);
+        groups[key].values.push(normalizeMetricValue(metricKey, (d.metrics as any)[metricKey]));
       }
     });
     const entries = Object.values(groups);
