@@ -77,6 +77,10 @@ export interface JumpMetrics {
   takeoff_velocity?: number;
   time_to_peak_force?: number;
   rsi?: number;
+  // Modified RSI (jump-height / contact-time), distinct from the plain
+  // Flight Time : Contraction Time ratio above - see valdToCCAthletics.ts
+  // toJumpMetrics(), which is the first mapper to populate both.
+  modified_rsi?: number;
 }
 
 export interface IsometricMetrics {

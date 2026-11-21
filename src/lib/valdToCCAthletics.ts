@@ -253,7 +253,13 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     mappedName === 'Left Side Drop Jump'   ||
     mappedName === 'Right Side Drop Jump';
   const heightCm = isDJ ? (test.djH ?? test.cmjH) : test.cmjH;
-  const rsiVal   = isDJ ? test.djRSI : test.cmjRSI;
+  // modifiedRsiVal = the jump-height/contact-time "RSI_MODIFIED" formula
+  // (what cmjRSI/djRSI have always held). plainRsiVal = the actual Flight
+  // Time : Contraction Time ratio CC Athletics documents as plain "RSI",
+  // sourced from the bridge's new rsiFlightContraction field when VALD
+  // reports it, falling back to the modified value when it doesn't.
+  const modifiedRsiVal = isDJ ? test.djRSI : test.cmjRSI;
+  const plainRsiVal     = (test as any).rsiFlightContraction ?? modifiedRsiVal;
   const ctVal    = isDJ ? test.djCT  : null;
   const raw      = rawOf(test);
   const d        = test as ValdTestDetail;
@@ -263,7 +269,10 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     jump_height_ft: flavour === 'report' ? cmToM(heightCm) : cmToFt(heightCm),
     jump_height_cm: flavour === 'report' ? cmToM(heightCm) : orUndef(heightCm),
     peak_power:     orUndef(test.cmjPP ?? rawBoth(raw, 'PEAK_TAKEOFF_POWER', 'PEAK_PROPULSIVE_POWER')),
-    rsi:            orUndef(rsiVal),
+    rsi:            orUndef(plainRsiVal),
+    // New: CC Athletics' own pogo metrics already separate rsi/modified_rsi
+    // (see toPogoMetrics below) — jump metrics now do too.
+    modified_rsi:   orUndef(modifiedRsiVal),
   };
 
   const contactSeconds = ctVal ?? rawBoth(raw, 'GROUND_CONTACT_TIME', 'CONTRACTION_TIME');
@@ -488,29 +497,29 @@ export function valdDetailToLimbPair(
   athlete: ValdAthlete,
 ): TestData[] | null {
   const t = detail.type.toLowerCase().replace(/[\s_-]/g, '');
-  
+
   let baseName: string | null = null;
   if (t === 'slj') baseName = 'Countermovement Jump';
   else if (t === 'sldj') baseName = 'Drop Jump';
   else if (t === 'slhj') baseName = 'Pogo Jump';
-  
+
   if (!baseName) return null; // not a unilateral test we handle this way
-  
+
   const raw = (detail as any).raw as Record<string, number> | undefined;
   const djL: number | null = (detail as any).djL ?? null;
   const djR: number | null = (detail as any).djR ?? null;
-  
+
   if (djL == null && djR == null) return null; // no limb data available
-  
+
   // Convert jump height cm → ft for CC Athletics (report generator converts back to cm)
   const cmToFt = (cm: number | null) => cm != null ? Math.round(cm * 0.0328084 * 100000) / 100000 : undefined;
-  
+
   // RSI already divided by 100 in bridge (cm/s → m/s)
   const rsi = (detail as any).cmjRSI ?? (detail as any).pjRSI ?? null;
   const ct = (detail as any).djCT ?? (detail as any).pjCT ?? null;
   const ft = raw?.['FLIGHT_TIME_Trial'] ?? null;
   const pp = (detail as any).cmjPP ?? null;
-  
+
   const makeMetrics = (heightCm: number | null) => {
     if (baseName === 'Pogo Jump') {
       return {
@@ -537,9 +546,9 @@ export function valdDetailToLimbPair(
     test_date: detail.date,
     repetition_number: 1,
   };
-  
+
   const results: TestData[] = [];
-  
+
   if (djL != null) {
     results.push({
       ...base,
@@ -556,6 +565,6 @@ export function valdDetailToLimbPair(
       metrics: makeMetrics(djR) as any,
     });
   }
-  
+
   return results.length ? results : null;
 }

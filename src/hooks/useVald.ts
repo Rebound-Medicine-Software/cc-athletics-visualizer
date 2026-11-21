@@ -58,6 +58,11 @@ export interface ValdTest {
   djCT: number | null;
   pjH: number | null;
   pjRSI: number | null;
+  // Plain RSI (Flight Time : Contraction Time ratio), from vald-bridge's
+  // flatMetrics(). Distinct from cmjRSI/djRSI/pjRSI above, which are the
+  // *modified* RSI formula. Not guaranteed present - VALD doesn't report
+  // FLIGHT_CONTRACTION_TIME_RATIO for every test type.
+  rsiFlightContraction?: number | null;
 }
 
 export interface ValdTestDetail extends ValdTest {
