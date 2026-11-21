@@ -7,7 +7,7 @@
  *   · A guide to using the External ForceDecks API
  *
  * ARCHITECTURE
- *   Auth        → https://auth.prd.vald.com/oauth/token  (audience: vald-api-external)
+ *   Auth        → https://auth.prd.vald.com/oauth/token (audience: vald-api-external)
  *   Profiles    → https://prd-{r}-api-externalprofile.valdperformance.com
  *   ForceDecks  → https://prd-{r}-api-extforcedecks.valdperformance.com
  *
@@ -214,7 +214,6 @@ async function getToken(forceRefresh = false): Promise<string> {
   return await _inflight;
 }
 
-
 // ── HTTP HELPER ───────────────────────────────────────────────────────────────
 
 async function get(url: string): Promise<{ status: number; body: unknown }> {
@@ -326,26 +325,26 @@ function flatMetrics(results: ValdResult[]) {
   const stdCT = firstMetric(results, ID_CONTACT, "Both");
 
   // HJ / SLHJ: all metrics use HOP_BEST_* prefix (confirmed from live /trials response)
-  const hopH   = r("HOP_BEST_JUMP_HEIGHT_Trial");
+  const hopH = r("HOP_BEST_JUMP_HEIGHT_Trial");
   const hopRSI = r("HOP_BEST_RSI_Trial");
-  const hopCT  = r("HOP_BEST_CONTACT_TIME_Trial");
+  const hopCT = r("HOP_BEST_CONTACT_TIME_Trial");
 
   return {
-    cmjH:    firstMetric(results, ID_HEIGHT, "Both"),
-    cmjHL:   firstMetric(results, ID_HEIGHT, "Left"),
-    cmjHR:   firstMetric(results, ID_HEIGHT, "Right"),
-    cmjRSI:  (() => { const v = firstMetric(results, ID_RSI_MOD, "Both"); return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
-    cmjPP:   firstMetric(results, ID_PEAK_POWER, "Both"),
+    cmjH: firstMetric(results, ID_HEIGHT, "Both"),
+    cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
+    cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
+    cmjRSI: (() => { const v = firstMetric(results, ID_RSI_MOD, "Both"); return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
+    cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
       firstMetric(results, ID_HEIGHT, "Asym") ??
       metric(results, "PEAK_TAKEOFF_FORCE", "Asym") ??
       metric(results, "ASYM_INDEX", "Both"),
-    djH:   firstMetric(results, ID_HEIGHT, "Both"),
+    djH: firstMetric(results, ID_HEIGHT, "Both"),
     djRSI: firstMetric(results, ID_RSI, "Both") ?? firstMetric(results, ID_RSI_MOD, "Both"),
     // Raw map fallback: CONTACT_TIME_Trial confirmed = 0.23s (DJ) / 0.34s (SLDJ) in live data
-    djCT:  stdCT ?? r("CONTACT_TIME_Trial"),
+    djCT: stdCT ?? r("CONTACT_TIME_Trial"),
     // Raw map fallback: HOP_BEST_* confirmed in live HJ/SLHJ /trials response
-    pjH:   firstMetric(results, ID_HEIGHT, "Both") ?? hopH,
+    pjH: firstMetric(results, ID_HEIGHT, "Both") ?? hopH,
     // pjRSI: for hop tests this comes from HOP_BEST_RSI which is ALREADY in m/s
     // For CMJ-family, RSI_MODIFIED is in cm/s and needs /100
     // We detect which by checking if hopRSI exists (hop tests) vs standard RSI (CMJ)
@@ -356,10 +355,9 @@ function flatMetrics(results: ValdResult[]) {
       // RSI_MODIFIED is cm/s for CMJ family -> divide by 100 to get m/s
       return stdVal != null ? Math.round(stdVal / 100 * 10000) / 10000 : null;
     }()),
-    pjCT:  stdCT ?? hopCT,
+    pjCT: stdCT ?? hopCT,
   };
 }
-
 
 // ── HANDLERS ──────────────────────────────────────────────────────────────────
 
@@ -368,8 +366,8 @@ async function handleAthletes(tenantId: string) {
   const list = (Array.isArray(body)
     ? body
     : ((body as Record<string, unknown>)?.profiles ??
-       (body as Record<string, unknown>)?.data ??
-       [])) as Record<string, unknown>[];
+      (body as Record<string, unknown>)?.data ??
+      [])) as Record<string, unknown>[];
 
   // Join vald_profile_metadata for sex/weight/height/sport/position/team
   let metaMap: Record<string, Record<string, unknown>> = {};
@@ -378,30 +376,30 @@ async function handleAthletes(tenantId: string) {
     if (metaRes.ok) { const rows = await metaRes.json() as Record<string,unknown>[]; rows.forEach(r => { metaMap[r.profile_id as string] = r; }); }
   } catch { /* non-fatal */ }
   const athletes = list
-.map((p) => {
-  const id = (p.profileId ?? p.id ?? "") as string;
-  const meta = metaMap[id] ?? {};
-  return {
-    id,
-    number: p.externalId ?? p.syncId ?? "",
-    name: `${p.givenName ?? ""} ${p.familyName ?? ""}`.trim(),
-    givenName: p.givenName ?? "",
-    familyName: p.familyName ?? "",
-    dob: p.dateOfBirth ?? "",
-    sex: (meta.sex as string | undefined) ?? (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
-    teams: (() => {
-      const teamArr = (p.teams as { name: string }[] | undefined) ??
-        (p.groups as { name: string }[] | undefined) ?? [];
-      return teamArr.map((t) => t.name).join(", ");
-    })(),
-    weightKg: (meta.weight_kg as number | undefined) ?? null,
-    heightCm: (meta.height_cm as number | undefined) ?? null,
-    position: (meta.position as string | undefined) ?? "",
-    sport: (meta.sport as string | undefined) ?? "",
-    team: (meta.team as string | undefined) ?? "",
-    notes: (meta.notes as string | undefined) ?? "",
-  };
-})
+    .map((p) => {
+      const id = (p.profileId ?? p.id ?? "") as string;
+      const meta = metaMap[id] ?? {};
+      return {
+        id,
+        number: p.externalId ?? p.syncId ?? "",
+        name: `${p.givenName ?? ""} ${p.familyName ?? ""}`.trim(),
+        givenName: p.givenName ?? "",
+        familyName: p.familyName ?? "",
+        dob: p.dateOfBirth ?? "",
+        sex: (meta.sex as string | undefined) ?? (p.sex as string | undefined) ?? (p.gender as string | undefined) ?? "",
+        teams: (() => {
+          const teamArr = (p.teams as { name: string }[] | undefined) ??
+            (p.groups as { name: string }[] | undefined) ?? [];
+          return teamArr.map((t) => t.name).join(", ");
+        })(),
+        weightKg: (meta.weight_kg as number | undefined) ?? null,
+        heightCm: (meta.height_cm as number | undefined) ?? null,
+        position: (meta.position as string | undefined) ?? "",
+        sport: (meta.sport as string | undefined) ?? "",
+        team: (meta.team as string | undefined) ?? "",
+        notes: (meta.notes as string | undefined) ?? "",
+      };
+    })
     .sort((a, b) => (a.name as string).localeCompare(b.name as string));
 
   return { athletes, count: athletes.length };
@@ -531,8 +529,8 @@ async function handleDetail(tenantId: string, testId: string) {
     ? trials.reduce((a, b) => getH(b as Record<string,unknown>) > getH(a as Record<string,unknown>) ? b : a, trials[0]) as Record<string,unknown>
     : (trials[0] ?? {}) as Record<string, unknown>;
 
-    const results = (primaryTrial.results ?? []) as ValdResult[];
-  const allR    = allMetrics(results); // shared raw map — reused for limb fallbacks
+  const results = (primaryTrial.results ?? []) as ValdResult[];
+  const allR = allMetrics(results); // shared raw map — reused for limb fallbacks
 
   return {
     trialCount: trials.length,
@@ -551,7 +549,9 @@ async function handleDetail(tenantId: string, testId: string) {
     takeoffVelocity: firstMetric(results, ["TAKEOFF_VELOCITY", "PEAK_TAKEOFF_VELOCITY"]),
     flightTime: metric(results, "FLIGHT_TIME", "Both") ?? allR["HOP_BEST_FLIGHT_TIME_Trial"] ?? null,
     bodyWeight: metric(results, "BODY_WEIGHT", "Both"),
-    rfdMax: firstMetric(results, ["PEAK_RFD", "MAX_RFD", "RFD_AT_150MS", "RFD_AT_250MS"]) ?? allR["RFD_AT_150MS_Trial"] ?? allR["RFD_AT_250MS_Trial"] ?? null,
+    // NOTE: this key used to be declared twice with the identical expression
+    // (a harmless but sloppy duplicate-key bug from an earlier edit) — now
+    // declared once.
     rfdMax: firstMetric(results, ["PEAK_RFD", "MAX_RFD", "RFD_AT_150MS", "RFD_AT_250MS"]) ?? allR["RFD_AT_150MS_Trial"] ?? allR["RFD_AT_250MS_Trial"] ?? null,
 
     // Per-limb: unilateral tests have trial.limb=Left/Right; get best per limb
@@ -581,9 +581,9 @@ async function handleDetail(tenantId: string, testId: string) {
     solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
     gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Left"),
     gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Right"),
-
   };
 }
+
 // ── REQUEST AUTHORIZATION ────────────────────────────────────────────────────
 // This endpoint returns every athlete/test in the whole VALD tenant and has no
 // scoping of its own. Supabase's default verify_jwt setting only requires *a*
@@ -602,13 +602,13 @@ async function requireAuthenticatedUser(req: Request): Promise<Response | null> 
   const authClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     getServiceRoleKey()
-    );
+  );
   const { data: userData, error: authError } = await authClient.auth.getUser(token);
   if (authError || !userData?.user) {
     return new Response(
       JSON.stringify({ error: "Authentication required", code: "VALD_AUTH_REQUIRED" }),
       { status: 401, headers: { ...CORS, "Content-Type": "application/json" } },
-      );
+    );
   }
   return null;
 }
