@@ -7,7 +7,6 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, LabelList, Line
 import { TestData } from "@/types/forcePlateTypes";
 import { getMetricTypesForTest, getUniqueTestNames, getUniqueAthleteNames } from "./filters/filterUtils";
 import { metricCaseLogic } from "./chart/useMetricCaseLogic";
-import { supabase } from "@/integrations/supabase/client";
 
 interface IndividualComparisonSectionProps {
   data: TestData[];
@@ -19,7 +18,7 @@ interface IndividualComparisonSectionProps {
 // Helper function to get metric units
 const getMetricUnit = (metricType: string | null): string => {
   if (!metricType) return '';
-  
+
   switch (metricType) {
     case 'Jump Height (cm)':
       return '[cm]';
@@ -50,17 +49,14 @@ const getMetricUnit = (metricType: string | null): string => {
 // Helper function to format metric values based on type
 const formatMetricValue = (value: number, metricType: string | null): number => {
   if (!metricType) return value;
-  
+
   switch (metricType) {
     case 'Jump Height (cm)':
-      // Convert from meters to centimeters (multiply by 100)
       return value * 100;
     case 'Contact Time':
     case 'Flight Time':
-      // Convert from seconds to milliseconds (multiply by 1000)
       return value * 1000;
     default:
-      // No conversion needed for other metrics
       return value;
   }
 };
@@ -74,18 +70,11 @@ interface LimbSymmetryData {
 }
 
 export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTeams, branding }: IndividualComparisonSectionProps) => {
-  // Filter states
   const [selectedTestName, setSelectedTestName] = useState("");
   const [selectedMetricType, setSelectedMetricType] = useState("");
   const [selectedAthleteName, setSelectedAthleteName] = useState("");
   const [selectedTestDate, setSelectedTestDate] = useState("");
 
-  // API data state
-  const [apiData, setApiData] = useState<TestData[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-
-  // Reset filters when resetFiltersKey changes
   useEffect(() => {
     setSelectedTestName("");
     setSelectedMetricType("");
@@ -93,51 +82,21 @@ export const IndividualComparisonSection = ({ data, resetFiltersKey, selectedTea
     setSelectedTestDate("");
   }, [resetFiltersKey]);
 
-  // Fetch API data using appropriate endpoint based on test type
-const fetchApiData = async () => {
-  setIsLoading(true);
-  try {
-    // Jump/Drop Jump/Pogo/Squat Jump tests go through the shared, authenticated
-    // Supabase client so the real logged-in user's session token is sent.
-    // fetch-cc-data now requires a real authenticated user (see framework.md
-    // Section 3) and no longer accepts a bare anon key on its own - this used
-    // to hardcode the public anon key directly here, which is what let this
-    // call keep working even with no logged-in user.
-    const { data: result, error } = await supabase.functions.invoke('fetch-cc-data', {
-      method: 'GET',
-    });
-
-    if (error) {
-      console.error('Failed to fetch API data:', error);
-      return;
-    }
-
-    if (result?.success && result.data) {
-      setApiData(result.data);
-    } else if (Array.isArray(result)) {
-      setApiData(result);
-    }
-  } catch (error) {
-    console.error('Failed to fetch API data:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-  useEffect(() => {
-    fetchApiData();
-  }, []);
-
-  // Filter options - use apiData instead of data prop
+  // Use the data prop passed down by the parent (DashboardContent for CC
+  // Athletics, ValdAnalytics for the VALD Hub) instead of re-fetching
+  // fetch-cc-data directly. The old self-fetch here always pulled CC
+  // Athletics data regardless of which page rendered this component, so the
+  // VALD Hub's Individual / Limb Comparison charts were silently showing CC
+  // Athletics data instead of the VALD data selected above them.
   const teamFilteredData = selectedTeams.length > 0
-    ? apiData.filter(d => selectedTeams.includes(d.team_name))
-    : apiData;
+    ? data.filter(d => selectedTeams.includes(d.team_name))
+    : data;
 
   const uniqueTestNames = getUniqueTestNames(teamFilteredData).filter(t => !t.startsWith("Left Side") && !t.startsWith("Right Side"));
-  const uniqueAthleteNames = selectedTestName 
+  const uniqueAthleteNames = selectedTestName
     ? getUniqueAthleteNames(teamFilteredData.filter(d => d.test_name === selectedTestName))
     : [];
-  
+
   const normalizeTestDate = (dateString: string) => {
     if (!dateString) return "";
 
@@ -162,7 +121,6 @@ const fetchApiData = async () => {
       )).sort()
     : [];
 
-  // Format dates as DD/MM/YYYY for display
   const formatDate = (dateString: string) => {
     const normalizedDate = normalizeTestDate(dateString);
     if (!normalizedDate) return dateString;
@@ -171,21 +129,16 @@ const fetchApiData = async () => {
     return `${day}/${month}/${year}`;
   };
 
-  // Get historical data for the trend chart (Task 3)
   const getHistoricalData = () => {
-    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !apiData.length) {
+    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !data.length) {
       return [];
     }
 
-
-    // Get all test records for the selected athlete and test name (regardless of selected test date)
-    const athleteTests = teamFilteredData.filter(d => 
-      d.test_name === selectedTestName && 
+    const athleteTests = teamFilteredData.filter(d =>
+      d.test_name === selectedTestName &&
       d.athlete_name === selectedAthleteName
     );
 
-
-    // Group tests by date to get the best value per date
     const testsByDate = athleteTests.reduce((acc, testRecord) => {
       const date = normalizeTestDate(testRecord.test_date);
       if (!date) return acc;
@@ -198,7 +151,6 @@ const fetchApiData = async () => {
     }, {} as Record<string, TestData[]>);
 
     const historicalResults = Object.entries(testsByDate).map(([date, testsOnDate]) => {
-      // Calculate metric values for all tests on this date
       const values = testsOnDate.map(testRecord => {
         const { value, yAxisLabel } = metricCaseLogic(testRecord, selectedTestName, selectedMetricType);
         return { value: value || 0, yAxisLabel };
@@ -213,12 +165,8 @@ const fetchApiData = async () => {
         };
       }
 
-      // Average all repetition values for this date
       const avgValue = values.reduce((sum, v) => sum + v.value, 0) / values.length;
-
-      // Format the value based on metric type
       const formattedValue = formatMetricValue(avgValue, selectedMetricType);
-
 
       return {
         date: formatDate(date),
@@ -232,22 +180,17 @@ const fetchApiData = async () => {
   };
 
   const historicalData = getHistoricalData();
-  
-  // Debug historical data
 
   const availableMetricTypes = selectedTestName ? getMetricTypesForTest(selectedTestName) : [];
 
-  // Calculate limb symmetry data based on TestData metrics
   const calculateLimbSymmetry = (): LimbSymmetryData | null => {
-    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate || !apiData.length) {
+    if (!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate || !data.length) {
       return null;
     }
 
-
-    // Find ALL test records that match our filters (all reps for this date)
-    const matchingRecords = apiData.filter(d => 
-      d.test_name === selectedTestName && 
-      d.athlete_name === selectedAthleteName && 
+    const matchingRecords = data.filter(d =>
+      d.test_name === selectedTestName &&
+      d.athlete_name === selectedAthleteName &&
       normalizeTestDate(d.test_date) === selectedTestDate
     );
 
@@ -258,7 +201,6 @@ const fetchApiData = async () => {
     let leftValue = 0;
     let rightValue = 0;
 
-    // Average limb values across all repetitions for this date
     const getLimbAverages = (leftKey: string, rightKey: string) => {
       let leftSum = 0, rightSum = 0, count = 0;
       matchingRecords.forEach(record => {
@@ -272,7 +214,6 @@ const fetchApiData = async () => {
       return count > 0 ? { left: leftSum / count, right: rightSum / count } : { left: 0, right: 0 };
     };
 
-    // Apply data logic based on test name and metric type - using exact API metric names
     if (selectedTestName === "Drop Jump" && ["Jump Height (cm)", "Contact Time", "Reactive Strength Index", "Flight Time"].includes(selectedMetricType)) {
       const avg = getLimbAverages('p1_avg_force', 'p2_avg_force');
       leftValue = avg.left;
@@ -290,40 +231,35 @@ const fetchApiData = async () => {
       leftValue = avg.left;
       rightValue = avg.right;
     } else {
-      // Case 5: Isometric tests
       const firstRecord = matchingRecords[0];
       const metrics = firstRecord.metrics as any;
-      
+
       if (metrics?.isometric_analysis?.trials) {
-        // Search across ALL test records for matching athlete, date to find left_leg and right_leg trials
-        const isoRecords = teamFilteredData.filter((record: TestData) => 
+        const isoRecords = teamFilteredData.filter((record: TestData) =>
           record.athlete_name === selectedAthleteName &&
           normalizeTestDate(record.test_date) === selectedTestDate &&
           record.test_name.includes('Isometric')
         );
-        
-        
+
         let allLeftTrials: any[] = [];
         let allRightTrials: any[] = [];
         let foundDualTrial = false;
-        
+
         isoRecords.forEach((record: TestData, recordIndex: number) => {
-          
+
           const recordMetrics = record.metrics as any;
           if (recordMetrics?.isometric_analysis?.trials) {
-            const leftTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+            const leftTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) =>
               trial.stance === 'left_leg' || trial.stance === 'left'
             );
-            const rightTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => 
+            const rightTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) =>
               trial.stance === 'right_leg' || trial.stance === 'right'
             );
             const dualTrials = recordMetrics.isometric_analysis.trials.filter((trial: any) => trial.stance === 'dual');
-            
-            
+
             allLeftTrials.push(...leftTrials);
             allRightTrials.push(...rightTrials);
-            
-            // Handle dual trials (prefer these over separate trials)
+
             dualTrials.forEach((dualTrial: any) => {
               if (dualTrial?.total_metrics?.force_peak_left && dualTrial?.total_metrics?.force_peak_right) {
                 leftValue = dualTrial.total_metrics.force_peak_left;
@@ -337,14 +273,12 @@ const fetchApiData = async () => {
             });
           }
         });
-        
 
-        // Only calculate from separate trials if we didn't find dual trial values
         if (!foundDualTrial) {
           if (allLeftTrials.length > 0) {
             leftValue = allLeftTrials.reduce((sum: number, trial: any) => {
-              const value = trial.total_metrics?.force_peak || 
-                           trial.total_metrics?.[selectedMetricType] || 
+              const value = trial.total_metrics?.force_peak ||
+                           trial.total_metrics?.[selectedMetricType] ||
                            trial.max_force || 0;
               return sum + value;
             }, 0) / allLeftTrials.length;
@@ -352,14 +286,14 @@ const fetchApiData = async () => {
 
           if (allRightTrials.length > 0) {
             rightValue = allRightTrials.reduce((sum: number, trial: any) => {
-              const value = trial.total_metrics?.force_peak || 
-                           trial.total_metrics?.[selectedMetricType] || 
+              const value = trial.total_metrics?.force_peak ||
+                           trial.total_metrics?.[selectedMetricType] ||
                            trial.max_force || 0;
               return sum + value;
             }, 0) / allRightTrials.length;
           }
         }
-        
+
       } else {
         leftValue = 0;
         rightValue = 0;
@@ -383,44 +317,27 @@ const fetchApiData = async () => {
 
   const limbSymmetryData = calculateLimbSymmetry();
 
-  // Debug logging
-  useEffect(() => {
-    if (selectedTestName && selectedAthleteName && selectedTestDate) {
-      const testRecord = apiData.find(d => 
-        d.test_name === selectedTestName && 
-        d.athlete_name === selectedAthleteName && 
-        normalizeTestDate(d.test_date) === selectedTestDate
-      );
-      if (testRecord?.metrics) {
-      }
-    }
-  }, [selectedTestName, selectedMetricType, selectedAthleteName, selectedTestDate, apiData, limbSymmetryData]);
-
-  // Custom mirrored bar chart component
   const MirroredBarChart = ({ data }: { data: LimbSymmetryData | null }) => {
     if (!data) return <div className="text-center text-gray-500">No data available</div>;
 
     const maxPercentage = Math.max(data.leftPercentage, data.rightPercentage);
-    const scale = maxPercentage > 0 ? 50 / maxPercentage : 1; // Scale to fit 50% of each side
+    const scale = maxPercentage > 0 ? 50 / maxPercentage : 1;
 
     return (
       <div className="w-full">
-        {/* Chart container */}
-        <div 
+        <div
           className="relative h-16 rounded border-2"
           style={{
             backgroundColor: branding?.secondary_color ? `${branding.secondary_color}20` : 'hsl(var(--muted))',
             borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
           }}
         >
-          {/* Center line */}
-          <div 
+          <div
             className="absolute left-1/2 top-0 bottom-0 w-0.5 z-10"
             style={{ backgroundColor: branding?.primary_color || 'hsl(var(--border))' }}
           ></div>
-          
-          {/* Left bar */}
-          <div 
+
+          <div
             className="absolute top-2 bottom-2 rounded-l"
             style={{
               right: '50%',
@@ -429,14 +346,12 @@ const fetchApiData = async () => {
               backgroundColor: branding?.primary_color || 'hsl(var(--foreground))'
             }}
           >
-            {/* Left percentage label */}
             <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white text-sm font-medium">
               {data.leftPercentage.toFixed(2)}%
             </div>
           </div>
-          
-          {/* Right bar */}
-          <div 
+
+          <div
             className="absolute top-2 bottom-2 rounded-r"
             style={{
               left: '50%',
@@ -445,20 +360,18 @@ const fetchApiData = async () => {
               backgroundColor: branding?.accent_color || 'hsl(var(--accent))'
             }}
           >
-            {/* Right percentage label */}
-            <div 
+            <div
               className="absolute left-2 top-1/2 transform -translate-y-1/2 text-sm font-medium"
               style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
             >
               {data.rightPercentage.toFixed(2)}%
             </div>
           </div>
-          
+
         </div>
-        
-        {/* Raw values as attractive scorecards */}
+
         <div className="mt-6 flex justify-center gap-6">
-          <div 
+          <div
             className="rounded-lg border-2 p-4 min-w-[120px] text-center shadow-sm"
             style={{
               backgroundColor: branding?.primary_color || 'hsl(var(--foreground))',
@@ -469,26 +382,26 @@ const fetchApiData = async () => {
             <div className="text-2xl font-bold text-white">{data.leftValue.toFixed(2)}</div>
             <div className="text-xs text-gray-300">{data.leftPercentage.toFixed(1)}%</div>
           </div>
-          <div 
+          <div
             className="rounded-lg border-2 p-4 min-w-[120px] text-center shadow-sm"
             style={{
               backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
               borderColor: branding?.accent_color || 'hsl(var(--accent))'
             }}
           >
-            <div 
+            <div
               className="text-sm font-medium mb-1"
               style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
             >
               Right Limb
             </div>
-            <div 
+            <div
               className="text-2xl font-bold"
               style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
             >
               {data.rightValue.toFixed(2)}
             </div>
-            <div 
+            <div
               className="text-xs"
               style={{ color: branding?.primary_color || 'hsl(var(--muted-foreground))' }}
             >
@@ -500,8 +413,6 @@ const fetchApiData = async () => {
     );
   };
 
-
-  // Filter handlers
   const handleTestNameChange = (value: string) => {
     setSelectedTestName(value);
     setSelectedMetricType("");
@@ -524,7 +435,7 @@ const fetchApiData = async () => {
 
   return (
     <div style={branding ? { fontFamily: branding.font_family || 'Inter, system-ui, sans-serif' } : {}}>
-      <Card 
+      <Card
         className="border-2"
         style={{
           backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
@@ -532,238 +443,215 @@ const fetchApiData = async () => {
         }}
       >
         <CardContent className="p-4">
-          {/* Sticky filter area */}
           <div className="sticky top-[80px] z-30 pb-4 rounded-t-lg" style={{
             backgroundColor: branding?.secondary_color ? `${branding.secondary_color}10` : 'hsl(var(--card))',
           }}>
-          {/* Header */}
-          <div className="flex justify-center mb-4">
-            <Button 
-              variant="default" 
-              className="w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default text-white"
+            <div className="flex justify-center mb-4">
+              <Button
+                variant="default"
+                className="w-auto min-w-[220px] text-lg font-semibold mx-auto justify-center block text-center cursor-default text-white"
+                style={{
+                  backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
+                  borderColor: branding?.accent_color || 'hsl(var(--accent))'
+                }}
+                aria-label="Individual / Between Limb Comparisons"
+              >
+                Individual / Between Limb Comparisons
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
+                <Select value={selectedTestName} onValueChange={handleTestNameChange}>
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select Test" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {uniqueTestNames.map(testName => (
+                      <SelectItem key={testName} value={testName}>
+                        {testName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
+                <Select
+                  value={selectedAthleteName}
+                  onValueChange={handleAthleteNameChange}
+                  disabled={!selectedTestName}
+                >
+                  <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                    <SelectValue placeholder="Select Athlete" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {uniqueAthleteNames.map(athleteName => (
+                      <SelectItem key={athleteName} value={athleteName}>
+                        {athleteName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
+                <Select
+                  value={selectedTestDate}
+                  onValueChange={handleTestDateChange}
+                  disabled={!selectedAthleteName}
+                >
+                  <SelectTrigger className={`${!selectedAthleteName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
+                    <SelectValue placeholder="Select Date" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {uniqueTestDates.map(testDate => (
+                      <SelectItem key={testDate} value={testDate}>
+                        {formatDate(testDate)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col">
+                <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
+                <Select
+                  value={selectedMetricType}
+                  onValueChange={handleMetricTypeChange}
+                  disabled={!selectedTestDate}
+                >
+                  <SelectTrigger className={`${!selectedTestDate ? "bg-gray-100 opacity-60" : "bg-white"} h-auto min-h-[2.5rem] [&>span]:!block [&>span]:!whitespace-normal [&>span]:!overflow-visible [&>span]:!text-ellipsis-none`}>
+                    <SelectValue placeholder="Select Metric" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white z-50">
+                    {availableMetricTypes.map(metricType => (
+                      <SelectItem key={metricType} value={metricType}>
+                        {metricType}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div
+              className="rounded-lg p-6 border-2"
               style={{
-                backgroundColor: branding?.accent_color || 'hsl(var(--accent))',
-                borderColor: branding?.accent_color || 'hsl(var(--accent))'
+                backgroundColor: '#ffffff',
+                borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
               }}
-              aria-label="Individual / Between Limb Comparisons"
             >
-            Individual / Between Limb Comparisons
-          </Button>
-        </div>
-
-        {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {/* Test Name */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Name</label>
-            <Select value={selectedTestName} onValueChange={handleTestNameChange}>
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Select Test" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {uniqueTestNames.map(testName => (
-                  <SelectItem key={testName} value={testName}>
-                    {testName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Athlete Name */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Athlete Name</label>
-            <Select 
-              value={selectedAthleteName} 
-              onValueChange={handleAthleteNameChange}
-              disabled={!selectedTestName}
-            >
-              <SelectTrigger className={`${!selectedTestName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Athlete" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {uniqueAthleteNames.map(athleteName => (
-                  <SelectItem key={athleteName} value={athleteName}>
-                    {athleteName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Test Date */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Test Date</label>
-            <Select 
-              value={selectedTestDate} 
-              onValueChange={handleTestDateChange}
-              disabled={!selectedAthleteName}
-            >
-              <SelectTrigger className={`${!selectedAthleteName ? "bg-gray-100 opacity-60" : "bg-white"}`}>
-                <SelectValue placeholder="Select Date" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {uniqueTestDates.map(testDate => (
-                  <SelectItem key={testDate} value={testDate}>
-                    {formatDate(testDate)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Metric Type */}
-          <div className="flex flex-col">
-            <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Metric Type</label>
-            <Select 
-              value={selectedMetricType} 
-              onValueChange={handleMetricTypeChange}
-              disabled={!selectedTestDate}
-            >
-              <SelectTrigger className={`${!selectedTestDate ? "bg-gray-100 opacity-60" : "bg-white"} h-auto min-h-[2.5rem] [&>span]:!block [&>span]:!whitespace-normal [&>span]:!overflow-visible [&>span]:!text-ellipsis-none`}>
-                <SelectValue placeholder="Select Metric" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                {availableMetricTypes.map(metricType => (
-                  <SelectItem key={metricType} value={metricType}>
-                    {metricType}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-          </div>
-
-
-        {/* Charts Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Limb Symmetry Chart */}
-          <div 
-            className="rounded-lg p-6 border-2"
-            style={{
-              backgroundColor: '#ffffff',
-              borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
-            }}
-          >
-            <h3 
-              className="text-lg font-semibold mb-4 text-center"
-              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
-            >
-              {selectedTestName || 'Test Name'} Limb Symmetry
-            </h3>
-            <div className="h-[200px] w-full">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-gray-500">Loading...</div>
-                </div>
-              ) : (
-                <div>
-                  {limbSymmetryData ? (
-                     <MirroredBarChart data={limbSymmetryData} />
-                  ) : (
-                    <div className="h-full flex items-center justify-center">
-                      <div className="text-center text-gray-500 text-sm">
-                        {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate 
-                          ? "Please select all filters to view limb symmetry data"
-                          : "No data available for the selected filters"
-                        }
-                      </div>
+              <h3
+                className="text-lg font-semibold mb-4 text-center"
+                style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+              >
+                {selectedTestName || 'Test Name'} Limb Symmetry
+              </h3>
+              <div className="h-[200px] w-full">
+                {limbSymmetryData ? (
+                  <MirroredBarChart data={limbSymmetryData} />
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center text-gray-500 text-sm">
+                      {!selectedTestName || !selectedMetricType || !selectedAthleteName || !selectedTestDate
+                        ? "Please select all filters to view limb symmetry data"
+                        : "No data available for the selected filters"
+                      }
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Historical Trend Chart */}
-          <div 
-            className="rounded-lg p-6 border-2"
-            style={{
-              backgroundColor: '#ffffff',
-              borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
-            }}
-          >
-            <h3 
-              className="text-lg font-semibold mb-4 text-center"
-              style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+            <div
+              className="rounded-lg p-6 border-2"
+              style={{
+                backgroundColor: '#ffffff',
+                borderColor: branding?.secondary_color ? `${branding.secondary_color}40` : 'hsl(var(--border))'
+              }}
             >
-              Individual Scores
-            </h3>
-            <div className="h-[200px] w-full">
-              {isLoading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-gray-500">Loading...</div>
-                </div>
-              ) : historicalData.length > 0 ? (
-                <div className="w-full overflow-x-auto">
-                  <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart 
-                        data={historicalData} 
-                        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                      >
-                        <XAxis 
-                          dataKey="date" 
-                          fontSize={11}
-                          angle={-45}
-                          textAnchor="end"
-                          height={60}
-                          interval={0}
-                        />
-                        <YAxis 
-                          fontSize={11}
-                          tickFormatter={(value) => `${value.toFixed(1)}`}
-                          label={{
-                            value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
-                            angle: -90,
-                            position: 'insideLeft',
-                            style: { 
-                              textAnchor: 'middle', 
-                              fontSize: 8, 
-                              fill: branding?.primary_color || "#374151" 
-                            },
-                          }}
-                        />
-                        <Tooltip 
-                          formatter={(value: number, name: string) => {
-                            const unit = getMetricUnit(selectedMetricType);
-                            return [`${value.toFixed(1)}${unit}`, name];
-                          }}
-                          labelFormatter={(label) => `Date: ${label}`}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke={branding?.primary_color || "#7DD3FC"}
-                          strokeWidth={3}
-                          dot={{ 
-                            fill: branding?.primary_color || "#7DD3FC", 
-                            strokeWidth: 2, 
-                            r: 5,
-                            stroke: branding?.accent_color || "#7DD3FC"
-                          }}
-                          name={selectedMetricType || "Metric"}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+              <h3
+                className="text-lg font-semibold mb-4 text-center"
+                style={{ color: branding?.primary_color || 'hsl(var(--foreground))' }}
+              >
+                Individual Scores
+              </h3>
+              <div className="h-[200px] w-full">
+                {historicalData.length > 0 ? (
+                  <div className="w-full overflow-x-auto">
+                    <div style={{ width: Math.max(100, historicalData.length * 80), minWidth: '100%' }}>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <LineChart
+                          data={historicalData}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                        >
+                          <XAxis
+                            dataKey="date"
+                            fontSize={11}
+                            angle={-45}
+                            textAnchor="end"
+                            height={60}
+                            interval={0}
+                          />
+                          <YAxis
+                            fontSize={11}
+                            tickFormatter={(value) => `${value.toFixed(1)}`}
+                            label={{
+                              value: historicalData.length > 0 ? historicalData[0].yAxisLabel : selectedMetricType || "Metric",
+                              angle: -90,
+                              position: 'insideLeft',
+                              style: {
+                                textAnchor: 'middle',
+                                fontSize: 8,
+                                fill: branding?.primary_color || "#374151"
+                              },
+                            }}
+                          />
+                          <Tooltip
+                            formatter={(value: number, name: string) => {
+                              const unit = getMetricUnit(selectedMetricType);
+                              return [`${value.toFixed(1)}${unit}`, name];
+                            }}
+                            labelFormatter={(label) => `Date: ${label}`}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke={branding?.primary_color || "#7DD3FC"}
+                            strokeWidth={3}
+                            dot={{
+                              fill: branding?.primary_color || "#7DD3FC",
+                              strokeWidth: 2,
+                              r: 5,
+                              stroke: branding?.accent_color || "#7DD3FC"
+                            }}
+                            name={selectedMetricType || "Metric"}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center text-gray-500 text-sm">
-                    {!selectedTestName || !selectedMetricType || !selectedAthleteName 
-                      ? "Please select test, metric, and athlete to view historical trends"
-                      : "No historical data available for the selected athlete and test"
-                    }
+                ) : (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center text-gray-500 text-sm">
+                      {!selectedTestName || !selectedMetricType || !selectedAthleteName
+                        ? "Please select test, metric, and athlete to view historical trends"
+                        : "No historical data available for the selected athlete and test"
+                      }
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 };
