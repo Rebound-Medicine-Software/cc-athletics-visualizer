@@ -1,6 +1,6 @@
 /**
  * NEXUS HUB — VALD Bridge Edge Function v3
- * ─────────────────────────────────────────────────────────────────────────────
+ * ──────────────────────────────────────────────────────────────────────────────
  * Built from VALD official API documentation (support.vald.com):
  *   · How to integrate with VALD APIs
  *   · A guide to using the External Profiles API
@@ -303,9 +303,18 @@ function allMetrics(results: ValdResult[]): Record<string, number> {
 }
 
 // Metric string IDs verified against live /trials responses.
-const ID_HEIGHT = ["JUMP_HEIGHT_IMP_MOM", "JUMP_HEIGHT", "IMPULSE_JUMP_HEIGHT"];
+// CC Athletics documents "Jump Height (ft)" as VALD's flight-time method
+// (JUMP_HEIGHT), confirmed live against VALD's /resultdefinitions — not the
+// impulse-momentum method (JUMP_HEIGHT_IMP_MOM), a different calculation CC
+// does not list as equivalent. Flight-time now takes priority.
+const ID_HEIGHT = ["JUMP_HEIGHT", "JUMP_HEIGHT_IMP_MOM", "IMPULSE_JUMP_HEIGHT"];
 const ID_RSI_MOD = ["RSI_MODIFIED", "RSI_MODIFIED_IMP_MOM"];
-const ID_RSI = ["RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
+// VALD's real id for CC Athletics' plain "RSI" (Flight Time : Contraction
+// Time ratio) is FLIGHT_CONTRACTION_TIME_RATIO, confirmed live. None of the
+// three candidates below exist in VALD's result definitions, so this always
+// silently fell through to RSI_MODIFIED (a different formula) wherever it
+// was used as a fallback.
+const ID_RSI = ["FLIGHT_CONTRACTION_TIME_RATIO", "RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
 const ID_PEAK_POWER = ["PEAK_TAKEOFF_POWER", "PEAK_PROPULSIVE_POWER", "PEAK_PROPULSIVE_PWR"];
 const ID_CONTACT = [
   "GROUND_CONTACT_TIME",
@@ -334,6 +343,11 @@ function flatMetrics(results: ValdResult[]) {
     cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
     cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
     cmjRSI: (() => { const v = firstMetric(results, ID_RSI_MOD, "Both"); return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
+    // Plain RSI (CC Athletics "rsi" key) = Flight Time : Contraction Time
+    // ratio. Distinct from cmjRSI/djRSI/pjRSI above, which are the
+    // *modified* RSI (jump-height / contact-time) formula CC calls
+    // "modified_rsi". Additive — does not change any existing field.
+    rsiFlightContraction: firstMetric(results, ID_RSI, "Both"),
     cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
       firstMetric(results, ID_HEIGHT, "Asym") ??
@@ -359,7 +373,7 @@ function flatMetrics(results: ValdResult[]) {
   };
 }
 
-// ── HANDLERS ──────────────────────────────────────────────────────────────────
+// ── HANDLERS ──────────────────────────────────────────────────────────────────────
 
 async function handleAthletes(tenantId: string) {
   const { body } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
