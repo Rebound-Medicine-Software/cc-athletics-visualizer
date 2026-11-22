@@ -429,11 +429,22 @@ function toIsometricMetrics(test: ValdTest | ValdTestDetail): IsometricMetrics {
   m.rfd_200ms = fw('RFD_AT_200MS', 'RFD_200MS');
   m.rfd_250ms = fw('RFD_AT_250MS', 'RFD_250MS');
 
-  m.impulse_50ms  = fw('IMPULSE_AT_50MS', 'IMPULSE_50MS');
-  m.impulse_100ms = fw('IMPULSE_AT_100MS', 'IMPULSE_100MS');
-  m.impulse_150ms = fw('IMPULSE_AT_150MS', 'IMPULSE_150MS');
-  m.impulse_200ms = fw('IMPULSE_AT_200MS', 'IMPULSE_200MS');
-  m.impulse_250ms = fw('IMPULSE_AT_250MS', 'IMPULSE_250MS');
+  // VALD's real result IDs for isometric impulse are "ISO_ABS_IMPULSE_<ms>"
+  // (confirmed live via Postman against Jess Ball's calf-raise trial data,
+  // 22 Nov 2026) — not "IMPULSE_AT_<ms>MS" / "IMPULSE_<ms>MS", neither of
+  // which ever existed on any VALD isometric test. Every impulse_Xms field
+  // below was silently undefined for every isometric test (not just calf
+  // raises) until this fix, regardless of classifyTestType working correctly.
+  m.impulse_50ms  = fw('ISO_ABS_IMPULSE_50', 'IMPULSE_AT_50MS', 'IMPULSE_50MS');
+  m.impulse_100ms = fw('ISO_ABS_IMPULSE_100', 'IMPULSE_AT_100MS', 'IMPULSE_100MS');
+  m.impulse_150ms = fw('ISO_ABS_IMPULSE_150', 'IMPULSE_AT_150MS', 'IMPULSE_150MS');
+  m.impulse_200ms = fw('ISO_ABS_IMPULSE_200', 'IMPULSE_AT_200MS', 'IMPULSE_200MS');
+  // Confirmed live: the calf-raise protocols (SEICR/STICR) cap at 200ms —
+  // there is no ISO_ABS_IMPULSE_250 result on those tests, same as the force
+  // reading above. Fall back to the 200ms value so "Impulse @ 250ms" shows
+  // the real latest-available number for calf raises instead of staying
+  // blank, while protocols that do report a genuine 250ms value still use it.
+  m.impulse_250ms = fw('ISO_ABS_IMPULSE_250', 'IMPULSE_AT_250MS', 'IMPULSE_250MS') ?? m.impulse_200ms;
 
   m.steadiness_force = fw('STABLE_FORCE_READING', 'MEAN_FORCE');
 
