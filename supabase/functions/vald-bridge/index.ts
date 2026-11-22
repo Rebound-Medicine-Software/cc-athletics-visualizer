@@ -1,6 +1,6 @@
 /**
  * NEXUS HUB — VALD Bridge Edge Function v3
- * ──────────────────────────────────────────────────────────────────────────────
+ * ───────────────────────────────────────────────────────────────────────────────
  * Built from VALD official API documentation (support.vald.com):
  *   · How to integrate with VALD APIs
  *   · A guide to using the External Profiles API
@@ -23,6 +23,23 @@
  *   - Metric values: value × definition.resultUnitScaleFactor = display unit.
  *   - modifiedFromUtc is REQUIRED on /tests.
  *   - VALD returns 204 with an empty body when there are no results.
+ *
+ * ISOMETRIC TESTS (solL/solR/gasL/gasR)
+ *   Confirmed against live /trials data for Jess Ball's "SEICR" (Seated
+ *   Isometric Calf Raise) and "STICR" (Standing Isometric Calf Raise) tests:
+ *   these are two SEPARATE single-muscle test records — each one just reports
+ *   PEAK_VERTICAL_FORCE (+ FORCE_AT_50/100/150/200MS) per leg. There is no
+ *   single test that reports both a "soleus" and a "gastrocnemius" reading —
+ *   solL/solR is simply "this isometric test's peak force per leg", generic
+ *   across SEICR/STICR/IMTP/ASH/etc. gasL/gasR previously guessed
+ *   FORCE_AT_250MS, which does not exist on either calf protocol (confirmed
+ *   live — both max out at FORCE_AT_200MS) — it has been widened to fall
+ *   back to FORCE_AT_200MS so it reflects a real "late force" reading instead
+ *   of always being null. The frontend (ValdReportHub) now labels these cards
+ *   using the test's own mapped name (e.g. "Seated Isometric Calf Raise —
+ *   Peak Force") rather than hardcoded Soleus/Gastrocnemius labels, since
+ *   which muscle a given reading represents depends entirely on which test
+ *   type it came from.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -590,11 +607,20 @@ async function handleDetail(tenantId: string, testId: string) {
     djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] || firstMetric(results, ID_HEIGHT, "Asym") || metric(results, "PEAK_LANDING_FORCE", "Asym") || null,
     pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
-    // Isometric
+    // Isometric — generic per-test peak force and "late" force, Left/Right.
+    // solL/solR = PEAK_FORCE / PEAK_VERTICAL_FORCE, confirmed present on both
+    // SEICR and STICR live trials (and the standard isometric metric family
+    // generally). These are NOT soleus-specific — the name is historical;
+    // what they represent depends on which test produced them (the frontend
+    // labels the card using the test's own mapped name).
     solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
     solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
-    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Left"),
-    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Right"),
+    // gasL/gasR = "late" isometric force reading, Left/Right. FORCE_AT_250MS
+    // does not exist on SEICR/STICR (confirmed live — both protocols only go
+    // up to FORCE_AT_200MS), so it now falls back to FORCE_AT_200MS instead
+    // of always resolving to null.
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Right"),
   };
 }
 
