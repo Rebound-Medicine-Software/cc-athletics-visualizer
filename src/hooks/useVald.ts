@@ -78,6 +78,39 @@ export interface ValdTestDetail extends ValdTest {
   gasR: number | null;
 }
 
+/**
+ * One trial/rep within a test session, as returned by action=trials.
+ * Same flat metric shape as ValdTestDetail (minus the cross-trial fields
+ * like djL/djR/djAsym, which only make sense once every trial is already
+ * compared against every other) plus per-trial identity/timing, so a list
+ * of these can be charted for intra-session (rep-to-rep) consistency.
+ */
+export interface ValdTrialRow {
+  trialId: string | null;
+  repeatIndex: number;
+  limb: string;
+  startTime: number | null;
+  endTime: number | null;
+  raw: Record<string, number>;
+  solL: number | null;
+  solR: number | null;
+  gasL: number | null;
+  gasR: number | null;
+  cmjH: number | null;
+  cmjHL: number | null;
+  cmjHR: number | null;
+  cmjRSI: number | null;
+  cmjPP: number | null;
+  cmjAsym: number | null;
+  djH: number | null;
+  djRSI: number | null;
+  djCT: number | null;
+  pjH: number | null;
+  pjRSI: number | null;
+  pjCT: number | null;
+  rsiFlightContraction: number | null;
+}
+
 // ── API caller via Supabase Edge Function ──────────────────────────────────────────
 
 async function callBridge<T>(params: Record<string, string>): Promise<T> {
@@ -155,6 +188,29 @@ export function useValdTestDetail(testId: string | null) {
     queryFn: () => {
       if (!testId) throw new Error("A test is required");
       return callBridge<ValdTestDetail>({ action: "detail", testId });
+    },
+    enabled: !!testId,
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/**
+ * Every trial/rep for one test session — for intra-session (rep-to-rep)
+ * consistency, matching the per-jump/per-hop/per-trial granularity CC
+ * Athletics' own get_athletes endpoint already returns natively. Unlike
+ * useValdTestDetail(), which collapses a test down to one "best"/primary
+ * trial, this returns the whole array so no rep data is discarded.
+ */
+export function useValdTestTrials(testId: string | null) {
+  return useQuery({
+    queryKey: ["vald", "trials", testId],
+    queryFn: () => {
+      if (!testId) throw new Error("A test is required");
+      return callBridge<{ testId: string; trialCount: number; trials: ValdTrialRow[] }>({
+        action: "trials",
+        testId,
+      });
     },
     enabled: !!testId,
     staleTime: 10 * 60 * 1000,

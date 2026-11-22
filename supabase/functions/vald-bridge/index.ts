@@ -16,6 +16,9 @@
  *   Tests    : GET /tests?tenantId=X&modifiedFromUtc=Y&profileId=Z
  *              (falls back to /v2019q3/teams/{tenantId}/tests?athleteId=Z&modifiedFrom=Y)
  *   Detail   : GET /v2019q3/teams/{tenantId}/tests/{testId}/trials
+ *   Trials   : GET /v2019q3/teams/{tenantId}/tests/{testId}/trials (action=trials)
+ *              Same URL as Detail, but returns EVERY trial/rep instead of
+ *              picking one "primary" trial — for intra-session comparison.
  *
  * NOTES
  *   - /tests is primarily metadata; when metric results are present they are mapped too
@@ -624,6 +627,55 @@ async function handleDetail(tenantId: string, testId: string) {
   };
 }
 
+// Shared per-trial extractor — same metric-lookup logic handleDetail() uses
+// for its single "primary" trial, but applied to EVERY trial so intra-
+// session (rep-to-rep) comparison is possible. Deliberately duplicates a
+// subset of handleDetail()'s extraction rather than refactoring it, to
+// avoid touching the already-verified primary-trial behaviour.
+function trialRow(t: Record<string, unknown>, index: number) {
+  const results = (t.results ?? []) as ValdResult[];
+  const allR = allMetrics(results);
+  return {
+    trialId: (t.id ?? null) as string | null,
+    repeatIndex: index,
+    limb: (t.limb ?? "Both") as string,
+    startTime: (t.startTime ?? null) as number | null,
+    endTime: (t.endTime ?? null) as number | null,
+    raw: allR,
+    ...flatMetrics(results),
+    // Isometric — generic per-rep peak force / late force, Left/Right.
+    // Same candidate IDs and FORCE_AT_200MS fallback as handleDetail()'s
+    // solL/solR/gasL/gasR (see the ISOMETRIC TESTS doc comment above).
+    solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
+    solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Right"),
+  };
+}
+
+// Returns EVERY trial/rep for a test, not just the one handleDetail() picks
+// as "primary". Confirmed live: a single VALD test can return multiple trial
+// objects (one of Jess Ball's tests returned 3 separate trials) — this is
+// what makes intra-session (rep-to-rep) comparison possible on the VALD
+// side, matching the per-jump/per-hop/per-trial granularity CC Athletics'
+// own get_athletes endpoint already returns natively. Same underlying VALD
+// call as handleDetail() — no extra request against VALD's quota-limited API.
+async function handleTrials(tenantId: string, testId: string) {
+  const { status, body } = await get(
+    `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
+  );
+
+  if (status === 204 || body == null) return { testId, trialCount: 0, trials: [] };
+
+  const rawTrials = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
+
+  const trials = rawTrials.map((t, i) => trialRow(t, i));
+
+  return { testId, trialCount: trials.length, trials };
+}
+
 // ── REQUEST AUTHORIZATION ────────────────────────────────────────────────────
 // This endpoint returns every athlete/test in the whole VALD tenant and has no
 // scoping of its own. Supabase's default verify_jwt setting only requires *a*
@@ -702,8 +754,14 @@ serve(async (req: Request) => {
         }
       }
       payload = { details, count: details.length };
+    } else if (action === "trials") {
+      // All trials/reps for a test — powers intra-session (rep-to-rep)
+      // comparison, matching CC Athletics' native per-rep granularity.
+      const testId = url.searchParams.get("testId") ?? "";
+      if (!testId) throw new Error("testId is required");
+      payload = await handleTrials(tenantId, testId);
     } else {
-      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail | details`);
+      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail | details | trials`);
     }
 
     return new Response(JSON.stringify(payload), {
