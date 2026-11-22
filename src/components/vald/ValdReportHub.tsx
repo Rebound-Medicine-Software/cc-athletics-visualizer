@@ -26,6 +26,7 @@ import {
   useValdAthletes, useValdTests, useValdTestDetail,
   ValdTest,
 } from "@/hooks/useVald";
+import { mapTestName, classifyTestType } from "@/lib/valdToCCAthletics";
 
 // ── Normative data (22 sport populations) ────────────────────────────
 // Sources: McMahon et al. (2022) Salford UK; Haugen et al. (2020); VALD EFL 2025
@@ -104,7 +105,7 @@ function AsymBadge({ value }: { value: number | null }) {
   return <Badge className={`text-xs font-mono ${cls}`}>{value.toFixed(1)}%</Badge>;
 }
 
-// ── Limb comparison bar (shared by CMJ / Soleus / Gastrocnemius) ────────────────────
+// ── Limb comparison bar (shared by CMJ / isometric tests) ────────────────────
 
 function LimbCompareCard({ title, left, right, metricLabel, unit }: {
   title: string; left: number; right: number; metricLabel: string; unit: string;
@@ -154,6 +155,13 @@ export default function ValdReportHub() {
 
   const norm = normKey && normKey !== "__none__" ? NORMS[normKey] : null;
 
+  // The test currently selected in the table — drives the isometric-aware
+  // metric-card labels below (which test produced solL/solR/gasL/gasR
+  // depends entirely on which test type this is; see valdToCCAthletics.ts).
+  const selectedTest = useMemo(() => (tests ?? []).find(t => t.id === testId) ?? null, [tests, testId]);
+  const selectedIsIsometric = selectedTest ? classifyTestType(selectedTest.type) === 'isometric' : false;
+  const isoName = selectedTest ? mapTestName(selectedTest.type) : "Isometric Test";
+
   const handleAthleteChange = (id: string) => {
     setAthleteId(id);
     setTestId(null);
@@ -187,7 +195,7 @@ export default function ValdReportHub() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All test types</SelectItem>
-            {testTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {testTypes.map(t => <SelectItem key={t} value={t}>{mapTestName(t)}</SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -342,7 +350,7 @@ export default function ValdReportHub() {
                           <td className="py-2 px-3 font-medium whitespace-nowrap">
                             {t.date ? format(new Date(t.date + "T12:00:00"), "d MMM yyyy") : "—"}
                           </td>
-                          <td className="py-2 px-3 font-semibold">{t.type}</td>
+                          <td className="py-2 px-3 font-semibold">{mapTestName(t.type)}</td>
                           <td className="py-2 px-3 text-right font-mono font-bold">{t.cmjH ?? "—"}</td>
                           <td className="py-2 px-3 text-right"><AsymBadge value={t.cmjAsym} /></td>
                           <td className="py-2 px-3 text-right font-mono">{t.djH ?? "—"}</td>
@@ -394,14 +402,20 @@ export default function ValdReportHub() {
             { label: "DJ RSI",       val: detail.djRSI,  unit: ""   },
             { label: "Pogo Height",  val: detail.pjH,    unit: "cm" },
             { label: "Pogo RSI",     val: detail.pjRSI,  unit: ""   },
-            // Isometric calf tests (Soleus / Gastrocnemius) — these were previously
-            // completely absent from this list, so selecting an isometric test
-            // showed an empty card grid even though the bridge already returns
-            // solL/solR/gasL/gasR for it. See useVald.ts ValdTestDetail.
-            { label: "Soleus Peak Force (L)",    val: detail.solL, unit: "N" },
-            { label: "Soleus Peak Force (R)",    val: detail.solR, unit: "N" },
-            { label: "Gastroc Force @250ms (L)", val: detail.gasL, unit: "N" },
-            { label: "Gastroc Force @250ms (R)", val: detail.gasR, unit: "N" },
+            // Isometric tests (SEICR, STICR, IMTP, ASH, etc.) — the card
+            // labels use the selected test's own mapped name rather than
+            // hardcoded "Soleus"/"Gastrocnemius", since solL/solR/gasL/gasR
+            // are generic per-test force readings whose meaning depends
+            // entirely on which test produced them (see valdToCCAthletics.ts
+            // classifyTestType/mapTestName). Only rendered when the
+            // currently selected test is actually classified isometric, so
+            // a CMJ/DJ/Pogo selection never shows stray isometric cards.
+            ...(selectedIsIsometric ? [
+              { label: `${isoName} — Peak Force (L)`,    val: detail.solL, unit: "N" },
+              { label: `${isoName} — Peak Force (R)`,    val: detail.solR, unit: "N" },
+              { label: `${isoName} — Force @ 200ms (L)`, val: detail.gasL, unit: "N" },
+              { label: `${isoName} — Force @ 200ms (R)`, val: detail.gasR, unit: "N" },
+            ] : []),
           ] as { label: string; val: number | null; unit: string }[])
             .filter(m => m.val != null)
             .map(m => (
@@ -425,21 +439,21 @@ export default function ValdReportHub() {
         />
       )}
 
-      {/* Limb comparison — Soleus (isometric calf) */}
-      {detail && detail.solL != null && detail.solR != null && (
+      {/* Limb comparison — isometric test peak force (SEICR/STICR/IMTP/ASH/etc.) */}
+      {detail && selectedIsIsometric && detail.solL != null && detail.solR != null && (
         <LimbCompareCard
-          title="Between-Limb Comparison — Soleus"
+          title={`Between-Limb Comparison — ${isoName}`}
           left={detail.solL} right={detail.solR}
           metricLabel="Peak Force" unit="N"
         />
       )}
 
-      {/* Limb comparison — Gastrocnemius (isometric calf) */}
-      {detail && detail.gasL != null && detail.gasR != null && (
+      {/* Limb comparison — isometric test force @ 200ms */}
+      {detail && selectedIsIsometric && detail.gasL != null && detail.gasR != null && (
         <LimbCompareCard
-          title="Between-Limb Comparison — Gastrocnemius"
+          title={`Between-Limb Comparison — ${isoName} (Force @ 200ms)`}
           left={detail.gasL} right={detail.gasR}
-          metricLabel="Force @ 250ms" unit="N"
+          metricLabel="Force @ 200ms" unit="N"
         />
       )}
 
