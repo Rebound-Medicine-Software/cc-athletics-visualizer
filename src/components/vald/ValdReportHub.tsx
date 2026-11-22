@@ -26,6 +26,7 @@ import {
   useValdAthletes, useValdTests, useValdTestDetail,
   ValdTest,
 } from "@/hooks/useVald";
+import { mapTestName, classifyTestType } from "@/lib/valdToCCAthletics";
 
 // ── Normative data (22 sport populations) ────────────────────────────
 // Sources: McMahon et al. (2022) Salford UK; Haugen et al. (2020); VALD EFL 2025
@@ -104,6 +105,31 @@ function AsymBadge({ value }: { value: number | null }) {
   return <Badge className={`text-xs font-mono ${cls}`}>{value.toFixed(1)}%</Badge>;
 }
 
+// ── Limb comparison bar (shared by CMJ / isometric tests) ────────────────────
+
+function LimbCompareCard({ title, left, right, metricLabel, unit }: {
+  title: string; left: number; right: number; metricLabel: string; unit: string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-mono uppercase tracking-widest text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-between text-xs font-mono mb-1">
+          <span className="text-blue-600 font-bold">LEFT {left} {unit}</span>
+          <span className="text-muted-foreground">{metricLabel}</span>
+          <span className="text-red-600 font-bold">RIGHT {right} {unit}</span>
+        </div>
+        <div className="flex h-3 gap-0.5 rounded-full overflow-hidden">
+          <div className="bg-blue-500 rounded-l-full" style={{ flex: left }} />
+          <div className="bg-red-500 rounded-r-full"  style={{ flex: right }} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────────────────
 
 export default function ValdReportHub() {
@@ -128,6 +154,13 @@ export default function ValdReportHub() {
   }, [tests, typeFilter, dayFilter]);
 
   const norm = normKey && normKey !== "__none__" ? NORMS[normKey] : null;
+
+  // The test currently selected in the table — drives the isometric-aware
+  // metric-card labels below (which test produced solL/solR/gasL/gasR
+  // depends entirely on which test type this is; see valdToCCAthletics.ts).
+  const selectedTest = useMemo(() => (tests ?? []).find(t => t.id === testId) ?? null, [tests, testId]);
+  const selectedIsIsometric = selectedTest ? classifyTestType(selectedTest.type) === 'isometric' : false;
+  const isoName = selectedTest ? mapTestName(selectedTest.type) : "Isometric Test";
 
   const handleAthleteChange = (id: string) => {
     setAthleteId(id);
@@ -162,7 +195,7 @@ export default function ValdReportHub() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">All test types</SelectItem>
-            {testTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {testTypes.map(t => <SelectItem key={t} value={t}>{mapTestName(t)}</SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -317,7 +350,7 @@ export default function ValdReportHub() {
                           <td className="py-2 px-3 font-medium whitespace-nowrap">
                             {t.date ? format(new Date(t.date + "T12:00:00"), "d MMM yyyy") : "—"}
                           </td>
-                          <td className="py-2 px-3 font-semibold">{t.type}</td>
+                          <td className="py-2 px-3 font-semibold">{mapTestName(t.type)}</td>
                           <td className="py-2 px-3 text-right font-mono font-bold">{t.cmjH ?? "—"}</td>
                           <td className="py-2 px-3 text-right"><AsymBadge value={t.cmjAsym} /></td>
                           <td className="py-2 px-3 text-right font-mono">{t.djH ?? "—"}</td>
@@ -369,6 +402,20 @@ export default function ValdReportHub() {
             { label: "DJ RSI",       val: detail.djRSI,  unit: ""   },
             { label: "Pogo Height",  val: detail.pjH,    unit: "cm" },
             { label: "Pogo RSI",     val: detail.pjRSI,  unit: ""   },
+            // Isometric tests (SEICR, STICR, IMTP, ASH, etc.) — the card
+            // labels use the selected test's own mapped name rather than
+            // hardcoded "Soleus"/"Gastrocnemius", since solL/solR/gasL/gasR
+            // are generic per-test force readings whose meaning depends
+            // entirely on which test produced them (see valdToCCAthletics.ts
+            // classifyTestType/mapTestName). Only rendered when the
+            // currently selected test is actually classified isometric, so
+            // a CMJ/DJ/Pogo selection never shows stray isometric cards.
+            ...(selectedIsIsometric ? [
+              { label: `${isoName} — Peak Force (L)`,    val: detail.solL, unit: "N" },
+              { label: `${isoName} — Peak Force (R)`,    val: detail.solR, unit: "N" },
+              { label: `${isoName} — Force @ 200ms (L)`, val: detail.gasL, unit: "N" },
+              { label: `${isoName} — Force @ 200ms (R)`, val: detail.gasR, unit: "N" },
+            ] : []),
           ] as { label: string; val: number | null; unit: string }[])
             .filter(m => m.val != null)
             .map(m => (
@@ -383,24 +430,31 @@ export default function ValdReportHub() {
         </div>
       )}
 
-      {/* Limb comparison */}
+      {/* Limb comparison — CMJ */}
       {detail && detail.cmjHL != null && detail.cmjHR != null && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-mono uppercase tracking-widest text-muted-foreground">Between-Limb Comparison</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between text-xs font-mono mb-1">
-              <span className="text-blue-600 font-bold">LEFT {detail.cmjHL} cm</span>
-              <span className="text-muted-foreground">CMJ Height</span>
-              <span className="text-red-600 font-bold">RIGHT {detail.cmjHR} cm</span>
-            </div>
-            <div className="flex h-3 gap-0.5 rounded-full overflow-hidden">
-              <div className="bg-blue-500 rounded-l-full" style={{ flex: detail.cmjHL }} />
-              <div className="bg-red-500 rounded-r-full"  style={{ flex: detail.cmjHR }} />
-            </div>
-          </CardContent>
-        </Card>
+        <LimbCompareCard
+          title="Between-Limb Comparison"
+          left={detail.cmjHL} right={detail.cmjHR}
+          metricLabel="CMJ Height" unit="cm"
+        />
+      )}
+
+      {/* Limb comparison — isometric test peak force (SEICR/STICR/IMTP/ASH/etc.) */}
+      {detail && selectedIsIsometric && detail.solL != null && detail.solR != null && (
+        <LimbCompareCard
+          title={`Between-Limb Comparison — ${isoName}`}
+          left={detail.solL} right={detail.solR}
+          metricLabel="Peak Force" unit="N"
+        />
+      )}
+
+      {/* Limb comparison — isometric test force @ 200ms */}
+      {detail && selectedIsIsometric && detail.gasL != null && detail.gasR != null && (
+        <LimbCompareCard
+          title={`Between-Limb Comparison — ${isoName} (Force @ 200ms)`}
+          left={detail.gasL} right={detail.gasR}
+          metricLabel="Force @ 200ms" unit="N"
+        />
       )}
 
     </div>

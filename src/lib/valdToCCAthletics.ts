@@ -104,7 +104,31 @@ export function classifyTestType(type: string): 'jump' | 'isometric' | 'pogo' {
     t.includes('adductor')  || c === 'shldisoy'     ||
     c.includes('shoulderisoy') || c.includes('shoulderiso-y') ||
     (t.includes('shoulder') && (t.includes('y') || t.includes('iso'))) ||
-    t.includes('nordboard') || t.includes('nordbord')
+    t.includes('nordboard') || t.includes('nordbord') ||
+    // Confirmed live from VALD Hub (Postman /trials): Seated / Standing
+    // Isometric Calf Raise. Neither contains "isometric" as a substring, so
+    // without this explicit check they fell through to the 'jump' bucket and
+    // all isometric handling (toIsometricMetrics, limb comparison, report
+    // cards) silently skipped them — the root cause of Jess Ball's missing
+    // calf data.
+    c === 'seicr' || c === 'sticr' ||
+    c.includes('isometriccalf') ||
+    // Athletic Shoulder (ASH) Test — isometric shoulder protocol.
+    c === 'ash' ||
+    // Other official VALD isometric protocols (support.vald.com test library).
+    c === 'isot' || c === 'slisot' || c === 'isq' ||
+    // Safety net: VALD Hub's own "Test Type" catalogue (confirmed live,
+    // 22 Nov 2026) lists far more isometric protocols than we have confirmed
+    // short codes for yet — Isometric Belt Squat, Isometric Push Up, Run-
+    // Specific Ankle/Hip/Knee Iso-Push, Shoulder ISO-IYT, the four Single Leg
+    // Hamstring 30/30–90/90 Isometric variants, Single Leg Isometric
+    // Mid-Thigh Pull / Squat Hold, and the Single Leg Seated/Standing
+    // Isometric Calf Raise variants. VALD's short-code convention embeds
+    // "ISO" in effectively every isometric protocol code (ISOT, SLISOT,
+    // SHLDISOY, etc.), and no jump/pogo code does, so this substring is a
+    // reliable catch-all until each of those codes is confirmed against a
+    // live test and added above explicitly.
+    c.includes('iso')
   ) return 'isometric';
   return 'jump';
 }
@@ -116,6 +140,10 @@ export function mapTestName(type: string): string {
   if (t === 'leftcmj' || t.includes('leftcountermovement')) return 'Left Side Countermovement Jump';
   if (t === 'rightcmj' || t.includes('rightcountermovement')) return 'Right Side Countermovement Jump';
   if (t === 'slcmj' || t.includes('singlelegcountermovement')) return 'Single Leg Countermovement Jump';
+  if (t === 'cmrj' || t.includes('countermovementrebound')) return 'Countermovement Rebound Jump';
+  if (t === 'slcmrj' || t.includes('singlelegcountermovementrebound')) return 'Single Leg Countermovement Rebound Jump';
+  if (t === 'lcmj' || t.includes('loadedcountermovement')) return 'Loaded Countermovement Jump';
+  if (t === 'abcmj' || t.includes('abalakov')) return 'Abalakov Jump';
   if (t === 'cmj' || t.includes('countermovement')) return 'Countermovement Jump';
 
   // Drop Jump variants
@@ -126,21 +154,69 @@ export function mapTestName(type: string): string {
 
   // Squat Jump variants
   if (t === 'slsj' || t.includes('singlelegsquat')) return 'Single Leg Squat Jump';
+  if (t === 'lsj' || t.includes('loadedsquatjump')) return 'Loaded Squat Jump';
   if (t === 'sj' || t.includes('squatjump')) return 'Squat Jump';
+  if (t === 'sqt' || t.includes('squatassessment')) return 'Squat Assessment';
 
   // Pogo Jump variants
   if (t.includes('pogo')) return 'Pogo Jump';
 
   // Hop / single leg jump tests
   if (t === 'slhj' || t.includes('singleleghoptest') || t.includes('singleleghop')) return 'Single Leg Hop Test';
+  // VALD Hub's own Test Type dropdown labels this just "Hop and Return"
+  // (confirmed live, 22 Nov 2026), not "Single Leg Hop and Return" — matching
+  // Hub's exact wording is the whole point here, so the shorter name wins.
+  if (t === 'slhar' || t.includes('hopandreturn')) return 'Hop and Return';
   if (t === 'slj' || t.includes('singlelegjump')) return 'Single Leg Jump';
   if (t === 'hj' || t.includes('hoptest')) return 'Hop Test';
 
-  // Isometric tests
+  // Landing / stability assessments
+  if (t === 'sllah' || t.includes('singleleglandandhold')) return 'Single Leg Land and Hold';
+  if (t === 'lah' || t.includes('landandhold')) return 'Land and Hold';
+
+  // Isometric tests — includes the two confirmed-live calf raise protocols
+  // plus the single-leg variants (confirmed live in VALD Hub's own "Test
+  // Type" filter list, 22 Nov 2026 — support.vald.com/hc/en-au test library).
+  if (t === 'slseicr' || t.includes('singlelegseatedisometriccalfraise')) return 'Single Leg Seated Isometric Calf Raise';
+  if (t === 'slsticr' || t.includes('singlelegstandingisometriccalfraise')) return 'Single Leg Standing Isometric Calf Raise';
+  if (t === 'seicr' || t.includes('seatedisometriccalfraise') || t.includes('seatedcalfraise')) return 'Seated Isometric Calf Raise';
+  if (t === 'sticr' || t.includes('standingisometriccalfraise') || t.includes('standingcalfraise')) return 'Standing Isometric Calf Raise';
+  if (t === 'slimtp' || t.includes('singlelegisometricmidthigh')) return 'Single Leg Isometric Mid-Thigh Pull';
   if (t === 'imtp' || t.includes('isometricmidthigh') || t.includes('midthighpull')) return 'Isometric Mid-Thigh Pull';
+  if (t === 'ash' || t.includes('athleticshoulder')) return 'Athletic Shoulder (ASH) Test';
+  if (t.includes('shoulderisoiyt') || t.includes('shoulderiyt')) return 'Shoulder ISO-IYT';
   if (t === 'shldisoy' || t.includes('shoulderisoy') || t.includes('shouldery') || (t.includes('shoulder') && t.includes('y'))) return 'Shoulder ISO-Y';
+  if (t.includes('shoulderisoi') || (t.includes('shoulder') && t.includes('i') && t.includes('iso'))) return 'Shoulder ISO-I';
+  if (t.includes('shoulderisot') || (t.includes('shoulder') && t.includes('t') && t.includes('iso'))) return 'Shoulder ISO-T';
+  if (t.includes('hamstring9090')) return 'Single Leg Hamstring 90/90 Isometric';
+  if (t.includes('hamstring9020')) return 'Single Leg Hamstring 90/20 Isometric';
+  if (t.includes('hamstring6060')) return 'Single Leg Hamstring 60/60 Isometric';
+  if (t.includes('hamstring3030')) return 'Single Leg Hamstring 30/30 Isometric';
+  if (t.includes('isometricbeltsquat') || t.includes('beltsquat')) return 'Isometric Belt Squat';
+  if (t === 'slisq' || t.includes('singlelegisometricsquathold')) return 'Single Leg Isometric Squat Hold';
+  if (t === 'isq' || t.includes('isometricsquathold')) return 'Isometric Squat Hold';
   if (t.includes('isometricsquat') || t.includes('isosquat')) return 'Isometric Squat';
+  if (t.includes('isometricpushup')) return 'Isometric Push Up';
   if (t.includes('isometricpush') || t.includes('isopush')) return 'Isometric Push';
+  if (t.includes('runspecificankleisopush') || t.includes('ankleisopush')) return 'Run-Specific Ankle Iso-Push';
+  if (t.includes('runspecifichipisopush') || t.includes('hipisopush')) return 'Run-Specific Hip Iso-Push';
+  if (t.includes('runspecifickneeisopush') || t.includes('kneeisopush')) return 'Run-Specific Knee Iso-Push';
+  if (t === 'slisot' || t.includes('singlelimbisometric')) return 'Single Limb Isometric Test';
+  if (t === 'isot' || t.includes('isometrictest')) return 'Isometric Test';
+
+  // Balance / functional protocols (VALD Hub test library)
+  if (t.includes('singlelegrangeofstability')) return 'Single Leg Range of Stability';
+  if (t === 'sls' || t.includes('singlelegstand')) return 'Single Leg Stand';
+  if (t === 'qs' || t.includes('quietstand')) return 'Quiet Stand';
+  if (t.includes('sittostandtosit')) return 'Sit to Stand to Sit';
+  if (t.includes('plyometricpushup')) return 'Plyometric Push Up';
+
+  // Other protocols
+  // VALD Hub's own Test Type dropdown labels this just "Push Up" (confirmed
+  // live, 22 Nov 2026), not "Push Up Test" — matching Hub's exact wording.
+  if (t === 'pushupt' || t.includes('pushuptest')) return 'Push Up';
+  if (t.includes('bodyweight')) return 'Body Weight';
+  if (t === 'gfta' || t.includes('generalforcetime')) return 'General Force-Time Analysis';
 
   return type; // preserve original for any unrecognised test
 }
@@ -253,13 +329,7 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     mappedName === 'Left Side Drop Jump'   ||
     mappedName === 'Right Side Drop Jump';
   const heightCm = isDJ ? (test.djH ?? test.cmjH) : test.cmjH;
-  // modifiedRsiVal = the jump-height/contact-time "RSI_MODIFIED" formula
-  // (what cmjRSI/djRSI have always held). plainRsiVal = the actual Flight
-  // Time : Contraction Time ratio CC Athletics documents as plain "RSI",
-  // sourced from the bridge's new rsiFlightContraction field when VALD
-  // reports it, falling back to the modified value when it doesn't.
-  const modifiedRsiVal = isDJ ? test.djRSI : test.cmjRSI;
-  const plainRsiVal     = (test as any).rsiFlightContraction ?? modifiedRsiVal;
+  const rsiVal   = isDJ ? test.djRSI : test.cmjRSI;
   const ctVal    = isDJ ? test.djCT  : null;
   const raw      = rawOf(test);
   const d        = test as ValdTestDetail;
@@ -269,10 +339,7 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     jump_height_ft: flavour === 'report' ? cmToM(heightCm) : cmToFt(heightCm),
     jump_height_cm: flavour === 'report' ? cmToM(heightCm) : orUndef(heightCm),
     peak_power:     orUndef(test.cmjPP ?? rawBoth(raw, 'PEAK_TAKEOFF_POWER', 'PEAK_PROPULSIVE_POWER')),
-    rsi:            orUndef(plainRsiVal),
-    // New: CC Athletics' own pogo metrics already separate rsi/modified_rsi
-    // (see toPogoMetrics below) — jump metrics now do too.
-    modified_rsi:   orUndef(modifiedRsiVal),
+    rsi:            orUndef(rsiVal),
   };
 
   const contactSeconds = ctVal ?? rawBoth(raw, 'GROUND_CONTACT_TIME', 'CONTRACTION_TIME');
