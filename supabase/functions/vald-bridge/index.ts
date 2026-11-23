@@ -520,8 +520,44 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
     await Promise.all(
       batch.map(async (t) => {
         try {
-          const results = await fetchTrialResults(tenantId, t.id);
+          const trials = await fetchAllTrials(tenantId, t.id);
+          const results = ((trials[0] ?? {}).results ?? []) as ValdResult[];
           Object.assign(t, flatMetrics(results));
+
+          // Single-limb-per-rep tests (Single Leg Jump, Single Leg Squat
+          // Jump, etc.) never populate cmjHL/cmjHR above: ForceDecks tags
+          // each trial's OWN results "Trial" (not "Left"/"Right") for these
+          // - only the parent trial object's own .limb field says which leg
+          // performed that rep (confirmed against VALD's External
+          // ForceDecks API guide). flatMetrics()'s result-level "Left"/
+          // "Right" lookup can never see that, so it always returns null
+          // here - same root cause handleDetail() already works around for
+          // its own djL/djR fields, just not applied to this list endpoint
+          // until now. Fill in the same way: group trials by trial.limb,
+          // take the best (highest jump height) trial per side, read that
+          // trial's own height result.
+          if (t.cmjHL == null || t.cmjHR == null) {
+            const trialLimbs = trials.map((tr) => String((tr as Record<string, unknown>).limb ?? "Both"));
+            const isUnilateral = trialLimbs.some((l) => l === "Left" || l === "Right") && !trialLimbs.includes("Both");
+            if (isUnilateral) {
+              const getH = (tr: Record<string, unknown>): number =>
+                firstMetric((tr.results ?? []) as ValdResult[], ID_HEIGHT, "Both") ?? 0;
+              const leftTrials = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Left");
+              const rightTrials = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Right");
+              if (t.cmjHL == null && leftTrials.length > 0) {
+                const best = leftTrials.reduce((a, b) => (getH(b as Record<string, unknown>) > getH(a as Record<string, unknown>) ? b : a));
+                t.cmjHL = firstMetric(((best as Record<string, unknown>).results ?? []) as ValdResult[], ID_HEIGHT, "Both");
+              }
+              if (t.cmjHR == null && rightTrials.length > 0) {
+                const best = rightTrials.reduce((a, b) => (getH(b as Record<string, unknown>) > getH(a as Record<string, unknown>) ? b : a));
+                t.cmjHR = firstMetric(((best as Record<string, unknown>).results ?? []) as ValdResult[], ID_HEIGHT, "Both");
+              }
+              if (t.cmjAsym == null && typeof t.cmjHL === "number" && typeof t.cmjHR === "number") {
+                const maxH = Math.max(t.cmjHL, t.cmjHR);
+                t.cmjAsym = maxH > 0 ? (Math.abs(t.cmjHL - t.cmjHR) / maxH) * 100 : null;
+              }
+            }
+          }
         } catch (err) {
           console.warn(`[vald-bridge] trial hydration failed for ${t.id}:`, String(err));
         }
@@ -531,14 +567,24 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
 }
 
 async function fetchTrialResults(tenantId: string, testId: string): Promise<ValdResult[]> {
+  const trials = await fetchAllTrials(tenantId, testId);
+  return ((trials[0] ?? {}).results ?? []) as ValdResult[];
+}
+
+// Returns every trial object for a test (id, limb, results, etc.) rather
+// than just the first trial's results - fetchTrialResults() above narrows to
+// that for its existing callers, but hydrateTestMetrics() also needs each
+// trial's own .limb field to split single-limb-per-rep tests by side (see
+// comment there). Same underlying VALD call handleDetail()/handleTrials()
+// already make - no extra request against VALD's quota-limited API.
+async function fetchAllTrials(tenantId: string, testId: string): Promise<Record<string, unknown>[]> {
   const { status, body } = await get(
     `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
   );
   if (status === 204 || body == null) return [];
-  const trials = (Array.isArray(body)
+  return (Array.isArray(body)
     ? body
     : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
-  return ((trials[0] ?? {}).results ?? []) as ValdResult[];
 }
 
 async function handleDetail(tenantId: string, testId: string) {
