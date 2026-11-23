@@ -377,8 +377,21 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     m.peak_landing_force = rawBoth(raw, 'PEAK_LANDING_FORCE');
     if (d.djAsym != null) m.asymmetry_index = d.djAsym;
   } else {
-    const l = rawLimb(raw, 'Left', 'PEAK_TAKEOFF_FORCE', 'MEAN_TAKEOFF_FORCE') ?? test.cmjHL ?? undefined;
-    const r = rawLimb(raw, 'Right', 'PEAK_TAKEOFF_FORCE', 'MEAN_TAKEOFF_FORCE') ?? test.cmjHR ?? undefined;
+    // Only ever assign a genuine per-limb FORCE value to p1_avg_force /
+    // fp1_peak_force (and their Right equivalents) here - never silently
+    // fall back to jump height. The report generator's
+    // calculateLimbSymmetry() labels this field pair "Peak Force", so
+    // conflating a height value into it would mislabel the Limb Symmetry
+    // card. jump_height_left_cm / jump_height_right_cm below carry the
+    // kinematic fallback honestly, and the edge function already knows to
+    // use those (labelled "Jump Height") when no force field is present -
+    // which is the normal case for VALD's Single Leg Jump / Single Leg
+    // Squat Jump: per VALD's own ForceDecks API docs, a single-limb rep's
+    // individual metric results are tagged limb "Trial" (inherited from
+    // the parent trial), not "Left"/"Right", so rawLimb() here legitimately
+    // finds nothing for those tests and that's expected, not a bug.
+    const l = rawLimb(raw, 'Left', 'PEAK_TAKEOFF_FORCE', 'MEAN_TAKEOFF_FORCE');
+    const r = rawLimb(raw, 'Right', 'PEAK_TAKEOFF_FORCE', 'MEAN_TAKEOFF_FORCE');
     if (l != null) { m.p1_avg_force = l; m.fp1_peak_force = l; }
     if (r != null) { m.p2_avg_force = r; m.fp2_peak_force = r; }
     if (test.cmjHL != null) m.jump_height_left_cm = test.cmjHL;
