@@ -105,9 +105,13 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
       ];
-    // VALD unilateral tests: valdDetailToLimbPair() converts these to
-    // "Left Side X" / "Right Side X" pairs before reaching the report generator.
-    // These cases are fallbacks if a single record is passed directly.
+    // VALD's Single Leg Jump / Single Leg Drop Jump arrive as ONE combined
+    // record (valdToCCAthletics.ts never splits them into "Left Side X" /
+    // "Right Side X" pairs - that split only happens for isometric tests
+    // that carry a stance field), so these cases are what the report
+    // generator actually renders for VALD unilateral jump tests, not a
+    // fallback. Limb symmetry for them comes from calculateLimbSymmetry's
+    // p1_avg_force / jump_height_left_cm fields on that combined record.
     case "Single Leg Jump":
     case "Left Side Single Leg Jump":
     case "Right Side Single Leg Jump":
@@ -175,28 +179,53 @@ interface LimbSymmetryResult {
   isSymmetryIndex?: boolean;
   dominantSide?: string;
   siValue?: number;
+  // What leftValue/rightValue actually represent, e.g. "Peak Force", "Jump
+  // Height" - shown in the Limb Symmetry card's sub-label so a kinematic
+  // fallback is never mislabeled as a force reading.
+  metricLabel?: string;
 }
 
-// Extract limb symmetry data matching dashboard's IndividualComparisonSection.tsx logic
+// Extract limb symmetry data. Rather than matching on an exact testName
+// string (which only ever covered the handful of bilateral names CC
+// Athletics ships natively and silently returned "Not available" for every
+// VALD single-leg/jump-family variant - Single Leg Jump, Single Leg Squat
+// Jump, Single Leg Drop Jump, Single Leg Hop Test, etc. - this now detects
+// which left/right field pair the upstream mapper actually populated and
+// uses that, so any test name with real paired data gets a real symmetry
+// value. Priority: real force > jump height (kinematic fallback for jump
+// tests with no raw per-limb force) > limb contribution % > isometric peak
+// force (signed symmetry index).
 function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymmetryResult | null {
   let leftValue = 0;
   let rightValue = 0;
+  let metricLabel: string | undefined;
 
-  if (testName === "Drop Jump") {
-    // Use fp1/fp2 peak landing force for between-limb symmetry
+  if (typeof metrics.fp1_peak_landing_force === 'number' || typeof metrics.fp2_peak_landing_force === 'number') {
+    // Drop Jump family (Drop Jump, Single Leg Drop Jump, Left/Right Side Drop Jump)
     // Formula: |Left - Right| / Max(Left, Right) × 100
     leftValue = metrics.fp1_peak_landing_force || 0;
     rightValue = metrics.fp2_peak_landing_force || 0;
-  } else if (testName === "Countermovement Jump") {
+    metricLabel = 'Peak Landing Force';
+  } else if (typeof metrics.p1_avg_force === 'number' || typeof metrics.fp1_peak_force === 'number' ||
+             typeof metrics.p2_avg_force === 'number' || typeof metrics.fp2_peak_force === 'number') {
+    // CMJ / Squat Jump family, incl. VALD's Single Leg Jump / Single Leg
+    // Squat Jump, which map onto these same field names (see valdToCCAthletics.ts)
     leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || 0;
     rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || 0;
-  } else if (testName === "Squat Jump") {
-    leftValue = metrics.p1_avg_force || 0;
-    rightValue = metrics.p2_avg_force || 0;
-  } else if (testName === "Pogo Jump") {
-    // Always use Dual_Leg contribution data by default
+    metricLabel = 'Peak Force';
+  } else if (typeof metrics.jump_height_left_cm === 'number' || typeof metrics.jump_height_right_cm === 'number') {
+    // No raw per-limb force available for this jump (common for VALD's
+    // Single Leg Jump) - fall back to per-limb jump height rather than
+    // showing nothing. Kept as its own branch (not folded into p1_avg_force)
+    // so it is only ever labelled as what it actually is.
+    leftValue = metrics.jump_height_left_cm || 0;
+    rightValue = metrics.jump_height_right_cm || 0;
+    metricLabel = 'Jump Height';
+  } else if (typeof metrics.fp1_contribution === 'number' || typeof metrics.avg_fp1_contribution === 'number') {
+    // Pogo Jump family (Pogo Jump, Single Leg Hop Test, Hop Test) - Dual_Leg contribution %
     leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? 0;
     rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? 0;
+    metricLabel = 'Limb Contribution';
   } else {
     // Isometric tests - use force_peak_left/right from preprocessed metrics
     leftValue = metrics.force_peak_left || 0;
@@ -214,6 +243,7 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
       isSymmetryIndex: true,
       dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
       siValue: si,
+      metricLabel: 'Peak Force',
     };
   }
 
@@ -226,7 +256,8 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
   return {
     leftValue,
     rightValue,
-    asymmetryPercent
+    asymmetryPercent,
+    metricLabel,
   };
 }
 
@@ -1082,10 +1113,17 @@ serve(async (req) => {
     }
 
     // Generate PDF with improved styling matching the HTML template
+    // Per-test pages are taller than A4 (see TEST_PAGE_HEIGHT below) so the
+    // force trace / emblem / "this report's one focus" section fits on the
+    // SAME page as the scores/symmetry/trend/insights above it, instead of
+    // spilling onto a second page per test. The summary overview and AI
+    // coach insight pages at the end stay standard A4 and set their own
+    // format explicitly on every addPage() call.
+    const TEST_PAGE_HEIGHT = 480
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: 'a4'
+      format: [210, TEST_PAGE_HEIGHT]
     })
 
     // Helper: convert hex color string to RGB array
@@ -1132,8 +1170,9 @@ serve(async (req) => {
         if (processedSidePairsCount.has(baseExercise)) continue
         processedSidePairsCount.add(baseExercise)
       }
-      // +1 base page, +1 new Limb Symmetry / Force Trace page per test
-      totalPages += 2
+      // 1 page per test - scores/symmetry/trend/insights plus the force
+      // trace/emblem/"one focus" section all live on the same page now.
+      totalPages += 1
     }
     totalPages++ // Summary overview page at the end
 
@@ -1224,7 +1263,11 @@ serve(async (req) => {
 
       doc.setDrawColor(226, 232, 240)
       doc.setLineWidth(0.2)
-      cy += drawMetricRow('Force Capacity Symmetry', '- Peak Force, L vs R', capacity, cy)
+      // Sub-label follows whatever calculateLimbSymmetry actually compared
+      // (Peak Force / Peak Landing Force / Jump Height / Limb Contribution)
+      // so a kinematic fallback is never shown under a "Peak Force" caption.
+      const capacitySub = capacity?.metricLabel ? `- ${capacity.metricLabel}, L vs R` : '- Peak Force, L vs R'
+      cy += drawMetricRow('Force Capacity Symmetry', capacitySub, capacity, cy)
       doc.line(x + 6, cy - 1, x + w - 6, cy - 1)
       cy += 2
       drawMetricRow('Force Expression Symmetry', '- Early Force @ 50ms, L vs R', expression, cy)
@@ -1243,7 +1286,9 @@ serve(async (req) => {
       })
     }
 
-    // ===== PAGE 2 PER TEST: REAL FORCE TRACE + EMBLEM + ONE FOCUS INSIGHT =====
+    // ===== SAME-PAGE SECTION: REAL FORCE TRACE + EMBLEM + ONE FOCUS INSIGHT =====
+    // Continues on the current test page, directly underneath Report
+    // Insights, rather than starting a new page - see TEST_PAGE_HEIGHT above.
     const renderTracePage = async (opts: {
       testName: string
       displayTitle: string
@@ -1254,37 +1299,21 @@ serve(async (req) => {
       combinedReps: TestRecord[]
       primaryConfig: CardConfig
       latestDate: string
+      startY: number
     }) => {
-      doc.addPage()
-      pageNumber++
       const pageWidth = 210
-      const pageHeight = 297
+      const pageHeight = TEST_PAGE_HEIGHT
       const marginLeft = 15
       const marginRight = 15
       const contentWidth = pageWidth - marginLeft - marginRight
 
-      // Condensed branded header (mirrors the main per-test header above)
-      doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
-      doc.rect(0, 0, pageWidth, 20, 'F')
-      let headerTextX = marginLeft
-      if (logoDataUrl) {
-        try {
-          const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
-          doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, 10, 10)
-          headerTextX = marginLeft + 14
-        } catch (_) { /* ignore */ }
-      }
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(255, 255, 255)
-      const headerTitle = branding?.org_name ? `${branding.org_name.toUpperCase()} | PERFORMANCE REPORT` : 'FORCE PLATE PERFORMANCE REPORT'
-      doc.text(headerTitle, headerTextX, 10)
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(220, 220, 220)
-      doc.text(`${athlete_name}  |  ${team_name || 'N/A'}`, pageWidth - marginRight, 10, { align: 'right' })
-
-      let yPos = 28
+      // Thin section divider in place of the old second page's own header -
+      // the branded header/title for this test is already on screen above.
+      let yPos = opts.startY + 6
+      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+      doc.setLineWidth(0.3)
+      doc.line(marginLeft, yPos, pageWidth - marginRight, yPos)
+      yPos += 6
       doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
@@ -1559,7 +1588,7 @@ serve(async (req) => {
         processedSidePairs.add(baseExercise)
       }
       if (pageNumber > 0) {
-        doc.addPage()
+        doc.addPage([210, TEST_PAGE_HEIGHT], 'portrait')
       }
       pageNumber++
 
@@ -1741,11 +1770,23 @@ serve(async (req) => {
         yPos += tableHeight + 5
 
         // ===== LIMB SYMMETRY (Capacity / Expression) =====
+        // Forward every field calculateLimbSymmetry knows how to read, not
+        // just the isometric ones - a "Left Side X" / "Right Side X" pair
+        // can equally be a split jump-family test, which carries force/
+        // jump-height/contribution fields instead of force_peak.
         const slSynthMetrics: TestMetrics = {
           force_peak_left: latestLeft.force_peak,
           force_peak_right: latestRight.force_peak,
           force_50ms_left: latestLeft.force_50ms,
           force_50ms_right: latestRight.force_50ms,
+          fp1_peak_landing_force: latestLeft.fp1_peak_landing_force ?? latestLeft.peak_landing_force,
+          fp2_peak_landing_force: latestRight.fp2_peak_landing_force ?? latestRight.peak_landing_force,
+          p1_avg_force: latestLeft.p1_avg_force ?? latestLeft.fp1_peak_force,
+          p2_avg_force: latestRight.p2_avg_force ?? latestRight.fp2_peak_force,
+          jump_height_left_cm: latestLeft.jump_height_left_cm ?? latestLeft.jump_height_cm,
+          jump_height_right_cm: latestRight.jump_height_right_cm ?? latestRight.jump_height_cm,
+          fp1_contribution: latestLeft.fp1_contribution ?? latestLeft.avg_fp1_contribution,
+          fp2_contribution: latestRight.fp2_contribution ?? latestRight.avg_fp2_contribution,
         }
         const slCapacitySymmetry = calculateLimbSymmetry(testName, slSynthMetrics)
         const slExpressionSymmetry = calculateExpressionSymmetry(slSynthMetrics)
@@ -1925,12 +1966,9 @@ serve(async (req) => {
           }
         }
 
-        // Footer
-        doc.setFontSize(8)
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-        doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, slPageHeight - 10, { align: 'right' })
-
-        // Real force trace, emblem and "this report's one focus" on their own page
+        // Real force trace, emblem and "this report's one focus" continue on
+        // this same page, directly underneath Report Insights (footer is
+        // printed once, at the bottom of this section, below).
         await renderTracePage({
           testName,
           displayTitle: `LIMB COMPARISON - ${baseExercise.toUpperCase()}`,
@@ -1941,6 +1979,7 @@ serve(async (req) => {
           combinedReps: [],
           primaryConfig: { icon: '', title: 'Peak Force', metricKey: 'force_peak', unit: 'N' },
           latestDate: slLatestDate,
+          startY: yPos,
         })
 
         continue // Skip standard rendering below
@@ -2294,12 +2333,9 @@ serve(async (req) => {
         }
       }
 
-      // ===== PAGE FOOTER =====
-      doc.setFontSize(8)
-      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
-
-      // Real force trace, emblem and "this report's one focus" on their own page
+      // Real force trace, emblem and "this report's one focus" continue on
+      // this same page, directly underneath Report Insights (footer is
+      // printed once, at the bottom of this section, below).
       await renderTracePage({
         testName,
         displayTitle: testName,
@@ -2310,12 +2346,15 @@ serve(async (req) => {
         combinedReps: group.records,
         primaryConfig: { icon: '', title: 'Peak Force', metricKey: 'force_peak', fallbackKeys: ['fp1_peak_force', 'p1_avg_force'], unit: 'N' },
         latestDate: group.latestDate,
+        startY: yPos,
       })
     }
 
     // ===== SUMMARY OVERVIEW PAGE =====
+    // Standard A4 - this page's own layout math (pageHeight = 297 below)
+    // assumes it, unlike the taller per-test pages above.
     {
-      doc.addPage()
+      doc.addPage([210, 297], 'portrait')
       pageNumber++
 
       const pageWidth = 210
@@ -2418,7 +2457,7 @@ serve(async (req) => {
           doc.setFontSize(8)
           doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
           doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
-          doc.addPage()
+          doc.addPage([210, 297], 'portrait')
           pageNumber++
           yPos = 20
         }
@@ -2529,9 +2568,10 @@ serve(async (req) => {
     }
 
     // ===== AI COACH INSIGHT PAGE (optional) =====
+    // Standard A4 - same reasoning as the summary overview page above.
     if (includedAiInsight) {
       try {
-        doc.addPage()
+        doc.addPage([210, 297], 'portrait')
         pageNumber++
         const pageWidth = 210
         const pageHeight = 297
@@ -2619,7 +2659,7 @@ serve(async (req) => {
           for (const rec of recs) {
             const lines = doc.splitTextToSize(`• ${String(rec)}`, contentWidth - 4)
             if (yPos + lines.length * 5 > pageHeight - 20) {
-              doc.addPage()
+              doc.addPage([210, 297], 'portrait')
               pageNumber++
               yPos = 20
             }
@@ -2633,7 +2673,7 @@ serve(async (req) => {
         const cues: string[] = Array.isArray(ai_insight.keyCues) ? ai_insight.keyCues : []
         if (cues.length > 0) {
           if (yPos + 20 > pageHeight - 20) {
-            doc.addPage()
+            doc.addPage([210, 297], 'portrait')
             pageNumber++
             yPos = 20
           }
@@ -2649,7 +2689,7 @@ serve(async (req) => {
           for (const cue of cues) {
             const lines = doc.splitTextToSize(`• ${String(cue)}`, contentWidth - 4)
             if (yPos + lines.length * 5 > pageHeight - 20) {
-              doc.addPage()
+              doc.addPage([210, 297], 'portrait')
               pageNumber++
               yPos = 20
             }
