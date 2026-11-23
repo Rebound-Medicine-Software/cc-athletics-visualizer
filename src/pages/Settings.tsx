@@ -25,6 +25,7 @@ import { StaffCredentialsTab } from "@/components/settings/StaffCredentialsTab";
 import { TierManagementTab } from "@/components/settings/TierManagementTab";
 import { BrandingTab } from "@/components/settings/BrandingTab";
 import { RetestSettingsTab } from "@/components/settings/RetestSettingsTab";
+import { TestEmblemsTab } from "@/components/settings/TestEmblemsTab";
 import { ReviewWorkflowTab } from "@/components/settings/ReviewWorkflowTab";
 import {
   UnsavedChangesProvider,
@@ -41,6 +42,7 @@ type SectionId =
   | "athlete-credentials"
   | "athlete-linking"
   | "data-housing"
+| "test-emblems"
   | "athlete-duplicates"
   | "tier-management"
     | "review-workflow";
@@ -94,6 +96,7 @@ const GROUPS: Group[] = [
     description: "Datasets and benchmarks.",
     sections: [
       { id: "data-housing", label: "Data Housing", description: "Region testing and elite athlete data." },
+      { id: "test-emblems", label: "Test Emblems", description: "Upload an image per test, shown on the force plate report." },
     ],
   },
   {
@@ -155,6 +158,7 @@ const SettingsInner = () => {
       case "athlete-linking": return <AthleteAccountLinkingTab />;
       case "athlete-duplicates": return <AthleteDuplicatesPanel />;
       case "data-housing": return <DataHousingTab />;
+case "test-emblems": return <TestEmblemsTab />;
       case "tier-management": return <TierManagementTab />;
       case "review-workflow": return <ReviewWorkflowTab />;
     }
