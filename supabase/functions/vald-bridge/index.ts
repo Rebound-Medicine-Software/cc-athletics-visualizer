@@ -676,6 +676,72 @@ async function handleDetail(tenantId: string, testId: string) {
     djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] || firstMetric(results, ID_HEIGHT, "Asym") || metric(results, "PEAK_LANDING_FORCE", "Asym") || null,
     pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
+    // Jump height per limb for single-limb-per-rep tests (SLJ, SLSJ, etc.)
+    // viewed at the single-test /detail level — mirrors hydrateTestMetrics()'s
+    // list-level fix for the exact same root cause: a unilateral rep's own
+    // JUMP_HEIGHT result is tagged limb "Trial" (inherited from the parent
+    // trial), never "Left"/"Right", so the ...flatMetrics(results) spread
+    // above always leaves cmjHL/cmjHR null here - only grouping trials by
+    // their own trial.limb field (as djL/djR already do, just above, for
+    // Drop Jump peak landing force) can recover it. Without this,
+    // valdToCCAthletics.ts's calculateLimbSymmetry() and toJumpMetrics()
+    // - which both fall back to cmjHL/cmjHR for jump-height symmetry
+    // whenever no genuine per-limb force reading exists, true for every VALD
+    // single-leg jump test - have nothing to read, and the report shows
+    // "No limb symmetry data available for this test yet" even though VALD
+    // has the data. Confirmed live (24 Nov 2026): Jess Ball's Single Leg
+    // Jump test has 6 trials, 3 tagged limb "Left" / 3 "Right", each
+    // trial's own JUMP_HEIGHT result tagged limb "Trial" - identical shape
+    // to the SLHJ case hydrateTestMetrics() already handles, just reached
+    // through a different endpoint (/detail instead of /tests).
+    //
+    // Trial selection here uses getHAny (not the getH declared above, which
+    // backs primaryTrial/djL/djR and is intentionally left untouched) because
+    // getH only recognises the CMJ/SLJ family's ID_HEIGHT - for a Single Leg
+    // Hop Test viewed via /detail, every trial would tie at 0 and "best"
+    // would be the first match, not the genuinely best hop. getHAny mirrors
+    // hydrateTestMetrics()'s own getH, which also checks HOP_BEST_JUMP_HEIGHT.
+    cmjHL: (function(): number | null {
+      const getHAny = (t: Record<string, unknown>): number => {
+        const r = (t.results ?? []) as ValdResult[];
+        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+      };
+      const lt = trials.filter((t) => (t as Record<string, unknown>).limb === "Left");
+      if (lt.length === 0) return flatMetrics(results).cmjHL ?? null;
+      const leftBest = lt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
+      const lr = ((leftBest as Record<string, unknown>).results ?? []) as ValdResult[];
+      return firstMetric(lr, ID_HEIGHT, "Both") ?? allMetrics(lr)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+    }()),
+    cmjHR: (function(): number | null {
+      const getHAny = (t: Record<string, unknown>): number => {
+        const r = (t.results ?? []) as ValdResult[];
+        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+      };
+      const rt = trials.filter((t) => (t as Record<string, unknown>).limb === "Right");
+      if (rt.length === 0) return flatMetrics(results).cmjHR ?? null;
+      const rightBest = rt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
+      const rr = ((rightBest as Record<string, unknown>).results ?? []) as ValdResult[];
+      return firstMetric(rr, ID_HEIGHT, "Both") ?? allMetrics(rr)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+    }()),
+    cmjAsym: (function(): number | null {
+      const getHAny = (t: Record<string, unknown>): number => {
+        const r = (t.results ?? []) as ValdResult[];
+        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+      };
+      const lt = trials.filter((t) => (t as Record<string, unknown>).limb === "Left");
+      const rt = trials.filter((t) => (t as Record<string, unknown>).limb === "Right");
+      if (lt.length === 0 || rt.length === 0) return flatMetrics(results).cmjAsym ?? null;
+      const l = lt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
+      const r = rt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
+      const lResults = ((l as Record<string, unknown>).results ?? []) as ValdResult[];
+      const rResults = ((r as Record<string, unknown>).results ?? []) as ValdResult[];
+      const lVal = firstMetric(lResults, ID_HEIGHT, "Both") ?? allMetrics(lResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+      const rVal = firstMetric(rResults, ID_HEIGHT, "Both") ?? allMetrics(rResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+      if (lVal == null || rVal == null) return null;
+      const maxH = Math.max(lVal, rVal);
+      return maxH > 0 ? (Math.abs(lVal - rVal) / maxH) * 100 : null;
+    }()),
+
     // Isometric — generic per-test peak force and "late" force, Left/Right.
     // solL/solR = PEAK_FORCE / PEAK_VERTICAL_FORCE, confirmed present on both
     // SEICR and STICR live trials (and the standard isometric metric family
