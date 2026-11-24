@@ -1467,8 +1467,16 @@ serve(async (req) => {
       const rowH = 58
       let rowX = marginLeft
       const emblemW = emblem ? 40 : 0
-      const zoomW = 48
-      const insightW = contentWidth - emblemW - zoomW - (emblem ? 8 : 4)
+      // Only reserve space for the zoom card when there's an actual trace to
+      // zoom into. It used to be a fixed 48mm regardless of `mode`, so a test
+      // with no raw force trace (the normal case for every VALD-sourced test
+      // today) still drew an empty pastel box with nothing in it - the same
+      // "scruffy, not proportional" box whether or not there was any
+      // expression/capacity data either. Collapsing it to 0 lets the insight
+      // box below grow to fill the freed width instead.
+      const zoomW = mode ? 48 : 0
+      const boxGaps = (emblem ? 1 : 0) + (zoomW ? 1 : 0)
+      const insightW = contentWidth - emblemW - zoomW - boxGaps * 4
 
       if (emblem) {
         doc.setFillColor(250, 250, 250)
@@ -1484,54 +1492,57 @@ serve(async (req) => {
         rowX += emblemW + 4
       }
 
-      // Zoom card: re-plot just the flagged window at a larger scale
-      doc.setFillColor(254, 242, 242)
-      doc.setDrawColor(254, 202, 202)
-      doc.roundedRect(rowX, yPos, zoomW, rowH, 2, 2, 'FD')
-      if (mode && (leftVals || rightVals)) {
-        const n2 = Math.max(leftVals?.length ?? 0, rightVals?.length ?? 0)
-        let zs = 0, ze = n2 - 1
-        if (focus?.type === 'expression') { zs = 0; ze = Math.max(1, Math.round(n2 * 0.18)) }
-        else if (focus?.type === 'capacity') {
-          if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
-            const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
-            let peakIdx = 0
-            series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
-            zs = Math.max(0, peakIdx - Math.round(n2 * 0.12)); ze = Math.min(n2 - 1, peakIdx + Math.round(n2 * 0.12))
-          } else { zs = Math.round(n2 * 0.55); ze = n2 - 1 }
-        }
-        const zoomLeft = leftVals ? leftVals.slice(zs, ze + 1) : null
-        const zoomRight = rightVals ? rightVals.slice(zs, ze + 1) : null
-        const zAll = [...(zoomLeft || []), ...(zoomRight || [])]
-        if (zAll.length > 1) {
-          const zMax = Math.max(...zAll)
-          const zMin = Math.min(...zAll)
-          const zRange = zMax - zMin || 1
-          const zX = rowX + 6
-          const zW = zoomW - 12
-          const zY = yPos + 10
-          const zH = rowH - 20
-          const plotZoom = (vals: number[] | null, color: number[]) => {
-            if (!vals || vals.length < 2) return
-            doc.setDrawColor(color[0], color[1], color[2])
-            doc.setLineWidth(0.6)
-            for (let i = 1; i < vals.length; i++) {
-              const x1 = zX + ((i - 1) / (vals.length - 1)) * zW
-              const y1 = zY + zH - ((vals[i - 1] - zMin) / zRange) * zH
-              const x2 = zX + (i / (vals.length - 1)) * zW
-              const y2 = zY + zH - ((vals[i] - zMin) / zRange) * zH
-              doc.line(x1, y1, x2, y2)
-            }
+      // Zoom card: re-plot just the flagged window at a larger scale. Only
+      // drawn at all when zoomW > 0, i.e. there's a real trace (mode is set).
+      if (zoomW) {
+        doc.setFillColor(254, 242, 242)
+        doc.setDrawColor(254, 202, 202)
+        doc.roundedRect(rowX, yPos, zoomW, rowH, 2, 2, 'FD')
+        if (leftVals || rightVals) {
+          const n2 = Math.max(leftVals?.length ?? 0, rightVals?.length ?? 0)
+          let zs = 0, ze = n2 - 1
+          if (focus?.type === 'expression') { zs = 0; ze = Math.max(1, Math.round(n2 * 0.18)) }
+          else if (focus?.type === 'capacity') {
+            if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
+              const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
+              let peakIdx = 0
+              series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
+              zs = Math.max(0, peakIdx - Math.round(n2 * 0.12)); ze = Math.min(n2 - 1, peakIdx + Math.round(n2 * 0.12))
+            } else { zs = Math.round(n2 * 0.55); ze = n2 - 1 }
           }
-          plotZoom(zoomLeft, mode === 'total' ? colors.dark : [37, 99, 235])
-          plotZoom(zoomRight, [220, 38, 38])
-          doc.setFontSize(6)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(153, 27, 27)
-          doc.text('zoom', rowX + zoomW / 2, yPos + 6, { align: 'center' })
+          const zoomLeft = leftVals ? leftVals.slice(zs, ze + 1) : null
+          const zoomRight = rightVals ? rightVals.slice(zs, ze + 1) : null
+          const zAll = [...(zoomLeft || []), ...(zoomRight || [])]
+          if (zAll.length > 1) {
+            const zMax = Math.max(...zAll)
+            const zMin = Math.min(...zAll)
+            const zRange = zMax - zMin || 1
+            const zX = rowX + 6
+            const zW = zoomW - 12
+            const zY = yPos + 10
+            const zH = rowH - 20
+            const plotZoom = (vals: number[] | null, color: number[]) => {
+              if (!vals || vals.length < 2) return
+              doc.setDrawColor(color[0], color[1], color[2])
+              doc.setLineWidth(0.6)
+              for (let i = 1; i < vals.length; i++) {
+                const x1 = zX + ((i - 1) / (vals.length - 1)) * zW
+                const y1 = zY + zH - ((vals[i - 1] - zMin) / zRange) * zH
+                const x2 = zX + (i / (vals.length - 1)) * zW
+                const y2 = zY + zH - ((vals[i] - zMin) / zRange) * zH
+                doc.line(x1, y1, x2, y2)
+              }
+            }
+            plotZoom(zoomLeft, mode === 'total' ? colors.dark : [37, 99, 235])
+            plotZoom(zoomRight, [220, 38, 38])
+            doc.setFontSize(6)
+            doc.setFont('helvetica', 'bold')
+            doc.setTextColor(153, 27, 27)
+            doc.text('zoom', rowX + zoomW / 2, yPos + 6, { align: 'center' })
+          }
         }
+        rowX += zoomW + 4
       }
-      rowX += zoomW + 4
 
       // Insight box: "this report's one focus"
       doc.setFillColor(17, 24, 39)
@@ -1966,6 +1977,11 @@ serve(async (req) => {
           }
         }
 
+        // Advance past the insight card's own height before drawing anything
+        // else - see the matching fix/comment in the standard (non-limb-pair)
+        // insight block above for why this is needed.
+        yPos += slInsightH + 5
+
         // Real force trace, emblem and "this report's one focus" continue on
         // this same page, directly underneath Report Insights (footer is
         // printed once, at the bottom of this section, below).
@@ -2332,6 +2348,12 @@ serve(async (req) => {
           doc.text(cuesText, marginLeft + 6, insightY, { maxWidth: contentWidth - 14 })
         }
       }
+
+      // Advance past the insight card's own height before drawing anything
+      // else. This previously stayed at the card's top Y, so the trace
+      // section's title (drawn by renderTracePage) landed on top of the
+      // "What this means" text instead of underneath the whole card.
+      yPos += insightCardHeight + 5
 
       // Real force trace, emblem and "this report's one focus" continue on
       // this same page, directly underneath Report Insights (footer is
