@@ -342,6 +342,11 @@ const ID_CONTACT = [
   "CONTACT_TIME",
   "TOUCHDOWN_TO_TAKEOFF_DURATION",
 ];
+// Early-force (50ms) capacity for isometric tests. Confirmed from live /trials
+// data (Standing/Seated Isometric Calf Raise): FORCE_AT_50MS results exist per
+// limb ("Left"/"Right") within a single bilateral trial, same shape as
+// PEAK_FORCE (→ solL/solR) and FORCE_AT_250MS (→ gasL/gasR) below.
+const ID_FORCE_50MS = ["FORCE_AT_50MS", "FORCE_50MS", "EARLY_FORCE_CAPACITY"];
 
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
@@ -540,17 +545,32 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
             const trialLimbs = trials.map((tr) => String((tr as Record<string, unknown>).limb ?? "Both"));
             const isUnilateral = trialLimbs.some((l) => l === "Left" || l === "Right") && !trialLimbs.includes("Both");
             if (isUnilateral) {
-              const getH = (tr: Record<string, unknown>): number =>
-                firstMetric((tr.results ?? []) as ValdResult[], ID_HEIGHT, "Both") ?? 0;
+              // HOP_BEST_JUMP_HEIGHT (Single Leg Hop Test / HJ family) is a
+              // separate metric ID from the CMJ/SLJ family's ID_HEIGHT list
+              // - confirmed from live /trials data (18 Nov 2026 Jess Ball
+              // SLHJ session: 2 trials, Left=7.18cm / Right=5.72cm, both
+              // tagged limb:"Trial" at the result level, same as JUMP_HEIGHT
+              // is for SLJ). Use the same allMetrics() raw-map fallback
+              // flatMetrics() already relies on for this metric family,
+              // rather than firstMetric(), to stay consistent with the
+              // documented resultId-mismatch workaround above.
+              const getH = (tr: Record<string, unknown>): number => {
+                const trResults = (tr.results ?? []) as ValdResult[];
+                const viaId = firstMetric(trResults, ID_HEIGHT, "Both");
+                if (viaId != null) return viaId;
+                return allMetrics(trResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+              };
               const leftTrials = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Left");
               const rightTrials = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Right");
               if (t.cmjHL == null && leftTrials.length > 0) {
                 const best = leftTrials.reduce((a, b) => (getH(b as Record<string, unknown>) > getH(a as Record<string, unknown>) ? b : a));
-                t.cmjHL = firstMetric(((best as Record<string, unknown>).results ?? []) as ValdResult[], ID_HEIGHT, "Both");
+                const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
+                t.cmjHL = firstMetric(bestResults, ID_HEIGHT, "Both") ?? allMetrics(bestResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
               }
               if (t.cmjHR == null && rightTrials.length > 0) {
                 const best = rightTrials.reduce((a, b) => (getH(b as Record<string, unknown>) > getH(a as Record<string, unknown>) ? b : a));
-                t.cmjHR = firstMetric(((best as Record<string, unknown>).results ?? []) as ValdResult[], ID_HEIGHT, "Both");
+                const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
+                t.cmjHR = firstMetric(bestResults, ID_HEIGHT, "Both") ?? allMetrics(bestResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
               }
               if (t.cmjAsym == null && typeof t.cmjHL === "number" && typeof t.cmjHR === "number") {
                 const maxH = Math.max(t.cmjHL, t.cmjHR);
@@ -670,6 +690,15 @@ async function handleDetail(tenantId: string, testId: string) {
     // of always resolving to null.
     gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Left"),
     gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Right"),
+    // Early-force (50ms) capacity per limb — same shape as gasL/gasR above.
+    // Confirmed from live /trials data (Jess Ball Standing/Seated Isometric
+    // Calf Raise, 18 Nov 2026): FORCE_AT_50MS appears tagged "Left" and
+    // "Right" within the same bilateral trial. Feeds
+    // valdToCCAthletics.ts's force_50ms_left/force_50ms_right, which is what
+    // the report's Force Expression Symmetry card reads — previously always
+    // "Not available" because nothing populated those two fields.
+    fiftyL: firstMetric(results, ID_FORCE_50MS, "Left"),
+    fiftyR: firstMetric(results, ID_FORCE_50MS, "Right"),
   };
 }
 

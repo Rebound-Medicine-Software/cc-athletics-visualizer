@@ -425,7 +425,29 @@ function toIsometricMetrics(test: ValdTest | ValdTestDetail): IsometricMetrics {
     return l ?? r ?? undefined;
   };
 
-  m.force_50ms  = fw('FORCE_AT_50MS', 'FORCE_50MS', 'EARLY_FORCE_CAPACITY');
+  // vald-bridge's handleDetail() exposes per-limb early-force as fiftyL/
+  // fiftyR (not yet declared on the ValdTestDetail interface in useVald.ts,
+  // hence the `as any` access below — same convention this file already
+  // uses for bodyWeight/flightTime a few lines up).
+  const dFiftyL = (d as any).fiftyL as number | undefined;
+  const dFiftyR = (d as any).fiftyR as number | undefined;
+
+  m.force_50ms  = fw('FORCE_AT_50MS', 'FORCE_50MS', 'EARLY_FORCE_CAPACITY') ??
+                  (dFiftyL != null && dFiftyR != null ? round((dFiftyL + dFiftyR) / 2, 2) : dFiftyL ?? dFiftyR ?? undefined);
+  // Per-limb early-force (50ms) capacity — drives the report's Force
+  // Expression Symmetry card. Previously never set anywhere (only the
+  // combined force_50ms above existed), unlike the structurally identical
+  // force_250ms_left/right below, which is why Expression Symmetry showed
+  // "Not available" for every isometric test. fiftyL/fiftyR come from
+  // vald-bridge's handleDetail() (FORCE_AT_50MS tagged "Left"/"Right" —
+  // confirmed present in live /trials data for Standing + Seated Isometric
+  // Calf Raise), with the raw-map lookup kept as a fallback for any caller
+  // that only has the bilateral "raw" map and not the handleDetail() fields.
+  const fiftyLeft = dFiftyL ?? rawLimb(raw, 'Left', 'FORCE_AT_50MS', 'FORCE_50MS', 'EARLY_FORCE_CAPACITY');
+  const fiftyRight = dFiftyR ?? rawLimb(raw, 'Right', 'FORCE_AT_50MS', 'FORCE_50MS', 'EARLY_FORCE_CAPACITY');
+  if (fiftyLeft != null) m.force_50ms_left = fiftyLeft;
+  if (fiftyRight != null) m.force_50ms_right = fiftyRight;
+
   m.force_100ms = fw('FORCE_AT_100MS', 'FORCE_100MS');
   m.force_150ms = fw('FORCE_AT_150MS', 'FORCE_150MS');
   m.force_200ms = fw('FORCE_AT_200MS', 'FORCE_200MS');
@@ -501,6 +523,17 @@ function toPogoMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): PogoM
     m.fp2_contribution = m.avg_fp2_contribution;
     m.asymmetry_index = derivedAsymmetry(l, r) ?? undefined;
   }
+
+  // Jump height per limb (used by the report's Limb Symmetry card for
+  // single-leg hop/pogo tests - e.g. Single Leg Hop Test). test.cmjHL /
+  // test.cmjHR are populated by vald-bridge's hydrateTestMetrics() for
+  // unilateral trial.limb-tagged tests (see vald-bridge/index.ts), using the
+  // HOP_BEST_JUMP_HEIGHT metric for this family. Mirrors the jump family's
+  // jump_height_left_cm / jump_height_right_cm in toJumpMetrics() above.
+  if (test.cmjHL != null) m.jump_height_left_cm = test.cmjHL;
+  if (test.cmjHR != null) m.jump_height_right_cm = test.cmjHR;
+  if (m.asymmetry_index == null && test.cmjAsym != null) m.asymmetry_index = test.cmjAsym;
+
   return m;
 }
 
