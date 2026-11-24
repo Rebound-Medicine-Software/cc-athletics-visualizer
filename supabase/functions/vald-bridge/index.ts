@@ -322,6 +322,27 @@ function allMetrics(results: ValdResult[]): Record<string, number> {
   return map;
 }
 
+// Picks the single most representative trial/rep out of a multi-rep test
+// session, instead of trials[0] (whichever rep VALD happened to return
+// first - not necessarily the athlete's best or most representative
+// attempt). Mirrors handleDetail()'s existing primaryTrial selection
+// (highest JUMP_HEIGHT, with the HOP_BEST_JUMP_HEIGHT fallback for
+// hop-family tests) so every caller picks a trial the same way. Confirmed
+// live (24 Nov 2026) this was the root cause of Jess Ball's Single Leg Jump
+// report showing a -160 N/s Early Force Development reading: hydrateTestMetrics()
+// (used by the /tests list endpoint the report pulls from) was reading
+// trials[0] unconditionally, which for that session happened to be her
+// highest jump but also her single worst early-RFD rep of six. The other
+// five reps that session ranged +420 to +1340 N/s.
+function pickBestTrial(trials: Record<string, unknown>[]): Record<string, unknown> {
+  if (trials.length === 0) return {};
+  const height = (t: Record<string, unknown>): number => {
+    const r = (t.results ?? []) as ValdResult[];
+    return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+  };
+  return trials.reduce((a, b) => (height(b) > height(a) ? b : a));
+}
+
 // Metric string IDs verified against live /trials responses.
 // CC Athletics documents "Jump Height (ft)" as VALD's flight-time method
 // (JUMP_HEIGHT), confirmed live against VALD's /resultdefinitions — not the
@@ -546,7 +567,7 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
       batch.map(async (t) => {
         try {
           const trials = await fetchAllTrials(tenantId, t.id);
-          const results = ((trials[0] ?? {}).results ?? []) as ValdResult[];
+          const results = (pickBestTrial(trials).results ?? []) as ValdResult[];
           Object.assign(t, flatMetrics(results));
 
           // Single-limb-per-rep tests (Single Leg Jump, Single Leg Squat
@@ -642,7 +663,7 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
 
 async function fetchTrialResults(tenantId: string, testId: string): Promise<ValdResult[]> {
   const trials = await fetchAllTrials(tenantId, testId);
-  return ((trials[0] ?? {}).results ?? []) as ValdResult[];
+  return (pickBestTrial(trials).results ?? []) as ValdResult[];
 }
 
 // Returns every trial object for a test (id, limb, results, etc.) rather

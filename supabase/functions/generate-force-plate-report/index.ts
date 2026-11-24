@@ -46,9 +46,8 @@ function getCardConfigs(testName: string): CardConfig[] {
     case "Countermovement Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "Peak Power", metricKey: "peak_power", unit: "W" },
         { icon: "⚡", title: "Peak Power / Body Mass", metricKey: "relative_peak_power", unit: "W/kg" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Squat Jump":
@@ -56,23 +55,19 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
         { icon: "⚡", title: "Take-off Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
         { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "N/s" },
-        { icon: "⚡", title: "Avg Propulsive Power", metricKey: "avg_propulsive_power", unit: "W" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Drop Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
         { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Pogo Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "avg_jump_height", keyOverride: "avg_jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "RSI", metricKey: "avg_rsi", fallbackKeys: ["rsi"], unit: "" },
         { icon: "⚡", title: "mRSI", metricKey: "avg_modified_rsi", fallbackKeys: ["modified_rsi", "rsi_modified"], unit: "m/s" },
-        { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
         { icon: "⏱️", title: "Flight Time", metricKey: "avg_flight_time", fallbackKeys: ["flight_time"], unit: "ms" },
       ];
@@ -80,27 +75,24 @@ function getCardConfigs(testName: string): CardConfig[] {
     case "Right Side Countermovement Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "Peak Propulsive Power", metricKey: "peak_propulsive_power", unit: "W" },
         { icon: "⚡", title: "Relative Peak Power", metricKey: "relative_peak_power", unit: "W/kg" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Squat Jump":
     case "Right Side Squat Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
-        { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "Take-off Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
+        { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "N/s" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Drop Jump":
     case "Right Side Drop Jump":
       return [
         { icon: "📏", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
+        { icon: "⚡", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
-        { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
         { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Pogo Jump":
@@ -118,14 +110,21 @@ function getCardConfigs(testName: string): CardConfig[] {
     // generator actually renders for VALD unilateral jump tests, not a
     // fallback. Limb symmetry for them comes from calculateLimbSymmetry's
     // p1_avg_force / jump_height_left_cm fields on that combined record.
+    //
+    // Single Leg Jump has no real landing/ground-contact phase (it's a
+    // CMJ-style test - dip, drive, land once, done), so "Contact Time" here
+    // used to read VALD's CONTRACTION_TIME (the dip+drive duration before
+    // takeoff) mislabeled as a contact event. Swapped for Peak Power, a
+    // genuine, distinct, already-populated metric for this test family.
+    // Single Leg Drop Jump keeps Contact Time - it genuinely has a
+    // landing-to-takeoff phase.
     case "Single Leg Jump":
     case "Left Side Single Leg Jump":
     case "Right Side Single Leg Jump":
       return [
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
-        { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
-        { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+        { icon: "J", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "Peak Power", metricKey: "peak_power", unit: "W" },
         { icon: "J", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", fallbackKeys: ["rfd_50ms_left", "rfd_50ms_right"], unit: "N/s" },
       ];
     case "Single Leg Drop Jump":
@@ -133,9 +132,8 @@ function getCardConfigs(testName: string): CardConfig[] {
     case "Right Side Single Leg Drop Jump":
       return [
         { icon: "J", title: "Jump Height (cm)", metricKey: "jump_height_ft", keyOverride: "jump_height_cm", unit: "cm" },
-        { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
+        { icon: "J", title: "RSI-mod (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
-        { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
         { icon: "J", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", fallbackKeys: ["rfd_50ms_left", "rfd_50ms_right"], unit: "N/s" },
       ];
     case "Hop Test":
