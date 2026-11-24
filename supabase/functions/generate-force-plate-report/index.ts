@@ -346,18 +346,48 @@ function getSymmetryBand(symmetryPercent: number): SymmetryBand {
 }
 
 // Force Expression Symmetry: same left/right-asymmetry shape as calculateLimbSymmetry,
-// but based on Early Force @ 50ms (force_50ms_left/right) rather than Peak Force.
-// Only populated when the preprocessed data actually carries those fields - no
-// per-limb rate metric exists yet for jump-type tests, so this returns null there
-// rather than fabricate a score.
+// but captures how FAST each limb gets there rather than how much force it
+// produces overall (that's Force Capacity Symmetry, above).
+//
+// Isometric tests: force_50ms_left/right - Early Force Capacity, a force
+// magnitude (N) from a static push against the plate.
+//
+// Jump-family tests have no static equivalent, but DO already carry their
+// own per-limb rate metric - rfd_50ms_left/right (Concentric RFD @ 50ms,
+// i.e. "Early Force Development", the same figure shown on the Individual
+// Scores card). It's the direct jump-world analog: both isometric and jump
+// versions measure how quickly force ramps up in the first 50ms, just one
+// from a static push and the other from a dynamic takeoff. Added per Josh's
+// direction (24 Nov 2026) so jump tests stop showing "Not available" here.
+//
+// CONCENTRIC_RFD_50 is signed (can be negative - force still falling from
+// the braking phase 50ms into the concentric/takeoff window, confirmed live
+// against Jess Ball's Single Leg Jump data). The Individual Scores card
+// already shows that raw signed value; this card is a magnitude comparison
+// between limbs (like every other symmetry row here), so it compares
+// |rfd_50ms_left| vs |rfd_50ms_right| rather than the signed values - using
+// the signed values directly would produce negative/nonsensical bar widths
+// and asymmetry percentages whenever one side's rate is still negative.
 function calculateExpressionSymmetry(metrics: TestMetrics): LimbSymmetryResult | null {
-  const leftValue = metrics.force_50ms_left
-  const rightValue = metrics.force_50ms_right
+  let leftValue: number | undefined
+  let rightValue: number | undefined
+  let metricLabel: string | undefined
+
+  if (typeof metrics.force_50ms_left === 'number' && typeof metrics.force_50ms_right === 'number') {
+    leftValue = metrics.force_50ms_left
+    rightValue = metrics.force_50ms_right
+    metricLabel = 'Early Force Capacity'
+  } else if (typeof metrics.rfd_50ms_left === 'number' && typeof metrics.rfd_50ms_right === 'number') {
+    leftValue = Math.abs(metrics.rfd_50ms_left)
+    rightValue = Math.abs(metrics.rfd_50ms_right)
+    metricLabel = 'Early Force Development'
+  }
+
   if (typeof leftValue !== 'number' || typeof rightValue !== 'number') return null
   const total = leftValue + rightValue
   if (total === 0) return null
   const asymmetryPercent = Math.abs(leftValue - rightValue) / Math.max(leftValue, rightValue) * 100
-  return { leftValue, rightValue, asymmetryPercent }
+  return { leftValue, rightValue, asymmetryPercent, metricLabel }
 }
 
 // Picks the most likely raw CSV path from a metrics object - mirrors
@@ -1277,7 +1307,12 @@ serve(async (req) => {
       cy += drawMetricRow('Force Capacity Symmetry', capacitySub, capacity, cy)
       doc.line(x + 6, cy - 1, x + w - 6, cy - 1)
       cy += 2
-      drawMetricRow('Force Expression Symmetry', '- Early Force @ 50ms, L vs R', expression, cy)
+      // Sub-label follows whatever calculateExpressionSymmetry actually
+      // compared (Early Force Capacity for isometric tests, Early Force
+      // Development for jump tests) so jump tests aren't shown under an
+      // isometric-only caption.
+      const expressionSub = expression?.metricLabel ? `- ${expression.metricLabel} @ 50ms, L vs R` : '- Early Force @ 50ms, L vs R'
+      drawMetricRow('Force Expression Symmetry', expressionSub, expression, cy)
 
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
       return boxH + 5
@@ -1805,6 +1840,12 @@ serve(async (req) => {
           jump_height_right_cm: latestRight.jump_height_right_cm ?? latestRight.jump_height_cm,
           fp1_contribution: latestLeft.fp1_contribution ?? latestLeft.avg_fp1_contribution,
           fp2_contribution: latestRight.fp2_contribution ?? latestRight.avg_fp2_contribution,
+          // Each side's own rfd_50ms is that side's single-limb Early Force
+          // Development reading (see calculateExpressionSymmetry above) - a
+          // "Left Side X" / "Right Side X" pair is two separate jump-family
+          // test records, so there's no left/right split within either one.
+          rfd_50ms_left: latestLeft.rfd_50ms ?? latestLeft.rfd_50ms_left,
+          rfd_50ms_right: latestRight.rfd_50ms ?? latestRight.rfd_50ms_right,
         }
         const slCapacitySymmetry = calculateLimbSymmetry(testName, slSynthMetrics)
         const slExpressionSymmetry = calculateExpressionSymmetry(slSynthMetrics)
