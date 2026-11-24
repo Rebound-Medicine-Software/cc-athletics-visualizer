@@ -329,7 +329,13 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     mappedName === 'Left Side Drop Jump'   ||
     mappedName === 'Right Side Drop Jump';
   const heightCm = isDJ ? (test.djH ?? test.cmjH) : test.cmjH;
-  const rsiVal   = isDJ ? test.djRSI : test.cmjRSI;
+  // Modified RSI (jump height / contraction time) for every CMJ-family test,
+  // Drop Jump included. test.djRSI used to take priority here, which reads
+  // VALD's plain Flight:Contraction-time ratio (FLIGHT_CONTRACTION_TIME_RATIO)
+  // first - a different, less standard formula than the modified RSI CMJ/SJ
+  // already display via cmjRSI. Standardised on cmjRSI (modified) everywhere
+  // per Josh's direction so every jump test's "RSI" card is the same formula.
+  const rsiVal   = test.cmjRSI;
   const ctVal    = isDJ ? test.djCT  : null;
   const raw      = rawOf(test);
   const d        = test as ValdTestDetail;
