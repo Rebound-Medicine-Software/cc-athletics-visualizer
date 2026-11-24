@@ -1,6 +1,6 @@
 /**
  * NEXUS HUB — VALD Bridge Edge Function v3
- * ─────────────────────────────────────────────────────────────────────────────
+ * ───────────────────────────────────────────────────────────────────────────────
  * Built from VALD official API documentation (support.vald.com):
  *   · How to integrate with VALD APIs
  *   · A guide to using the External Profiles API
@@ -16,6 +16,9 @@
  *   Tests    : GET /tests?tenantId=X&modifiedFromUtc=Y&profileId=Z
  *              (falls back to /v2019q3/teams/{tenantId}/tests?athleteId=Z&modifiedFrom=Y)
  *   Detail   : GET /v2019q3/teams/{tenantId}/tests/{testId}/trials
+ *   Trials   : GET /v2019q3/teams/{tenantId}/tests/{testId}/trials (action=trials)
+ *              Same URL as Detail, but returns EVERY trial/rep instead of
+ *              picking one "primary" trial — for intra-session comparison.
  *
  * NOTES
  *   - /tests is primarily metadata; when metric results are present they are mapped too
@@ -23,6 +26,23 @@
  *   - Metric values: value × definition.resultUnitScaleFactor = display unit.
  *   - modifiedFromUtc is REQUIRED on /tests.
  *   - VALD returns 204 with an empty body when there are no results.
+ *
+ * ISOMETRIC TESTS (solL/solR/gasL/gasR)
+ *   Confirmed against live /trials data for Jess Ball's "SEICR" (Seated
+ *   Isometric Calf Raise) and "STICR" (Standing Isometric Calf Raise) tests:
+ *   these are two SEPARATE single-muscle test records — each one just reports
+ *   PEAK_VERTICAL_FORCE (+ FORCE_AT_50/100/150/200MS) per leg. There is no
+ *   single test that reports both a "soleus" and a "gastrocnemius" reading —
+ *   solL/solR is simply "this isometric test's peak force per leg", generic
+ *   across SEICR/STICR/IMTP/ASH/etc. gasL/gasR previously guessed
+ *   FORCE_AT_250MS, which does not exist on either calf protocol (confirmed
+ *   live — both max out at FORCE_AT_200MS) — it has been widened to fall
+ *   back to FORCE_AT_200MS so it reflects a real "late force" reading instead
+ *   of always being null. The frontend (ValdReportHub) now labels these cards
+ *   using the test's own mapped name (e.g. "Seated Isometric Calf Raise —
+ *   Peak Force") rather than hardcoded Soleus/Gastrocnemius labels, since
+ *   which muscle a given reading represents depends entirely on which test
+ *   type it came from.
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -303,9 +323,18 @@ function allMetrics(results: ValdResult[]): Record<string, number> {
 }
 
 // Metric string IDs verified against live /trials responses.
-const ID_HEIGHT = ["JUMP_HEIGHT_IMP_MOM", "JUMP_HEIGHT", "IMPULSE_JUMP_HEIGHT"];
+// CC Athletics documents "Jump Height (ft)" as VALD's flight-time method
+// (JUMP_HEIGHT), confirmed live against VALD's /resultdefinitions — not the
+// impulse-momentum method (JUMP_HEIGHT_IMP_MOM), a different calculation CC
+// does not list as equivalent. Flight-time now takes priority.
+const ID_HEIGHT = ["JUMP_HEIGHT", "JUMP_HEIGHT_IMP_MOM", "IMPULSE_JUMP_HEIGHT"];
 const ID_RSI_MOD = ["RSI_MODIFIED", "RSI_MODIFIED_IMP_MOM"];
-const ID_RSI = ["RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
+// VALD's real id for CC Athletics' plain "RSI" (Flight Time : Contraction
+// Time ratio) is FLIGHT_CONTRACTION_TIME_RATIO, confirmed live. None of the
+// three candidates below exist in VALD's result definitions, so this always
+// silently fell through to RSI_MODIFIED (a different formula) wherever it
+// was used as a fallback.
+const ID_RSI = ["FLIGHT_CONTRACTION_TIME_RATIO", "RSI", "REACTIVE_STRENGTH_INDEX", "REACTIVE_STR_IDX"];
 const ID_PEAK_POWER = ["PEAK_TAKEOFF_POWER", "PEAK_PROPULSIVE_POWER", "PEAK_PROPULSIVE_PWR"];
 const ID_CONTACT = [
   "GROUND_CONTACT_TIME",
@@ -339,6 +368,11 @@ function flatMetrics(results: ValdResult[]) {
     cmjHL: firstMetric(results, ID_HEIGHT, "Left"),
     cmjHR: firstMetric(results, ID_HEIGHT, "Right"),
     cmjRSI: (() => { const v = firstMetric(results, ID_RSI_MOD, "Both"); return v != null ? Math.round(v / 100 * 10000) / 10000 : null; })(),
+    // Plain RSI (CC Athletics "rsi" key) = Flight Time : Contraction Time
+    // ratio. Distinct from cmjRSI/djRSI/pjRSI above, which are the
+    // *modified* RSI (jump-height / contact-time) formula CC calls
+    // "modified_rsi". Additive — does not change any existing field.
+    rsiFlightContraction: firstMetric(results, ID_RSI, "Both"),
     cmjPP: firstMetric(results, ID_PEAK_POWER, "Both"),
     cmjAsym:
       firstMetric(results, ID_HEIGHT, "Asym") ??
@@ -364,7 +398,7 @@ function flatMetrics(results: ValdResult[]) {
   };
 }
 
-// ── HANDLERS ──────────────────────────────────────────────────────────────────
+// ── HANDLERS ──────────────────────────────────────────────────────────────────────
 
 async function handleAthletes(tenantId: string) {
   const { body } = await get(`${profilesBase()}/profiles?${new URLSearchParams({ tenantId })}`);
@@ -642,11 +676,20 @@ async function handleDetail(tenantId: string, testId: string) {
     djAsym: allR["HOP_BEST_AVERAGE_FORCE_Asym"] || firstMetric(results, ID_HEIGHT, "Asym") || metric(results, "PEAK_LANDING_FORCE", "Asym") || null,
     pjCT: firstMetric(results, ID_CONTACT, "Both") ?? allR["HOP_BEST_CONTACT_TIME_Trial"] ?? null,
 
-    // Isometric
+    // Isometric — generic per-test peak force and "late" force, Left/Right.
+    // solL/solR = PEAK_FORCE / PEAK_VERTICAL_FORCE, confirmed present on both
+    // SEICR and STICR live trials (and the standard isometric metric family
+    // generally). These are NOT soleus-specific — the name is historical;
+    // what they represent depends on which test produced them (the frontend
+    // labels the card using the test's own mapped name).
     solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
     solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
-    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Left"),
-    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS"], "Right"),
+    // gasL/gasR = "late" isometric force reading, Left/Right. FORCE_AT_250MS
+    // does not exist on SEICR/STICR (confirmed live — both protocols only go
+    // up to FORCE_AT_200MS), so it now falls back to FORCE_AT_200MS instead
+    // of always resolving to null.
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Right"),
     // Early-force (50ms) capacity per limb — same shape as gasL/gasR above.
     // Confirmed from live /trials data (Jess Ball Standing/Seated Isometric
     // Calf Raise, 18 Nov 2026): FORCE_AT_50MS appears tagged "Left" and
@@ -657,6 +700,55 @@ async function handleDetail(tenantId: string, testId: string) {
     fiftyL: firstMetric(results, ID_FORCE_50MS, "Left"),
     fiftyR: firstMetric(results, ID_FORCE_50MS, "Right"),
   };
+}
+
+// Shared per-trial extractor — same metric-lookup logic handleDetail() uses
+// for its single "primary" trial, but applied to EVERY trial so intra-
+// session (rep-to-rep) comparison is possible. Deliberately duplicates a
+// subset of handleDetail()'s extraction rather than refactoring it, to
+// avoid touching the already-verified primary-trial behaviour.
+function trialRow(t: Record<string, unknown>, index: number) {
+  const results = (t.results ?? []) as ValdResult[];
+  const allR = allMetrics(results);
+  return {
+    trialId: (t.id ?? null) as string | null,
+    repeatIndex: index,
+    limb: (t.limb ?? "Both") as string,
+    startTime: (t.startTime ?? null) as number | null,
+    endTime: (t.endTime ?? null) as number | null,
+    raw: allR,
+    ...flatMetrics(results),
+    // Isometric — generic per-rep peak force / late force, Left/Right.
+    // Same candidate IDs and FORCE_AT_200MS fallback as handleDetail()'s
+    // solL/solR/gasL/gasR (see the ISOMETRIC TESTS doc comment above).
+    solL: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Left"),
+    solR: firstMetric(results, ["PEAK_FORCE", "PEAK_VERTICAL_FORCE"], "Right"),
+    gasL: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Left"),
+    gasR: firstMetric(results, ["FORCE_AT_250MS", "FORCE_250MS", "FORCE_AT_200MS", "FORCE_200MS"], "Right"),
+  };
+}
+
+// Returns EVERY trial/rep for a test, not just the one handleDetail() picks
+// as "primary". Confirmed live: a single VALD test can return multiple trial
+// objects (one of Jess Ball's tests returned 3 separate trials) — this is
+// what makes intra-session (rep-to-rep) comparison possible on the VALD
+// side, matching the per-jump/per-hop/per-trial granularity CC Athletics'
+// own get_athletes endpoint already returns natively. Same underlying VALD
+// call as handleDetail() — no extra request against VALD's quota-limited API.
+async function handleTrials(tenantId: string, testId: string) {
+  const { status, body } = await get(
+    `${forcedecksBase()}/v2019q3/teams/${tenantId}/tests/${testId}/trials`,
+  );
+
+  if (status === 204 || body == null) return { testId, trialCount: 0, trials: [] };
+
+  const rawTrials = (Array.isArray(body)
+    ? body
+    : ((body as Record<string, unknown>).trials ?? [body])) as Record<string, unknown>[];
+
+  const trials = rawTrials.map((t, i) => trialRow(t, i));
+
+  return { testId, trialCount: trials.length, trials };
 }
 
 // ── REQUEST AUTHORIZATION ────────────────────────────────────────────────────
@@ -737,8 +829,14 @@ serve(async (req: Request) => {
         }
       }
       payload = { details, count: details.length };
+    } else if (action === "trials") {
+      // All trials/reps for a test — powers intra-session (rep-to-rep)
+      // comparison, matching CC Athletics' native per-rep granularity.
+      const testId = url.searchParams.get("testId") ?? "";
+      if (!testId) throw new Error("testId is required");
+      payload = await handleTrials(tenantId, testId);
     } else {
-      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail | details`);
+      throw new Error(`Unknown action "${action}". Valid: athletes | tests | detail | details | trials`);
     }
 
     return new Response(JSON.stringify(payload), {
