@@ -65,6 +65,10 @@ export interface JumpMetrics {
   avg_propulsive_force?: number;
   avg_propulsive_power?: number;
   avg_rfd?: number;
+  // Early force development (first 50ms of the concentric/takeoff phase) —
+  // the jump-family equivalent of IsometricMetrics.force_50ms. Set by
+  // valdToCCAthletics.ts toJumpMetrics() from VALD's CONCENTRIC_RFD_50.
+  rfd_50ms?: number;
   body_mass?: number;
   braking_duration?: number;
   contact_time?: number;

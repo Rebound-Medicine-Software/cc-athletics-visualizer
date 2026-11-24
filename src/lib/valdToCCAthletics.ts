@@ -360,8 +360,24 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
   m.net_impulse          = rawBoth(raw, 'NET_IMPULSE', 'CONCENTRIC_IMPULSE', 'PROPULSIVE_IMPULSE');
   m.takeoff_velocity     = rawBoth(raw, 'TAKEOFF_VELOCITY', 'PEAK_TAKEOFF_VELOCITY', 'VELOCITY_AT_TAKEOFF');
   m.peak_velocity        = rawBoth(raw, 'PEAK_VELOCITY', 'PEAK_TAKEOFF_VELOCITY');
-  m.avg_rfd              = rawBoth(raw, 'MEAN_RFD', 'AVG_RFD', 'RFD', 'PEAK_RFD');
+  // Rate of Force Development (concentric/takeoff phase). CC Athletics calls
+  // this "Average Rate of Force Development" (avg_rfd). The VALD IDs this
+  // previously tried (MEAN_RFD/AVG_RFD/RFD/PEAK_RFD) do not exist anywhere in
+  // VALD's /resultdefinitions catalogue (confirmed via a live pull of all 532
+  // definitions, 24 Nov 2026) — avg_rfd was always null for every jump test
+  // as a result. The real jump-family RFD IDs are CONCENTRIC_RFD /
+  // CONCENTRIC_RFD_MAX, confirmed live against Jess Ball's Single Leg Jump
+  // /trials data. test.concRfd is vald-bridge's own bilateral lookup of the
+  // same IDs (handles the Trial/Both limb aliasing already); rawBoth() here
+  // is just a safety-net fallback for callers that only have the raw map.
+  m.avg_rfd              = orUndef((d as any).concRfd) ?? rawBoth(raw, 'CONCENTRIC_RFD', 'CONCENTRIC_RFD_MAX');
   m.time_to_peak_force   = rawBoth(raw, 'TIME_TO_PEAK_FORCE');
+  // "Early force development" for jumps — the first-50ms window of the same
+  // concentric/takeoff RFD above (CONCENTRIC_RFD_50), the jump-family
+  // equivalent of isometric's Early Force Capacity (force_50ms). Bilateral
+  // value here; per-limb left/right versions are added below for unilateral
+  // tests (SLJ etc.).
+  m.rfd_50ms             = orUndef((d as any).concRfd50) ?? rawBoth(raw, 'CONCENTRIC_RFD_50');
 
   // Relative peak power so the dashboard tile can also read it directly
   if (m.peak_power != null && m.body_mass) {
@@ -397,6 +413,21 @@ function toJumpMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): JumpM
     if (test.cmjHL != null) m.jump_height_left_cm = test.cmjHL;
     if (test.cmjHR != null) m.jump_height_right_cm = test.cmjHR;
     if (test.cmjAsym != null) m.asymmetry_index = test.cmjAsym;
+
+    // Early force development per limb (single-leg tests only, e.g. SLJ).
+    // test.rfd50L / test.rfd50R are vald-bridge's own best-per-side trial
+    // extraction (same group-by-trial.limb fix used for cmjHL/cmjHR above —
+    // CONCENTRIC_RFD_50 is tagged "Trial" at the result level regardless of
+    // which leg performed the rep, exactly like jump height). rawLimb() is
+    // a fallback for any shape where the bridge didn't already compute it.
+    const rfd50l = orUndef((test as any).rfd50L) ?? rawLimb(raw, 'Left', 'CONCENTRIC_RFD_50');
+    const rfd50r = orUndef((test as any).rfd50R) ?? rawLimb(raw, 'Right', 'CONCENTRIC_RFD_50');
+    if (rfd50l != null) m.rfd_50ms_left = rfd50l;
+    if (rfd50r != null) m.rfd_50ms_right = rfd50r;
+    // No bilateral CONCENTRIC_RFD_50 exists for a true single-leg test (every
+    // trial is one leg or the other) — fall back to whichever side resolved
+    // so the card shows something rather than staying permanently blank.
+    if (m.rfd_50ms == null) m.rfd_50ms = rfd50l ?? rfd50r ?? undefined;
   }
 
   return m;
@@ -643,8 +674,15 @@ export function valdDetailToLimbPair(
   const ct = (detail as any).djCT ?? (detail as any).pjCT ?? null;
   const ft = raw?.['FLIGHT_TIME_Trial'] ?? null;
   const pp = (detail as any).cmjPP ?? null;
+  // Early force development (CONCENTRIC_RFD_50), per limb - same bridge fields
+  // toJumpMetrics() reads (see hydrateTestMetrics()/handleDetail() in
+  // vald-bridge). Only meaningful for the jump/drop-jump branch below; Pogo
+  // Jump (SLHJ) has no concentric-takeoff RFD concept, so it's left out of
+  // that shape entirely rather than showing a misleading always-blank card.
+  const rfd50L = (detail as any).rfd50L ?? null;
+  const rfd50R = (detail as any).rfd50R ?? null;
 
-  const makeMetrics = (heightCm: number | null) => {
+  const makeMetrics = (heightCm: number | null, rfd50: number | null) => {
     if (baseName === 'Pogo Jump') {
       return {
         avg_jump_height: heightCm != null ? heightCm / 100 : undefined, // metres
@@ -660,6 +698,7 @@ export function valdDetailToLimbPair(
       contact_time: ct ?? undefined,
       flight_time: ft ?? undefined,
       peak_power: pp ?? undefined,
+      rfd_50ms: rfd50 ?? undefined,
     };
   };
 
@@ -678,7 +717,7 @@ export function valdDetailToLimbPair(
       ...base,
       test_name: `Left Side ${baseName}`,
       leg_stance: 'left_leg',
-      metrics: makeMetrics(djL) as any,
+      metrics: makeMetrics(djL, rfd50L) as any,
     });
   }
   if (djR != null) {
@@ -686,7 +725,7 @@ export function valdDetailToLimbPair(
       ...base,
       test_name: `Right Side ${baseName}`,
       leg_stance: 'right_leg',
-      metrics: makeMetrics(djR) as any,
+      metrics: makeMetrics(djR, rfd50R) as any,
     });
   }
 

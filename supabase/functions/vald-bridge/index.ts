@@ -347,6 +347,20 @@ const ID_CONTACT = [
 // limb ("Left"/"Right") within a single bilateral trial, same shape as
 // PEAK_FORCE (→ solL/solR) and FORCE_AT_250MS (→ gasL/gasR) below.
 const ID_FORCE_50MS = ["FORCE_AT_50MS", "FORCE_50MS", "EARLY_FORCE_CAPACITY"];
+// Early force DEVELOPMENT (rate) for JUMP tests — distinct from the isometric
+// "early force capacity" (a force level) above. Confirmed live against Jess
+// Ball's Single Leg Jump /trials data (24 Nov 2026): VALD reports
+// CONCENTRIC_RFD / CONCENTRIC_RFD_50 / _100 / _200 / _MAX for jump-family
+// tests, tagged limb "Trial" at the result level exactly like JUMP_HEIGHT —
+// NOT "RFD"/"AVG_RFD"/"MEAN_RFD"/"PEAK_RFD" as docs/metric-mapping.md's
+// unconfirmed candidate list guessed (none of those IDs exist in VALD's
+// /resultdefinitions catalogue; confirmed via a live pull of all 532
+// definitions). CONCENTRIC_RFD_50 is the literal "first 50ms of the
+// concentric/takeoff phase" reading CC Athletics calls Average Rate of Force
+// Development for jumps (docs/cc-athletics-metric-map.md, Squat Jump table).
+const ID_CONCENTRIC_RFD = ["CONCENTRIC_RFD"];
+const ID_CONCENTRIC_RFD_MAX = ["CONCENTRIC_RFD_MAX"];
+const ID_CONCENTRIC_RFD_50 = ["CONCENTRIC_RFD_50"];
 
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
@@ -378,6 +392,12 @@ function flatMetrics(results: ValdResult[]) {
       firstMetric(results, ID_HEIGHT, "Asym") ??
       metric(results, "PEAK_TAKEOFF_FORCE", "Asym") ??
       metric(results, "ASYM_INDEX", "Both"),
+    // Rate of force development (concentric/takeoff phase) — bilateral.
+    // CONCENTRIC_RFD = CC Athletics' "Average Rate of Force Development"
+    // (avg_rfd). CONCENTRIC_RFD_50 = the first-50ms "early" window, the
+    // jump-family equivalent of isometric's Early Force Capacity.
+    concRfd: firstMetric(results, ID_CONCENTRIC_RFD, "Both") ?? firstMetric(results, ID_CONCENTRIC_RFD_MAX, "Both"),
+    concRfd50: firstMetric(results, ID_CONCENTRIC_RFD_50, "Both"),
     djH: firstMetric(results, ID_HEIGHT, "Both"),
     djRSI: firstMetric(results, ID_RSI, "Both") ?? firstMetric(results, ID_RSI_MOD, "Both"),
     // Raw map fallback: CONTACT_TIME_Trial confirmed = 0.23s (DJ) / 0.34s (SLDJ) in live data
@@ -578,6 +598,40 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
               }
             }
           }
+
+          // Early force DEVELOPMENT per limb (CONCENTRIC_RFD_50) for the same
+          // single-limb-per-rep tests as above — identical root cause and
+          // identical fix shape as the cmjHL/cmjHR block directly above:
+          // group trials by their own trial.limb field, then read that
+          // trial's own CONCENTRIC_RFD_50 result (tagged "Trial"/"Both" at
+          // the result level regardless of which leg performed the rep).
+          // Picks the same "best" (highest jump height) trial per side used
+          // for cmjHL/cmjHR above, so every per-limb KPI on a given side
+          // comes from the one representative rep for that side.
+          if ((t.rfd50L == null || t.rfd50R == null)) {
+            const trialLimbs2 = trials.map((tr) => String((tr as Record<string, unknown>).limb ?? "Both"));
+            const isUnilateral2 = trialLimbs2.some((l) => l === "Left" || l === "Right") && !trialLimbs2.includes("Both");
+            if (isUnilateral2) {
+              const getH2 = (tr: Record<string, unknown>): number => {
+                const trResults = (tr.results ?? []) as ValdResult[];
+                const viaId = firstMetric(trResults, ID_HEIGHT, "Both");
+                if (viaId != null) return viaId;
+                return allMetrics(trResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+              };
+              const leftTrials2 = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Left");
+              const rightTrials2 = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Right");
+              if (t.rfd50L == null && leftTrials2.length > 0) {
+                const best = leftTrials2.reduce((a, b) => (getH2(b as Record<string, unknown>) > getH2(a as Record<string, unknown>) ? b : a));
+                const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
+                t.rfd50L = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+              }
+              if (t.rfd50R == null && rightTrials2.length > 0) {
+                const best = rightTrials2.reduce((a, b) => (getH2(b as Record<string, unknown>) > getH2(a as Record<string, unknown>) ? b : a));
+                const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
+                t.rfd50R = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+              }
+            }
+          }
         } catch (err) {
           console.warn(`[vald-bridge] trial hydration failed for ${t.id}:`, String(err));
         }
@@ -631,6 +685,25 @@ async function handleDetail(tenantId: string, testId: string) {
 
   const results = (primaryTrial.results ?? []) as ValdResult[];
   const allR = allMetrics(results); // shared raw map — reused for limb fallbacks
+
+  // Shared helper for the cmjHL/cmjHR/cmjAsym and rfd50L/rfd50R/rfd50Asym
+  // blocks below — mirrors hydrateTestMetrics()'s own getH, which also
+  // checks HOP_BEST_JUMP_HEIGHT so hop-family tests reached via /detail pick
+  // a genuinely-best trial per side instead of tying at 0.
+  const getHAny = (t: Record<string, unknown>): number => {
+    const r = (t.results ?? []) as ValdResult[];
+    return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
+  };
+  const leftTrialsD = trials.filter((t) => (t as Record<string, unknown>).limb === "Left");
+  const rightTrialsD = trials.filter((t) => (t as Record<string, unknown>).limb === "Right");
+  const bestLeftD = leftTrialsD.length > 0
+    ? leftTrialsD.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a))
+    : null;
+  const bestRightD = rightTrialsD.length > 0
+    ? rightTrialsD.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a))
+    : null;
+  const bestLeftResultsD = bestLeftD ? ((bestLeftD as Record<string, unknown>).results ?? []) as ValdResult[] : null;
+  const bestRightResultsD = bestRightD ? ((bestRightD as Record<string, unknown>).results ?? []) as ValdResult[] : null;
 
   return {
     trialCount: trials.length,
@@ -695,52 +768,37 @@ async function handleDetail(tenantId: string, testId: string) {
     // to the SLHJ case hydrateTestMetrics() already handles, just reached
     // through a different endpoint (/detail instead of /tests).
     //
-    // Trial selection here uses getHAny (not the getH declared above, which
-    // backs primaryTrial/djL/djR and is intentionally left untouched) because
-    // getH only recognises the CMJ/SLJ family's ID_HEIGHT - for a Single Leg
-    // Hop Test viewed via /detail, every trial would tie at 0 and "best"
-    // would be the first match, not the genuinely best hop. getHAny mirrors
-    // hydrateTestMetrics()'s own getH, which also checks HOP_BEST_JUMP_HEIGHT.
-    cmjHL: (function(): number | null {
-      const getHAny = (t: Record<string, unknown>): number => {
-        const r = (t.results ?? []) as ValdResult[];
-        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
-      };
-      const lt = trials.filter((t) => (t as Record<string, unknown>).limb === "Left");
-      if (lt.length === 0) return flatMetrics(results).cmjHL ?? null;
-      const leftBest = lt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
-      const lr = ((leftBest as Record<string, unknown>).results ?? []) as ValdResult[];
-      return firstMetric(lr, ID_HEIGHT, "Both") ?? allMetrics(lr)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
-    }()),
-    cmjHR: (function(): number | null {
-      const getHAny = (t: Record<string, unknown>): number => {
-        const r = (t.results ?? []) as ValdResult[];
-        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
-      };
-      const rt = trials.filter((t) => (t as Record<string, unknown>).limb === "Right");
-      if (rt.length === 0) return flatMetrics(results).cmjHR ?? null;
-      const rightBest = rt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
-      const rr = ((rightBest as Record<string, unknown>).results ?? []) as ValdResult[];
-      return firstMetric(rr, ID_HEIGHT, "Both") ?? allMetrics(rr)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
-    }()),
+    // Reuses the bestLeftResultsD/bestRightResultsD computed once above
+    // (shared with the rfd50L/rfd50R block below) rather than recomputing
+    // the best trial per side twice.
+    cmjHL: bestLeftResultsD
+      ? (firstMetric(bestLeftResultsD, ID_HEIGHT, "Both") ?? allMetrics(bestLeftResultsD)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null)
+      : (flatMetrics(results).cmjHL ?? null),
+    cmjHR: bestRightResultsD
+      ? (firstMetric(bestRightResultsD, ID_HEIGHT, "Both") ?? allMetrics(bestRightResultsD)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null)
+      : (flatMetrics(results).cmjHR ?? null),
     cmjAsym: (function(): number | null {
-      const getHAny = (t: Record<string, unknown>): number => {
-        const r = (t.results ?? []) as ValdResult[];
-        return firstMetric(r, ID_HEIGHT, "Both") ?? allMetrics(r)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? 0;
-      };
-      const lt = trials.filter((t) => (t as Record<string, unknown>).limb === "Left");
-      const rt = trials.filter((t) => (t as Record<string, unknown>).limb === "Right");
-      if (lt.length === 0 || rt.length === 0) return flatMetrics(results).cmjAsym ?? null;
-      const l = lt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
-      const r = rt.reduce((a, b) => (getHAny(b as Record<string, unknown>) > getHAny(a as Record<string, unknown>) ? b : a));
-      const lResults = ((l as Record<string, unknown>).results ?? []) as ValdResult[];
-      const rResults = ((r as Record<string, unknown>).results ?? []) as ValdResult[];
-      const lVal = firstMetric(lResults, ID_HEIGHT, "Both") ?? allMetrics(lResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
-      const rVal = firstMetric(rResults, ID_HEIGHT, "Both") ?? allMetrics(rResults)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+      if (!bestLeftResultsD || !bestRightResultsD) return flatMetrics(results).cmjAsym ?? null;
+      const lVal = firstMetric(bestLeftResultsD, ID_HEIGHT, "Both") ?? allMetrics(bestLeftResultsD)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
+      const rVal = firstMetric(bestRightResultsD, ID_HEIGHT, "Both") ?? allMetrics(bestRightResultsD)["HOP_BEST_JUMP_HEIGHT_Trial"] ?? null;
       if (lVal == null || rVal == null) return null;
       const maxH = Math.max(lVal, rVal);
       return maxH > 0 ? (Math.abs(lVal - rVal) / maxH) * 100 : null;
     }()),
+
+    // Early force DEVELOPMENT per limb (CONCENTRIC_RFD_50) at the /detail
+    // level — same root cause and same fix shape as cmjHL/cmjHR directly
+    // above (and hydrateTestMetrics()'s list-level twin): the result's own
+    // "limb" is always "Trial"/"Both" regardless of which leg performed the
+    // rep, so only grouping by the TRIAL's own .limb field recovers true
+    // per-side values. Live-verified against Jess Ball's Single Leg Jump
+    // test (24 Nov 2026): Left trials' CONCENTRIC_RFD_50 = -160 / 1340 / 880
+    // N/s, Right trials' = 640 / 420 / -160 N/s — same 6-trial, 3-Left/
+    // 3-Right shape as the jump-height data above, read from the same
+    // best-per-side trial so every per-limb KPI for a given side comes from
+    // one representative rep.
+    rfd50L: bestLeftResultsD ? (firstMetric(bestLeftResultsD, ID_CONCENTRIC_RFD_50, "Both") ?? null) : null,
+    rfd50R: bestRightResultsD ? (firstMetric(bestRightResultsD, ID_CONCENTRIC_RFD_50, "Both") ?? null) : null,
 
     // Isometric — generic per-test peak force and "late" force, Left/Right.
     // solL/solR = PEAK_FORCE / PEAK_VERTICAL_FORCE, confirmed present on both

@@ -49,6 +49,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Peak Power", metricKey: "peak_power", unit: "W" },
         { icon: "⚡", title: "Peak Power / Body Mass", metricKey: "relative_peak_power", unit: "W/kg" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Squat Jump":
       return [
@@ -56,6 +57,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Take-off Velocity", metricKey: "takeoff_velocity", unit: "m/s" },
         { icon: "⚡", title: "Avg Rate of Force Dev.", metricKey: "avg_rfd", unit: "N/s" },
         { icon: "⚡", title: "Avg Propulsive Power", metricKey: "avg_propulsive_power", unit: "W" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Drop Jump":
       return [
@@ -63,6 +65,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⏱️", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
         { icon: "⏱️", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Pogo Jump":
       return [
@@ -80,6 +83,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Peak Propulsive Power", metricKey: "peak_propulsive_power", unit: "W" },
         { icon: "⚡", title: "Relative Peak Power", metricKey: "relative_peak_power", unit: "W/kg" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Squat Jump":
     case "Right Side Squat Jump":
@@ -88,6 +92,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Drop Jump":
     case "Right Side Drop Jump":
@@ -96,6 +101,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Peak Landing Force", metricKey: "peak_landing_force", unit: "N" },
         { icon: "⏱️", title: "Ground Contact Time", metricKey: "time_to_takeoff", unit: "s" },
         { icon: "⚡", title: "Reactive Strength Index", metricKey: "rsi", unit: "" },
+        { icon: "⚡", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", unit: "N/s" },
       ];
     case "Left Side Pogo Jump":
     case "Right Side Pogo Jump":
@@ -105,13 +111,9 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "⚡", title: "Power", metricKey: "avg_power", fallbackKeys: ["power", "avg_pogo_power"], unit: "W" },
         { icon: "⏱️", title: "Contact Time", metricKey: "avg_contact_time", fallbackKeys: ["contact_time"], unit: "ms" },
       ];
-    // VALD's Single Leg Jump / Single Leg Drop Jump arrive as ONE combined
-    // record (valdToCCAthletics.ts never splits them into "Left Side X" /
-    // "Right Side X" pairs - that split only happens for isometric tests
-    // that carry a stance field), so these cases are what the report
-    // generator actually renders for VALD unilateral jump tests, not a
-    // fallback. Limb symmetry for them comes from calculateLimbSymmetry's
-    // p1_avg_force / jump_height_left_cm fields on that combined record.
+    // VALD unilateral tests: valdDetailToLimbPair() converts these to
+    // "Left Side X" / "Right Side X" pairs before reaching the report generator.
+    // These cases are fallbacks if a single record is passed directly.
     case "Single Leg Jump":
     case "Left Side Single Leg Jump":
     case "Right Side Single Leg Jump":
@@ -120,6 +122,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+        { icon: "J", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", fallbackKeys: ["rfd_50ms_left", "rfd_50ms_right"], unit: "N/s" },
       ];
     case "Single Leg Drop Jump":
     case "Left Side Single Leg Drop Jump":
@@ -129,6 +132,7 @@ function getCardConfigs(testName: string): CardConfig[] {
         { icon: "J", title: "RSI (m/s)", metricKey: "rsi", unit: "" },
         { icon: "J", title: "Contact Time", metricKey: "contact_time", unit: "ms" },
         { icon: "J", title: "Flight Time", metricKey: "flight_time", unit: "ms" },
+        { icon: "J", title: "Early Force Development (50ms)", metricKey: "rfd_50ms", fallbackKeys: ["rfd_50ms_left", "rfd_50ms_right"], unit: "N/s" },
       ];
     case "Hop Test":
       return [
@@ -179,53 +183,43 @@ interface LimbSymmetryResult {
   isSymmetryIndex?: boolean;
   dominantSide?: string;
   siValue?: number;
-  // What leftValue/rightValue actually represent, e.g. "Peak Force", "Jump
-  // Height" - shown in the Limb Symmetry card's sub-label so a kinematic
-  // fallback is never mislabeled as a force reading.
-  metricLabel?: string;
 }
 
-// Extract limb symmetry data. Rather than matching on an exact testName
-// string (which only ever covered the handful of bilateral names CC
-// Athletics ships natively and silently returned "Not available" for every
-// VALD single-leg/jump-family variant - Single Leg Jump, Single Leg Squat
-// Jump, Single Leg Drop Jump, Single Leg Hop Test, etc. - this now detects
-// which left/right field pair the upstream mapper actually populated and
-// uses that, so any test name with real paired data gets a real symmetry
-// value. Priority: real force > jump height (kinematic fallback for jump
-// tests with no raw per-limb force) > limb contribution % > isometric peak
-// force (signed symmetry index).
+// Extract limb symmetry data matching dashboard's IndividualComparisonSection.tsx logic
 function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymmetryResult | null {
   let leftValue = 0;
   let rightValue = 0;
-  let metricLabel: string | undefined;
 
-  if (typeof metrics.fp1_peak_landing_force === 'number' || typeof metrics.fp2_peak_landing_force === 'number') {
-    // Drop Jump family (Drop Jump, Single Leg Drop Jump, Left/Right Side Drop Jump)
+  if (testName === "Drop Jump" || testName === "Single Leg Drop Jump") {
+    // Use fp1/fp2 peak landing force for between-limb symmetry
     // Formula: |Left - Right| / Max(Left, Right) × 100
+    // Single Leg Drop Jump never had its own case here before - it fell
+    // through to the isometric else branch below and read force_peak_left/
+    // right, which toJumpMetrics() never sets, so this test's symmetry
+    // always silently showed "not available" regardless of what data VALD
+    // actually returned.
     leftValue = metrics.fp1_peak_landing_force || 0;
     rightValue = metrics.fp2_peak_landing_force || 0;
-    metricLabel = 'Peak Landing Force';
-  } else if (typeof metrics.p1_avg_force === 'number' || typeof metrics.fp1_peak_force === 'number' ||
-             typeof metrics.p2_avg_force === 'number' || typeof metrics.fp2_peak_force === 'number') {
-    // CMJ / Squat Jump family, incl. VALD's Single Leg Jump / Single Leg
-    // Squat Jump, which map onto these same field names (see valdToCCAthletics.ts)
-    leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || 0;
-    rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || 0;
-    metricLabel = 'Peak Force';
-  } else if (typeof metrics.jump_height_left_cm === 'number' || typeof metrics.jump_height_right_cm === 'number') {
-    // No raw per-limb force available for this jump (common for VALD's
-    // Single Leg Jump) - fall back to per-limb jump height rather than
-    // showing nothing. Kept as its own branch (not folded into p1_avg_force)
-    // so it is only ever labelled as what it actually is.
-    leftValue = metrics.jump_height_left_cm || 0;
-    rightValue = metrics.jump_height_right_cm || 0;
-    metricLabel = 'Jump Height';
-  } else if (typeof metrics.fp1_contribution === 'number' || typeof metrics.avg_fp1_contribution === 'number') {
-    // Pogo Jump family (Pogo Jump, Single Leg Hop Test, Hop Test) - Dual_Leg contribution %
-    leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? 0;
-    rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? 0;
-    metricLabel = 'Limb Contribution';
+  } else if (testName === "Countermovement Jump" || testName === "Single Leg Jump") {
+    // Single Leg Jump: real per-limb takeoff FORCE rarely resolves for VALD's
+    // single-leg protocols (per-rep results are tagged limb "Trial", not
+    // "Left"/"Right" - see toJumpMetrics() in valdToCCAthletics.ts), so fall
+    // back to jump_height_left_cm/right_cm, which vald-bridge DOES populate
+    // correctly for these tests (grouping trials by their own trial.limb).
+    leftValue = metrics.p1_avg_force || metrics.fp1_peak_force || metrics.jump_height_left_cm || 0;
+    rightValue = metrics.p2_avg_force || metrics.fp2_peak_force || metrics.jump_height_right_cm || 0;
+  } else if (testName === "Squat Jump") {
+    leftValue = metrics.p1_avg_force || 0;
+    rightValue = metrics.p2_avg_force || 0;
+  } else if (testName === "Pogo Jump" || testName === "Hop Test" || testName === "Single Leg Hop Test") {
+    // Always use Dual_Leg contribution data by default. Hop Test / Single Leg
+    // Hop Test had no case here before (same fallthrough bug as above) - and
+    // for SLHJ specifically, fp1_contribution/avg_fp1_contribution rarely
+    // resolves either (same Trial-vs-Left/Right force-tagging quirk as jump
+    // height), so fall back to jump_height_left_cm/right_cm, which
+    // toPogoMetrics() populates from the HOP_BEST_JUMP_HEIGHT fix.
+    leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? metrics.jump_height_left_cm ?? 0;
+    rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? metrics.jump_height_right_cm ?? 0;
   } else {
     // Isometric tests - use force_peak_left/right from preprocessed metrics
     leftValue = metrics.force_peak_left || 0;
@@ -243,7 +237,6 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
       isSymmetryIndex: true,
       dominantSide: si >= 0 ? 'Left Leg Dominant' : 'Right Leg Dominant',
       siValue: si,
-      metricLabel: 'Peak Force',
     };
   }
 
@@ -256,8 +249,7 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
   return {
     leftValue,
     rightValue,
-    asymmetryPercent,
-    metricLabel,
+    asymmetryPercent
   };
 }
 
@@ -316,246 +308,6 @@ function getMetricValue(metrics: TestMetrics, config: CardConfig): number | null
   
   if (typeof value !== 'number') return null;
   return formatMetricValue(value, config.keyOverride || config.metricKey);
-}
-
-// ===== LIMB SYMMETRY (CAPACITY / EXPRESSION) + REAL FORCE TRACE =====
-// Added for the "Limb Symmetry" report section: two separate views on the
-// same limb pair (Capacity = how much force, from existing calculateLimbSymmetry
-// above; Expression = how fast it gets there, from force_50ms_left/right) plus
-// a real force-time trace chart pulled from CC Athletics' raw per-sample CSV
-// (same source cc-raw-csv/index.ts and src/lib/movement/rawTraceFetch.ts already
-// use), replacing the earlier illustrative/mocked-up curve.
-
-interface SymmetryBand {
-  label: string;
-  color: number[];
-}
-
-// Symmetry % = 100 - asymmetryPercent. Thresholds match the already-shipped
-// asymmetry color convention elsewhere in this file (>15% danger, >10% warning).
-function getSymmetryBand(symmetryPercent: number): SymmetryBand {
-  if (symmetryPercent < 75) return { label: 'Serious', color: [192, 57, 57] }
-  if (symmetryPercent < 90) return { label: 'Moderate', color: [234, 88, 12] }
-  return { label: 'Good', color: [13, 148, 136] }
-}
-
-// Force Expression Symmetry: same left/right-asymmetry shape as calculateLimbSymmetry,
-// but based on Early Force @ 50ms (force_50ms_left/right) rather than Peak Force.
-// Only populated when the preprocessed data actually carries those fields - no
-// per-limb rate metric exists yet for jump-type tests, so this returns null there
-// rather than fabricate a score.
-function calculateExpressionSymmetry(metrics: TestMetrics): LimbSymmetryResult | null {
-  const leftValue = metrics.force_50ms_left
-  const rightValue = metrics.force_50ms_right
-  if (typeof leftValue !== 'number' || typeof rightValue !== 'number') return null
-  const total = leftValue + rightValue
-  if (total === 0) return null
-  const asymmetryPercent = Math.abs(leftValue - rightValue) / Math.max(leftValue, rightValue) * 100
-  return { leftValue, rightValue, asymmetryPercent }
-}
-
-// Picks the most likely raw CSV path from a metrics object - mirrors
-// src/lib/movement/rawTraceFetch.ts's pickRawCsvPath() so CC-sourced tests are
-// detected the same way here as on the dashboard. VALD-sourced tests don't carry
-// any of these fields yet (raw trace access is pending VALD support approval),
-// so this naturally returns null for them.
-function pickRawCsvPath(metrics: TestMetrics): string | null {
-  if (!metrics || typeof metrics !== 'object') return null
-  return metrics.raw_csv_path ?? metrics.path_to_this_jump_raw_csv ?? metrics.path_to_raw_csv ?? null
-}
-
-interface TraceSample {
-  t: number;
-  left: number | null;
-  right: number | null;
-  total: number | null;
-}
-
-interface ParsedTrace {
-  samples: TraceSample[];
-  hasLeftRight: boolean;
-}
-
-// Minimal CSV parser for the raw force-plate export - plain comma-delimited,
-// header row first, numeric samples. Matches the header-normalisation and
-// column-candidate lists already proven in src/lib/movement/rawTraceFetch.ts.
-function parseForceTraceCsv(csvText: string): ParsedTrace {
-  const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0)
-  if (lines.length < 2) return { samples: [], hasLeftRight: false }
-
-  const normalizeHeader = (h: string) => h.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
-  const headers = lines[0].split(',').map(normalizeHeader)
-
-  const tKeys = ['time', 't', 'time_s', 'time_sec', 'time_seconds', 'timestamp']
-  const leftKeys = ['fz_left', 'force_left', 'left', 'plate1', 'fp1', 'left_n']
-  const rightKeys = ['fz_right', 'force_right', 'right', 'plate2', 'fp2', 'right_n']
-  const totalKeys = ['fz', 'force', 'force_n', 'force_total', 'total', 'sum_force', 'fz_total']
-
-  const findIdx = (keys: string[]) => headers.findIndex(h => keys.includes(h))
-  const tIdx = findIdx(tKeys)
-  const leftIdx = findIdx(leftKeys)
-  const rightIdx = findIdx(rightKeys)
-  const totalIdx = findIdx(totalKeys)
-  const hasLeftRight = leftIdx !== -1 && rightIdx !== -1
-
-  const num = (v: string | undefined): number | null => {
-    if (v === undefined || v === '') return null
-    const n = Number(v)
-    return Number.isFinite(n) ? n : null
-  }
-
-  const samples: TraceSample[] = []
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(',')
-    const left = leftIdx !== -1 ? num(cols[leftIdx]) : null
-    const right = rightIdx !== -1 ? num(cols[rightIdx]) : null
-    let total = totalIdx !== -1 ? num(cols[totalIdx]) : null
-    if (total === null && (left !== null || right !== null)) total = (left ?? 0) + (right ?? 0)
-    if (total === null) continue
-    const t = tIdx !== -1 ? num(cols[tIdx]) : null
-    samples.push({ t: t !== null ? t : (i - 1), left, right, total: Math.abs(total) })
-  }
-  return { samples, hasLeftRight }
-}
-
-// Fetches a CC Athletics raw force-trace CSV server-side - same two-step flow
-// (get_csv_download_url, then GET the signed URL) already proven in
-// supabase/functions/cc-raw-csv/index.ts, called directly here instead of via
-// that function so report generation stays a single request.
-async function fetchCcRawTrace(path: string, apiKey: string): Promise<ParsedTrace | null> {
-  try {
-    const params = new URLSearchParams({ path })
-    const urlRes = await fetch(
-      `https://europe-west1-forcemate-desktop.cloudfunctions.net/get_csv_download_url?${params.toString()}`,
-      { headers: { 'X-API-Key': apiKey } }
-    )
-    if (!urlRes.ok) return null
-    const { download_url } = await urlRes.json()
-    if (!download_url) return null
-    const csvRes = await fetch(download_url)
-    if (!csvRes.ok) return null
-    const csvText = await csvRes.text()
-    return parseForceTraceCsv(csvText)
-  } catch (e) {
-    console.error('fetchCcRawTrace failed:', e)
-    return null
-  }
-}
-
-// Simple centered moving-average smoothing (mockup asked for "smoothed out" traces).
-function smoothValues(values: number[], windowSize = 7): number[] {
-  if (values.length <= 2) return values
-  const half = Math.floor(windowSize / 2)
-  return values.map((_, i) => {
-    const start = Math.max(0, i - half)
-    const end = Math.min(values.length - 1, i + half)
-    let sum = 0
-    for (let j = start; j <= end; j++) sum += values[j]
-    return sum / (end - start + 1)
-  })
-}
-
-// Evenly downsamples a sample array to at most maxPoints, for both chart
-// readability and a bounded number of jsPDF draw calls per page.
-function downsampleSamples(samples: TraceSample[], maxPoints = 160): TraceSample[] {
-  if (samples.length <= maxPoints) return samples
-  const step = samples.length / maxPoints
-  const out: TraceSample[] = []
-  for (let i = 0; i < maxPoints; i++) out.push(samples[Math.floor(i * step)])
-  return out
-}
-
-// Generic image fetch -> base64 data URL, generalised from the existing org-logo
-// fetch below so the same helper can also embed a practitioner-uploaded test emblem.
-async function fetchImageAsDataUrl(url: string): Promise<{ dataUrl: string; format: 'PNG' | 'JPEG' } | null> {
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const buffer = await res.arrayBuffer()
-    const bytes = new Uint8Array(buffer)
-    let binary = ''
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-    const base64 = btoa(binary)
-    const contentType = res.headers.get('content-type') || 'image/png'
-    const format: 'PNG' | 'JPEG' = contentType.includes('jpeg') || contentType.includes('jpg') ? 'JPEG' : 'PNG'
-    return { dataUrl: `data:${contentType};base64,${base64}`, format }
-  } catch (e) {
-    console.error('fetchImageAsDataUrl failed:', e)
-    return null
-  }
-}
-
-interface FocusResult {
-  type: 'capacity' | 'expression';
-  weakerSide: 'Left' | 'Right';
-  weakerValue: number;
-  strongerValue: number;
-  symmetryPercent: number;
-  label: string;
-}
-
-// Picks which of Capacity / Expression is this report's "one focus" - the
-// lower-hanging-fruit, worse of the two symmetry scores, per Josh's explicit
-// "you're only as strong as your weakest link" framing. Only compares the two
-// when both exist; falls back to whichever one is actually available.
-function selectSymmetryFocus(capacity: LimbSymmetryResult | null, expression: LimbSymmetryResult | null): FocusResult | null {
-  const toFocus = (r: LimbSymmetryResult, type: 'capacity' | 'expression'): FocusResult => {
-    const symmetryPercent = 100 - r.asymmetryPercent
-    const weakerSide = r.leftValue < r.rightValue ? 'Left' : 'Right'
-    return {
-      type,
-      weakerSide,
-      weakerValue: Math.min(r.leftValue, r.rightValue),
-      strongerValue: Math.max(r.leftValue, r.rightValue),
-      symmetryPercent,
-      label: type === 'capacity' ? 'Force Capacity' : 'Force Expression',
-    }
-  }
-  if (capacity && expression) {
-    const capFocus = toFocus(capacity, 'capacity')
-    const expFocus = toFocus(expression, 'expression')
-    return capFocus.symmetryPercent <= expFocus.symmetryPercent ? capFocus : expFocus
-  }
-  if (capacity) return toFocus(capacity, 'capacity')
-  if (expression) return toFocus(expression, 'expression')
-  return null
-}
-
-// Humanised, deterministic insight copy for the focus box - phrased in the same
-// voice already approved on the mockups (scrubbed of AI writing tells), built
-// from a small per-test-type copy bank rather than an LLM call so the PDF stays
-// fast and doesn't depend on an extra AI request per test.
-function buildFocusInsight(testName: string, focus: FocusResult, unit: string): { title: string; stat: string; whatsHappening: string; whyItMatters: string; whatToDo: string } {
-  const name = testName.toLowerCase()
-  const side = focus.weakerSide.toLowerCase()
-  const metricName = focus.type === 'capacity' ? 'force capacity' : 'force expression'
-  const title = `${focus.weakerSide} ${name.includes('side') ? name.replace(/^(left side|right side)\s+/i, '') : name}, ${metricName}.`
-  const stat = `${focus.weakerValue.toFixed(0)}${unit} vs ${focus.strongerValue.toFixed(0)}${unit} ${focus.type === 'capacity' ? 'peak force' : 'at 50ms'}`
-
-  let whatsHappening: string
-  let whyItMatters: string
-  let whatToDo: string
-
-  if (focus.type === 'capacity') {
-    whatsHappening = `The ${side} side reaches a lower ceiling than the other, ${focus.weakerValue.toFixed(0)}${unit} against ${focus.strongerValue.toFixed(0)}${unit} at peak. That's a straight strength gap, not a speed one.`
-    whyItMatters = `A gap this size at peak is about load, not timing. Extra reactive or speed work won't close it on its own.`
-    whatToDo = name.includes('adductor') || name.includes('copenhagen')
-      ? `Heavy, slow Copenhagen holds and side-lying adductor work on the ${side} side, loaded up properly over the next block.`
-      : name.includes('soleus') || name.includes('calf')
-        ? `Heavy single leg calf raises on the ${side} side, slow and controlled, building the load over the next block.`
-        : name.includes('jump') ? `Heavy unilateral strength work for the ${side} leg - split squats, single leg press, loaded up properly. Hold off on extra jump volume until the gap closes.`
-          : `Heavy unilateral strength work on the ${side} side before adding more volume or speed work.`
-  } else {
-    whatsHappening = `Both sides get to a decent peak eventually, but the ${side} side takes its time getting there. At 50ms it's putting out ${focus.weakerValue.toFixed(0)}${unit} against ${focus.strongerValue.toFixed(0)}${unit} on the other side.`
-    whyItMatters = `The ${side} side isn't weak, it just takes longer to switch on. Adding load alone won't touch that.`
-    whatToDo = name.includes('adductor') || name.includes('copenhagen')
-      ? `Fast, reactive adductor work twice a week - banded quick pulses, lateral change of direction drills. Keep the slow holds going too, just don't expect them to close this gap alone.`
-      : name.includes('soleus') || name.includes('calf')
-        ? `Fast, reactive calf work on the ${side} side - pogo hops, short-contact bounds - alongside the existing strength block.`
-        : `Fast, reactive work on the ${side} side twice a week, alongside the existing strength block.`
-  }
-
-  return { title, stat, whatsHappening, whyItMatters, whatToDo }
 }
 
 serve(async (req) => {
@@ -634,43 +386,6 @@ serve(async (req) => {
       } catch (logoErr) {
         console.error('Failed to fetch logo:', logoErr)
       }
-    }
-
-    // Load any practitioner-uploaded test emblems for this team (test_emblems,
-    // PR #86). Keyed by exact test_name - left blank in the PDF for any test
-    // the practitioner hasn't assigned an emblem to yet, per Josh's instruction.
-    const emblemDataUrlByTestName: Map<string, { dataUrl: string; format: 'PNG' | 'JPEG' }> = new Map()
-    if (teamIdForLog) {
-      try {
-        const { data: emblemRows } = await supabaseClient
-          .from('test_emblems')
-          .select('test_name, storage_path')
-          .eq('team_id', teamIdForLog)
-        for (const row of emblemRows || []) {
-          const { data: pub } = supabaseClient.storage.from('test-emblems').getPublicUrl(row.storage_path)
-          if (!pub?.publicUrl) continue
-          const img = await fetchImageAsDataUrl(pub.publicUrl)
-          if (img) emblemDataUrlByTestName.set(row.test_name, img)
-        }
-      } catch (emblemErr) {
-        console.error('Failed to load test emblems:', emblemErr)
-      }
-    }
-
-    // CC Athletics API key for fetching real raw force-trace CSVs server-side
-    // (same get_csv_download_url flow as supabase/functions/cc-raw-csv/index.ts).
-    // Only CC-sourced tests carry a raw_csv_path in their metrics - VALD-sourced
-    // tests don't yet (raw trace access is pending VALD's own approval), so this
-    // is simply unused for those and the trace section shows a "not available"
-    // note instead of a fabricated curve.
-    const ccApiKey = Deno.env.get('CC_ATHLETICS_API_KEY') ?? ''
-    const rawTraceCache: Map<string, ParsedTrace | null> = new Map()
-    const getRawTrace = async (path: string): Promise<ParsedTrace | null> => {
-      if (!ccApiKey) return null
-      if (rawTraceCache.has(path)) return rawTraceCache.get(path)!
-      const result = await fetchCcRawTrace(path, ccApiKey)
-      rawTraceCache.set(path, result)
-      return result
     }
 
     console.log(`Generating force plate PDF report for: ${athlete_name}`)
@@ -1113,17 +828,10 @@ serve(async (req) => {
     }
 
     // Generate PDF with improved styling matching the HTML template
-    // Per-test pages are taller than A4 (see TEST_PAGE_HEIGHT below) so the
-    // force trace / emblem / "this report's one focus" section fits on the
-    // SAME page as the scores/symmetry/trend/insights above it, instead of
-    // spilling onto a second page per test. The summary overview and AI
-    // coach insight pages at the end stay standard A4 and set their own
-    // format explicitly on every addPage() call.
-    const TEST_PAGE_HEIGHT = 480
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [210, TEST_PAGE_HEIGHT]
+      format: 'a4'
     })
 
     // Helper: convert hex color string to RGB array
@@ -1170,423 +878,12 @@ serve(async (req) => {
         if (processedSidePairsCount.has(baseExercise)) continue
         processedSidePairsCount.add(baseExercise)
       }
-      // 1 page per test - scores/symmetry/trend/insights plus the force
-      // trace/emblem/"one focus" section all live on the same page now.
-      totalPages += 1
+      totalPages++
     }
+    totalPages++ // Limb Symmetry page (before Performance Overview, per Josh's ordering)
     totalPages++ // Summary overview page at the end
 
     let pageNumber = 0
-
-    // ===== LIMB SYMMETRY SECTION (shared by both page layouts below) =====
-    // Draws the Capacity / Expression symmetry card at (x, y, w) on the current
-    // page and returns the height it consumed, so callers can keep advancing yPos.
-    const drawLimbSymmetrySection = (capacity: LimbSymmetryResult | null, expression: LimbSymmetryResult | null, x: number, y: number, w: number): number => {
-      const drawMetricRow = (label: string, sub: string, r: LimbSymmetryResult | null, rowY: number): number => {
-        doc.setFontSize(9)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(17, 24, 39)
-        doc.text(label, x + 6, rowY)
-        const labelW = doc.getTextWidth(label)
-        doc.setFontSize(7.5)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(119, 119, 119)
-        doc.text(sub, x + 8 + labelW, rowY)
-
-        if (!r) {
-          doc.setFontSize(7)
-          doc.setFont('helvetica', 'bold')
-          const chipLabel = 'Not available'
-          const chipW = doc.getTextWidth(chipLabel) + 8
-          doc.setFillColor(156, 163, 175)
-          doc.roundedRect(x + w - 6 - chipW, rowY - 4, chipW, 6, 1.5, 1.5, 'F')
-          doc.setTextColor(255, 255, 255)
-          doc.text(chipLabel, x + w - 6 - chipW / 2, rowY, { align: 'center' })
-
-          let ry = rowY + 7
-          doc.setFontSize(7)
-          doc.setFont('helvetica', 'italic')
-          doc.setTextColor(136, 136, 136)
-          doc.text('Not tracked for this test yet.', x + 6, ry)
-          return ry - rowY + 8
-        }
-
-        const symPct = 100 - r.asymmetryPercent
-        const band = getSymmetryBand(symPct)
-        doc.setFontSize(7)
-        doc.setFont('helvetica', 'bold')
-        const chipLabel = `${band.label} - ${symPct.toFixed(1)}%`
-        const chipW = doc.getTextWidth(chipLabel) + 8
-        doc.setFillColor(band.color[0], band.color[1], band.color[2])
-        doc.roundedRect(x + w - 6 - chipW, rowY - 4, chipW, 6, 1.5, 1.5, 'F')
-        doc.setTextColor(255, 255, 255)
-        doc.text(chipLabel, x + w - 6 - chipW / 2, rowY, { align: 'center' })
-
-        let ry = rowY + 7
-        const barX = x + 32
-        const barW = w - 64
-        const total = r.leftValue + r.rightValue
-        const leftW = total > 0 ? (r.leftValue / total) * barW : barW / 2
-        const rightW = barW - leftW
-
-        doc.setFontSize(7.5)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(37, 99, 235)
-        doc.text(`L ${r.leftValue.toFixed(0)}`, x + 6, ry + 3)
-        doc.setFillColor(37, 99, 235)
-        doc.rect(barX, ry, leftW, 4.5, 'F')
-        doc.setFillColor(220, 38, 38)
-        doc.rect(barX + leftW, ry, rightW, 4.5, 'F')
-        doc.setTextColor(220, 38, 38)
-        doc.text(`R ${r.rightValue.toFixed(0)}`, x + w - 6, ry + 3, { align: 'right' })
-
-        return ry + 4.5 - rowY + 6
-      }
-
-      doc.setFillColor(248, 250, 252)
-      doc.setDrawColor(51, 65, 85)
-      doc.setLineWidth(0.4)
-      const boxH = 50
-      doc.roundedRect(x, y, w, boxH, 2, 2, 'FD')
-
-      let cy = y + 7
-      doc.setFontSize(10.5)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(17, 24, 39)
-      doc.text('Limb Symmetry', x + 6, cy)
-      cy += 4
-      doc.setFontSize(6.5)
-      doc.setFont('helvetica', 'italic')
-      doc.setTextColor(102, 102, 102)
-      doc.text('Two views on the same limb - a strength gap needs different work to a speed of force gap.', x + 6, cy)
-      cy += 7
-
-      doc.setDrawColor(226, 232, 240)
-      doc.setLineWidth(0.2)
-      // Sub-label follows whatever calculateLimbSymmetry actually compared
-      // (Peak Force / Peak Landing Force / Jump Height / Limb Contribution)
-      // so a kinematic fallback is never shown under a "Peak Force" caption.
-      const capacitySub = capacity?.metricLabel ? `- ${capacity.metricLabel}, L vs R` : '- Peak Force, L vs R'
-      cy += drawMetricRow('Force Capacity Symmetry', capacitySub, capacity, cy)
-      doc.line(x + 6, cy - 1, x + w - 6, cy - 1)
-      cy += 2
-      drawMetricRow('Force Expression Symmetry', '- Early Force @ 50ms, L vs R', expression, cy)
-
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-      return boxH + 5
-    }
-
-    // Picks the "best" rep from a set of records for a given metric config.
-    const pickBestRecord = (records: TestRecord[], config: CardConfig): TestRecord | null => {
-      if (records.length === 0) return null
-      return records.reduce((best, r) => {
-        const bv = getMetricValue(best.metrics, config) ?? -Infinity
-        const rv = getMetricValue(r.metrics, config) ?? -Infinity
-        return rv > bv ? r : best
-      })
-    }
-
-    // ===== SAME-PAGE SECTION: REAL FORCE TRACE + EMBLEM + ONE FOCUS INSIGHT =====
-    // Continues on the current test page, directly underneath Report
-    // Insights, rather than starting a new page - see TEST_PAGE_HEIGHT above.
-    const renderTracePage = async (opts: {
-      testName: string
-      displayTitle: string
-      capacity: LimbSymmetryResult | null
-      expression: LimbSymmetryResult | null
-      leftReps: TestRecord[]
-      rightReps: TestRecord[]
-      combinedReps: TestRecord[]
-      primaryConfig: CardConfig
-      latestDate: string
-      startY: number
-    }) => {
-      const pageWidth = 210
-      const pageHeight = TEST_PAGE_HEIGHT
-      const marginLeft = 15
-      const marginRight = 15
-      const contentWidth = pageWidth - marginLeft - marginRight
-
-      // Thin section divider in place of the old second page's own header -
-      // the branded header/title for this test is already on screen above.
-      let yPos = opts.startY + 6
-      doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-      doc.setLineWidth(0.3)
-      doc.line(marginLeft, yPos, pageWidth - marginRight, yPos)
-      yPos += 6
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-      doc.text(opts.displayTitle.toUpperCase(), marginLeft, yPos)
-      yPos += 8
-
-      // Resolve a single representative raw trace (best rep). Faded multi-rep
-      // overlay is left for a follow-up - this ships the real single-rep curve.
-      type Mode = 'lr' | 'total' | 'lr-separate' | null
-      let mode: Mode = null
-      let leftVals: number[] | null = null
-      let rightVals: number[] | null = null
-
-      if (opts.combinedReps.length > 0) {
-        const best = pickBestRecord(opts.combinedReps, opts.primaryConfig)
-        const path = best ? pickRawCsvPath(best.metrics) : null
-        const trace = path ? await getRawTrace(path) : null
-        if (trace && trace.samples.length > 1) {
-          const ds = downsampleSamples(trace.samples, 160)
-          if (trace.hasLeftRight) {
-            mode = 'lr'
-            leftVals = smoothValues(ds.map(s => s.left ?? 0))
-            rightVals = smoothValues(ds.map(s => s.right ?? 0))
-          } else {
-            mode = 'total'
-            leftVals = smoothValues(ds.map(s => s.total ?? 0))
-          }
-        }
-      } else if (opts.leftReps.length > 0 || opts.rightReps.length > 0) {
-        const bestLeft = pickBestRecord(opts.leftReps, opts.primaryConfig)
-        const bestRight = pickBestRecord(opts.rightReps, opts.primaryConfig)
-        const leftPath = bestLeft ? pickRawCsvPath(bestLeft.metrics) : null
-        const rightPath = bestRight ? pickRawCsvPath(bestRight.metrics) : null
-        const leftTrace = leftPath ? await getRawTrace(leftPath) : null
-        const rightTrace = rightPath ? await getRawTrace(rightPath) : null
-        if (leftTrace && leftTrace.samples.length > 1) leftVals = smoothValues(downsampleSamples(leftTrace.samples, 160).map(s => s.total ?? 0))
-        if (rightTrace && rightTrace.samples.length > 1) rightVals = smoothValues(downsampleSamples(rightTrace.samples, 160).map(s => s.total ?? 0))
-        if (leftVals || rightVals) mode = 'lr-separate'
-      }
-
-      const focus = selectSymmetryFocus(opts.capacity, opts.expression)
-
-      if (!mode) {
-        doc.setFillColor(255, 255, 255)
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.roundedRect(marginLeft, yPos, contentWidth, 30, 2, 2, 'FD')
-        doc.setFontSize(9)
-        doc.setFont('helvetica', 'italic')
-        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-        doc.text('Raw force trace not available yet for this test. CC Athletics-sourced tests populate this', marginLeft + 6, yPos + 13)
-        doc.text('automatically; VALD-sourced tests will once VALD approves raw trace access.', marginLeft + 6, yPos + 19)
-        yPos += 36
-      } else {
-        // Align both series to equal length for drawing
-        const n = Math.max(leftVals?.length ?? 0, rightVals?.length ?? 0)
-        const chartH = 75
-        doc.setFillColor(255, 255, 255)
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.roundedRect(marginLeft, yPos, contentWidth, chartH, 2, 2, 'FD')
-
-        let cy = yPos + 7
-        doc.setFontSize(9.5)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
-        doc.text(mode === 'total' ? 'Force Trace (best rep this session)' : 'Force Trace - Left vs Right (best rep this session)', marginLeft + 6, cy)
-
-        if (mode !== 'total') {
-          doc.setFontSize(6.5)
-          doc.setDrawColor(37, 99, 235)
-          doc.setLineWidth(0.5)
-          doc.line(marginLeft + 6, cy + 4, marginLeft + 14, cy + 4)
-          doc.setTextColor(37, 99, 235)
-          doc.text('Left', marginLeft + 16, cy + 5)
-          doc.setDrawColor(220, 38, 38)
-          doc.line(marginLeft + 30, cy + 4, marginLeft + 38, cy + 4)
-          doc.setTextColor(220, 38, 38)
-          doc.text('Right', marginLeft + 40, cy + 5)
-        }
-
-        cy += 10
-        const chartX = marginLeft + 12
-        const chartW = contentWidth - 24
-        const chartAH = chartH - 24
-
-        const allVals = [...(leftVals || []), ...(rightVals || [])]
-        const maxV = Math.max(...allVals, 1)
-        const minV = Math.min(...allVals, 0)
-        const range = maxV - minV || 1
-
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.setLineWidth(0.1)
-        doc.line(chartX, cy, chartX, cy + chartAH)
-        doc.line(chartX, cy + chartAH, chartX + chartW, cy + chartAH)
-
-        // Flagged phase window (sample indices) based on the focus type
-        let boxStart = 0
-        let boxEnd = n - 1
-        let phaseLabel = ''
-        if (focus?.type === 'expression') {
-          boxStart = 0
-          boxEnd = Math.max(1, Math.round(n * 0.18))
-          phaseLabel = 'Early phase'
-        } else if (focus?.type === 'capacity') {
-          if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
-            // jump-type: window around the overall peak sample
-            const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
-            let peakIdx = 0
-            series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
-            boxStart = Math.max(0, peakIdx - Math.round(n * 0.12))
-            boxEnd = Math.min(n - 1, peakIdx + Math.round(n * 0.12))
-            phaseLabel = 'Push off phase'
-          } else {
-            boxStart = Math.round(n * 0.55)
-            boxEnd = n - 1
-            phaseLabel = 'Plateau / peak phase'
-          }
-        }
-
-        const plotSeries = (vals: number[] | null, color: number[]) => {
-          if (!vals || vals.length < 2) return
-          doc.setDrawColor(color[0], color[1], color[2])
-          doc.setLineWidth(0.6)
-          for (let i = 1; i < vals.length; i++) {
-            const x1 = chartX + ((i - 1) / (vals.length - 1)) * chartW
-            const y1 = cy + chartAH - ((vals[i - 1] - minV) / range) * chartAH
-            const x2 = chartX + (i / (vals.length - 1)) * chartW
-            const y2 = cy + chartAH - ((vals[i] - minV) / range) * chartAH
-            doc.line(x1, y1, x2, y2)
-          }
-        }
-        plotSeries(leftVals, mode === 'total' ? colors.dark : [37, 99, 235])
-        plotSeries(rightVals, [220, 38, 38])
-
-        if (phaseLabel && n > 2) {
-          const bx1 = chartX + (boxStart / (n - 1)) * chartW
-          const bx2 = chartX + (boxEnd / (n - 1)) * chartW
-          doc.setDrawColor(192, 57, 57)
-          doc.setLineWidth(0.5)
-          doc.rect(bx1, cy, bx2 - bx1, chartAH, 'D')
-          doc.setFontSize(7)
-          doc.setFont('helvetica', 'bold')
-          doc.setTextColor(192, 57, 57)
-          doc.text(phaseLabel, (bx1 + bx2) / 2, cy - 2, { align: 'center' })
-        }
-
-        yPos += chartH + 5
-      }
-
-      // ===== BANDWIDTH ROW: emblem / zoom / insight, all in one strip =====
-      const emblem = emblemDataUrlByTestName.get(opts.testName)
-      const rowH = 58
-      let rowX = marginLeft
-      const emblemW = emblem ? 40 : 0
-      // Only reserve space for the zoom card when there's an actual trace to
-      // zoom into. It used to be a fixed 48mm regardless of `mode`, so a test
-      // with no raw force trace (the normal case for every VALD-sourced test
-      // today) still drew an empty pastel box with nothing in it - the same
-      // "scruffy, not proportional" box whether or not there was any
-      // expression/capacity data either. Collapsing it to 0 lets the insight
-      // box below grow to fill the freed width instead.
-      const zoomW = mode ? 48 : 0
-      const boxGaps = (emblem ? 1 : 0) + (zoomW ? 1 : 0)
-      const insightW = contentWidth - emblemW - zoomW - boxGaps * 4
-
-      if (emblem) {
-        doc.setFillColor(250, 250, 250)
-        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
-        doc.roundedRect(rowX, yPos, emblemW, rowH, 2, 2, 'FD')
-        try {
-          doc.addImage(emblem.dataUrl, emblem.format, rowX + 4, yPos + 4, emblemW - 8, emblemW - 8)
-        } catch (_) { /* ignore */ }
-        doc.setFontSize(6.5)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
-        doc.text(opts.testName, rowX + emblemW / 2, yPos + rowH - 6, { align: 'center', maxWidth: emblemW - 6 })
-        rowX += emblemW + 4
-      }
-
-      // Zoom card: re-plot just the flagged window at a larger scale. Only
-      // drawn at all when zoomW > 0, i.e. there's a real trace (mode is set).
-      if (zoomW) {
-        doc.setFillColor(254, 242, 242)
-        doc.setDrawColor(254, 202, 202)
-        doc.roundedRect(rowX, yPos, zoomW, rowH, 2, 2, 'FD')
-        if (leftVals || rightVals) {
-          const n2 = Math.max(leftVals?.length ?? 0, rightVals?.length ?? 0)
-          let zs = 0, ze = n2 - 1
-          if (focus?.type === 'expression') { zs = 0; ze = Math.max(1, Math.round(n2 * 0.18)) }
-          else if (focus?.type === 'capacity') {
-            if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
-              const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
-              let peakIdx = 0
-              series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
-              zs = Math.max(0, peakIdx - Math.round(n2 * 0.12)); ze = Math.min(n2 - 1, peakIdx + Math.round(n2 * 0.12))
-            } else { zs = Math.round(n2 * 0.55); ze = n2 - 1 }
-          }
-          const zoomLeft = leftVals ? leftVals.slice(zs, ze + 1) : null
-          const zoomRight = rightVals ? rightVals.slice(zs, ze + 1) : null
-          const zAll = [...(zoomLeft || []), ...(zoomRight || [])]
-          if (zAll.length > 1) {
-            const zMax = Math.max(...zAll)
-            const zMin = Math.min(...zAll)
-            const zRange = zMax - zMin || 1
-            const zX = rowX + 6
-            const zW = zoomW - 12
-            const zY = yPos + 10
-            const zH = rowH - 20
-            const plotZoom = (vals: number[] | null, color: number[]) => {
-              if (!vals || vals.length < 2) return
-              doc.setDrawColor(color[0], color[1], color[2])
-              doc.setLineWidth(0.6)
-              for (let i = 1; i < vals.length; i++) {
-                const x1 = zX + ((i - 1) / (vals.length - 1)) * zW
-                const y1 = zY + zH - ((vals[i - 1] - zMin) / zRange) * zH
-                const x2 = zX + (i / (vals.length - 1)) * zW
-                const y2 = zY + zH - ((vals[i] - zMin) / zRange) * zH
-                doc.line(x1, y1, x2, y2)
-              }
-            }
-            plotZoom(zoomLeft, mode === 'total' ? colors.dark : [37, 99, 235])
-            plotZoom(zoomRight, [220, 38, 38])
-            doc.setFontSize(6)
-            doc.setFont('helvetica', 'bold')
-            doc.setTextColor(153, 27, 27)
-            doc.text('zoom', rowX + zoomW / 2, yPos + 6, { align: 'center' })
-          }
-        }
-        rowX += zoomW + 4
-      }
-
-      // Insight box: "this report's one focus"
-      doc.setFillColor(17, 24, 39)
-      doc.roundedRect(rowX, yPos, insightW, rowH, 2, 2, 'F')
-      let iy = yPos + 7
-      doc.setFillColor(192, 57, 57)
-      doc.roundedRect(rowX + 4, iy - 3.5, 42, 5, 1, 1, 'F')
-      doc.setFontSize(6)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(255, 255, 255)
-      doc.text("THIS REPORT'S ONE FOCUS", rowX + 6, iy)
-      iy += 7
-
-      if (focus) {
-        const copy = buildFocusInsight(opts.testName, focus, 'N')
-        doc.setFontSize(7.5)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(255, 255, 255)
-        doc.text(copy.title, rowX + 4, iy, { maxWidth: insightW - 8 })
-        iy += 4.5
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(252, 165, 165)
-        doc.text(copy.stat, rowX + 4, iy, { maxWidth: insightW - 8 })
-        iy += 5
-        doc.setFontSize(6.5)
-        doc.setTextColor(229, 231, 235)
-        const bodyLines = doc.splitTextToSize(copy.whatsHappening, insightW - 8)
-        doc.text(bodyLines.slice(0, 3), rowX + 4, iy)
-        iy += Math.min(bodyLines.length, 3) * 3 + 2
-        const doLines = doc.splitTextToSize(`What to do: ${copy.whatToDo}`, insightW - 8)
-        doc.text(doLines.slice(0, 3), rowX + 4, iy)
-      } else {
-        doc.setFontSize(7)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(229, 231, 235)
-        doc.text('No limb symmetry data available for this test yet.', rowX + 4, iy, { maxWidth: insightW - 8 })
-      }
-
-      yPos += rowH + 8
-
-      doc.setFontSize(8)
-      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
-      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
-    }
 
     // Generate one page per test
     const processedSidePairs = new Set<string>()
@@ -1599,7 +896,7 @@ serve(async (req) => {
         processedSidePairs.add(baseExercise)
       }
       if (pageNumber > 0) {
-        doc.addPage([210, TEST_PAGE_HEIGHT], 'portrait')
+        doc.addPage()
       }
       pageNumber++
 
@@ -1780,29 +1077,6 @@ serve(async (req) => {
 
         yPos += tableHeight + 5
 
-        // ===== LIMB SYMMETRY (Capacity / Expression) =====
-        // Forward every field calculateLimbSymmetry knows how to read, not
-        // just the isometric ones - a "Left Side X" / "Right Side X" pair
-        // can equally be a split jump-family test, which carries force/
-        // jump-height/contribution fields instead of force_peak.
-        const slSynthMetrics: TestMetrics = {
-          force_peak_left: latestLeft.force_peak,
-          force_peak_right: latestRight.force_peak,
-          force_50ms_left: latestLeft.force_50ms,
-          force_50ms_right: latestRight.force_50ms,
-          fp1_peak_landing_force: latestLeft.fp1_peak_landing_force ?? latestLeft.peak_landing_force,
-          fp2_peak_landing_force: latestRight.fp2_peak_landing_force ?? latestRight.peak_landing_force,
-          p1_avg_force: latestLeft.p1_avg_force ?? latestLeft.fp1_peak_force,
-          p2_avg_force: latestRight.p2_avg_force ?? latestRight.fp2_peak_force,
-          jump_height_left_cm: latestLeft.jump_height_left_cm ?? latestLeft.jump_height_cm,
-          jump_height_right_cm: latestRight.jump_height_right_cm ?? latestRight.jump_height_cm,
-          fp1_contribution: latestLeft.fp1_contribution ?? latestLeft.avg_fp1_contribution,
-          fp2_contribution: latestRight.fp2_contribution ?? latestRight.avg_fp2_contribution,
-        }
-        const slCapacitySymmetry = calculateLimbSymmetry(testName, slSynthMetrics)
-        const slExpressionSymmetry = calculateExpressionSymmetry(slSynthMetrics)
-        yPos += drawLimbSymmetrySection(slCapacitySymmetry, slExpressionSymmetry, marginLeft, yPos, contentWidth)
-
         // ===== DUAL TREND CHART =====
         if (slAllDates.length >= 1) {
           const slChartHeight = 35
@@ -1977,26 +1251,10 @@ serve(async (req) => {
           }
         }
 
-        // Advance past the insight card's own height before drawing anything
-        // else - see the matching fix/comment in the standard (non-limb-pair)
-        // insight block above for why this is needed.
-        yPos += slInsightH + 5
-
-        // Real force trace, emblem and "this report's one focus" continue on
-        // this same page, directly underneath Report Insights (footer is
-        // printed once, at the bottom of this section, below).
-        await renderTracePage({
-          testName,
-          displayTitle: `LIMB COMPARISON - ${baseExercise.toUpperCase()}`,
-          capacity: slCapacitySymmetry,
-          expression: slExpressionSymmetry,
-          leftReps: leftRecords,
-          rightReps: rightRecords,
-          combinedReps: [],
-          primaryConfig: { icon: '', title: 'Peak Force', metricKey: 'force_peak', unit: 'N' },
-          latestDate: slLatestDate,
-          startY: yPos,
-        })
+        // Footer
+        doc.setFontSize(8)
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+        doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, slPageHeight - 10, { align: 'right' })
 
         continue // Skip standard rendering below
       }
@@ -2109,12 +1367,17 @@ serve(async (req) => {
         doc.text(valueText, rightColX + rightColWidth - 5, rowY, { align: 'right' })
       })
 
-      yPos += 72
+      // Between-limb note in summary card
+      sumY += 30
+      const limbData = calculateLimbSymmetry(testName, group.latestMetrics)
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      if (!limbData) {
+        doc.text('Between-limb differences: L/R data not available for this test.', rightColX + 5, sumY, { maxWidth: rightColWidth - 10 })
+      }
 
-      // ===== LIMB SYMMETRY (Capacity / Expression) =====
-      const capacitySymmetry = calculateLimbSymmetry(testName, group.latestMetrics)
-      const expressionSymmetry = calculateExpressionSymmetry(group.latestMetrics)
-      yPos += drawLimbSymmetrySection(capacitySymmetry, expressionSymmetry, marginLeft, yPos, contentWidth)
+      yPos += 72
 
       // ===== HISTORICAL TREND CHART - Best Value Per Date =====
       // Determine if this metric is "lower is better" (contact time, GCT, etc.)
@@ -2261,8 +1524,104 @@ serve(async (req) => {
         yPos += chartCardHeight + 5
       }
 
-      // (Between-Limb Differences replaced by the Limb Symmetry section above,
-      // drawn right after the Individual Scores / Comparisons cards.)
+      // ===== BETWEEN-LIMB DIFFERENCES SECTION =====
+      if (limbData) {
+        doc.setFillColor(255, 255, 255)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, yPos, contentWidth, 40, 2, 2, 'FD')
+
+        let limbY = yPos + 8
+        doc.setFontSize(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text('Between-Limb Differences', marginLeft + 6, limbY)
+
+        limbY += 12
+
+        if (limbData.isSymmetryIndex) {
+          // SI-based display (Drop Jump: Time to Peak Landing Force SI)
+          const siValue = limbData.siValue || 0
+          const dominantSide = limbData.dominantSide || ''
+          
+          // Show the SI metric name
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+          doc.text(testName === 'Drop Jump' ? 'Peak Landing Force Symmetry' : 'Symmetry Index', marginLeft + 6, limbY)
+
+          // Show the SI value prominently
+          limbY += 8
+          const siColor = Math.abs(siValue) > 15 ? colors.danger : 
+                         Math.abs(siValue) > 10 ? [234, 179, 8] : colors.success
+          doc.setFontSize(14)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(siColor[0], siColor[1], siColor[2])
+          const siSign = siValue >= 0 ? '+' : ''
+          doc.text(`${siSign}${siValue.toFixed(1)}%`, marginLeft + contentWidth / 2, limbY, { align: 'center' })
+
+          // Show dominant side label
+          limbY += 7
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text(dominantSide, marginLeft + contentWidth / 2, limbY, { align: 'center' })
+
+          // Explanation note
+          limbY += 6
+          doc.setFontSize(6)
+          doc.setFont('helvetica', 'italic')
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text(testName === 'Drop Jump' ? 'Calculated from fp1/fp2 peak landing force. Positive = Left Leg Dominant, Negative = Right Leg Dominant.' : 'Positive values indicate left side dominant, negative values indicate right side dominant.', marginLeft + 8, limbY, { maxWidth: contentWidth - 16 })
+
+        } else {
+          // Standard L/R bar chart display (CMJ, Squat Jump, Pogo, Isometric)
+          const barWidth = 120
+          const barX = marginLeft + 35
+          const barHeight = 8
+
+          const total = limbData.leftValue + limbData.rightValue
+          const leftPct = (limbData.leftValue / total) * 100
+          const rightPct = (limbData.rightValue / total) * 100
+
+          // Left side (primary color)
+          doc.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2])
+          doc.rect(barX, limbY, (leftPct / 100) * barWidth, barHeight, 'F')
+
+          // Right side (gray)
+          doc.setFillColor(colors.lightText[0], colors.lightText[1], colors.lightText[2])
+          doc.rect(barX + (leftPct / 100) * barWidth, limbY, (rightPct / 100) * barWidth, barHeight, 'F')
+
+          // Left label
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+          doc.text('LEFT', marginLeft + 8, limbY + 3)
+          doc.setFontSize(9)
+          doc.text(limbData.leftValue.toFixed(1), marginLeft + 8, limbY + 9)
+
+          // Right label
+          doc.text('RIGHT', pageWidth - marginRight - 22, limbY + 3)
+          doc.setFontSize(9)
+          doc.text(limbData.rightValue.toFixed(1), pageWidth - marginRight - 22, limbY + 9)
+
+          // Asymmetry indicator
+          limbY += 18
+          const asymColor = limbData.asymmetryPercent > 15 ? colors.danger : 
+                           limbData.asymmetryPercent > 10 ? [234, 179, 8] : colors.success
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
+          doc.text(`Asymmetry: ${limbData.asymmetryPercent.toFixed(1)}%`, barX + barWidth / 2, limbY, { align: 'center' })
+
+          // Formula note
+          doc.setFontSize(6)
+          doc.setFont('helvetica', 'italic')
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text('Formula: |Left - Right| / Max(Left, Right) × 100', marginLeft + 8, limbY + 6)
+        }
+
+        yPos += 45
+      }
 
       // ===== REPORT INSIGHTS SECTION =====
       const insight = aiInsights.get(testName)
@@ -2349,34 +1708,217 @@ serve(async (req) => {
         }
       }
 
-      // Advance past the insight card's own height before drawing anything
-      // else. This previously stayed at the card's top Y, so the trace
-      // section's title (drawn by renderTracePage) landed on top of the
-      // "What this means" text instead of underneath the whole card.
-      yPos += insightCardHeight + 5
-
-      // Real force trace, emblem and "this report's one focus" continue on
-      // this same page, directly underneath Report Insights (footer is
-      // printed once, at the bottom of this section, below).
-      await renderTracePage({
-        testName,
-        displayTitle: testName,
-        capacity: capacitySymmetry,
-        expression: expressionSymmetry,
-        leftReps: [],
-        rightReps: [],
-        combinedReps: group.records,
-        primaryConfig: { icon: '', title: 'Peak Force', metricKey: 'force_peak', fallbackKeys: ['fp1_peak_force', 'p1_avg_force'], unit: 'N' },
-        latestDate: group.latestDate,
-        startY: yPos,
-      })
+      // ===== PAGE FOOTER =====
+      doc.setFontSize(8)
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
     }
 
-    // ===== SUMMARY OVERVIEW PAGE =====
-    // Standard A4 - this page's own layout math (pageHeight = 297 below)
-    // assumes it, unlike the taller per-test pages above.
+    // ===== LIMB SYMMETRY PAGE =====
+    // Per Josh's request: the last pages of the report should show which
+    // areas need development, limb symmetry first, then performance. This
+    // uses the now-fixed calculateLimbSymmetry() (added Single Leg Jump /
+    // Single Leg Drop Jump / Hop Test / Single Leg Hop Test cases) for
+    // bilateral-named test rows, and the same per-metric left/right
+    // comparison the single-leg comparison page (above) already uses for
+    // "Left Side X" / "Right Side X" pairs - so every test type that has
+    // any genuine limb data appears here, ranked worst-asymmetry-first.
     {
-      doc.addPage([210, 297], 'portrait')
+      doc.addPage()
+      pageNumber++
+
+      const pageWidth = 210
+      const pageHeight = 297
+      const marginLeft = 15
+      const marginRight = 15
+      const contentWidth = pageWidth - marginLeft - marginRight
+
+      // Header bar
+      doc.setFillColor(colors.headerBg[0], colors.headerBg[1], colors.headerBg[2])
+      doc.rect(0, 0, pageWidth, 20, 'F')
+
+      let headerTextX = marginLeft
+      if (logoDataUrl) {
+        try {
+          const logoFormat = logoDataUrl.includes('image/jpeg') || logoDataUrl.includes('image/jpg') ? 'JPEG' : 'PNG'
+          doc.addImage(logoDataUrl, logoFormat, marginLeft, 3, 10, 10)
+          headerTextX = marginLeft + 14
+        } catch (_) { /* ignore */ }
+      }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(255, 255, 255)
+      const symmetryHeaderTitle = branding?.org_name
+        ? `${branding.org_name.toUpperCase()} | LIMB SYMMETRY`
+        : 'LIMB SYMMETRY'
+      doc.text(symmetryHeaderTitle, headerTextX, 12)
+
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(220, 220, 220)
+      doc.text(`${athlete_name}   |   ${team_name || 'N/A'}`, pageWidth - marginRight, 12, { align: 'right' })
+
+      let symYPos = 28
+
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+      doc.text('Limb Symmetry', marginLeft, symYPos)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text('Tests ranked by between-limb asymmetry - greatest imbalance first', marginLeft, symYPos + 5)
+
+      symYPos += 14
+
+      interface SymmetryScore {
+        testName: string
+        leftValue: number
+        rightValue: number
+        unit: string
+        asymmetryPercent: number
+        dominantSide: string | null
+      }
+      const symmetryScores: SymmetryScore[] = []
+      const symProcessedPairs = new Set<string>()
+
+      for (const [symTestName, symGroup] of groupedTests) {
+        const isSideTest = symTestName.startsWith('Left Side') || symTestName.startsWith('Right Side')
+
+        if (isSideTest) {
+          // Same pairing approach as the single-leg comparison page above:
+          // find the Left/Right counterpart and compare their primary metric.
+          const baseExercise = symTestName.replace(/^(Left Side|Right Side)\s+/, '')
+          if (symProcessedPairs.has(baseExercise)) continue
+          symProcessedPairs.add(baseExercise)
+
+          const pairedTestName = symTestName.startsWith('Left Side') ? `Right Side ${baseExercise}` : `Left Side ${baseExercise}`
+          const pairedGroup = groupedTests.get(pairedTestName)
+          if (!pairedGroup) continue
+
+          const leftGroup = symTestName.startsWith('Left Side') ? symGroup : pairedGroup
+          const rightGroup = symTestName.startsWith('Left Side') ? pairedGroup : symGroup
+
+          const configs = getCardConfigs(symTestName)
+          const primaryConfig = configs[0]
+          const leftVal = getMetricValue(leftGroup.latestMetrics, primaryConfig)
+          const rightVal = getMetricValue(rightGroup.latestMetrics, primaryConfig)
+          if (leftVal === null || rightVal === null || Math.max(leftVal, rightVal) === 0) continue
+
+          const asymmetryPercent = Math.abs(leftVal - rightVal) / Math.max(leftVal, rightVal) * 100
+          symmetryScores.push({
+            testName: baseExercise,
+            leftValue: leftVal,
+            rightValue: rightVal,
+            unit: primaryConfig.unit,
+            asymmetryPercent,
+            dominantSide: asymmetryPercent < 2 ? null : (leftVal > rightVal ? 'Left' : 'Right'),
+          })
+        } else {
+          const limbData = calculateLimbSymmetry(symTestName, symGroup.latestMetrics)
+          if (!limbData) continue
+          symmetryScores.push({
+            testName: symTestName,
+            leftValue: limbData.leftValue,
+            rightValue: limbData.rightValue,
+            unit: '',
+            asymmetryPercent: limbData.asymmetryPercent,
+            dominantSide: limbData.dominantSide
+              ? limbData.dominantSide.replace(' Leg Dominant', '')
+              : (limbData.asymmetryPercent < 2 ? null : (limbData.leftValue > limbData.rightValue ? 'Left' : 'Right')),
+          })
+        }
+      }
+
+      // Sort: worst (highest asymmetry) first - mirrors Josh's "needs work" framing
+      symmetryScores.sort((a, b) => b.asymmetryPercent - a.asymmetryPercent)
+
+      if (symmetryScores.length === 0) {
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+        doc.text('No between-limb comparison data is available for this athlete yet.', marginLeft, symYPos + 5)
+      }
+
+      const symRowHeight = 20
+      symmetryScores.forEach((score, index) => {
+        if (symYPos + symRowHeight + 10 > pageHeight - 20) {
+          doc.setFontSize(8)
+          doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+          doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+          doc.addPage()
+          pageNumber++
+          symYPos = 20
+        }
+
+        const asymColor = score.asymmetryPercent > 15 ? colors.danger : score.asymmetryPercent > 10 ? [234, 179, 8] : colors.success
+
+        doc.setFillColor(index % 2 === 0 ? 255 : 248, index % 2 === 0 ? 255 : 250, index % 2 === 0 ? 255 : 253)
+        doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
+        doc.roundedRect(marginLeft, symYPos, contentWidth, symRowHeight, 1.5, 1.5, 'FD')
+
+        // Rank badge
+        doc.setFillColor(asymColor[0], asymColor[1], asymColor[2])
+        doc.roundedRect(marginLeft + 3, symYPos + 3, 16, 7, 1, 1, 'F')
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(255, 255, 255)
+        doc.text(`#${index + 1}`, marginLeft + 11, symYPos + 7.5, { align: 'center' })
+
+        // Test name
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2])
+        doc.text(score.testName, marginLeft + 22, symYPos + 7)
+
+        // L/R values
+        doc.setFontSize(7.5)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.text[0], colors.text[1], colors.text[2])
+        const lrStr = score.unit
+          ? `L: ${score.leftValue.toFixed(1)} ${score.unit}   R: ${score.rightValue.toFixed(1)} ${score.unit}`
+          : `L: ${score.leftValue.toFixed(1)}   R: ${score.rightValue.toFixed(1)}`
+        doc.text(lrStr, marginLeft + 22, symYPos + 13)
+
+        // Asymmetry % + dominant side
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(asymColor[0], asymColor[1], asymColor[2])
+        const dominantStr = score.dominantSide ? ` (${score.dominantSide} dominant)` : ''
+        doc.text(`${score.asymmetryPercent.toFixed(1)}% asymmetry${dominantStr}`, pageWidth - marginRight - 5, symYPos + 10, { align: 'right' })
+
+        symYPos += symRowHeight + 3
+      })
+
+      // Legend
+      symYPos += 5
+      if (symYPos + 15 < pageHeight - 20 && symmetryScores.length > 0) {
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+
+        doc.setFillColor(colors.danger[0], colors.danger[1], colors.danger[2])
+        doc.circle(marginLeft + 2, symYPos, 1.5, 'F')
+        doc.text('>15% - needs attention', marginLeft + 6, symYPos + 1)
+
+        doc.setFillColor(234, 179, 8)
+        doc.circle(marginLeft + 48, symYPos, 1.5, 'F')
+        doc.text('10-15% - monitor', marginLeft + 52, symYPos + 1)
+
+        doc.setFillColor(colors.success[0], colors.success[1], colors.success[2])
+        doc.circle(marginLeft + 88, symYPos, 1.5, 'F')
+        doc.text('<10% - within normal range', marginLeft + 92, symYPos + 1)
+      }
+
+      // Footer
+      doc.setFontSize(8)
+      doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
+      doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
+    }
+
+    // ===== SUMMARY OVERVIEW PAGE (Performance) =====
+    {
+      doc.addPage()
       pageNumber++
 
       const pageWidth = 210
@@ -2479,7 +2021,7 @@ serve(async (req) => {
           doc.setFontSize(8)
           doc.setTextColor(colors.muted[0], colors.muted[1], colors.muted[2])
           doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth - marginRight, pageHeight - 10, { align: 'right' })
-          doc.addPage([210, 297], 'portrait')
+          doc.addPage()
           pageNumber++
           yPos = 20
         }
@@ -2590,10 +2132,9 @@ serve(async (req) => {
     }
 
     // ===== AI COACH INSIGHT PAGE (optional) =====
-    // Standard A4 - same reasoning as the summary overview page above.
     if (includedAiInsight) {
       try {
-        doc.addPage([210, 297], 'portrait')
+        doc.addPage()
         pageNumber++
         const pageWidth = 210
         const pageHeight = 297
@@ -2681,7 +2222,7 @@ serve(async (req) => {
           for (const rec of recs) {
             const lines = doc.splitTextToSize(`• ${String(rec)}`, contentWidth - 4)
             if (yPos + lines.length * 5 > pageHeight - 20) {
-              doc.addPage([210, 297], 'portrait')
+              doc.addPage()
               pageNumber++
               yPos = 20
             }
@@ -2695,7 +2236,7 @@ serve(async (req) => {
         const cues: string[] = Array.isArray(ai_insight.keyCues) ? ai_insight.keyCues : []
         if (cues.length > 0) {
           if (yPos + 20 > pageHeight - 20) {
-            doc.addPage([210, 297], 'portrait')
+            doc.addPage()
             pageNumber++
             yPos = 20
           }
@@ -2711,7 +2252,7 @@ serve(async (req) => {
           for (const cue of cues) {
             const lines = doc.splitTextToSize(`• ${String(cue)}`, contentWidth - 4)
             if (yPos + lines.length * 5 > pageHeight - 20) {
-              doc.addPage([210, 297], 'portrait')
+              doc.addPage()
               pageNumber++
               yPos = 20
             }
