@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.3"
   }
   public: {
     Tables: {
@@ -47,6 +47,66 @@ export type Database = {
           team_id?: string
           test_date?: string | null
           test_name?: string
+        }
+        Relationships: []
+      }
+      api_endpoint_catalog: {
+        Row: {
+          auth_method: string
+          confirmed: boolean
+          created_at: string
+          endpoint: string
+          granularity: string
+          id: number
+          limb_symmetry_fields: string | null
+          method: string
+          notes: string | null
+          purpose: string
+          returns_limb_symmetry_fields: boolean
+          supports_intra_session: boolean
+          supports_longitudinal: boolean
+          system: string
+          updated_at: string
+          used_in_code: string
+          wired_into_app: boolean
+        }
+        Insert: {
+          auth_method: string
+          confirmed?: boolean
+          created_at?: string
+          endpoint: string
+          granularity: string
+          id?: never
+          limb_symmetry_fields?: string | null
+          method: string
+          notes?: string | null
+          purpose: string
+          returns_limb_symmetry_fields?: boolean
+          supports_intra_session?: boolean
+          supports_longitudinal?: boolean
+          system: string
+          updated_at?: string
+          used_in_code: string
+          wired_into_app?: boolean
+        }
+        Update: {
+          auth_method?: string
+          confirmed?: boolean
+          created_at?: string
+          endpoint?: string
+          granularity?: string
+          id?: never
+          limb_symmetry_fields?: string | null
+          method?: string
+          notes?: string | null
+          purpose?: string
+          returns_limb_symmetry_fields?: boolean
+          supports_intra_session?: boolean
+          supports_longitudinal?: boolean
+          system?: string
+          updated_at?: string
+          used_in_code?: string
+          wired_into_app?: boolean
         }
         Relationships: []
       }
@@ -2007,6 +2067,57 @@ export type Database = {
           },
         ]
       }
+      vald_cc_metric_map: {
+        Row: {
+          cc_metric_key: string
+          cc_metric_name: string
+          cc_unit: string | null
+          confidence: string
+          id: number
+          jump_type: string
+          notes: string | null
+          source_version: string
+          unit_note: string | null
+          updated_at: string
+          vald_group: string | null
+          vald_result_id: string | null
+          vald_result_name: string | null
+          vald_unit: string | null
+        }
+        Insert: {
+          cc_metric_key: string
+          cc_metric_name: string
+          cc_unit?: string | null
+          confidence?: string
+          id?: number
+          jump_type: string
+          notes?: string | null
+          source_version?: string
+          unit_note?: string | null
+          updated_at?: string
+          vald_group?: string | null
+          vald_result_id?: string | null
+          vald_result_name?: string | null
+          vald_unit?: string | null
+        }
+        Update: {
+          cc_metric_key?: string
+          cc_metric_name?: string
+          cc_unit?: string | null
+          confidence?: string
+          id?: number
+          jump_type?: string
+          notes?: string | null
+          source_version?: string
+          unit_note?: string | null
+          updated_at?: string
+          vald_group?: string | null
+          vald_result_id?: string | null
+          vald_result_name?: string | null
+          vald_unit?: string | null
+        }
+        Relationships: []
+      }
       vald_profile_metadata: {
         Row: {
           created_at: string | null
@@ -2043,6 +2154,45 @@ export type Database = {
           team?: string | null
           updated_at?: string | null
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      vald_test_type_catalog: {
+        Row: {
+          app_category: string
+          confirmed: boolean
+          created_at: string
+          display_name: string
+          id: number
+          notes: string | null
+          source: string
+          updated_at: string
+          vald_group: string
+          vald_short_code: string | null
+        }
+        Insert: {
+          app_category: string
+          confirmed?: boolean
+          created_at?: string
+          display_name: string
+          id?: never
+          notes?: string | null
+          source: string
+          updated_at?: string
+          vald_group: string
+          vald_short_code?: string | null
+        }
+        Update: {
+          app_category?: string
+          confirmed?: boolean
+          created_at?: string
+          display_name?: string
+          id?: never
+          notes?: string | null
+          source?: string
+          updated_at?: string
+          vald_group?: string
+          vald_short_code?: string | null
         }
         Relationships: []
       }
