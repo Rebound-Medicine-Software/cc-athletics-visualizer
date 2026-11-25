@@ -382,6 +382,15 @@ const ID_FORCE_50MS = ["FORCE_AT_50MS", "FORCE_50MS", "EARLY_FORCE_CAPACITY"];
 const ID_CONCENTRIC_RFD = ["CONCENTRIC_RFD"];
 const ID_CONCENTRIC_RFD_MAX = ["CONCENTRIC_RFD_MAX"];
 const ID_CONCENTRIC_RFD_50 = ["CONCENTRIC_RFD_50"];
+// Hop Test / Single Leg Hop Test (continuous rhythmic hopping, no
+// countermovement-to-takeoff rep) never reports CONCENTRIC_RFD_50 — confirmed
+// live against Jess Ball's Single Leg Hop Test /trials data (25 Nov 2026):
+// zero CONCENTRIC_RFD results of any kind for this test type. It does report
+// HOP_BEST_LANDING_RFD instead — a landing-phase (not takeoff) rate of force
+// development, tagged limb "Trial" per rep exactly like HOP_BEST_JUMP_HEIGHT.
+// Arguably the more relevant "how fast" metric for a test that's fundamentally
+// about reactive landing stiffness rather than a concentric drive.
+const ID_HOP_LANDING_RFD = ["HOP_BEST_LANDING_RFD"];
 
 /** Flat metric fields consumed by ValdReportHub / valdToCCAthletics. */
 function flatMetrics(results: ValdResult[]) {
@@ -620,16 +629,21 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
             }
           }
 
-          // Early force DEVELOPMENT per limb (CONCENTRIC_RFD_50) for the same
+          // Early force DEVELOPMENT per limb (CONCENTRIC_RFD_50 for jump-style
+          // tests, HOP_BEST_LANDING_RFD for Hop-family tests) for the same
           // single-limb-per-rep tests as above — identical root cause and
           // identical fix shape as the cmjHL/cmjHR block directly above:
           // group trials by their own trial.limb field, then read that
-          // trial's own CONCENTRIC_RFD_50 result (tagged "Trial"/"Both" at
-          // the result level regardless of which leg performed the rep).
-          // Picks the same "best" (highest jump height) trial per side used
-          // for cmjHL/cmjHR above, so every per-limb KPI on a given side
-          // comes from the one representative rep for that side.
-          if ((t.rfd50L == null || t.rfd50R == null)) {
+          // trial's own RFD result (tagged "Trial"/"Both" at the result level
+          // regardless of which leg performed the rep). Picks the same "best"
+          // (highest jump height) trial per side used for cmjHL/cmjHR above,
+          // so every per-limb KPI on a given side comes from the one
+          // representative rep for that side. Both rfd50L/R and
+          // hopLandingRfdL/R are read from the same best-per-side trial —
+          // whichever metric that test type actually reports ends up
+          // populated, the other stays null (fine, since a given test type
+          // only ever reports one of the two; see ID_HOP_LANDING_RFD above).
+          if (t.rfd50L == null || t.rfd50R == null || t.hopLandingRfdL == null || t.hopLandingRfdR == null) {
             const trialLimbs2 = trials.map((tr) => String((tr as Record<string, unknown>).limb ?? "Both"));
             const isUnilateral2 = trialLimbs2.some((l) => l === "Left" || l === "Right") && !trialLimbs2.includes("Both");
             if (isUnilateral2) {
@@ -641,15 +655,17 @@ async function hydrateTestMetrics(tenantId: string, tests: TestRow[]) {
               };
               const leftTrials2 = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Left");
               const rightTrials2 = trials.filter((tr) => (tr as Record<string, unknown>).limb === "Right");
-              if (t.rfd50L == null && leftTrials2.length > 0) {
+              if ((t.rfd50L == null || t.hopLandingRfdL == null) && leftTrials2.length > 0) {
                 const best = leftTrials2.reduce((a, b) => (getH2(b as Record<string, unknown>) > getH2(a as Record<string, unknown>) ? b : a));
                 const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
-                t.rfd50L = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+                if (t.rfd50L == null) t.rfd50L = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+                if (t.hopLandingRfdL == null) t.hopLandingRfdL = firstMetric(bestResults, ID_HOP_LANDING_RFD, "Both") ?? null;
               }
-              if (t.rfd50R == null && rightTrials2.length > 0) {
+              if ((t.rfd50R == null || t.hopLandingRfdR == null) && rightTrials2.length > 0) {
                 const best = rightTrials2.reduce((a, b) => (getH2(b as Record<string, unknown>) > getH2(a as Record<string, unknown>) ? b : a));
                 const bestResults = ((best as Record<string, unknown>).results ?? []) as ValdResult[];
-                t.rfd50R = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+                if (t.rfd50R == null) t.rfd50R = firstMetric(bestResults, ID_CONCENTRIC_RFD_50, "Both") ?? null;
+                if (t.hopLandingRfdR == null) t.hopLandingRfdR = firstMetric(bestResults, ID_HOP_LANDING_RFD, "Both") ?? null;
               }
             }
           }
@@ -820,6 +836,11 @@ async function handleDetail(tenantId: string, testId: string) {
     // one representative rep.
     rfd50L: bestLeftResultsD ? (firstMetric(bestLeftResultsD, ID_CONCENTRIC_RFD_50, "Both") ?? null) : null,
     rfd50R: bestRightResultsD ? (firstMetric(bestRightResultsD, ID_CONCENTRIC_RFD_50, "Both") ?? null) : null,
+    // Landing-phase RFD per limb for Hop-family tests (see ID_HOP_LANDING_RFD
+    // above) — same best-per-side trial as rfd50L/R, read via the same
+    // bestLeftResultsD/bestRightResultsD computed once above.
+    hopLandingRfdL: bestLeftResultsD ? (firstMetric(bestLeftResultsD, ID_HOP_LANDING_RFD, "Both") ?? null) : null,
+    hopLandingRfdR: bestRightResultsD ? (firstMetric(bestRightResultsD, ID_HOP_LANDING_RFD, "Both") ?? null) : null,
 
     // Isometric — generic per-test peak force and "late" force, Left/Right.
     // solL/solR = PEAK_FORCE / PEAK_VERTICAL_FORCE, confirmed present on both

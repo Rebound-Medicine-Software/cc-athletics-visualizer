@@ -687,8 +687,16 @@ export function valdDetailToLimbPair(
   // that shape entirely rather than showing a misleading always-blank card.
   const rfd50L = (detail as any).rfd50L ?? null;
   const rfd50R = (detail as any).rfd50R ?? null;
+  // Landing-phase RFD, per limb - Hop Test's own "how fast" metric
+  // (HOP_BEST_LANDING_RFD, see ID_HOP_LANDING_RFD in vald-bridge). Hop Test
+  // is a continuous rhythmic hop with no concentric/takeoff phase, so it
+  // never reports CONCENTRIC_RFD_50 (confirmed live, 25 Nov 2026) - this is
+  // the Pogo-family analog of rfd50L/R above, read from the landing phase
+  // instead of a takeoff phase.
+  const landingRfdL = (detail as any).hopLandingRfdL ?? null;
+  const landingRfdR = (detail as any).hopLandingRfdR ?? null;
 
-  const makeMetrics = (heightCm: number | null, rfd50: number | null) => {
+  const makeMetrics = (heightCm: number | null, rfd50: number | null, landingRfd: number | null) => {
     if (baseName === 'Pogo Jump') {
       return {
         avg_jump_height: heightCm != null ? heightCm / 100 : undefined, // metres
@@ -696,6 +704,7 @@ export function valdDetailToLimbPair(
         avg_contact_time: ct ?? undefined,
         avg_flight_time: ft != null ? ft : undefined,
         avg_power: pp ?? undefined,
+        landing_rfd: landingRfd ?? undefined,
       };
     }
     return {
@@ -723,7 +732,7 @@ export function valdDetailToLimbPair(
       ...base,
       test_name: `Left Side ${baseName}`,
       leg_stance: 'left_leg',
-      metrics: makeMetrics(djL, rfd50L) as any,
+      metrics: makeMetrics(djL, rfd50L, landingRfdL) as any,
     });
   }
   if (djR != null) {
@@ -731,7 +740,7 @@ export function valdDetailToLimbPair(
       ...base,
       test_name: `Right Side ${baseName}`,
       leg_stance: 'right_leg',
-      metrics: makeMetrics(djR, rfd50R) as any,
+      metrics: makeMetrics(djR, rfd50R, landingRfdR) as any,
     });
   }
 

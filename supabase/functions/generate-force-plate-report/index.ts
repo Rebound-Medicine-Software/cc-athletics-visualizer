@@ -368,6 +368,15 @@ function getSymmetryBand(symmetryPercent: number): SymmetryBand {
 // |rfd_50ms_left| vs |rfd_50ms_right| rather than the signed values - using
 // the signed values directly would produce negative/nonsensical bar widths
 // and asymmetry percentages whenever one side's rate is still negative.
+//
+// Hop Test / Single Leg Hop Test (continuous rhythmic hopping, no
+// countermovement-to-takeoff rep) never reports CONCENTRIC_RFD_50 - confirmed
+// live against Jess Ball's Single Leg Hop Test data (25 Nov 2026). Its own
+// "how fast" metric is HOP_BEST_LANDING_RFD (landing_rfd_left/right), a
+// landing-phase rate rather than a fixed 50ms window like the two branches
+// above - so it gets its own label without the "@ 50ms" qualifier (see the
+// sub-label logic in drawLimbSymmetrySection, which only appends that
+// qualifier for the two time-windowed metrics).
 function calculateExpressionSymmetry(metrics: TestMetrics): LimbSymmetryResult | null {
   let leftValue: number | undefined
   let rightValue: number | undefined
@@ -381,6 +390,10 @@ function calculateExpressionSymmetry(metrics: TestMetrics): LimbSymmetryResult |
     leftValue = Math.abs(metrics.rfd_50ms_left)
     rightValue = Math.abs(metrics.rfd_50ms_right)
     metricLabel = 'Early Force Development'
+  } else if (typeof metrics.landing_rfd_left === 'number' && typeof metrics.landing_rfd_right === 'number') {
+    leftValue = Math.abs(metrics.landing_rfd_left)
+    rightValue = Math.abs(metrics.landing_rfd_right)
+    metricLabel = 'Landing RFD'
   }
 
   if (typeof leftValue !== 'number' || typeof rightValue !== 'number') return null
@@ -1309,9 +1322,16 @@ serve(async (req) => {
       cy += 2
       // Sub-label follows whatever calculateExpressionSymmetry actually
       // compared (Early Force Capacity for isometric tests, Early Force
-      // Development for jump tests) so jump tests aren't shown under an
-      // isometric-only caption.
-      const expressionSub = expression?.metricLabel ? `- ${expression.metricLabel} @ 50ms, L vs R` : '- Early Force @ 50ms, L vs R'
+      // Development for jump tests, Landing RFD for Hop-family tests) so a
+      // test is never shown under a caption that doesn't match what was
+      // measured. The "@ 50ms" qualifier only applies to the two genuinely
+      // 50ms-windowed metrics - Landing RFD (Hop-family) is a landing-phase
+      // rate with no fixed time window, so it's labelled on its own.
+      const expressionSub = expression?.metricLabel
+        ? (expression.metricLabel === 'Landing RFD'
+            ? `- ${expression.metricLabel}, L vs R`
+            : `- ${expression.metricLabel} @ 50ms, L vs R`)
+        : '- Early Force @ 50ms, L vs R'
       drawMetricRow('Force Expression Symmetry', expressionSub, expression, cy)
 
       doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2])
@@ -1846,6 +1866,12 @@ serve(async (req) => {
           // test records, so there's no left/right split within either one.
           rfd_50ms_left: latestLeft.rfd_50ms ?? latestLeft.rfd_50ms_left,
           rfd_50ms_right: latestRight.rfd_50ms ?? latestRight.rfd_50ms_right,
+          // Hop-family ("Left/Right Side Pogo Jump" pair) landing-phase RFD -
+          // each side's own plain landing_rfd field (see valdDetailToLimbPair
+          // in valdToCCAthletics.ts), same single-sided-record shape as
+          // rfd_50ms above.
+          landing_rfd_left: latestLeft.landing_rfd ?? latestLeft.landing_rfd_left,
+          landing_rfd_right: latestRight.landing_rfd ?? latestRight.landing_rfd_right,
         }
         const slCapacitySymmetry = calculateLimbSymmetry(testName, slSynthMetrics)
         const slExpressionSymmetry = calculateExpressionSymmetry(slSynthMetrics)
