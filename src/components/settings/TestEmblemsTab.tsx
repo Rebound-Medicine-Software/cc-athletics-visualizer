@@ -45,12 +45,16 @@ export function TestEmblemsTab() {
         new Set((testNames ?? []).map((r: any) => r.test_name).filter(Boolean))
       ).sort();
 
-      const { data: emblems, error: emblemsErr } = await supabase
+      // test_emblems is not in the generated Supabase types yet (the
+      // definitions are stale), so this call is cast through any.
+      const { data: emblems, error: emblemsErr } = await (supabase as any)
         .from('test_emblems')
         .select('test_name, storage_path')
         .eq('team_id', teamId);
       if (emblemsErr) throw emblemsErr;
-      const byName = new Map((emblems ?? []).map((e: any) => [e.test_name, e.storage_path]));
+      const byName = new Map<string, string | null>(
+        (emblems ?? []).map((e: any) => [e.test_name, e.storage_path ?? null] as [string, string | null])
+      );
 
       const merged: EmblemRow[] = uniqueNames.map((name) => ({
         test_name: name,
@@ -91,7 +95,7 @@ export function TestEmblemsTab() {
       const { error: uploadErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true });
       if (uploadErr) throw uploadErr;
 
-      const { error: upsertErr } = await supabase
+      const { error: upsertErr } = await (supabase as any)
         .from('test_emblems')
         .upsert({ team_id: teamId, test_name: testName, storage_path: path }, { onConflict: 'team_id,test_name' });
       if (upsertErr) throw upsertErr;
@@ -110,7 +114,7 @@ export function TestEmblemsTab() {
     if (!confirm(`Remove the emblem for ${testName}? The report will leave this blank until you upload a new one.`)) return;
     try {
       await supabase.storage.from(BUCKET).remove([storagePath]);
-      await supabase.from('test_emblems').delete().eq('team_id', teamId).eq('test_name', testName);
+      await (supabase as any).from('test_emblems').delete().eq('team_id', teamId).eq('test_name', testName);
       toast.success('Emblem removed.');
       await load();
     } catch (e: any) {
