@@ -571,6 +571,17 @@ function toPogoMetrics(test: ValdTest | ValdTestDetail, flavour: Flavour): PogoM
   if (test.cmjHR != null) m.jump_height_right_cm = test.cmjHR;
   if (m.asymmetry_index == null && test.cmjAsym != null) m.asymmetry_index = test.cmjAsym;
 
+  // Landing-phase RFD per limb (HOP_BEST_LANDING_RFD) — the Hop-family
+  // "how fast" metric. vald-bridge populates hopLandingRfdL/R on the
+  // best-per-side trial; mapping them here is what puts landing_rfd_left /
+  // landing_rfd_right on the metrics object the Force Expression Symmetry
+  // card reads (see generate-force-plate-report). Same as the
+  // jump_height_left_cm / jump_height_right_cm block above.
+  const landingRfdL = (test as any).hopLandingRfdL;
+  const landingRfdR = (test as any).hopLandingRfdR;
+  if (landingRfdL != null) m.landing_rfd_left = landingRfdL;
+  if (landingRfdR != null) m.landing_rfd_right = landingRfdR;
+
   return m;
 }
 
