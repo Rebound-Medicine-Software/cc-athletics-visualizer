@@ -232,6 +232,14 @@ function calculateLimbSymmetry(testName: string, metrics: TestMetrics): LimbSymm
     leftValue = metrics.fp1_contribution ?? metrics.avg_fp1_contribution ?? 0;
     rightValue = metrics.fp2_contribution ?? metrics.avg_fp2_contribution ?? 0;
     metricLabel = 'Limb Contribution';
+    if (leftValue > 0 && leftValue <= 1 && rightValue > 0 && rightValue <= 1) {
+      // CC Athletics sometimes reports Limb Contribution as a 0-1 fraction
+      // rather than an already-scaled 0-100 percentage - without this a
+      // genuine 48%/52% split renders as '0 vs 1' after toFixed(0) in
+      // buildFocusInsight's stat line.
+      leftValue *= 100;
+      rightValue *= 100;
+    }
   } else {
     // Isometric tests - use force_peak_left/right from preprocessed metrics
     leftValue = metrics.force_peak_left || 0;
@@ -548,7 +556,7 @@ interface FocusResult {
 // "you're only as strong as your weakest link" framing. Only compares the two
 // when both exist; falls back to whichever one is actually available.
 function selectSymmetryFocus(capacity: LimbSymmetryResult | null, expression: LimbSymmetryResult | null): FocusResult | null {
-  const toFocus = (r: LimbSymmetryResult, type: 'capacity' | 'expression'): FocusResult => {
+  const toFocus = (r: LimbSymmetryResult, type: 'capacity' | 'expression'): any => {
     const symmetryPercent = 100 - r.asymmetryPercent
     const weakerSide = r.leftValue < r.rightValue ? 'Left' : 'Right'
     return {
@@ -558,6 +566,7 @@ function selectSymmetryFocus(capacity: LimbSymmetryResult | null, expression: Li
       strongerValue: Math.max(r.leftValue, r.rightValue),
       symmetryPercent,
       label: type === 'capacity' ? 'Force Capacity' : 'Force Expression',
+      metricLabel: r.metricLabel,
     }
   }
   if (capacity && expression) {
@@ -574,19 +583,25 @@ function selectSymmetryFocus(capacity: LimbSymmetryResult | null, expression: Li
 // voice already approved on the mockups (scrubbed of AI writing tells), built
 // from a small per-test-type copy bank rather than an LLM call so the PDF stays
 // fast and doesn't depend on an extra AI request per test.
-function buildFocusInsight(testName: string, focus: FocusResult, unit: string): { title: string; stat: string; whatsHappening: string; whyItMatters: string; whatToDo: string } {
+function buildFocusInsight(testName: string, focus: any, unit: string): { title: string; stat: string; whatsHappening: string; whyItMatters: string; whatToDo: string } {
   const name = testName.toLowerCase()
   const side = focus.weakerSide.toLowerCase()
   const metricName = focus.type === 'capacity' ? 'force capacity' : 'force expression'
   const title = `${focus.weakerSide} ${name.includes('side') ? name.replace(/^(left side|right side)\s+/i, '') : name}, ${metricName}.`
-  const stat = `${focus.weakerValue.toFixed(0)}${unit} vs ${focus.strongerValue.toFixed(0)}${unit} ${focus.type === 'capacity' ? 'peak force' : 'at 50ms'}`
+  const metricUnits: Record<string, string> = { 'Limb Contribution': '%', 'Jump Height': 'cm', 'Peak Landing Force': 'N', 'Peak Force': 'N', 'Early Force Capacity': 'N', 'Early Force Development': 'N/s', 'Landing RFD': 'N/s' }
+  const statUnit = (focus.metricLabel && metricUnits[focus.metricLabel]) || unit
+  const statPhrase = focus.metricLabel ? focus.metricLabel.toLowerCase() : (focus.type === 'capacity' ? 'peak force' : 'at 50ms')
+  const statDecimals = statUnit === '%' ? 1 : 0
+  const weaker = focus.weakerValue.toFixed(statDecimals)
+  const stronger = focus.strongerValue.toFixed(statDecimals)
+  const stat = `${weaker}${statUnit} vs ${stronger}${statUnit} ${statPhrase}`
 
   let whatsHappening: string
   let whyItMatters: string
   let whatToDo: string
 
   if (focus.type === 'capacity') {
-    whatsHappening = `The ${side} side reaches a lower ceiling than the other, ${focus.weakerValue.toFixed(0)}${unit} against ${focus.strongerValue.toFixed(0)}${unit} at peak. That's a straight strength gap, not a speed one.`
+    whatsHappening = `The ${side} side reaches a lower ceiling than the other, ${weaker}${statUnit} against ${stronger}${statUnit} ${statPhrase}. That's a straight strength gap, not a speed one.`
     whyItMatters = `A gap this size at peak is about load, not timing. Extra reactive or speed work won't close it on its own.`
     whatToDo = name.includes('adductor') || name.includes('copenhagen')
       ? `Heavy, slow Copenhagen holds and side-lying adductor work on the ${side} side, loaded up properly over the next block.`
@@ -595,7 +610,8 @@ function buildFocusInsight(testName: string, focus: FocusResult, unit: string): 
         : name.includes('jump') ? `Heavy unilateral strength work for the ${side} leg - split squats, single leg press, loaded up properly. Hold off on extra jump volume until the gap closes.`
           : `Heavy unilateral strength work on the ${side} side before adding more volume or speed work.`
   } else {
-    whatsHappening = `Both sides get to a decent peak eventually, but the ${side} side takes its time getting there. At 50ms it's putting out ${focus.weakerValue.toFixed(0)}${unit} against ${focus.strongerValue.toFixed(0)}${unit} on the other side.`
+    const atPhrase = (focus.metricLabel === 'Early Force Capacity' || focus.metricLabel === 'Early Force Development') ? 'At 50ms' : 'Early on'
+    whatsHappening = `Both sides get to a decent peak eventually, but the ${side} side takes its time getting there. ${atPhrase}, it's putting out ${weaker}${statUnit} against ${stronger}${statUnit} on the other side.`
     whyItMatters = `The ${side} side isn't weak, it just takes longer to switch on. Adding load alone won't touch that.`
     whatToDo = name.includes('adductor') || name.includes('copenhagen')
       ? `Fast, reactive adductor work twice a week - banded quick pulses, lateral change of direction drills. Keep the slow holds going too, just don't expect them to close this gap alone.`
@@ -1479,11 +1495,11 @@ serve(async (req) => {
           boxEnd = Math.max(1, Math.round(n * 0.18))
           phaseLabel = 'Early phase'
         } else if (focus?.type === 'capacity') {
-          if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
+          if (opts.testName.toLowerCase().includes('jump')) {
             // jump-type: window around the overall peak sample
             const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
             let peakIdx = 0
-            series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
+            const searchEnd = Math.max(1, Math.round(series.length * 0.6)); for (let i = 0; i < searchEnd; i++) { if (series[i] > series[peakIdx]) peakIdx = i }
             boxStart = Math.max(0, peakIdx - Math.round(n * 0.12))
             boxEnd = Math.min(n - 1, peakIdx + Math.round(n * 0.12))
             phaseLabel = 'Push off phase'
@@ -1565,10 +1581,10 @@ serve(async (req) => {
           let zs = 0, ze = n2 - 1
           if (focus?.type === 'expression') { zs = 0; ze = Math.max(1, Math.round(n2 * 0.18)) }
           else if (focus?.type === 'capacity') {
-            if (mode === 'lr-separate' || opts.testName.toLowerCase().includes('jump')) {
+            if (opts.testName.toLowerCase().includes('jump')) {
               const series = leftVals && leftVals.length ? leftVals : (rightVals || [])
               let peakIdx = 0
-              series.forEach((v, i) => { if (v > series[peakIdx]) peakIdx = i })
+              const searchEnd = Math.max(1, Math.round(series.length * 0.6)); for (let i = 0; i < searchEnd; i++) { if (series[i] > series[peakIdx]) peakIdx = i }
               zs = Math.max(0, peakIdx - Math.round(n2 * 0.12)); ze = Math.min(n2 - 1, peakIdx + Math.round(n2 * 0.12))
             } else { zs = Math.round(n2 * 0.55); ze = n2 - 1 }
           }
